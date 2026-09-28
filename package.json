@@ -1,0 +1,12 @@
+{
+  "name": "harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Portable primitives extracted from a personal agent harness, once they have proven themselves in real work.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "ownership": "node src/cli.ts"
+  }
+}
