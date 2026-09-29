@@ -233,6 +233,8 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // a TTY and from a script, which also makes a piped session testable.
   rl.prompt();
   let staged: string | null = null;
+  /** The last greeting answered, so a repeated one gets a different reply. */
+  let lastConversational: string | null = null;
   for await (const line of rl) {
     // A staged goal waits for an explicit go. This is the confirmation that
     // was missing when a bare "hello ?" consumed an entire agent budget: the
@@ -280,9 +282,19 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         );
         break;
       case "conversational":
-        console.log(
-          "hey. I answer state questions and run goals that pass admission. open me inside a project for real work, or type help.",
-        );
+        // Not one constant for every greeting. The second "hey" in a row was
+        // printing the first one's answer, which reads as a hang rather than
+        // as a tool that has nothing to add. Repeating yourself is how this
+        // project used to pay for an expensive greeting, so the repeat is the
+        // expensive case and it gets the short answer.
+        if (intent.text.trim().toLowerCase() === lastConversational) {
+          console.log("still here. type help, or name a goal.");
+        } else {
+          console.log(
+            "hey. I answer state questions and run goals that pass admission. type help for the list.",
+          );
+          lastConversational = intent.text.trim().toLowerCase();
+        }
         break;
       case "ownership": {
         const { snapshotPortfolio } = await import("./adapters/frontier.ts");
@@ -370,6 +382,24 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         break;
       }
       case "goal":
+        // The home directory is a warning with teeth. The header says so, and
+        // this is where that promise has to hold: a goal staged in ~ is a goal
+        // an agent will run against the whole home tree, which is the one
+        // checkout in this setup that must never receive an unattended writer.
+        // The refusal is the same shape as the admission one, and `!` is the
+        // owner's explicit override in both cases.
+        if (inHome && !intent.forced) {
+          console.log(
+            `refused ${intent.text}`,
+          );
+          console.log(
+            "scope   " +
+              cwd +
+              " is your home directory, not a project. scoped work needs a project directory.",
+          );
+          console.log("        open cuesheet inside one, or prefix the line with ! to run it here anyway.");
+          break;
+        }
         if (intent.forced) {
           await runGoal(intent.text, true, durable, cwd);
           break;
