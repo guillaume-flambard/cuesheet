@@ -49,7 +49,15 @@ function newId(prefix: string): string {
 }
 
 /** One line of live progress, compact enough to read while it scrolls. */
-function eventLine(event: { seq: number; kind: string; data: Record<string, unknown> }): string {
+function eventLine(
+  event: { seq: number; kind: string; data: Record<string, unknown> },
+  live = false,
+): string {
+  // In live view the goal and the admission are already on screen; echoing
+  // them again was part of the noise the first real user flagged as ugly.
+  if (live && (event.kind === "goal" || event.kind === "capability")) {
+    return "";
+  }
   const d = event.data as { text?: unknown; tool?: unknown; exit?: unknown };
   if (event.kind === "observation" && typeof d.text === "string") {
     return `  ${event.seq}  ${String(d.text).slice(0, 96)}`;
@@ -151,7 +159,8 @@ async function runGoal(
     registry: forced ? undefined : registry,
     maxSteps: 8,
     onEvent: (event) => {
-      console.log(eventLine(event));
+      const line = eventLine(event, true);
+      if (line) console.log(line);
       // Persist the moment it happens, so the session outlives the process.
       durable.append(sessionId, event);
     },
@@ -176,9 +185,17 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
     rl.close();
   });
 
-  console.log(`cuesheet chat, in ${cwd}`);
-  console.log("every line is an intention: a question the state answers, or a goal the gate admits.");
-  console.log("help lists the questions. ! before a line overrides a refusal. exit leaves.");
+  const inHome = cwd === homedir() || cwd === homedir() + "/";
+  const sessions = durable.list();
+  console.log("cuesheet chat");
+  console.log(`  here      ${cwd}`);
+  if (inHome) {
+    console.log("            you are in your home directory: open cuesheet inside a project for scoped work.");
+  }
+  console.log(`  registry  ${liveRegistry().length} capabilities`);
+  console.log(`  sessions  ${sessions.length} on disk`);
+  console.log("");
+  console.log("say what you want. a goal is staged and runs when you type go. help lists the questions.");
   console.log("");
 
   // Iterated rather than question-per-line, and the reason cost a debugging
@@ -187,7 +204,30 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // it was registered. The async iterator consumes every line in order, from
   // a TTY and from a script, which also makes a piped session testable.
   rl.prompt();
+  let staged: string | null = null;
   for await (const line of rl) {
+    // A staged goal waits for an explicit go. This is the confirmation that
+    // was missing when a bare "hello ?" consumed an entire agent budget: the
+    // user sees what would run, where, and decides with one word.
+    if (staged !== null) {
+      const goal = staged;
+      const decision = line.trim().toLowerCase();
+      staged = null;
+      if (/^(go|y|yes|oui|run)$/.test(decision)) {
+        await runGoal(goal, false, durable, cwd);
+        if (done) break;
+        rl.prompt();
+        continue;
+      }
+      console.log("staged goal discarded.");
+      if (/^(n|no|non)$/.test(decision)) {
+        rl.prompt();
+        continue;
+      }
+      // Anything else is a new intention; it is routed below, and if it is
+      // another goal it restages on its own.
+    }
+
     const intent = routeIntention(line);
 
     switch (intent.kind) {
@@ -211,12 +251,19 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           ].join("\n"),
         );
         break;
-      case "ownership": {
-        const registry = liveRegistry();
-        console.log(`live registry: ${registry.length} capabilities.`);
+      case "conversational":
         console.log(
-          "ownership is read per project from git state: `cuesheet projects --root <dir>`, or open the chat inside a project and run a goal.",
+          "hey. I answer state questions and run goals that pass admission. open me inside a project for real work, or type help.",
         );
+        break;
+      case "ownership": {
+        const { snapshotPortfolio } = await import("./adapters/frontier.ts");
+        const snap = snapshotPortfolio();
+        console.log(`free to write : ${snap.free.length}`);
+        console.log(`held          : ${snap.held.length}${snap.held.length > 0 ? ` (${snap.held.slice(0, 6).join(", ")}${snap.held.length > 6 ? ", ..." : ""})` : ""}`);
+        if (snap.declaredButMissing.length > 0) {
+          console.log(`declared but not on disk: ${snap.declaredButMissing.join(", ")}`);
+        }
         break;
       }
       case "capabilities": {
@@ -288,7 +335,14 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         break;
       }
       case "goal":
-        await runGoal(intent.text, intent.forced, durable, cwd);
+        if (intent.forced) {
+          await runGoal(intent.text, true, durable, cwd);
+          break;
+        }
+        staged = intent.text;
+        console.log(`goal    ${intent.text}`);
+        console.log(`scope   ${cwd}`);
+        console.log("run     type go to run it. anything else discards it. ! before a line runs it past a refusal.");
         break;
     }
 

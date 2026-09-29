@@ -14,7 +14,7 @@ describe("cuesheet dispatcher", () => {
     const r = spawnSync(process.execPath, [ENTRY], { encoding: "utf8", input: "" });
     assert.equal(r.status, 0, "stdin EOF is a clean exit, not a crash");
     assert.match(r.stdout, /cuesheet chat/);
-    assert.match(r.stdout, /every line is an intention/);
+    assert.match(r.stdout, /a goal is staged and runs when you type go/);
   });
 
   it("an unknown command names it and exits 2", () => {

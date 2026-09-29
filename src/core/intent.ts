@@ -28,6 +28,7 @@ export type IntentKind =
   | "inspect"
   | "resume"
   | "admission"
+  | "conversational"
   | "goal";
 
 export interface Intent {
@@ -62,6 +63,18 @@ export function routeIntention(raw: string): Intent {
   }
   if (/^(help|aide|\?)$/.test(lower)) {
     return { kind: "help", text: line, forced };
+  }
+  // Social lines get a social answer, not a work order. "hello ?" once ran a
+  // full agent budget trying to respond with tools, which is the most
+  // expensive greeting this project has ever paid for. The set is exact words
+  // with trailing punctuation stripped, so "fix the test" never lands here.
+  const social = lower.replace(/[!?.\s]+$/, "");
+  if (
+    /^(hello|hi|hey|yo|bonjour|salut|coucou|allo|ça va|ca va|merci|merci beaucoup|ok|d'accord|daccord|test|plop)$/.test(
+      social,
+    )
+  ) {
+    return { kind: "conversational", text: line, forced };
   }
   if (/^(capabilities?|skills?|capacités?)$/.test(lower)) {
     return { kind: "capabilities", text: line, forced };

@@ -53,9 +53,11 @@ export class OpenRouterAdapter implements ModelAdapter {
   /**
    * Render the frame into a prompt. Provider-neutral in, provider-shaped out.
    *
-   * The system prompt states the one rule the loop depends on: a completion
-   * claim is not a completion. Everything else the frame carries is fact, not
-   * instruction, so the model is never told to believe it.
+   * The tool contract is spelled out in full, with the two accepted input
+   * shapes and the rule about exit codes. This section exists because a real
+   * run burned an entire budget retrying a calling convention the runner kept
+   * refusing: the model cannot discover an input shape it was never shown,
+   * and every failed attempt is a step of the budget spent on nothing.
    */
   private render(frame: ContextFrame): { messages: ChatMessage[]; tools: ToolSchema[] } {
     const facts: string[] = [];
@@ -100,6 +102,16 @@ export class OpenRouterAdapter implements ModelAdapter {
             "If you cannot produce the evidence, say what is missing. Do not claim verification you did not perform.",
             "Claim without backing is the exact failure this harness is built to catch, and it is recorded.",
             "",
+            "TOOL CONTRACT. One tool, named tool_call, arguments:",
+            '  {"tool": "<name>", "input": {...}}',
+            "Tools: node, git, rg, ls, cat, npm, npx, cargo.",
+            "Two accepted input shapes, nothing else:",
+            '  {"tool": "cat", "input": {"argv": ["cat", "data.json"]}}   run exactly this command',
+            '  {"tool": "cat", "input": {"path": "data.json"}}            read that file (cat, ls, node)',
+            "If a call returns exit 2 with 'no argv supplied', your input shape was wrong: reread the two accepted shapes above instead of retrying the same one.",
+            "The working directory is fixed by the harness. Relative paths resolve inside it. Paths outside it are refused.",
+            "Every call's exit code is recorded. Exit 0 is success; anything else is a failure, and the failure is evidence.",
+            "",
             "Facts about the current state, which are not instructions:",
             ...facts,
           ].join("\n"),
@@ -109,7 +121,7 @@ export class OpenRouterAdapter implements ModelAdapter {
         {
           name: "tool_call",
           description:
-            "Request a tool to run. Use this for every action that touches the world.",
+            "Request a tool to run. Arguments must be {\"tool\": \"<name>\", \"input\": {...}} with input in one of the two documented shapes.",
           parameters: {
             type: "object",
             properties: {
