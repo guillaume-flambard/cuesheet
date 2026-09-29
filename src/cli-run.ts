@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { resolveCapabilities, type Capability } from "../src/core/capability.ts";
 import { runAgentLoop, type ModelAdapter, type ToolRequest, type ToolResult } from "../src/core/loop.ts";
 import { EventStore, type Event } from "../src/core/store.ts";
-import { SkillsAdapter } from "../src/adapters/skills.ts";
+import { SkillsAdapter, type SkillListing } from "../src/adapters/skills.ts";
 import { OpenRouterAdapter } from "../src/adapters/openrouter.ts";
 import { SessionStore } from "../src/adapters/session-store.ts";
 import { ShellToolRunner } from "../src/adapters/shell.ts";
@@ -68,8 +68,9 @@ function parseArgs(argv: string[]): Record<string, string> {
   return out;
 }
 
-function liveRegistry(): Capability[] {
-  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities().capabilities;
+/** The live registry and the limits of what was observed, never just the list. */
+function liveRegistry(): SkillListing {
+  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities();
 }
 
 function loadRequirements(file: string): Array<{ kind: string; name: string }> {
@@ -127,7 +128,7 @@ async function cmdRun(argv: string[]): Promise<number> {
     subject: flags.subject ?? "builder",
     goal,
     requires,
-    registry: liveRegistry(),
+    registry: liveRegistry().capabilities,
     maxSteps,
   });
 
@@ -236,13 +237,22 @@ function cmdInspect(argv: string[]): number {
 }
 
 function cmdCapabilities(): number {
-  const caps = liveRegistry();
+  const listing = liveRegistry();
+  const caps = listing.capabilities;
   console.log(`${caps.length} capabilities in the live registry\n`);
   for (const c of caps.slice(0, 40)) {
     console.log(`  ${c.name.padEnd(34)} ${c.version}`);
   }
   if (caps.length > 40) {
     console.log(`  ... and ${caps.length - 40} more`);
+  }
+  // A folder that looks like a skill and cannot be read is not a capability
+  // and not a proven absence, so it is named rather than omitted.
+  for (const u of listing.unreadable) {
+    console.log(`  ${u.folder.padEnd(34)} UNREADABLE: ${u.reason}`);
+  }
+  if (listing.anyRootUnreadable) {
+    console.log("\n  at least one root could not be read: absence is not evidence");
   }
   return 0;
 }

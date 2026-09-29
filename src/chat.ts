@@ -28,20 +28,43 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { routeIntention } from "./core/intent.ts";
+import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
-import { resolveCapabilities, type Capability } from "./core/capability.ts";
+import {
+  resolveCapabilities,
+  type Capability,
+  type CapabilityResolution,
+  type Requirement,
+} from "./core/capability.ts";
 import { runAgentLoop, type ModelAdapter, type ToolRunner } from "./core/loop.ts";
 import { EventStore } from "./core/store.ts";
 import { OpenRouterAdapter } from "./adapters/openrouter.ts";
 import { SessionStore } from "./adapters/session-store.ts";
 import { ShellToolRunner } from "./adapters/shell.ts";
-import { SkillsAdapter } from "./adapters/skills.ts";
 
 const SESSION_ROOT = join(homedir(), ".cuesheet", "sessions");
 const SKILL_ROOTS = [join(homedir(), ".agents", "skills")];
 
-function liveRegistry(): Capability[] {
-  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities().capabilities;
+/**
+ * The live registry, and the limits of what was observed.
+ *
+ * Every caller needs both halves, because the core's `registryUnverified` is
+ * the difference between "no skill is called X" and "we could not tell". A
+ * helper that returned only the list would let a caller resolve requirements
+ * against a registry whose own coverage it never asked about, which is the
+ * defect this type was introduced to close.
+ */
+function liveRegistry(): SkillListing {
+  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities();
+}
+
+/** Resolve against the live registry, carrying its coverage into the core. */
+function resolveAgainstLive(requirements: Requirement[]): CapabilityResolution {
+  const listing = liveRegistry();
+  return resolveCapabilities(requirements, listing.capabilities, {
+    now: Date.now(),
+    registryUnverified: listing.anyRootUnreadable || listing.unreadable.length > 0,
+  });
 }
 
 function newId(prefix: string): string {
@@ -105,13 +128,12 @@ async function runGoal(
 ): Promise<void> {
   const sessionId = newId("run");
   const requirements = extractSkillRequirements(goal).requirements;
-  const registry = liveRegistry();
 
   let verdict: "allowed" | "would_block" | "unverified" = "allowed";
   let missing: string[] = [];
 
   if (requirements.length > 0) {
-    const resolution = resolveCapabilities(requirements, registry, { now: Date.now() });
+    const resolution = resolveAgainstLive(requirements);
     verdict = resolution.registryUnverified
       ? "unverified"
       : resolution.verdict === "ready"
@@ -192,7 +214,13 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   if (inHome) {
     console.log("            you are in your home directory: open cuesheet inside a project for scoped work.");
   }
-  console.log(`  registry  ${liveRegistry().length} capabilities`);
+  const listing = liveRegistry();
+  console.log(
+    `  registry  ${listing.capabilities.length} capabilities` +
+      (listing.unreadable.length > 0
+        ? `, ${listing.unreadable.length} unreadable (absence is not evidence)`
+        : ""),
+  );
   console.log(`  sessions  ${sessions.length} on disk`);
   console.log("");
   console.log("say what you want. a goal is staged and runs when you type go. help lists the questions.");
@@ -267,10 +295,18 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         break;
       }
       case "capabilities": {
-        const caps = liveRegistry();
-        console.log(`${caps.length} capabilities in the live registry:`);
-        for (const c of caps.slice(0, 30)) {
+        const listing = liveRegistry();
+        console.log(`${listing.capabilities.length} capabilities in the live registry:`);
+        for (const c of listing.capabilities.slice(0, 30)) {
           console.log(`  ${c.name.padEnd(32)} ${c.version}`);
+        }
+        // Counted, not silently absent: a folder that looks like a skill and
+        // whose manifest cannot be read is neither resolved nor proven missing.
+        for (const u of listing.unreadable) {
+          console.log(`  ${u.folder.padEnd(32)} UNREADABLE: ${u.reason}`);
+        }
+        if (listing.anyRootUnreadable) {
+          console.log("  at least one skill root could not be read: absence is not evidence");
         }
         if (caps.length > 30) {
           console.log(`  ... and ${caps.length - 30} more`);
@@ -319,8 +355,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
       }
       case "admission": {
         const requirements = extractSkillRequirements(intent.text).requirements;
-        const registry = liveRegistry();
-        const resolution = resolveCapabilities(requirements, registry, { now: Date.now() });
+        const resolution = resolveAgainstLive(requirements);
         const missing = resolution.resolution.unresolved.map((u) => u.requirement.name);
         printAdmission(
           resolution.registryUnverified

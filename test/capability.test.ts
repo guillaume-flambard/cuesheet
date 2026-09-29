@@ -258,6 +258,47 @@ describe("SkillsAdapter", () => {
     }
   });
 
+  it("an unreadable root is observable without a pseudo-capability, and that is the only way in", () => {
+    // The shape exists so a caller cannot silently drop the coverage half.
+    // An adapter that returned Capability[] would let `resolveCapabilities`
+    // infer "unverified" from an empty list alone, which is indistinguishable
+    // from a registry that is genuinely empty.
+    const root = mkdtempSync(join(tmpdir(), "cuesheet-cap-"));
+    try {
+      const listing = new SkillsAdapter({ roots: [join(root, "gone")] }).listCapabilities();
+      assert.ok("capabilities" in listing);
+      assert.ok("unreadable" in listing);
+      assert.ok("anyRootUnreadable" in listing);
+      assert.deepEqual(listing.capabilities, []);
+      assert.equal(listing.anyRootUnreadable, true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("a readable but empty root is NOT flagged unverified: that is a real absence", () => {
+    // The mirror image. If an empty-but-readable root were also marked
+    // unverified, every clean machine would report "absence is not evidence"
+    // and the warning would stop carrying information.
+    const root = mkdtempSync(join(tmpdir(), "cuesheet-cap-"));
+    try {
+      const listing = new SkillsAdapter({ roots: [root] }).listCapabilities();
+      assert.deepEqual(listing.capabilities, []);
+      assert.equal(listing.anyRootUnreadable, false);
+      const result = resolveCapabilities(
+        [{ kind: "skill", name: "github-readme" }],
+        listing.capabilities,
+        { now: 1_757_000_000_000, registryUnverified: listing.anyRootUnreadable },
+      );
+      // An empty list alone still makes the core conservative, and that is
+      // deliberate: it cannot tell, from an empty list, whether the adapter
+      // looked. What the adapter supplies is the case where it knows it did.
+      assert.equal(result.registryUnverified, true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("an unreadable root marks the resolution unverified, so absence is not evidence", () => {
     const root = mkdtempSync(join(tmpdir(), "cuesheet-cap-"));
     try {
