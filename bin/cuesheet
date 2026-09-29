@@ -1,0 +1,16 @@
+#!/bin/bash
+# cuesheet: the installed command. Thin by design.
+#
+# Everything it knows is in the repo it points at. This shim exists so the
+# command is on PATH without an npm link and without a build step, the same
+# way other personal commands on this machine are installed. If the repo
+# moves, this file is the only thing that needs to change.
+set -euo pipefail
+
+CUESHEET_ROOT="$HOME/projects/tools/cuesheet"
+if [ ! -f "$CUESHEET_ROOT/src/cuesheet.ts" ]; then
+  echo "cuesheet: entry point not found at $CUESHEET_ROOT" >&2
+  exit 1
+fi
+
+exec node "$CUESHEET_ROOT/src/cuesheet.ts" "$@"

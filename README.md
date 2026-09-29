@@ -45,9 +45,15 @@ author.
 
 ```text
 src/core/ownership.ts     resolveOwnership(): who may write where. No I/O.
-src/adapters/opencode.ts  OpenCode session storage -> ActiveSession[]
-src/cli.ts                reads adapters, prints. All I/O glue lives here.
-test/ownership.test.ts    11 tests
+src/core/capability.ts    resolveCapabilities(): requirements at delegation time. No I/O.
+src/core/delegation.ts    preflightDelegation(): the gate, composed from the two above.
+src/core/store.ts         EventStore: the append-only log a session is.
+src/core/loop.ts          runAgentLoop(): observe, compile, infer, act, never trust a claim.
+src/core/memory.ts        durable objects and the conditions that wake them.
+src/adapters/             the only places allowed to do I/O.
+src/cuesheet.ts           the installed command's dispatcher.
+bin/cuesheet              the PATH shim, copied to ~/.local/bin.
+test/                     137 tests
 ```
 
 ## The primitive
@@ -78,20 +84,46 @@ conservative, because the cost of a false `available` is a corrupted checkout.
 
 ```bash
 npm test
-node src/cli.ts --root ~/projects/<a> --root ~/projects/<b>
-node src/cli.ts --minutes 90 --root ~/projects/<a>
 ```
+
+The installed command dispatches every subcommand:
+
+```bash
+cuesheet projects --root ~/projects/<a> --root ~/projects/<b>
+cuesheet gate --requirements brief.json --skill-root ~/.agents/skills
+cuesheet capabilities
+cuesheet run <goal> --in <dir> --session <id>
+cuesheet sessions
+cuesheet inspect <session>
+cuesheet frontier
+```
+
+To install it, copy `bin/cuesheet` to a directory on your PATH. The shim execs
+`src/cuesheet.ts` from this repository and is the only file that knows where
+the repo lives.
+
+The raw entry points still work and are what the shim calls: `src/cli.ts`
+(ownership and the gate, flag-driven), `src/cli-run.ts` (sessions, subcommand
+driven), `src/frontier-cli.ts` (frontier generation), `src/replay.ts`
+(historical replay).
 
 Before a worker is briefed, its requirements can be gated:
 
 ```bash
-node src/cli.ts --requirements brief.json --skill-root ~/.agents/skills
+cuesheet gate --requirements brief.json --skill-root ~/.agents/skills
 ```
 
 This resolves the capabilities the brief declares against the live skill
 roots, prints a conformance-style verdict, and exits 1 when blocked (2 on a
 broken invocation), so it chains into a script as a gate. The declaration
 shape and the verdict lines are specified in docs/requirements.md.
+
+A run also exists: `cuesheet run <goal> --in <dir>` starts a session that owns
+its own event log, drives a model through OpenRouter, and persists every event
+so the session survives its process. It needs `OPENROUTER_API_KEY`; there is
+no unauthenticated fallback, on purpose. Shadow mode, which observes real
+delegations without blocking them, lives in the OpenCode plugin in
+`plugin-opencode/`.
 
 ## Not here yet, on purpose
 
