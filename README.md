@@ -82,6 +82,17 @@ node src/cli.ts --root ~/projects/<a> --root ~/projects/<b>
 node src/cli.ts --minutes 90 --root ~/projects/<a>
 ```
 
+Before a worker is briefed, its requirements can be gated:
+
+```bash
+node src/cli.ts --requirements brief.json --skill-root ~/.agents/skills
+```
+
+This resolves the capabilities the brief declares against the live skill
+roots, prints a conformance-style verdict, and exits 1 when blocked (2 on a
+broken invocation), so it chains into a script as a gate. The declaration
+shape and the verdict lines are specified in docs/requirements.md.
+
 ## Not here yet, on purpose
 
 No graph, no scheduler, no agent runtime abstraction, no UI, no config schema.

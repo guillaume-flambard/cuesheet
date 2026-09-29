@@ -169,7 +169,9 @@ export function isSpawnable(resolution: CapabilityResolution): boolean {
 /**
  * The message for a blocked resolution. Names every unmet requirement and
  * what was actually available, so the failure is actionable at the place that
- * can fix it, instead of a bare failure with no explanation.
+ * can fix it, instead of a bare failure with no explanation. When the
+ * registry could not be verified, it also says that absence is not evidence,
+ * because a refusal on unreadable data must not read as a proven fact.
  */
 export function describeBlock(resolution: CapabilityResolution): string {
   const parts: string[] = [];
@@ -179,7 +181,9 @@ export function describeBlock(resolution: CapabilityResolution): string {
     );
   }
   if (resolution.registryUnverified) {
-    parts.push("the registry itself could not be read, so these lists may be wrong");
+    parts.push(
+      "the registry itself could not be read, so these lists may be wrong and absence here is not evidence the requirement is unsatisfiable everywhere",
+    );
   }
   return parts.join("; ");
 }

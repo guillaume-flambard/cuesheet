@@ -1,5 +1,11 @@
 /**
- * CLI: report what the portfolio can currently accept work on.
+ * CLI: two reports, one per mode.
+ *
+ * Ownership mode (the default) reports what the portfolio can currently
+ * accept work on. Requirements mode (`--requirements <file>`) is the
+ * delegation gate: it resolves a work packet's declared capabilities against
+ * live skill roots and prints a conformance-style verdict before anything
+ * spawns, exiting nonzero when blocked so a script can use it as a gate.
  *
  * This replaces an ad-hoc shell script that grew two silent bugs, both from
  * the same mistake: treating "no data" as "no data present" instead of "no
@@ -12,7 +18,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import {
   resolveOwnership,
@@ -21,11 +27,28 @@ import {
   type ProjectState,
 } from "./core/ownership.ts";
 import { OpenCodeAdapter } from "./adapters/opencode.ts";
+import { SkillsAdapter } from "./adapters/skills.ts";
+import {
+  parseRequirements,
+  preflightDelegation,
+  RequirementsFormatError,
+  type Requirement,
+} from "./core/delegation.ts";
 
-/** A project the caller wants to know about. Resolved by the caller, not here. */
-function parseArgs(argv: string[]): { windowMinutes: number; roots: string[] } {
+interface ParsedArgs {
+  mode: "ownership" | "delegation";
+  windowMinutes: number;
+  roots: string[];
+  requirementsFile: string | null;
+  skillRoots: string[];
+}
+
+function parseArgs(argv: string[]): ParsedArgs {
   let windowMinutes = 45;
   const roots: string[] = [];
+  const skillRoots: string[] = [];
+  let requirementsFile: string | null = null;
+
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--minutes" && argv[i + 1]) {
       const n = Number(argv[++i]);
@@ -35,15 +58,36 @@ function parseArgs(argv: string[]): { windowMinutes: number; roots: string[] } {
       windowMinutes = n;
     } else if (argv[i] === "--root" && argv[i + 1]) {
       roots.push(argv[++i]!);
+    } else if (argv[i] === "--requirements") {
+      if (!argv[i + 1]) fail("--requirements needs a file path");
+      requirementsFile = argv[++i]!;
+    } else if (argv[i] === "--skill-root") {
+      if (!argv[i + 1]) fail("--skill-root needs a directory");
+      skillRoots.push(argv[++i]!);
     } else {
       fail(`unknown argument ${argv[i]}`);
     }
   }
-  return { windowMinutes, roots };
+
+  if (requirementsFile !== null) {
+    if (skillRoots.length === 0) {
+      fail("--requirements needs at least one --skill-root to resolve against");
+    }
+  } else if (skillRoots.length > 0) {
+    fail("--skill-root only means something with --requirements");
+  }
+
+  return {
+    mode: requirementsFile === null ? "ownership" : "delegation",
+    windowMinutes,
+    roots,
+    requirementsFile,
+    skillRoots,
+  };
 }
 
 function fail(message: string): never {
-  console.error(`cuesheet-ownership: ${message}`);
+  console.error(`cuesheet: ${message}`);
   process.exit(2);
 }
 
@@ -75,14 +119,74 @@ function readProjectState(root: string): ProjectState {
   };
 }
 
-function main(): void {
-  const { windowMinutes, roots } = parseArgs(process.argv.slice(2));
-  if (roots.length === 0) fail("pass at least one --root");
+/**
+ * The requirements gate. The exit codes are the contract: 0 spawn, 1 blocked
+ * refusal (a normal outcome, not a crash), 2 broken invocation.
+ */
+function gate(requirementsFile: string, skillRoots: string[]): void {
+  let text: string;
+  try {
+    text = readFileSync(requirementsFile, "utf8");
+  } catch (cause) {
+    fail(
+      `cannot read requirements file ${requirementsFile}: ${(cause as Error).message}`,
+    );
+  }
+
+  let requirements: Requirement[];
+  try {
+    requirements = parseRequirements(text);
+  } catch (cause) {
+    if (cause instanceof RequirementsFormatError) fail(cause.message);
+    throw cause;
+  }
 
   const now = Date.now();
-  const windowMs = windowMinutes * 60_000;
+  const available = new SkillsAdapter({ roots: skillRoots }).listCapabilities();
+  const preflight = preflightDelegation(requirements, available, { now });
+  const { resolved, unresolved } = preflight.resolution.resolution;
+  const total = requirements.length;
 
-  const projects: Project[] = roots
+  console.log(
+    `requirements: ${requirementsFile} (${total} declared, ` +
+      `${skillRoots.length} skill root${skillRoots.length === 1 ? "" : "s"})`,
+  );
+  for (const c of resolved) {
+    console.log(`ok      ${c.kind} "${c.name}" ${c.version} ${c.source}`);
+  }
+  for (const u of unresolved) {
+    console.log(
+      `BLOCKED ${u.requirement.kind} "${u.requirement.name}": ${u.reasons.join("; ")}`,
+    );
+  }
+
+  if (preflight.spawnable) {
+    console.log(
+      total === 0
+        ? "conformance verdict: ready (no requirements declared)"
+        : `conformance verdict: ready (${resolved.length} of ${total} resolved)`,
+    );
+    return;
+  }
+  console.log(
+    `conformance verdict: blocked (${resolved.length} of ${total} resolved): do not spawn`,
+  );
+  process.exit(1);
+}
+
+function main(): void {
+  const args = parseArgs(process.argv.slice(2));
+  if (args.mode === "delegation") {
+    gate(args.requirementsFile!, args.skillRoots);
+    return;
+  }
+
+  if (args.roots.length === 0) fail("pass at least one --root");
+
+  const now = Date.now();
+  const windowMs = args.windowMinutes * 60_000;
+
+  const projects: Project[] = args.roots
     .filter((r) => existsSync(r))
     .map((path) => ({ id: path, path }));
 
