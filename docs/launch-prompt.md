@@ -71,10 +71,10 @@ filled only when something actually bit. An unverifiable claim is a blocked
 claim.
 
 EVERY PROJECT IS BOTH A CONSUMER AND A PROVING GROUND. Complete the project
-objective first, then capture what the work revealed, so the harness improves
+objective first, then capture what the work revealed, so the cuesheet improves
 through real work rather than through design.
 
-THE HARNESS IS A PRODUCT. Its core in ~/projects/tools/harness holds invariants
+THE CUESHEET IS A PRODUCT. Its core in ~/projects/tools/cuesheet holds invariants
 with no knowledge of me, my paths or my agent runtime, and holds nothing that no
 real work has needed yet. When work reveals a cross-project invariant, name it
 without project names, and propose the extraction. Do not open a second project
@@ -103,7 +103,7 @@ existent ailleurs et se mettent à jour sans que ce fichier soit réédité :
 |---|---|
 | `~/.config/opencode/AGENTS.md` | autorité du propriétaire, phase, stasis consultatif, boucle d'apprentissage, règles d'écriture |
 | `~/.agents/skills/portfolio-orchestration/SKILL.md` | la méthode : préflight, délégation, work packet, réconciliation |
-| `~/projects/tools/harness/` | `resolveOwnership()` testé, l'adapter OpenCode, 11 tests |
+| `~/projects/tools/cuesheet/` | `resolveOwnership()` testé, l'adapter OpenCode, 11 tests |
 | `~/.agent/refresh-live-state.sh` | injecte la phase et l'étiquette du pari à chaque tour |
 
 Le prompt dit **quoi lancer et dans quel ordre**. Le reste est lu au moment où
