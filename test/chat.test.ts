@@ -24,30 +24,39 @@ function say(lines: string[], cwd = process.cwd()): { out: string; code: number 
 }
 
 describe("the chat surface", () => {
-  it("a repeated greeting does not print the same answer twice", () => {
-    // Typing "hey" twice got the identical line twice, which reads as a hang
-    // rather than as a tool with nothing to add.
-    const { out } = say(["hey", "hey", "exit"]);
+  it("a second greeting does not print the first one's answer again", () => {
+    // Two greetings in a row got the identical line twice, which reads as a
+    // hang. The check is on the answer not repeating, not on the greeting
+    // repeating: "hey" then "hello" are different words and the second one is
+    // still a second greeting.
+    const { out } = say(["hey", "hello", "hey", "exit"]);
     const answers = out
       .split("\n")
       .filter((l) => l.includes("I answer state questions") || l.includes("still here"));
-    assert.equal(answers.length, 2);
-    assert.notEqual(
-      answers[0],
-      answers[1],
-      "the second greeting must not repeat the first answer",
-    );
+    assert.equal(answers.length, 3);
+    assert.equal(new Set(answers).size, 2, `answers repeated: ${JSON.stringify(answers)}`);
   });
 
-  it("a goal is refused in the home directory, not staged", () => {
-    // The header warns that ~ is not a project, and every other line is
-    // treated as a goal. Without the refusal, "ca marche pas" staged a goal
-    // whose scope was the whole home tree, and "go" would have run an agent
-    // there. The rule was announced and not applied.
-    const { out } = say(["ca marche pas", "exit"], homedir());
-    assert.match(out, /refused ca marche pas/);
+  it("a work goal in the home directory is refused, not staged", () => {
+    // The header warns that ~ is not a project, and every other line was
+    // treated as a goal. Without the refusal, "fix the test" was staged with
+    // the whole home tree as its scope, and "go" would have run an agent there.
+    // The rule was announced and not applied.
+    const { out } = say(["fix the test", "exit"], homedir());
+    assert.match(out, /refused fix the test/);
     assert.match(out, /home directory, not a project/);
     assert.doesNotMatch(out, /type go to run it/);
+  });
+
+  it("a complaint is not answered with a scope policy error", () => {
+    // "c'est quoi cette merde" is not a task. Answering it with "your line is
+    // out of scope" treats a person asking whether the tool works as a caller
+    // who made a mistake, and answers neither question.
+    const { out } = say(["c'est quoi cette merde", "exit"], homedir());
+    assert.match(out, /not a goal/);
+    assert.match(out, /needs a project before it will run anything/);
+    assert.doesNotMatch(out, /refused/);
+    assert.doesNotMatch(out, /prefix the line with/);
   });
 
   it("the same line is still a goal inside a project", () => {

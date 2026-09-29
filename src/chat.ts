@@ -233,8 +233,8 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // a TTY and from a script, which also makes a piped session testable.
   rl.prompt();
   let staged: string | null = null;
-  /** The last greeting answered, so a repeated one gets a different reply. */
-  let lastConversational: string | null = null;
+  /** How many greetings were answered, so a second one gets a different reply. */
+  let conversationalCount = 0;
   for await (const line of rl) {
     // A staged goal waits for an explicit go. This is the confirmation that
     // was missing when a bare "hello ?" consumed an entire agent budget: the
@@ -282,18 +282,17 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         );
         break;
       case "conversational":
-        // Not one constant for every greeting. The second "hey" in a row was
-        // printing the first one's answer, which reads as a hang rather than
-        // as a tool that has nothing to add. Repeating yourself is how this
-        // project used to pay for an expensive greeting, so the repeat is the
-        // expensive case and it gets the short answer.
-        if (intent.text.trim().toLowerCase() === lastConversational) {
+        // Not one constant for every greeting. Two greetings in a row used to
+        // print the same line twice, which reads as a hang. The de-duplication
+        // counts greetings rather than comparing their text, because "hey"
+        // then "hello" is a repetition even though the words differ.
+        conversationalCount++;
+        if (conversationalCount > 1) {
           console.log("still here. type help, or name a goal.");
         } else {
           console.log(
             "hey. I answer state questions and run goals that pass admission. type help for the list.",
           );
-          lastConversational = intent.text.trim().toLowerCase();
         }
         break;
       case "ownership": {
@@ -389,15 +388,32 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         // The refusal is the same shape as the admission one, and `!` is the
         // owner's explicit override in both cases.
         if (inHome && !intent.forced) {
-          console.log(
-            `refused ${intent.text}`,
+          // A refusal that reads like a policy error is the wrong answer to a
+          // line that does not look like work at all. Two different problems
+          // were arriving here: "do this task", which needs a project scope,
+          // and "this is broken", which needs the surface itself. Saying
+          // "your line is out of scope" to someone saying "c'est quoi cette
+          // merde" answers neither.
+          const looksLikeWork = /\b(fix|add|write|build|create|make|update|remove|refactor|test|debug|implement|ship|commit)\b/i.test(
+            intent.text,
           );
-          console.log(
-            "scope   " +
-              cwd +
-              " is your home directory, not a project. scoped work needs a project directory.",
-          );
-          console.log("        open cuesheet inside one, or prefix the line with ! to run it here anyway.");
+          if (looksLikeWork) {
+            console.log(`refused ${intent.text}`);
+            console.log(
+              "scope   " +
+                cwd +
+                " is your home directory, not a project. scoped work needs a project directory.",
+            );
+            console.log(
+              "        open cuesheet inside one, or prefix the line with ! to run it here anyway.",
+            );
+          } else {
+            console.log(`not a goal: ${intent.text}`);
+            console.log(
+              `scope   ${cwd}, your home directory. this surface needs a project before it will run anything.`,
+            );
+            console.log("        cd into a project, or type help for what it can answer from here.");
+          }
           break;
         }
         if (intent.forced) {
