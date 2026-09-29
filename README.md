@@ -1,7 +1,7 @@
-# harness
+# cuesheet
 
-Invariants discovered by running a personal agent harness, extracted once they
-have survived contact with real work.
+Invariants discovered by running a personal agent control plane, extracted once
+they have survived contact with real work.
 
 This is deliberately tiny. One primitive, eleven tests, no dependencies.
 

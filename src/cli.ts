@@ -43,7 +43,7 @@ function parseArgs(argv: string[]): { windowMinutes: number; roots: string[] } {
 }
 
 function fail(message: string): never {
-  console.error(`harness-ownership: ${message}`);
+  console.error(`cuesheet-ownership: ${message}`);
   process.exit(2);
 }
 
