@@ -80,6 +80,17 @@ export interface ResolutionOptions {
    * `resolveOwnership` uses.
    */
   now: number;
+  /**
+   * Set by the caller when the registry adapter knows it could not read part
+   * of what it was asked to cover.
+   *
+   * Without it, an empty list has to stand for both "there is nothing here"
+   * and "we found nothing because we could not look", and the two collapse
+   * into the first. That is the whole error this option exists to prevent, so
+   * the adapter that observed the failure must say so here rather than
+   * returning an empty array and letting inference do it.
+   */
+  registryUnverified?: boolean;
 }
 
 export interface CapabilityResolution {
@@ -120,6 +131,7 @@ export function resolveCapabilities(
   const resolved: Capability[] = [];
   const unresolved: RequirementResult[] = [];
   const registryUnverified =
+    options.registryUnverified === true ||
     available.length === 0 ||
     available.every((c) => c.version === REGISTRY_UNVERIFIED);
 

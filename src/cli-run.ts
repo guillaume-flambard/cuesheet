@@ -69,7 +69,7 @@ function parseArgs(argv: string[]): Record<string, string> {
 }
 
 function liveRegistry(): Capability[] {
-  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities();
+  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities().capabilities;
 }
 
 function loadRequirements(file: string): Array<{ kind: string; name: string }> {

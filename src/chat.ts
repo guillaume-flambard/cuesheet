@@ -41,7 +41,7 @@ const SESSION_ROOT = join(homedir(), ".cuesheet", "sessions");
 const SKILL_ROOTS = [join(homedir(), ".agents", "skills")];
 
 function liveRegistry(): Capability[] {
-  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities();
+  return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities().capabilities;
 }
 
 function newId(prefix: string): string {

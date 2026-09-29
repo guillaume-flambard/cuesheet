@@ -24,7 +24,7 @@ import {
   resolveOwnership,
   type Ownership,
   type Project,
-  type ProjectState,
+  type ProjectObservation,
 } from "./core/ownership.ts";
 import { OpenCodeAdapter } from "./adapters/opencode.ts";
 import { SkillsAdapter } from "./adapters/skills.ts";
@@ -41,6 +41,7 @@ interface ParsedArgs {
   roots: string[];
   requirementsFile: string | null;
   skillRoots: string[];
+  format: "text" | "json";
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -48,6 +49,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   const roots: string[] = [];
   const skillRoots: string[] = [];
   let requirementsFile: string | null = null;
+  let format: "text" | "json" = "text";
 
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--minutes" && argv[i + 1]) {
@@ -64,6 +66,12 @@ function parseArgs(argv: string[]): ParsedArgs {
     } else if (argv[i] === "--skill-root") {
       if (!argv[i + 1]) fail("--skill-root needs a directory");
       skillRoots.push(argv[++i]!);
+    } else if (argv[i] === "--format" && argv[i + 1]) {
+      const value = argv[++i]!;
+      if (value !== "json" && value !== "text") {
+        fail("--format takes json or text");
+      }
+      format = value;
     } else {
       fail(`unknown argument ${argv[i]}`);
     }
@@ -83,6 +91,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     roots,
     requirementsFile,
     skillRoots,
+    format,
   };
 }
 
@@ -96,26 +105,54 @@ function fail(message: string): never {
  * absence of an upstream is a normal condition, not an error, and a crash here
  * must never be reported as "clean".
  */
-function readProjectState(root: string): ProjectState {
-  const run = (args: string[]): string | null => {
+function readProjectState(root: string): ProjectObservation {
+  const run = (args: string[]): { text: string } | { error: string } => {
     try {
-      return execFileSync("git", ["-C", root, ...args], {
+      const text = execFileSync("git", ["-C", root, ...args], {
         encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
+        stdio: ["ignore", "pipe", "pipe"],
       });
-    } catch {
-      return null;
+      return { text };
+    } catch (cause) {
+      const detail = cause instanceof Error ? cause.message : String(cause);
+      return { error: detail.split("\n")[0] ?? detail };
     }
   };
 
+  const countLines = (text: string): number =>
+    text.split("\n").filter((l) => l.trim()).length;
+
+  // `git status` is the one call that decides whether a second writer is
+  // authorised, so a failure here is never turned into a count. Reporting a
+  // crashed read as zero dirty files is what makes a broken checkout look
+  // available, and that is the exact failure this command exists to prevent.
   const status = run(["status", "--porcelain"]);
-  const hasUpstream = run(["rev-parse", "--abbrev-ref", "@{u}"]) !== null;
-  const aheadText = hasUpstream ? run(["log", "--oneline", "@{u}..HEAD"]) : null;
+  if ("error" in status) {
+    return { observed: false, reason: `git status failed: ${status.error}` };
+  }
+
+  // An absent upstream is a normal condition and is not an error, so this one
+  // stays a boolean probe. A real failure and "no upstream" are different
+  // facts and only the second one is a `false`.
+  const upstream = run(["rev-parse", "--abbrev-ref", "@{u}"]);
+  const hasUpstream = !("error" in upstream);
+
+  let commitsAhead = 0;
+  if (hasUpstream) {
+    const ahead = run(["log", "--oneline", "@{u}..HEAD"]);
+    if ("error" in ahead) {
+      return { observed: false, reason: `git log failed: ${ahead.error}` };
+    }
+    commitsAhead = countLines(ahead.text);
+  }
 
   return {
-    dirtyFiles: status === null ? 0 : status.split("\n").filter((l) => l.trim()).length,
-    commitsAhead: aheadText === null ? 0 : aheadText.split("\n").filter((l) => l.trim()).length,
-    hasUpstream,
+    observed: true,
+    counts: {
+      dirtyFiles: countLines(status.text),
+      commitsAhead,
+      hasUpstream,
+    },
   };
 }
 
@@ -142,8 +179,11 @@ function gate(requirementsFile: string, skillRoots: string[]): void {
   }
 
   const now = Date.now();
-  const available = new SkillsAdapter({ roots: skillRoots }).listCapabilities();
-  const preflight = preflightDelegation(requirements, available, { now });
+  const listing = new SkillsAdapter({ roots: skillRoots }).listCapabilities();
+  const preflight = preflightDelegation(requirements, listing.capabilities, {
+    now,
+    registryUnverified: listing.anyRootUnreadable || listing.unreadable.length > 0,
+  });
   const { resolved, unresolved } = preflight.resolution.resolution;
   const total = requirements.length;
 
@@ -153,6 +193,15 @@ function gate(requirementsFile: string, skillRoots: string[]): void {
   );
   for (const c of resolved) {
     console.log(`ok      ${c.kind} "${c.name}" ${c.version} ${c.source}`);
+  }
+  // A folder that looks like a skill and whose manifest could not be read is
+  // neither a resolved capability nor a proven absence. Printing it is the
+  // whole point: the requirement below may be unmet, or merely unreadable,
+  // and only the operator can tell which.
+  for (const u of listing.unreadable) {
+    console.log(
+      `UNREADABLE ${u.folder}: ${u.reason} (${u.path})`,
+    );
   }
   for (const u of unresolved) {
     console.log(
@@ -195,14 +244,49 @@ function main(): void {
   const sessions = new OpenCodeAdapter({ now, windowMs }).getActiveSessions();
   const ownership = resolveOwnership(projects, sessions, states, { now, windowMs });
 
+  // A report that a machine cannot read is not a verdict, it is a printout.
+  // `--format json` is what makes this usable as a sensor instead of a command
+  // a human has to watch, and `unknown` is a real value here rather than a 0.
+  if (args.format === "json") {
+    console.log(
+      JSON.stringify(
+        {
+          now,
+          windowMinutes: args.windowMinutes,
+          projects: ownership.map((o) => {
+            const observation = states.get(o.project.id);
+            return {
+              id: o.project.id,
+              path: o.project.path,
+              availability: o.availability,
+              unobserved: o.unobserved,
+              dirtyFiles: observation?.observed ? observation.counts.dirtyFiles : null,
+              commitsAhead: observation?.observed ? observation.counts.commitsAhead : null,
+              hasUpstream: observation?.observed ? observation.counts.hasUpstream : null,
+              lastSession: o.lastSession,
+              reasons: o.reasons,
+            };
+          }),
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
   console.log("REPO".padEnd(30) + "STATE".padEnd(10) + "DIRTY".padStart(6) + "AHEAD".padStart(7));
   for (const o of ownership) {
-    const state = states.get(o.project.id);
+    const observation = states.get(o.project.id);
+    // Not `?? 0`. A count that was never read prints as `?`, because a zero
+    // here would be the same claim as "this checkout is clean".
+    const dirty = observation?.observed ? String(observation.counts.dirtyFiles) : "?";
+    const ahead = observation?.observed ? String(observation.counts.commitsAhead) : "?";
     console.log(
       o.project.path.replace(`${process.env.HOME}/projects/`, "").padEnd(30) +
         o.availability.padEnd(10) +
-        String(state?.dirtyFiles ?? 0).padStart(6) +
-        String(state?.commitsAhead ?? 0).padStart(7),
+        dirty.padStart(6) +
+        ahead.padStart(7),
     );
   }
 

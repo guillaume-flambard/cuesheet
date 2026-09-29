@@ -5,7 +5,8 @@ import {
   resolveOwnership,
   availableProjects,
   type Project,
-  type ProjectState,
+  type ProjectObservation,
+  type ObservedCounts,
   type ActiveSession,
 } from "../src/core/ownership.ts";
 
@@ -13,15 +14,19 @@ const NOW = 1_757_000_000_000;
 const MIN = 60_000;
 
 const project = (id: string, path: string): Project => ({ id, path });
-const clean: ProjectState = { dirtyFiles: 0, commitsAhead: 0, hasUpstream: true };
-const states = (...entries: [string, ProjectState][]) => new Map(entries);
+const clean: ObservedCounts = { dirtyFiles: 0, commitsAhead: 0, hasUpstream: true };
+/** An adapter that looked, and found a clean tree. */
+const seen = (counts: ObservedCounts): ProjectObservation => ({ observed: true, counts });
+/** An adapter that could not look. Absence of data, not absence of dirt. */
+const unseen = (reason: string): ProjectObservation => ({ observed: false, reason });
+const states = (...entries: [string, ProjectObservation][]) => new Map(entries);
 
 describe("resolveOwnership", () => {
   test("a project with no session and a clean tree is available", () => {
     const [result] = resolveOwnership(
       [project("p", "/w/p")],
       [],
-      states(["p", clean]),
+      states(["p", seen(clean)]),
       { now: NOW },
     );
     assert.equal(result.availability, "available");
@@ -33,7 +38,7 @@ describe("resolveOwnership", () => {
     const [result] = resolveOwnership(
       [project("p", "/w/p")],
       [{ id: "s1", directory: "/w/p", lastActivity: NOW - 2 * MIN }],
-      states(["p", clean]),
+      states(["p", seen(clean)]),
       { now: NOW },
     );
     assert.equal(result.availability, "held");
@@ -47,7 +52,7 @@ describe("resolveOwnership", () => {
     const [result] = resolveOwnership(
       [project("p", "/w/p")],
       [{ id: "s1", directory: "/w/p", lastActivity: NOW - 60 * MIN }],
-      states(["p", clean]),
+      states(["p", seen(clean)]),
       { now: NOW },
     );
     assert.equal(result.availability, "available");
@@ -59,7 +64,7 @@ describe("resolveOwnership", () => {
     const [result] = resolveOwnership(
       [project("p", "/w/p")],
       [],
-      states(["p", { dirtyFiles: 39, commitsAhead: 0, hasUpstream: false }]),
+      states(["p", seen({ dirtyFiles: 39, commitsAhead: 0, hasUpstream: false })]),
       { now: NOW },
     );
     assert.equal(result.availability, "held");
@@ -70,7 +75,7 @@ describe("resolveOwnership", () => {
     const [result] = resolveOwnership(
       [project("p", "/w/p")],
       [],
-      states(["p", { dirtyFiles: 0, commitsAhead: 2, hasUpstream: true }]),
+      states(["p", seen({ dirtyFiles: 0, commitsAhead: 2, hasUpstream: true })]),
       { now: NOW },
     );
     assert.equal(result.availability, "held");
@@ -83,7 +88,7 @@ describe("resolveOwnership", () => {
     const [result] = resolveOwnership(
       [project("p", "/w/p")],
       [],
-      states(["p", { dirtyFiles: 3, commitsAhead: 0, hasUpstream: false }]),
+      states(["p", seen({ dirtyFiles: 3, commitsAhead: 0, hasUpstream: false })]),
       { now: NOW },
     );
     assert.equal(result.availability, "held");
@@ -97,7 +102,7 @@ describe("resolveOwnership", () => {
         { id: "old", directory: "/w/p", lastActivity: NOW - 10 * MIN },
         { id: "new", directory: "/w/p", lastActivity: NOW - 1 * MIN },
       ],
-      states(["p", clean]),
+      states(["p", seen(clean)]),
       { now: NOW },
     );
     assert.equal(result.lastSession?.id, "new");
@@ -108,7 +113,7 @@ describe("resolveOwnership", () => {
     const result = resolveOwnership(
       [project("a", "/w/a"), project("b", "/w/b")],
       [{ id: "s1", directory: "/w/a", lastActivity: NOW - 1 * MIN }],
-      states(["a", clean], ["b", clean]),
+      states(["a", seen(clean)], ["b", seen(clean)]),
       { now: NOW },
     );
     assert.equal(result[0]?.availability, "held");
@@ -116,16 +121,56 @@ describe("resolveOwnership", () => {
     assert.deepEqual(availableProjects(result).map((o) => o.project.id), ["b"]);
   });
 
-  test("a project with no reported state is treated as clean, not as broken", () => {
+  // This test used to read "a project with no reported state is treated as
+  // clean, not as broken", and it asserted availability. That encoded the
+  // inverse of the rule this repository exists to hold: nobody looking is not
+  // evidence of a clean tree, and a clean tree is what authorises a second
+  // writer. The verdict is now held, and the reason says why.
+  test("a project with no reported state is held, not released", () => {
     const [result] = resolveOwnership([project("p", "/w/p")], [], new Map(), { now: NOW });
+    assert.equal(result.availability, "held");
+    assert.equal(result.unobserved, true);
+    assert.match(result.reasons[0]!, /no observation was supplied/);
+  });
+
+  test("a project whose state could not be read is held, and names the failure", () => {
+    const [result] = resolveOwnership(
+      [project("p", "/w/p")],
+      [],
+      states(["p", unseen("git exited 128")]),
+      { now: NOW },
+    );
+    assert.equal(result.availability, "held");
+    assert.equal(result.unobserved, true);
+    assert.match(result.reasons[0]!, /git exited 128/);
+  });
+
+  test("an unobserved project never appears among the available ones", () => {
+    const result = resolveOwnership(
+      [project("a", "/w/a"), project("b", "/w/b")],
+      [],
+      new Map<string, ProjectObservation>([["a", unseen("locked")]]),
+      { now: NOW },
+    );
+    assert.deepEqual(availableProjects(result).map((o) => o.project.id), []);
+  });
+
+  test("an observed clean project is still available", () => {
+    const [result] = resolveOwnership(
+      [project("p", "/w/p")],
+      [],
+      states(["p", seen(clean)]),
+      { now: NOW },
+    );
     assert.equal(result.availability, "available");
+    assert.equal(result.unobserved, false);
   });
 
   test("reasons always explain the verdict", () => {
     const result = resolveOwnership(
       [project("p", "/w/p")],
       [{ id: "s1", directory: "/w/p", lastActivity: NOW - 1 * MIN }],
-      states(["p", { dirtyFiles: 1, commitsAhead: 1, hasUpstream: true }]),
+      states(["p", seen({ dirtyFiles: 1, commitsAhead: 1, hasUpstream: true })]),
       { now: NOW },
     );
     assert.equal(result[0]?.reasons.length, 3);
@@ -135,7 +180,7 @@ describe("resolveOwnership", () => {
     const [result] = resolveOwnership(
       [project("p", "/w/p")],
       [{ id: "s1", directory: "/w/p", lastActivity: NOW - 30 * MIN }],
-      states(["p", clean]),
+      states(["p", seen(clean)]),
       { now: NOW, windowMs: 5 * MIN },
     );
     assert.equal(result.availability, "available");

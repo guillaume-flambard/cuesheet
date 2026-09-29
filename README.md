@@ -3,7 +3,7 @@
 Invariants discovered by running a personal agent control plane, extracted once
 they have survived contact with real work.
 
-This is deliberately tiny. One primitive, eleven tests, no dependencies.
+This is deliberately tiny. A handful of primitives, no dependencies.
 
 ## Why it exists
 
@@ -53,7 +53,7 @@ src/core/memory.ts        durable objects and the conditions that wake them.
 src/adapters/             the only places allowed to do I/O.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     137 tests
+test/                     160 tests
 ```
 
 ## The primitive
@@ -79,6 +79,19 @@ Three rules, each of which is a bug that already happened:
 The window is an inference, not a lock: a long single step and an abandoned
 session are indistinguishable from outside. The default is deliberately
 conservative, because the cost of a false `available` is a corrupted checkout.
+
+The fourth rule is the one that was missing, and it is a fourth rule because a
+count that was never read is not a count of zero:
+
+- **A project nobody looked at is held.** An adapter that could not read the
+  repository reports `observed: false` with the reason, and the project is held
+  on that ground alone. A project absent from the map entirely is also held.
+  The earlier version defaulted an unobserved project to zero dirty files and
+  zero unpushed commits, which is the one fact that authorises a second writer,
+  invented from nothing. The same rule runs through the capability registry: a
+  `SKILL.md` that cannot be read is reported as unreadable, never as an absent
+  skill, and an unreadable root marks the resolution `registryUnverified` so a
+  blocked requirement says absence is not evidence.
 
 ## Running it
 
@@ -106,6 +119,12 @@ cuesheet sessions
 cuesheet inspect <session>
 cuesheet frontier
 ```
+
+`--help` works on the tool and on every subcommand, and `--version` prints the
+version from `package.json`. `projects` also takes `--format json`, which is
+what makes it usable as a sensor rather than something a human has to watch.
+In that output an unobserved project's `dirtyFiles` is `null` and its
+availability is `held`: never a `0` dressed up as an observation.
 
 To install it, copy `bin/cuesheet` to a directory on your PATH. The shim execs
 `src/cuesheet.ts` from this repository and is the only file that knows where

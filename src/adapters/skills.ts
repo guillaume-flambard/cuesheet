@@ -13,14 +13,37 @@
  */
 
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync } from "node:fs";
+import { chmodSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { Capability } from "../core/capability.ts";
+import {
+  REGISTRY_UNVERIFIED,
+  type Capability,
+} from "../core/capability.ts";
 
 export interface SkillProvider {
-  /** Every skill currently on disk, as this adapter sees it. */
-  listCapabilities(): Capability[];
+  /**
+   * Every skill currently on disk, as this adapter sees it, plus what it could
+   * not see. A caller that ignores the second half can still treat absence as
+   * evidence, which is the one thing this adapter exists to prevent.
+   */
+  listCapabilities(): SkillListing;
+}
+
+/**
+ * A skill registry as observed, and the limits of that observation.
+ *
+ * `unreadable` names the folders that look like skills but whose manifest
+ * could not be read. They are absent from `capabilities` because nothing was
+ * established about them, and they are not silently absent, because something
+ * was seen and refused to be read.
+ */
+export interface SkillListing {
+  capabilities: Capability[];
+  /** Folders that look like a skill but whose SKILL.md could not be read. */
+  unreadable: Array<{ folder: string; path: string; reason: string }>;
+  /** True when a root could not be read at all. */
+  anyRootUnreadable: boolean;
 }
 
 export interface SkillsAdapterOptions {
@@ -38,8 +61,10 @@ export class SkillsAdapter implements SkillProvider {
     this.roots = options.roots;
   }
 
-  listCapabilities(): Capability[] {
+  listCapabilities(): SkillListing {
     const capabilities: Capability[] = [];
+    const unreadable: SkillListing["unreadable"] = [];
+    let anyRootUnreadable = false;
 
     for (const root of this.roots) {
       let folders: string[];
@@ -52,35 +77,51 @@ export class SkillsAdapter implements SkillProvider {
         // tell", identical to how the OpenCode adapter treats a missing
         // database. The core decides what to do with the absence of evidence;
         // this adapter refuses to invent evidence it does not have.
+        anyRootUnreadable = true;
         continue;
       }
 
       for (const folder of folders) {
         const path = join(root, folder);
         const parsed = this.parseSkill(path, folder);
-        if (parsed) {
-          capabilities.push(parsed);
+        if ("capability" in parsed) {
+          capabilities.push(parsed.capability);
+        } else {
+          unreadable.push({ folder, path, reason: parsed.reason });
         }
       }
     }
 
-    // Newest root wins going forward, so adapters must order deterministically:
-    // roots in the order the caller gave them, skills alphabetically inside.
-    return capabilities;
+    // A registry where nothing at all could be read is not an empty registry,
+    // and it is not faked into one by inventing a capability with a name in
+    // it. `REGISTRY_UNVERIFIED` is the core's own marker, and the flag below
+    // is what the core reads to set it. Inventing a pseudo-capability here
+    // would put "unreadable" into the list of real capabilities, which is the
+    // same error one level up: a thing that was never observed, presented as a
+    // thing that was.
+    return { capabilities, unreadable, anyRootUnreadable };
   }
 
-  private parseSkill(path: string, folderName: string): Capability | null {
+  /**
+   * One folder's manifest. A read failure is a reported fact, not a null that
+   * the caller cannot tell from "this folder is not a skill".
+   */
+  private parseSkill(
+    path: string,
+    folderName: string,
+  ): { capability: Capability } | { reason: string } {
     let raw: string;
     try {
       raw = readFileSync(join(path, "SKILL.md"), "utf8");
-    } catch {
-      return null;
+    } catch (cause) {
+      const detail = cause instanceof Error ? cause.message : String(cause);
+      return { reason: detail.split("\n")[0] ?? detail };
     }
 
     const match = /^name:\s*(\S+)/m.exec(raw);
     const name = match?.[1] ?? folderName;
     const version = createHash("sha256").update(raw).digest("hex").slice(0, 12);
 
-    return { kind: "skill", name, version, source: path };
+    return { capability: { kind: "skill", name, version, source: path } };
   }
 }

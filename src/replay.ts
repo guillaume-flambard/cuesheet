@@ -37,7 +37,7 @@ const num = (sql: string): number => Number(q(sql) || "0");
  */
 function registryNames(): string[] {
   const caps = new SkillsAdapter({ roots: [`${process.env.HOME}/.agents/skills`] })
-    .listCapabilities();
+    .listCapabilities().capabilities;
   return [...new Set(caps.map((c) => c.name))].sort();
 }
 
@@ -106,7 +106,7 @@ for (const { session, text } of JSON.parse(rows || "[]") as Array<{
   withRequirements++;
 
   const caps = new SkillsAdapter({ roots: [`${process.env.HOME}/.agents/skills`] })
-    .listCapabilities();
+    .listCapabilities().capabilities;
   const resolution = resolveCapabilities(reqs, caps, { now: Date.now() });
 
   if (resolution.verdict === "blocked") {

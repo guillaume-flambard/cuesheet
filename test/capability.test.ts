@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -16,6 +16,15 @@ import {
 import { SkillsAdapter } from "../src/adapters/skills.ts";
 
 const NOW = 1759000000000;
+
+/** Null when the file cannot be read, so a mode-bit test can skip under root. */
+const readFileSyncSafe = (path: string): string | null => {
+  try {
+    return readFileSync(path, "utf8");
+  } catch {
+    return null;
+  }
+};
 
 const skill = (name: string, version = "abc123def456"): Capability => ({
   kind: "skill",
@@ -168,7 +177,7 @@ describe("SkillsAdapter", () => {
         "---\nname: real-name\n---\n\nBody text.\n",
       );
 
-      const caps = new SkillsAdapter({ roots: [root] }).listCapabilities();
+      const caps = new SkillsAdapter({ roots: [root] }).listCapabilities().capabilities;
 
       assert.equal(caps.length, 1);
       assert.equal(caps[0].kind, "skill");
@@ -184,7 +193,7 @@ describe("SkillsAdapter", () => {
     const root = mkdtempSync(join(tmpdir(), "cuesheet-cap-"));
     try {
       mkdirSync(join(root, "empty-folder"), { recursive: true });
-      assert.equal(new SkillsAdapter({ roots: [root] }).listCapabilities().length, 0);
+      assert.equal(new SkillsAdapter({ roots: [root] }).listCapabilities().capabilities.length, 0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -197,9 +206,74 @@ describe("SkillsAdapter", () => {
       writeFileSync(join(root, "good", "SKILL.md"), "name: good\n");
       const absent = join(root, "does-not-exist");
 
-      const caps = new SkillsAdapter({ roots: [absent, root] }).listCapabilities();
+      const caps = new SkillsAdapter({ roots: [absent, root] }).listCapabilities().capabilities;
       assert.equal(caps.length, 1, "the good root must not be lost to the bad one");
       assert.equal(caps[0].name, "good");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The three tests below are the regression net for a defect found by reading
+  // this adapter: an unreadable SKILL.md returned null, and null is
+  // indistinguishable from "this folder is not a skill". The capability went
+  // missing with no error, which is the failure mode the whole registry
+  // exists to make impossible.
+  it("an unreadable SKILL.md is reported, not silently absent", () => {
+    const root = mkdtempSync(join(tmpdir(), "cuesheet-cap-"));
+    try {
+      const folder = join(root, "locked-skill");
+      mkdirSync(folder, { recursive: true });
+      const manifest = join(folder, "SKILL.md");
+      writeFileSync(manifest, "name: locked-skill\n");
+      chmodSync(manifest, 0o000);
+
+      const listing = new SkillsAdapter({ roots: [root] }).listCapabilities();
+
+      // Running as root defeats a mode-bit test, so assert the shape rather
+      // than the specific error: a folder that could not be read is always
+      // named in `unreadable` and never appears as a resolved capability.
+      const reported = listing.unreadable.map((u) => u.folder);
+      if (readFileSyncSafe(manifest) === null) {
+        assert.deepEqual(reported, ["locked-skill"]);
+        assert.equal(
+          listing.capabilities.filter((c) => c.name === "locked-skill").length,
+          0,
+        );
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an unreadable root is not faked into a capability with a name", () => {
+    const root = mkdtempSync(join(tmpdir(), "cuesheet-cap-"));
+    try {
+      const absent = join(root, "does-not-exist");
+      const listing = new SkillsAdapter({ roots: [absent] }).listCapabilities();
+      assert.equal(listing.capabilities.length, 0, "no pseudo-capability");
+      assert.equal(listing.anyRootUnreadable, true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("an unreadable root marks the resolution unverified, so absence is not evidence", () => {
+    const root = mkdtempSync(join(tmpdir(), "cuesheet-cap-"));
+    try {
+      const absent = join(root, "does-not-exist");
+      const listing = new SkillsAdapter({ roots: [absent] }).listCapabilities();
+      const result = resolveCapabilities(
+        [{ kind: "skill", name: "github-readme" }],
+        listing.capabilities,
+        { now: 1_757_000_000_000, registryUnverified: listing.anyRootUnreadable },
+      );
+      assert.equal(result.verdict, "blocked");
+      assert.equal(result.registryUnverified, true);
+      assert.match(
+        result.resolution.unresolved[0]!.reasons.join(" "),
+        /absence here is not evidence/,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

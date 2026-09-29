@@ -33,7 +33,12 @@ export interface ActiveSession {
 }
 
 /** The repository state the core cannot observe itself. */
-export interface ProjectState {
+/**
+ * Counts that were actually observed. Every count is a number because it was
+ * read; a count that could not be read is not a zero, and it does not live in
+ * this shape. See `ProjectObservation`.
+ */
+export interface ObservedCounts {
   /** Files with uncommitted changes. */
   dirtyFiles: number;
   /** Commits present locally but not on the upstream branch. */
@@ -45,6 +50,26 @@ export interface ProjectState {
    */
   hasUpstream: boolean;
 }
+
+/**
+ * What an adapter could establish about a project, and what it could not.
+ *
+ * A caller that has not looked must say so. Defaulting an unobserved project
+ * to zero dirty files and zero unpushed commits is the same mistake as
+ * reporting a failed read as "clean": it invents the one fact that authorises
+ * a second writer, from nothing.
+ *
+ * `observed: false` is never a free pass. An unobserved project is held.
+ */
+export type ProjectObservation =
+  | { readonly observed: true; readonly counts: ObservedCounts }
+  | { readonly observed: false; readonly reason: string };
+
+/**
+ * A project the adapter observed. Counts are always real, because the adapter
+ * only constructs this shape after a successful read.
+ */
+export type ProjectState = ObservedCounts;
 
 export type Availability = "available" | "held";
 
@@ -61,6 +86,12 @@ export interface Ownership {
   reasons: string[];
   /** True when work exists here that is not yet on the remote. */
   needsPush: boolean;
+  /**
+   * True when no state was observed at all. An unobserved project is always
+   * held, and this flag is how a caller tells "held because work is visible"
+   * from "held because we could not look".
+   */
+  unobserved: boolean;
 }
 
 export interface OwnershipOptions {
@@ -80,7 +111,7 @@ const DEFAULT_WINDOW_MS = 45 * 60 * 1000;
 export function resolveOwnership(
   projects: Project[],
   sessions: ActiveSession[],
-  states: Map<string, ProjectState>,
+  states: Map<string, ProjectObservation>,
   options: OwnershipOptions,
 ): Ownership[] {
   const windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
@@ -96,11 +127,33 @@ export function resolveOwnership(
 
   return projects.map((project) => {
     const reasons: string[] = [];
-    const state = states.get(project.id) ?? {
-      dirtyFiles: 0,
-      commitsAhead: 0,
-      hasUpstream: false,
-    };
+    const observation = states.get(project.id);
+
+    // A project nobody looked at is not a clean project. The whole point of
+    // this primitive is that a second writer must never be authorised from an
+    // absence of observation, so an unobserved project is held on that ground
+    // alone, and the reason says which one it was.
+    if (!observation) {
+      return {
+        project,
+        availability: "held" as const,
+        lastSession: null,
+        reasons: [`no observation was supplied for this project, so its state is unknown`],
+        needsPush: false,
+        unobserved: true,
+      };
+    }
+    if (!observation.observed) {
+      return {
+        project,
+        availability: "held" as const,
+        lastSession: null,
+        reasons: [`state could not be observed: ${observation.reason}`],
+        needsPush: false,
+        unobserved: true,
+      };
+    }
+    const state = observation.counts;
 
     // A session inside the window is a live owner, not a historical record.
     const candidate = byDirectory.get(project.path);
@@ -126,10 +179,11 @@ export function resolveOwnership(
     // they are gone. It is enough to refuse a second writer.
     return {
       project,
-      availability: reasons.length > 0 ? "held" : "available",
+      availability: reasons.length > 0 ? ("held" as const) : ("available" as const),
       lastSession,
       reasons,
       needsPush,
+      unobserved: false,
     };
   });
 }
