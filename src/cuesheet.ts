@@ -34,6 +34,7 @@ const COMMANDS: Record<
   inspect: { file: "cli-run.ts", about: "print a session log, event by event", style: "subcommand" },
   capabilities: { file: "cli-run.ts", about: "resolve the live skill registry", style: "subcommand" },
   frontier: { file: "frontier-cli.ts", about: "regenerate the portfolio frontier", style: "subcommand" },
+  chat: { file: "chat.ts", about: "open the intention chat (this is what plain `cuesheet` does)", style: "subcommand" },
 };
 
 function usage(): never {
@@ -61,7 +62,10 @@ fallback, on purpose.
 }
 
 function dispatch(argv: string[]): number {
-  const [command, ...rest] = argv;
+  // A bare `cuesheet` is the chat: one surface, intentions in, tooling serves
+  // them. The subcommands remain for scripts and for people who already know
+  // which primitive they want.
+  const [command = "chat", ...rest] = argv;
   if (!command) {
     usage();
   }

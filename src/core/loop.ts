@@ -89,6 +89,14 @@ export interface LoopOptions {
   registry?: Capability[];
   /** Hard ceiling on inferences. A loop that cannot be stopped is a hazard. */
   maxSteps: number;
+  /**
+   * Called for every event the moment it is appended. This is how a chat
+   * surface can show the work as it happens, and how a caller can persist
+   * incrementally: an event handed to this callback is durable in the caller's
+   * terms before the next inference starts, so a killed process leaves the log
+   * intact up to the last real event.
+   */
+  onEvent?: (event: Event) => void;
 }
 
 export type LoopStop =
@@ -138,6 +146,14 @@ export async function runAgentLoop(
 ): Promise<LoopOutcome> {
   const claims: string[] = [];
   const requires = options.requires ?? [];
+  // Every append funnels through here so onEvent cannot be forgotten on one
+  // code path and fire on another: five append sites existed when this was
+  // added, and only a single funnel keeps them honest.
+  const append = (event: Parameters<EventStore["append"]>[0]): Event => {
+    const appended = store.append(event);
+    options.onEvent?.(appended);
+    return appended;
+  };
 
   // The admission gate runs before anything is spent, against the live
   // registry, not against what a session-start snapshot happened to hold.
@@ -155,14 +171,14 @@ export async function runAgentLoop(
         claims,
       };
     }
-    store.append({
+    append({
       kind: "capability",
       subject: options.subject,
       data: { resolved: gate.resolution.resolved.map((c) => c.name) },
     });
   }
 
-  store.append({ kind: "goal", subject: options.subject, data: { text: options.goal } });
+  append({ kind: "goal", subject: options.subject, data: { text: options.goal } });
 
   for (let step = 1; step <= options.maxSteps; step++) {
     const session = store.toSession();
@@ -172,7 +188,7 @@ export async function runAgentLoop(
 
     if (response.text.trim()) {
       claims.push(response.text);
-      store.append({
+      append({
         kind: "observation",
         subject: options.subject,
         data: { text: response.text, step },
@@ -181,14 +197,14 @@ export async function runAgentLoop(
 
     for (const call of response.toolCalls) {
       const result = await tools.run(call);
-      store.append({
+      append({
         kind: "action",
         subject: options.subject,
         data: { tool: call.name, input: call.input, step },
       });
       // The result is an observation, not evidence. Only something the loop
       // can point at later closes a goal.
-      store.append({
+      append({
         kind: "observation",
         subject: options.subject,
         data: { tool: call.name, exit: result.exit, output: result.output, step },

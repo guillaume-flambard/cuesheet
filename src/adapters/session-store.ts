@@ -20,6 +20,7 @@ import {
   fsyncSync,
   mkdirSync,
   openSync,
+  readdirSync,
   readFileSync,
   writeSync,
 } from "node:fs";
@@ -74,6 +75,42 @@ export class SessionStore {
       .split("\n")
       .filter((line) => line.trim().length > 0)
       .map((line) => JSON.parse(line) as Event);
+  }
+
+  /**
+   * Every session on disk, newest first by last event timestamp. A corrupt
+   * line does not remove the session: it surfaces as fewer events, and the
+   * caller decides what an incomplete history means.
+   */
+  list(): Array<{ id: string; events: number; lastAt: number; goal: string }> {
+    let files: string[];
+    try {
+      files = readdirSync(this.root).filter((f) => f.endsWith(".jsonl"));
+    } catch {
+      return [];
+    }
+    const out: Array<{ id: string; events: number; lastAt: number; goal: string }> = [];
+    for (const file of files) {
+      const id = file.replace(/\.jsonl$/, "");
+      let events: Event[] = [];
+      try {
+        events = this.read(id);
+      } catch {
+        // A session that cannot be parsed still exists; hiding it would let
+        // data disappear from the list while staying on disk.
+        out.push({ id, events: -1, lastAt: 0, goal: "(unreadable)" });
+        continue;
+      }
+      const goal = events.find((e) => e.kind === "goal");
+      const lastAt = events.length > 0 ? events[events.length - 1].at : 0;
+      out.push({
+        id,
+        events: events.length,
+        lastAt,
+        goal: goal ? String((goal.data as { text?: unknown }).text ?? "") : "",
+      });
+    }
+    return out.sort((a, b) => b.lastAt - a.lastAt);
   }
 
   /** Rehydrate a core store from disk, replaying every persisted event. */

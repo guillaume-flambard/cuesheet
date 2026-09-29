@@ -10,12 +10,11 @@ const run = (args: string[]) =>
   spawnSync(process.execPath, [ENTRY, ...args], { encoding: "utf8" });
 
 describe("cuesheet dispatcher", () => {
-  it("no command prints the usage and exits 2", () => {
-    const r = run([]);
-    assert.equal(r.status, 2);
-    assert.match(r.stdout, /cuesheet, a session that owns its own state/);
-    assert.match(r.stdout, /projects/);
-    assert.match(r.stdout, /gate/);
+  it("no command opens the chat, and a closed stdin leaves it cleanly", () => {
+    const r = spawnSync(process.execPath, [ENTRY], { encoding: "utf8", input: "" });
+    assert.equal(r.status, 0, "stdin EOF is a clean exit, not a crash");
+    assert.match(r.stdout, /cuesheet chat/);
+    assert.match(r.stdout, /every line is an intention/);
   });
 
   it("an unknown command names it and exits 2", () => {
@@ -24,9 +23,9 @@ describe("cuesheet dispatcher", () => {
     assert.match(r.stderr, /unknown command "definitely-not-a-command"/);
   });
 
-  it("the usage lists every subcommand with its purpose", () => {
-    const r = run([]);
-    for (const name of ["projects", "gate", "run", "resume", "sessions", "inspect", "capabilities", "frontier"]) {
+  it("the usage lists every subcommand with its purpose, chat included", () => {
+    const r = run(["definitely-not-a-command"]);
+    for (const name of ["projects", "gate", "run", "resume", "sessions", "inspect", "capabilities", "frontier", "chat"]) {
       assert.match(r.stdout, new RegExp(`^  ${name}`, "m"), `missing subcommand: ${name}`);
     }
   });

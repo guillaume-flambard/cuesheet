@@ -86,7 +86,16 @@ conservative, because the cost of a false `available` is a corrupted checkout.
 npm test
 ```
 
-The installed command dispatches every subcommand:
+The installed command with no arguments opens the chat: one surface, lines
+typed as intentions, the tooling serves them. A question the live state can
+answer (sessions, capabilities, a session's log) is answered from state;
+anything else is a goal, which the admission gate evaluates before the first
+inference, and which is then run and persisted event by event. A line starting
+with `!` overrides a refusal explicitly, which is owner authority rather than
+a bypass.
+
+The subcommands remain for scripts and for people who know the primitive they
+want:
 
 ```bash
 cuesheet projects --root ~/projects/<a> --root ~/projects/<b>
