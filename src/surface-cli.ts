@@ -35,7 +35,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..");
 const TERMINAL = join(REPO, "apps", "terminal");
 const RUNNER = join(TERMINAL, "node_modules", ".bin", "tsx");
-const SLICE = join(TERMINAL, "src", "slice.tsx");
+const SLICE = join(TERMINAL, "src", "main.tsx");
 
 /**
  * Run the surface, inheriting the terminal so Ink sees a real TTY.
@@ -53,6 +53,19 @@ export async function surface(): Promise<number> {
   if (!existsSync(RUNNER)) {
     console.error(`surface: ${RUNNER} is not installed.`);
     console.error("        run `pnpm install` in apps/terminal, then try again.");
+    return 1;
+  }
+
+  // The surface draws a cursor, so it needs a terminal on both ends. Ink's own
+  // failure for a missing one is a stack trace about raw mode, which tells the
+  // person reading it nothing about what to do next. This says it in a line.
+  //
+  // `isTTY` is checked on stdin as well as stdout because a pipe on one side is
+  // enough to break the drawing, and the most common way to arrive here is
+  // `cuesheet | tee log` or a CI step, where stdout is a file and stdin is not.
+  if (!process.stdout.isTTY) {
+    console.error("surface: this needs a terminal. `cuesheet` draws a prompt and reads keys.");
+    console.error("         for a non-interactive check, use `cuesheet inspect` or `cuesheet projects`.");
     return 1;
   }
 

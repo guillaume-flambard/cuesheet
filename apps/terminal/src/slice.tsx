@@ -132,18 +132,23 @@ export function Slice_() {
   const lines = render(slice, typed);
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingLeft={1}>
       {lines.map((line, i) => (
-        <Text key={i} color={line.includes("cuesheet") ? ACCENT : undefined}>
+        <Text key={i} color={line === "cuesheet" ? ACCENT : undefined}>
           {line}
         </Text>
       ))}
       {slice.at === "greeting" || slice.at === "ambiguous" || slice.at === "unresolved" ? (
+        // One row, prompt and text in it, so the caret lands where the words are
+        // instead of a line below them. `slice.at === "resolving"` is excluded
+        // on purpose: while the portfolio is being read there is nothing to type
+        // into, and showing an empty prompt invites a keystroke that goes
+        // nowhere.
         <Text>
           <Text color={ACCENT} bold>
             {"› "}
           </Text>
-          {typed}
+          <Text>{typed}</Text>
           <Text inverse>{" "}</Text>
         </Text>
       ) : null}

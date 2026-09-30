@@ -22,11 +22,15 @@ describe("cuesheet dispatcher", () => {
     // ```
     //
     // Every line was true and none of it was what someone typing `cuesheet`
-    // asked for. So a bare invocation now runs the human surface, and the rule
-    // is checked rather than the old wording: nothing about the machine may
-    // appear on the normal path.
+    // asked for. So a bare invocation now runs the human surface.
+    //
+    // The test runs without a TTY, so the surface refuses with a sentence
+    // rather than Ink's raw-mode stack trace. That refusal is the observable
+    // here, and the rule it checks is that no machine detail appears: no
+    // registry, no session count, no home-directory notice, no staging
+    // sentence, and not a JavaScript trace.
     const r = spawnSync(process.execPath, [ENTRY], { encoding: "utf8", input: "" });
-    assert.equal(r.status, 0, "stdin EOF is a clean exit, not a crash");
+    assert.equal(r.status, 1, "a surface that cannot draw says so and stops");
 
     for (const leaked of [
       /cuesheet chat/,
@@ -35,9 +39,21 @@ describe("cuesheet dispatcher", () => {
       /sessions\s+\d+ on disk/,
       /home directory/,
       /a goal is staged/,
+      /at .*\.tsx:\d+/,
+      /raw mode/,
     ]) {
       assert.doesNotMatch(r.stdout, leaked, `the diagnostic path printed: ${leaked}`);
+      assert.doesNotMatch(r.stderr, leaked, `the diagnostic path printed: ${leaked}`);
     }
+    assert.match(r.stderr, /needs a terminal/, "and it says why, in a sentence");
+  });
+
+  it("a bare invocation is the surface, not the usage text", () => {
+    // The surface is the default, so no argument means surface. Usage is
+    // printed only when help is asked for, which is the rule this checks.
+    const r = spawnSync(process.execPath, [ENTRY], { encoding: "utf8", input: "" });
+    assert.doesNotMatch(r.stdout, /Subcommands:/);
+    assert.doesNotMatch(r.stdout, /Run `cuesheet <command> --help`/);
   });
 
   it("the old chat is still reachable, because it is evidence", () => {
@@ -81,14 +97,6 @@ describe("cuesheet dispatcher", () => {
       version: string;
     };
     assert.equal(r.stdout.trim(), pkg.version);
-  });
-
-  it("a bare invocation is the chat, not the usage text", () => {
-    // The chat is the default surface, so no argument means chat. Usage is
-    // printed only when help is asked for.
-    const r = spawnSync(process.execPath, [ENTRY], { encoding: "utf8", input: "" });
-    assert.equal(r.status, 0);
-    assert.doesNotMatch(r.stdout, /Subcommands:/);
   });
 
   it("--format json produces a report a machine can read", () => {

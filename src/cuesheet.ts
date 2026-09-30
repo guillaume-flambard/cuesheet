@@ -15,6 +15,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isEntryPoint } from "./is-entry-point.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -235,4 +236,6 @@ function dispatch(argv: string[]): number {
   return result.status ?? 1;
 }
 
-process.exit(dispatch(process.argv.slice(2)));
+if (isEntryPoint(import.meta.url)) {
+  process.exit(dispatch(process.argv.slice(2)));
+}

@@ -57,47 +57,47 @@ const MUTED = "gray";
 export function render(slice: Slice, typed: string): string[] {
   switch (slice.at) {
     case "greeting":
-      return ["", "  cuesheet", "", "  What are we working on?", ""];
+      return ["", "cuesheet", "", "What are we working on?", ""];
 
     case "resolving":
-      return [`  ${typed}`, "", "  Looking through your projects…", ""];
+      return [`${typed}`, "", "Looking through your projects…", ""];
 
     case "ambiguous":
       return [
-        `  ${slice.said}`,
+        `${slice.said}`,
         "",
-        `  I can see ${count(slice.binding.candidates.length, "project")} that could be it:`,
+        `I can see ${count(slice.binding.candidates.length, "project")} that could be it:`,
         "",
-        ...slice.binding.candidates.map((c) => `    ${c.name}  ${MUTED_MARK}${c.path}`),
+        ...slice.binding.candidates.map((c) => `  ${c.name}  ${MUTED_MARK}${c.path}`),
         "",
-        "  Which one?",
+        "Which one?",
         "",
       ];
 
     case "unresolved":
       return [
-        `  ${slice.said}`,
+        `${slice.said}`,
         "",
-        "  I can't tell which one you mean.",
-        "  Give me its name, or its folder.",
+        "I can't tell which one you mean.",
+        "Give me its name, or its folder.",
         "",
       ];
 
     case "bound":
       return [
-        `  ${slice.said}`,
+        `${slice.said}`,
         "",
-        `  ${slice.project}  ${MUTED_MARK}${slice.path}`,
+        `${slice.project}  ${MUTED_MARK}${slice.path}`,
         "",
-        "  What do you want to look at?",
+        "What do you want to look at?",
         "",
       ];
 
     case "refused":
-      return [`  ${slice.said}`, "", "  Ask me about a project and we can start there.", ""];
+      return [`${slice.said}`, "", "Ask me about a project and we can start there.", ""];
   }
 }
 
-const MUTED_MARK = "  ";
+const MUTED_MARK = "";
 const count = (n: number, word: string) => (n === 1 ? `one ${word}` : `${n} ${word}s`);
 
