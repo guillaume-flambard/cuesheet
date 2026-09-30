@@ -60,6 +60,27 @@ export class OpenRouterAdapter implements ModelAdapter {
    * refusing: the model cannot discover an input shape it was never shown,
    * and every failed attempt is a step of the budget spent on nothing.
    */
+  /**
+   * The verbs this frame's directives offer, recovered from the directives.
+   *
+   * Read from the directive text rather than carried on `ContextFrame`, so that
+   * adding a verb to a producer is a change to that producer and not a change to
+   * the core's frame type. A core that must know every adapter's vocabulary has
+   * become a place where adapters are declared, which is the dependency direction
+   * this repository has spent fifteen milestones removing.
+   *
+   * The recovery is a stated format, not a guess: a producer that wants a closed
+   * schema writes `tools: a, b, c` in its directive, and anything else simply
+   * yields no enum, which is the older behaviour and is not worse.
+   */
+  private vocabularyOf(frame: ContextFrame): string[] | null {
+    for (const d of frame.directives) {
+      const m = /^tools:\s*([a-z_, ]+)$/m.exec(d.text);
+      if (m) return m[1]!.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    return null;
+  }
+
   private render(frame: ContextFrame): { messages: ChatMessage[]; tools: ToolSchema[] } {
     const facts: string[] = [];
     facts.push(`goal: ${frame.goal}`);
@@ -122,11 +143,30 @@ export class OpenRouterAdapter implements ModelAdapter {
         {
           name: "tool_call",
           description:
-            "Request a tool to run. Arguments must be {\"tool\": \"<name>\", \"input\": {...}} with input in one of the two documented shapes.",
+            "Request a producer verb. Arguments must be {\"tool\": \"<one of the verbs listed in the directives>\", \"input\": {...}}. " +
+            "The `tool` value must be one of the names enumerated in the standing directives, " +
+            "not a shell command: there is no shell here and no name outside that list is runnable.",
           parameters: {
             type: "object",
             properties: {
-              tool: { type: "string" },
+              // An enum, not a free string. The producer's vocabulary is closed
+              // and a schema that accepts any string invites the model to supply
+              // one, which is what happened: a real model answered `ls`, and the
+              // producer correctly refused a verb it does not honour, so the run
+              // produced nothing. The refusal was right and the invitation was
+              // wrong.
+              //
+              // This adapter is shared, so the enum is carried on the frame
+              // rather than hard-coded here. An adapter with no declared
+              // vocabulary declares no enum, and the model is left to choose,
+              // which is the older and worse behaviour.
+              tool: {
+                type: "string",
+                ...(() => {
+                  const vocabulary = this.vocabularyOf(frame);
+                  return vocabulary && vocabulary.length > 0 ? { enum: vocabulary } : {};
+                })(),
+              },
               input: { type: "object" },
             },
             required: ["tool"],

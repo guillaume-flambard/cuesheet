@@ -43,8 +43,8 @@
  * that.
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
-import { isAbsolute, resolve, sep } from "node:path";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { isAbsolute, join, resolve, sep } from "node:path";
 
 import type { ContextFrame, ModelAdapter, ModelResponse } from "../core/loop.ts";
 import { digestOf } from "../verify.ts";
@@ -58,6 +58,40 @@ import { OpenRouterAdapter } from "./openrouter.ts";
  * be worn thin, so the set is fixed here rather than passed in.
  */
 export const WRITE_TOOL = "write_file";
+
+/**
+ * The whole vocabulary a model has, closed and enumerated.
+ *
+ * LIVE-01 measured what one verb costs. A real model was shown the workspace, was
+ * told how to change a file, and answered with `ls`, which this producer does not
+ * honour, so the run produced nothing and was correctly attributed to the model.
+ *
+ * The attribution was right and the conclusion would have been wrong. A model
+ * asked to fix code in a directory it cannot list has been asked to guess what is
+ * in it. `ls` was the first capability it reached for and it was missing, not
+ * misbehaviour.
+ *
+ * So the vocabulary is now four verbs, and no shell:
+ *
+ * ```text
+ * list_files   what is here
+ * read_file    what is in one of them, including ones it was not shown
+ * write_file   replace one file's whole contents
+ * finish       say it is done
+ * ```
+ *
+ * No `bash`, no free-form command, no `exec`. Each is a function of the
+ * workspace, and each is implemented below rather than declared in the frame, so
+ * a verb the model was offered and the producer does not honour is a defect the
+ * tests can see. The alternative, honouring whatever string arrived, is what
+ * fifteen milestones were spent removing.
+ */
+export const LIST_TOOL = "list_files";
+export const READ_TOOL = "read_file";
+export const FINISH_TOOL = "finish";
+
+/** The complete set. A model is offered these and nothing else. */
+export const PRODUCER_VOCABULARY = [LIST_TOOL, READ_TOOL, WRITE_TOOL, FINISH_TOOL] as const;
 
 /** A write the model proposed and this producer is willing to apply. */
 export interface ProposedWrite {
@@ -115,6 +149,24 @@ export function writesFromResponse(response: ModelResponse): PatchExtraction {
   const discarded: string[] = [];
 
   for (const call of response.toolCalls) {
+    if (call.name === LIST_TOOL || call.name === READ_TOOL) {
+      // A read that arrived alongside a write. The read verbs are honoured,
+      // and a real model routinely emits them in the same turn as a write
+      // because it was told it had four tools. Calling it "not a verb this
+      // producer honours" was both wrong and unhelpful: the producer honours
+      // it, it was simply answered earlier in the conversation.
+      //
+      // A2 found this: the scripted fixtures never batched a read with a write,
+      // so nothing caught it, and a real model does it on the first try.
+      discarded.push(`${call.name}: answered earlier in this conversation, not re-read here`);
+      continue;
+    }
+    if (call.name === FINISH_TOOL) {
+      // The model said it was done. Recorded, never read: it is a claim like any
+      // other, and the oracle judges the workspace rather than the announcement.
+      discarded.push(`${FINISH_TOOL}: the model said it finished; the oracle decides`);
+      continue;
+    }
     if (call.name !== WRITE_TOOL) {
       discarded.push(`${call.name}: not a verb this producer honours`);
       continue;
@@ -263,10 +315,23 @@ export function frameFor(options: ProduceOptions): ContextFrame {
         target: "worker",
         applied: false,
         text: [
-          `To change a file, call the ${WRITE_TOOL} tool with exactly:`,
-          `  {"tool": "${WRITE_TOOL}", "input": {"path": "<workspace-relative path>", "contents": "<the complete new file text>"}}`,
-          "contents replaces the whole file. Paths are relative to the working directory and may not leave it.",
-          "Change the files that make the task true. Then stop.",
+          `You have exactly four tools. There is no shell and no other way to touch anything.`,
+          `tools: ${[LIST_TOOL, READ_TOOL, WRITE_TOOL, FINISH_TOOL].join(", ")}`,
+          "",
+          `1. ${LIST_TOOL}   {"tool": "${LIST_TOOL}", "input": {}}`,
+          "   Every file in the working directory, sorted.",
+          "",
+          `2. ${READ_TOOL}   {"tool": "${READ_TOOL}", "input": {"path": "<workspace-relative path>"}}`,
+          "   The current contents of one file. You may read a file you were not shown.",
+          "",
+          `3. ${WRITE_TOOL}  {"tool": "${WRITE_TOOL}", "input": {"path": "<workspace-relative path>", "contents": "<the complete new file text>"}}`,
+          "   Replaces one file's whole contents. This is the only thing that changes anything.",
+          "",
+          `4. ${FINISH_TOOL} {"tool": "${FINISH_TOOL}", "input": {}}`,
+          "   You are done. Optional; stopping without it is also accepted.",
+          "",
+          "Paths are relative to the working directory and may not leave it.",
+          "Look before you edit: list the files, read the ones that matter, then change what makes the task true.",
           "Do not report whether you succeeded. Nothing you write is read as evidence of success.",
         ].join("\n"),
       },
@@ -324,9 +389,10 @@ function workspaceEvidence(options: ProduceOptions): ContextFrame["evidence"] {
  * What it never does, in any of the three: decide whether the work is good.
  */
 export async function produce(options: ProduceOptions): Promise<ProduceReport> {
+  const turn = (frame: ContextFrame) => options.adapter.infer(frame);
   let response: ModelResponse;
   try {
-    response = await options.adapter.infer(frameFor(options));
+    response = await turn(frameFor(options));
   } catch (cause) {
     // The provider's own fault, kept distinct from the model declining to act.
     // `OpenRouterAdapter` already wraps transport errors in `FailureWithOrigin`,
@@ -334,6 +400,22 @@ export async function produce(options: ProduceOptions): Promise<ProduceReport> {
     const why = cause instanceof Error ? cause.message : String(cause);
     writeFailure(options, why);
     return { kind: "failed", origin: "provider", why };
+  }
+
+  // Answer the read verbs, if any, and ask again.
+  //
+  // Bounded on purpose: a model that reads forever is not a worker, and a loop
+  // here would be a resource the model controls. The bound is a turn count, not
+  // a token count, because a turn is what this function is actually spending.
+  const answered = await answerReads(options, frameFor(options), response, turn);
+  if (answered !== response) {
+    try {
+      response = answered;
+    } catch (cause) {
+      const why = cause instanceof Error ? cause.message : String(cause);
+      writeFailure(options, why);
+      return { kind: "failed", origin: "provider", why };
+    }
   }
 
   const { writes, discarded } = writesFromResponse(response);
@@ -484,4 +566,144 @@ if (invokedDirectly) {
   // The exit code is not the outcome and nothing reads it. `workOutcomeOf`
   // answers from the receipt alone, which is the whole point of the split.
   process.exit(report.kind === "produced" ? 0 : 1);
+}
+
+/** How many times the producer will answer a read before insisting on an edit. */
+export const MAX_READ_TURNS = 6;
+
+/**
+ * Answer `list_files` and `read_file` calls, then let the model reply once more.
+ *
+ * This is what makes the vocabulary more than a declaration. A verb offered and
+ * not answered is a verb the model learns to stop using, and one model answered
+ * `ls` in LIVE-01, which is the whole reason this function exists.
+ *
+ * Every answer is derived from the workspace and nothing else: no interpreter,
+ * no shell, no network. A path that leaves the workspace is refused with the same
+ * rule `placeInWorkspace` applies to a write, so reading cannot become a way out
+ * that writing is not.
+ *
+ * The transcript of what was read goes back into the frame as evidence, with the
+ * file named as its backing. That is the same shape as the workspace evidence the
+ * first frame carried, and it carries the same caveat: read by the harness, not
+ * checked for correctness.
+ */
+async function answerReads(
+  options: ProduceOptions,
+  frame: ContextFrame,
+  response: ModelResponse,
+  turn: (frame: ContextFrame) => Promise<ModelResponse>,
+): Promise<ModelResponse> {
+  let current = frame;
+  let currentResponse = response;
+
+  for (let i = 0; i < MAX_READ_TURNS; i += 1) {
+    const reads = readCallsOf(currentResponse);
+    if (reads.length === 0) return currentResponse;
+
+    const answers = reads.map((read) => answerRead(options, read));
+    current = withEvidence(current, answers);
+    try {
+      currentResponse = await turn(current);
+    } catch (cause) {
+      // A provider failure mid-conversation is still a provider failure, and the
+      // caller is told so rather than being handed a half-read conversation.
+      //
+      // Rethrown as it arrived rather than re-wrapped. Wrapping it would mean
+      // importing `../effects.ts`, which is the module that builds observations,
+      // and the boundary test A wrote forbids that import for exactly this
+      // reason: an adapter that can reach the effects vocabulary can start
+      // asserting things about effects. `produce` catches this at the top and
+      // attributes it, so the information survives without the import.
+      throw cause;
+    }
+  }
+  return currentResponse;
+}
+
+interface ReadCall {
+  path?: string;
+}
+
+function readCallsOf(response: ModelResponse): ReadCall[] {
+  return response.toolCalls
+    .filter((c) => c.name === LIST_TOOL || c.name === READ_TOOL)
+    .map((c) => payloadOf(c) as { path?: unknown })
+    .map((payload) => ({ path: typeof payload.path === "string" ? payload.path : undefined }));
+}
+
+/** One read verb, answered from the workspace. Never an interpreter. */
+function answerRead(options: ProduceOptions, call: ReadCall): ContextFrame["evidence"][number] {
+  if (call.path === undefined) {
+    // A list with no path: the whole workspace, which is the only directory this
+    // producer was ever given.
+    const files = listWorkspace(options.workspace);
+    return {
+      seq: 0,
+      at: 0,
+      subject: "(workspace)",
+      claim: `files in the workspace:\\n${files.join("\\n") || "(empty)"}`,
+      backing: "listed by the harness from the workspace directory; not a test result",
+    };
+  }
+
+  const placement = placeInWorkspace(options.workspace, call.path);
+  if (!placement.ok) {
+    return {
+      seq: 0,
+      at: 0,
+      subject: call.path,
+      claim: `not readable: ${placement.why}`,
+      backing: "refused by the harness before any read",
+    };
+  }
+  try {
+    const contents = readFileSync(placement.absolute, "utf8");
+    return {
+      seq: 0,
+      at: 0,
+      subject: call.path,
+      claim: `current contents of ${call.path}:\\n${contents}`,
+      backing: "read from the workspace by the harness; not checked for correctness",
+    };
+  } catch (cause) {
+    return {
+      seq: 0,
+      at: 0,
+      subject: call.path,
+      claim: `not readable: ${cause instanceof Error ? cause.message : String(cause)}`,
+      backing: "refused by the harness during the read",
+    };
+  }
+}
+
+/** Every file in the workspace, relative and sorted, so the order is not the fs's. */
+function listWorkspace(workspace: string): string[] {
+  const out: string[] = [];
+  const walk = (dir: string, prefix: string) => {
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(join(dir, entry.name), rel);
+      else out.push(rel);
+    }
+  };
+  walk(workspace, "");
+  return out.sort();
+}
+
+function withEvidence(
+  frame: ContextFrame,
+  added: ContextFrame["evidence"],
+): ContextFrame {
+  return {
+    ...frame,
+    evidence: [...frame.evidence, ...added].map((e, i) => ({ ...e, seq: i + 1 })),
+  };
 }
