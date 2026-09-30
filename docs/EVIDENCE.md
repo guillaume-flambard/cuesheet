@@ -1229,3 +1229,65 @@ DOGFOOD-01  still BLOCKED ON CREDITS
 from every run so far. The OpenRouter path never reported them. It is worth
 recording that a local backend would have improved the *evidence* even though it
 cannot serve as the *backend*, and that these are separate properties.
+
+## Three measurements of the same thing, and only the last one was real
+
+The surface typed a project name and appeared to take 1.9 seconds. That was
+measured, fixed, and re-measured at 650ms. Then it was measured again at about
+1.5 seconds per keystroke, and the conclusion drawn was that `tsx` recompiles on
+every keypress.
+
+Every one of those numbers came from the same mistake. The harness drained stdin
+with a fixed sleep and timed the end of the sleep:
+
+```python
+drain(1.2)                      # waits the full 1.2s
+print((time.time() - t0))        # reports the sleep, not the keystroke
+```
+
+So the reported latency was the sleep. The keystrokes were arriving in
+single-digit milliseconds the whole time, measured by waiting for the byte:
+
+```text
+8 keypresses      0 ms total, each timed at arrival
+Enter             first byte 4 ms, full resolution in the same chunk
+project binding   1 ms, no subprocess
+```
+
+The "tsx recompiles per keystroke" diagnosis was false, and it was false in the
+way that matters: it would have justified replacing the runner. The reasoning was
+sound and the premise was not, which is exactly the failure this repository has
+been documenting since P0.
+
+### The oracle that would have caught it
+
+A component with no Cuesheet in it at all, which only appends the key it
+receives:
+
+```text
+Ink alone        0 ms per keystroke
+Cuesheet slice   0 ms per keystroke
+```
+
+That control was available and was not run. Had it been, the first number would
+have been 0 ms and no build system would have been touched. Two bundling
+attempts were made on the strength of the bad number, and both failed for
+unrelated reasons: two copies of React in an ESM bundle, and yoga-wasm-web
+unresolvable at runtime.
+
+### The rule this adds
+
+> A latency number is only a measurement if the thing being timed is the thing
+> that was slow.
+
+Reading the clock after a sleep measures the sleep. So does reading it after a
+`select` timeout that has already returned. To time a keystroke, wait for the
+byte and read the clock when it arrives; to time a render, wait for the pixels
+and read the clock when they land. Anything else measures the harness.
+
+This is the third time in this repository that a derived representation has been
+trusted over the source: the capture regex that invented a misalignment, the
+`identities.map is not a function` trace whose real cause was a duplicated
+function two files away, and now a sleep loop that reported itself as a
+latency. The pattern is worth naming, because it is not a tooling mistake. It is
+the same mistake as reading `VERIFIED` as a claim about coherence.
