@@ -25,7 +25,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { render } from "../apps/terminal/src/render.ts";
+import { render, resolve } from "../apps/terminal/src/render.ts";
 
 /** The internal vocabulary. None of it may appear on the normal path. */
 const INTERNAL = [
@@ -85,7 +85,7 @@ function unresolvedSlice() {
 
 describe("the founding transcript, from $HOME", () => {
   it("the greeting says one thing and stops", () => {
-    const out = linesFor({ at: "greeting" });
+    const out = linesFor({ at: "welcome" });
     assert.match(out, /cuesheet/);
     assert.match(out, /What are we working on\?/);
     for (const word of INTERNAL) {
@@ -116,7 +116,7 @@ describe("the founding transcript, from $HOME", () => {
 
   it("an unresolved project asks for a name, and never says the line was not a goal", () => {
     const out = linesFor(unresolvedSlice());
-    assert.match(out, /Give me its name/);
+    assert.match(out, /Name a project/);
     // The exact sentence the old surface printed, which was a lie about the
     // intention rather than a description of the scope.
     assert.doesNotMatch(out, /not a goal/i);
@@ -181,5 +181,65 @@ describe("the visual identity is not negotiable", () => {
     } as const;
     const out = linesFor(many);
     assert.ok(out.split("\n").length < 24, "the question stays a question");
+  });
+});
+
+
+/**
+ * OBS-1, the first counterexample a person found, on the first run.
+ *
+ * ```text
+ * > on fait quoi ?
+ * I can't tell which one you mean.
+ * Give me its name, or its folder.
+ * ```
+ *
+ * The surface had one interpretation of every line, and it was always "this
+ * names a project". So a question about what to do was answered as a failed
+ * directory lookup, which is the same shape as the old chat saying "not a goal"
+ * about a stated intention: a helpful answer that asserts what the person meant,
+ * and is wrong.
+ *
+ * The fix is not a better matcher. It is asking the router that has existed in
+ * `core/intent.ts` all along, instead of asking the binder first and nobody
+ * else.
+ */
+describe("OBS-1 a question is answered as a question", () => {
+  it("a question about what to do is not a failed project lookup", () => {
+    const said = "on fait quoi ?";
+    const slice = resolve(said);
+    assert.equal(slice.at, "question", "the router recognises it as a question");
+    const out = render(slice, "").join("\n");
+    assert.doesNotMatch(
+      out,
+      /can't tell which one you mean/i,
+      "the false claim about what the person said must not come back",
+    );
+    for (const word of INTERNAL) {
+      assert.doesNotMatch(out, new RegExp(word, "i"), `"${word}" leaked into an answer to a question`);
+    }
+  });
+
+  it("a greeting is not a project lookup either", () => {
+    assert.equal(resolve("salut").at, "greeting");
+    const out = render(resolve("salut"), "").join("\n");
+    assert.doesNotMatch(out, /can't tell which one you mean/i);
+  });
+
+  it("a project name still binds, and an unknown name still asks", () => {
+    assert.equal(resolve("cuesheet").at, "bound", "the path that worked still works");
+    assert.equal(resolve("le projet video de mon pote").at, "unresolved");
+  });
+
+  it("the router is asked first, so a second classifier cannot drift", () => {
+    // Read off the source: the question is settled before any binding happens.
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "..", "apps", "terminal", "src", "render.ts"),
+      "utf8",
+    );
+    const routeAt = source.indexOf("routeIntention(");
+    const bindAt = source.indexOf("bindProject(");
+    assert.ok(routeAt > 0 && bindAt > 0, "both are called");
+    assert.ok(routeAt < bindAt, "the router answers first, which is the whole fix");
   });
 });

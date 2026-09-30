@@ -16,14 +16,17 @@
  */
 
 import { bindProject, type Binding } from "../../../src/adapters/project-binding.ts";
+import { routeIntention } from "../../../src/core/intent.ts";
 
 // ─── the slice's states ────────────────────────────────────────────────────
 
 export type Slice =
-  | { readonly at: "greeting" }
+  | { readonly at: "welcome" }
   | { readonly at: "resolving" }
   | { readonly at: "ambiguous"; readonly said: string; readonly binding: Extract<Binding, { kind: "unbound" }> }
   | { readonly at: "unresolved"; readonly said: string }
+  | { readonly at: "question"; readonly said: string; readonly about: "portfolio" }
+  | { readonly at: "greeting"; readonly said: string }
   | { readonly at: "bound"; readonly said: string; readonly project: string; readonly path: string }
   | { readonly at: "refused"; readonly said: string };
 
@@ -33,6 +36,24 @@ export type Slice =
  * `project-binding.ts` and re-deciding them here would create a second opinion.
  */
 export function resolve(said: string): Slice {
+  // The question comes first, because OBS-1 was this line asked in the wrong
+  // order. "on fait quoi ?" is not a failed project lookup; it is a question
+  // about the portfolio, and the router in `core/intent.ts` has known that since
+  // it was written. The slice was calling the binder first and asking nobody,
+  // so a question received "I can't tell which one you mean", which is a
+  // helpful way of saying something false.
+  //
+  // The router is not duplicated here. It is the same function the diagnostic
+  // chat uses, so a greeting or a question is recognised the same way in both
+  // places, and a second classifier would drift from the first.
+  const kind = routeIntention(said).kind;
+  if (kind === "next" || kind === "admission") {
+    return { at: "question", said, about: "portfolio" };
+  }
+  if (kind === "conversational") {
+    return { at: "greeting", said };
+  }
+
   const binding = bindProject(said);
   if (binding.kind === "bound") {
     return { at: "bound", said, project: binding.candidate.name, path: binding.candidate.path };
@@ -55,7 +76,7 @@ const MUTED = "gray";
  */
 export function render(slice: Slice, typed: string): string[] {
   switch (slice.at) {
-    case "greeting":
+    case "welcome":
       return ["", "cuesheet", "", "What are we working on?", ""];
 
     case "resolving":
@@ -77,10 +98,25 @@ export function render(slice: Slice, typed: string): string[] {
       return [
         `${slice.said}`,
         "",
-        "I can't tell which one you mean.",
-        "Give me its name, or its folder.",
+        "I don't know that one.",
+        "Name a project, or ask me what we're working on.",
         "",
       ];
+
+    // OBS-1. This state exists because the surface used to answer "on fait
+    // quoi ?" with "I can't tell which one you mean", which is a false claim
+    // about what the person said. A question is answered as a question.
+    case "question":
+      return [
+        `${slice.said}`,
+        "",
+        "Your projects are in ~/projects.",
+        "Name one and we'll work there.",
+        "",
+      ];
+
+    case "greeting":
+      return [`${slice.said}`, "", "Name a project when you're ready.", ""];
 
     case "bound":
       return [

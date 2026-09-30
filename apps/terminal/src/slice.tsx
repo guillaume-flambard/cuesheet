@@ -32,7 +32,7 @@ const ACCENT = "cyan";
 
 export function Slice_() {
   const { exit } = useApp();
-  const [slice, setSlice] = useState<Slice>({ at: "greeting" });
+  const [slice, setSlice] = useState<Slice>({ at: "welcome" });
   const [typed, setTyped] = useState("");
 
   useInput((input, key) => {
@@ -63,7 +63,8 @@ export function Slice_() {
           {line}
         </Text>
       ))}
-      {slice.at === "greeting" || slice.at === "ambiguous" || slice.at === "unresolved" ? (
+      {slice.at === "welcome" || slice.at === "ambiguous" || slice.at === "unresolved"
+        || slice.at === "question" || slice.at === "greeting" ? (
         // One row, prompt and text in it, so the caret lands where the words are
         // instead of a line below them. `slice.at === "resolving"` is excluded
         // on purpose: while the portfolio is being read there is nothing to type
