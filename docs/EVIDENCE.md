@@ -1138,3 +1138,94 @@ below can measure, not a constant picked to make a call succeed.
 DOGFOOD  real repository, real task, real oracle   BLOCKED ON CREDITS
         and the two setup mistakes it exposed       RECORDED ABOVE
 ```
+
+## OpenCode as a Cuesheet provider: LOCAL OPENCODE BINARY NOT COMPATIBLE
+
+DOGFOOD-01 was blocked on OpenRouter credits, and the obvious route was to use
+the developer's already-installed `opencode` binary instead. The instruction was
+explicit that a negative result was acceptable and better than quietly turning
+Cuesheet into an OpenCode wrapper, so the contract was measured before any code
+was written.
+
+### The observed contract, from the installed binary
+
+```text
+executable  /Users/memo/.opencode/bin/opencode
+version     1.18.33
+run         opencode run [message..]
+            --format default|json    --model provider/model
+            --agent <name>           --dir <path>
+output      NDJSON events: step_start, tool_use, text, step_finish
+exits       0 on success, non-zero on failure
+```
+
+`--format json` gives structured, parseable events including per-step token
+counts, which is better than the OpenRouter path for measurement. That part of
+the plan was sound.
+
+### Why it is incompatible, measured rather than argued
+
+`opencode run` is not a model transport. It is an agent with its own tools, and
+the built-in `build` agent carries a broad permission set:
+
+```text
+opencode agent list
+  build (primary)
+    permission * -> allow
+    plus external_directory rules
+```
+
+Two probes, both run against the real binary:
+
+```text
+1  "say only the word PONG and nothing else"
+   -> TEXT: PONG
+   (it can answer without touching a tool, which is what made this look viable)
+
+2  "create a file called probe.txt containing HELLO, then tell me you are done"
+   -> TOOL: write
+      input: {"filePath": "/private/tmp/probe.txt", "content": "HELLO\n"}
+   -> TEXT: "Done - /private/tmp/probe.txt now contains HELLO."
+   -> /tmp/probe.txt exists on disk
+```
+
+Probe 2 is the whole finding. The binary reached the filesystem, wrote a file,
+and then reported completion in its own words. If Cuesheet wrapped this, the
+model's "done" would be self-issued and the workspace would already be modified
+before any of Cuesheet's four verbs ran. Every property EXP-03A, EXP-05B and
+EXP-08 established would be bypassed by the transport:
+
+```text
+Cuesheet's four verbs   the only path to a change      -> bypassed
+artifact frozen         from Cuesheet's capture        -> the write is already out
+conformance             Cuesheet's independent oracle -> the model declared success
+work outcome            from a surviving producer      -> opencode said "Done"
+```
+
+This is STOP CONDITION 1 from the instruction, verified rather than assumed:
+OpenCode can only operate as a full agent with its own tools.
+
+### What was deliberately not done
+
+No adapter was written. The instruction said a negative result was preferable to
+weakening the boundary, and an adapter that could not prevent the binary from
+writing would have been worse than no adapter, because its name would imply a
+guarantee it did not provide.
+
+```text
+LOCAL OPENCODE BINARY NOT COMPATIBLE
+WITH CUESHEET PROVIDER BOUNDARY
+
+cause   opencode run is a full agent with its own tools, not a model transport
+proved  probe 2 above, on the installed binary, real filesystem effect
+cost    no adapter written, no credit spent, no core touched
+
+DOGFOOD-01  still BLOCKED ON CREDITS
+```
+
+### The one thing it would have been good for
+
+`--format json` reports per-step token counts, and that measurement is missing
+from every run so far. The OpenRouter path never reported them. It is worth
+recording that a local backend would have improved the *evidence* even though it
+cannot serve as the *backend*, and that these are separate properties.
