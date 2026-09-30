@@ -9,7 +9,7 @@ import {
   type EffectRequest,
 } from "../src/effects.ts";
 import { deriveState } from "../src/state.ts";
-import { classifyFailure } from "../src/effects.ts";
+import { classifyFailure, FailureWithOrigin } from "../src/effects.ts";
 import { deriveAffordances } from "../src/affordances.ts";
 import { seen } from "../src/state.ts";
 import { EventStore } from "../src/core/store.ts";
@@ -278,5 +278,36 @@ describe("a failure names a step and an origin", () => {
     });
     const status = effectStatuses(store.toSession().events).get("E42");
     assert.equal(status?.failure, undefined, "an incomplete cause is not a cause");
+  });
+});
+
+describe("a boundary knows better than an exception type", () => {
+  it("a failure the adapter attributed is not re-classified by its type", () => {
+    // The case that makes `instanceof ReferenceError` insufficient on its own:
+    // a provider SDK can throw a `ReferenceError` from inside code we do not
+    // own, and a rule that reads that as "our wiring is broken" blames
+    // Cuesheet for a bug it cannot see or fix.
+    //
+    // `classifyFailure` checks for an attributed failure FIRST, so the boundary
+    // wins over the type. The bare `ReferenceError` below is the control: same
+    // exception type, different origin, because the boundary said so.
+    const attributed = new FailureWithOrigin(
+      "launch",
+      "provider",
+      "cannot read property of undefined",
+    );
+    assert.equal(classifyFailure(attributed).origin, "provider");
+
+    const bare = new ReferenceError("cannot read property of undefined");
+    assert.equal(classifyFailure(bare).origin, "cuesheet", "the same message, unadorned");
+  });
+
+  it("the origin the adapter set is the one that survives", () => {
+    for (const origin of ["world", "cuesheet", "provider", "unknown"] as const) {
+      const f = new FailureWithOrigin("run", origin, "x");
+      const got = classifyFailure(f);
+      assert.equal(got.origin, origin);
+      assert.equal(got.step, "run", "and the step, not just the origin");
+    }
   });
 });

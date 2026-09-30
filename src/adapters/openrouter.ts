@@ -13,6 +13,7 @@
  */
 
 import type { ContextFrame, ModelAdapter, ModelResponse, ToolRequest } from "../src/core/loop.ts";
+import { FailureWithOrigin } from "../effects.ts";
 
 export interface OpenRouterOptions {
   apiKey: string;
@@ -152,19 +153,32 @@ export class OpenRouterAdapter implements ModelAdapter {
       ],
     };
 
-    const res = await fetch(`${this.options.baseUrl ?? "https://openrouter.ai/api/v1"}/chat/completions`, {
+    // Everything inside this boundary belongs to the provider, including the
+    // SDK's own programming errors. Wrapping it here is what stops a
+    // `ReferenceError` from a third-party client being read as Cuesheet's own
+    // wiring, which is what `classifyFailure` would otherwise conclude.
+    let res: Response;
+    try {
+      res = await fetch(`${this.options.baseUrl ?? "https://openrouter.ai/api/v1"}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${this.options.apiKey}`,
         "x-title": this.options.label ?? "cuesheet",
       },
-      body: JSON.stringify(body),
-    });
+        body: JSON.stringify(body),
+      });
+    } catch (cause) {
+      throw new FailureWithOrigin(
+        "launch",
+        "provider",
+        cause instanceof Error ? cause.message : String(cause),
+      );
+    }
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`provider ${res.status}: ${text.slice(0, 300)}`);
+      throw new FailureWithOrigin("launch", "provider", `provider ${res.status}: ${text.slice(0, 300)}`);
     }
 
     const json = (await res.json()) as {

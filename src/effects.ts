@@ -312,6 +312,17 @@ export function classifyFailure(cause: unknown): {
 } {
   const why = cause instanceof Error ? cause.message : String(cause);
 
+  // A boundary that already knows wins, before any type is examined.
+  //
+  // The reason is a provider SDK. An adapter that calls a third-party client can
+  // throw a `ReferenceError` from inside that client, and a rule that reads
+  // `ReferenceError` as "our wiring" would blame Cuesheet for a bug in code we
+  // do not own and cannot read. The boundary is closer to the cause than the
+  // exception type is, so it goes first.
+  if (cause instanceof FailureWithOrigin) {
+    return { step: cause.step, origin: cause.origin, why: cause.why };
+  }
+
   if (cause instanceof ReferenceError || cause instanceof SyntaxError) {
     return { step: "launch", origin: "cuesheet", why };
   }
@@ -325,4 +336,27 @@ export function classifyFailure(cause: unknown): {
     return { step: "run", origin: "world", why };
   }
   return { step: "run", origin: "unknown", why };
+}
+
+/**
+ * A failure whose boundary already knows who it belongs to.
+ *
+ * The escape hatch for the case `classifyFailure` cannot solve alone, and it is
+ * the shape every adapter should throw from its own catch: a provider adapter
+ * wrapping a third-party SDK is the concrete example, because that SDK can
+ * throw anything at all.
+ *
+ * Without this, the only way to attribute a provider failure is to match on its
+ * message, which is the guess the type was supposed to replace.
+ */
+export class FailureWithOrigin extends Error {
+  readonly step: FailureStep;
+  readonly origin: FailureOrigin;
+
+  constructor(step: FailureStep, origin: FailureOrigin, why: string) {
+    super(why);
+    this.name = "FailureWithOrigin";
+    this.step = step;
+    this.origin = origin;
+  }
 }
