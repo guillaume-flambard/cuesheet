@@ -44,12 +44,16 @@ export interface EffectRequest {
   /**
    * The revision this request was committed against, as CON-01 requires.
    *
-   * It is part of the request rather than of the surrounding append because a
-   * request outlives the process that made it: the whole point of P11 is
-   * reading this record again after a restart, and a record that cannot say
-   * which state it was judged against is a decision nobody can audit.
+   * Part of the request rather than of the surrounding append, because a request
+   * outlives the process that made it: the whole point of P11 is reading this
+   * record again after a restart, and a record that cannot say which state it
+   * was judged against is a decision nobody can audit.
+   *
+   * Nullable, and that is not a hedge. A log written before P12 has no revision
+   * in it, and reading one back must not invent a number. `null` means "this
+   * record does not say", which is a fact about the record.
    */
-  revision: number;
+  revision: number | null;
   /**
    * An identifier the world will still recognise after a restart, when the
    * adapter can genuinely look the effect up by it.
@@ -128,12 +132,26 @@ function readRequest(event: Event): EffectRequest | null {
   if (typeof id !== "string" || typeof effect !== "string" || typeof affordance !== "string") {
     return null;
   }
+  // `revision` and `reconciliationKey` are restored here rather than left out.
+  //
+  // The first version of this reader dropped both, so a request read back out
+  // of the log had `revision: undefined` while the type said `revision: number`,
+  // and lost the one field that makes a crash recoverable. Found by Agent E
+  // while building the proof ledger, which is the argument for having one.
+  const revision = typeof d.revision === "number" ? d.revision : null;
+  const key = typeof d.reconciliationKey === "string" ? d.reconciliationKey : undefined;
+
   return {
     id,
     effect: effect as EffectName,
     subject: event.subject,
     affordance,
     reads: (d.reads as Record<string, "known"> | undefined) ?? {},
+    // A log written before P12 has no revision field. Rather than inventing
+    // one, the request says it does not know, which is the honest answer and
+    // the only reason `revision` is nullable on the read side.
+    revision,
+    ...(key ? { reconciliationKey: key } : {}),
   };
 }
 

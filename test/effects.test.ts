@@ -190,3 +190,34 @@ describe("effects", () => {
     );
   });
 });
+
+describe("a request read back out of the log", () => {
+  it("carries the revision and the key, or says it does not know them", () => {
+    // The round trip is the whole point of a record that outlives its process.
+    // The first `readRequest` dropped both fields, so a request recovered from
+    // disk had `revision: undefined` while the type promised a number, and had
+    // lost the key that makes it reconciliable at all. Found by Agent E while
+    // building the proof ledger.
+    const store = log();
+    store.append(effectRequested(request({ id: "E7", revision: 41, reconciliationKey: "spawn:E7" })));
+
+    const recovered = effectStatuses(store.toSession().events).get("E7")?.request;
+    assert.equal(recovered?.revision, 41, "the revision survives the round trip");
+    assert.equal(recovered?.reconciliationKey, "spawn:E7", "and so does the key");
+  });
+
+  it("an older record with no revision says so rather than inventing one", () => {
+    // A log written before P12 has no revision in it. Reading one back must not
+    // fabricate a number, because a fabricated revision is a claim that the
+    // decision was made against a state nobody recorded.
+    const store = log();
+    store.append({
+      kind: "effect_requested",
+      subject: "fix the display",
+      data: { effect: "SpawnAgent", effectId: "E8", affordance: "APPROVE_GOAL", reads: {} },
+    });
+    const recovered = effectStatuses(store.toSession().events).get("E8")?.request;
+    assert.equal(recovered?.revision, null, "unknown, not invented");
+    assert.equal(recovered?.reconciliationKey, undefined, "and no key either");
+  });
+});
