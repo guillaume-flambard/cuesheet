@@ -1094,3 +1094,43 @@ A fake would have reported green forever.
 
 The converse is equally true: the fake is what makes P14 and the crash adversary
 reproducible, and a live model is neither cheap nor schedulable.
+
+## DOGFOOD 1, blocked on credits, and one real finding
+
+The first dogfood attempt put a real task in a real repository with no concession:
+`intentlane`, a pnpm monorepo, and a real `TODO` in the Apple generator whose
+template emits three unimplemented Swift resolver methods. The contract is the
+repository's own `pnpm verify`, and the producer got the same four verbs it gets
+on a fixture.
+
+It did not run, for a reason that has nothing to do with the harness:
+
+```text
+provider 402  Prompt tokens limit exceeded
+openrouter credits  total 10, used 9.22
+```
+
+So the live matrix above is unchanged and the dogfood is **not started**. It is
+recorded as blocked rather than quietly retried with a different task, because
+"dogfood pending" and "dogfood passed" are different claims.
+
+### The finding the attempt did produce
+
+Passing a 41 KB source file in as workspace evidence made the request exceed the
+provider's context limit at 478K prompt tokens, which is roughly ten times the
+file. The cause is a choice in how the run was set up, not a defect in the
+protocol: the harness was handed the file up front instead of letting the model
+discover it with `list_files` and `read_file`. That is the correct default on a
+fixture and the wrong one on a real repository, and the protocol's own
+`read_file` verb already exists for exactly this.
+
+Second and smaller: `OpenRouterAdapter` sends no `max_tokens`, so the provider
+applies its own default of 65536 and a task the model could do in 4K is billed
+against a 65K ceiling. That is an adapter gap rather than a protocol finding, and
+it is not fixed here because the honest next step is a measured budget, not a
+constant picked to make a call succeed.
+
+```text
+DOGFOOD  real repository, real task, real oracle   BLOCKED ON CREDITS
+        and the two setup mistakes it exposed       RECORDED ABOVE
+```
