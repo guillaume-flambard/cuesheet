@@ -1,26 +1,18 @@
 /**
- * The executable entry point of the human surface.
+ * The entry point.
  *
- * Kept separate from `slice.tsx` so the component stays importable and the
- * words stay testable: `node --test` cannot load a `.tsx`, which is why the
- * render lives in `render.ts` and this file does nothing but mount it.
- *
- * Three lines of behaviour, and the third is the one that matters:
- *
- * ```text
- * mount the surface
- * wait for the person
- * exit 0 on a clean Ctrl-C, because leaving is not a failure
- * ```
+ * Two responsibilities and nothing else: mount the shell, and put the terminal
+ * back the way it was found. The second one matters more than it looks, because a
+ * TUI that leaves the cursor hidden or the alternate screen active makes the shell
+ * unusable afterwards, and that is a failure a person notices once and remembers.
  */
 
 import { createElement } from "react";
 import { render } from "ink";
-import { Slice_ } from "./slice.tsx";
+import { App } from "./app/App.tsx";
 
-const instance = render(createElement(Slice_));
+const instance = render(createElement(App));
 
-// A killed child reports a signal, and Ink's own exit path is the clean one.
 instance.waitUntilExit().then(
   () => process.exit(0),
   () => process.exit(1),
