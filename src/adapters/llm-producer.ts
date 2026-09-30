@@ -407,7 +407,9 @@ export async function produce(options: ProduceOptions): Promise<ProduceReport> {
   // Bounded on purpose: a model that reads forever is not a worker, and a loop
   // here would be a resource the model controls. The bound is a turn count, not
   // a token count, because a turn is what this function is actually spending.
-  const answered = await answerReads(options, frameFor(options), response, turn);
+  const census = censusOf(response);
+  const answered = await answerReads(options, frameFor(options), response, turn, census);
+  census.turns += 1;
   if (answered !== response) {
     try {
       response = answered;
@@ -418,7 +420,18 @@ export async function produce(options: ProduceOptions): Promise<ProduceReport> {
     }
   }
 
-  const { writes, discarded } = writesFromResponse(response);
+  for (const call of answered.toolCalls) {
+    census.requested[call.name] = (census.requested[call.name] ?? 0) + 1;
+  }
+  for (const name of Object.keys(census.requested)) {
+    if (PRODUCER_VOCABULARY.includes(name as never)) {
+      census.honoured[name] = census.requested[name]!;
+    } else if (!census.unsupported.includes(name)) {
+      census.unsupported.push(name);
+    }
+  }
+
+  const { writes, discarded } = writesFromResponse(answered);
   if (writes.length === 0) {
     const why =
       discarded.length > 0
@@ -444,7 +457,7 @@ export async function produce(options: ProduceOptions): Promise<ProduceReport> {
   // reaches in here to occupy it; production code has no reason to.
   options.afterApply?.();
 
-  writeResult(options, applied, response.text);
+  writeResult(options, applied, answered.text, census);
   return {
     kind: "produced",
     applied,
@@ -474,10 +487,43 @@ const producerDigest = (writes: readonly ProposedWrite[]): string =>
  * a test can prove that whatever lands here cannot move a verdict. The model's
  * prose goes in `claim`, verbatim, unparsed.
  */
+/**
+ * What verbs the model actually reached for, and which ones this producer could
+ * not serve.
+ *
+ * Measured, not anticipated, because LIVE-01 was the cost of guessing wrong. A
+ * real model was asked to fix code in a directory it could not list, answered
+ * `ls`, and the run produced nothing. The failure was attributed correctly and
+ * the vocabulary was wrong, and nothing in the repository had recorded which
+ * verbs a model reaches for first.
+ *
+ * So this is a census, and it is deliberately NOT a mechanism. The protocol has
+ * four verbs because four were enough; this count is how we would learn that they
+ * stopped being enough, rather than adding a fifth because it seemed likely. If
+ * five unrelated tasks all ask for `search_text`, that is a signal to consider a
+ * fifth verb, and until then it is five occurrences of a number.
+ *
+ * `unsupported` is the field that would have caught LIVE-01 on the first run.
+ */
+export interface VerbCensus {
+  /** Every verb name the model emitted, with how many times. */
+  readonly requested: Readonly<Record<string, number>>;
+  /** Of those, the ones this producer answers. */
+  readonly honoured: Readonly<Record<string, number>>;
+  /**
+   * Names outside the vocabulary, verbatim. An empty list is the only evidence
+   * that the protocol currently covers what a model asks for.
+   */
+  readonly unsupported: readonly string[];
+  /** How many answer-and-retry turns the conversation took. */
+  readonly turns: number;
+}
+
 function writeResult(
   options: ProduceOptions,
   applied: readonly ProposedWrite[],
   claim: string,
+  census: VerbCensus,
 ): void {
   writeFileSync(
     `${options.effectDir}/result.json`,
@@ -490,6 +536,7 @@ function writeResult(
         // The powerless fields, kept so VER-02 stays testable against a model.
         success: true,
         producerClaim: { success: true, reason: claim },
+        census,
       },
       null,
       2,
@@ -593,6 +640,7 @@ async function answerReads(
   frame: ContextFrame,
   response: ModelResponse,
   turn: (frame: ContextFrame) => Promise<ModelResponse>,
+  census: MutableCensus,
 ): Promise<ModelResponse> {
   let current = frame;
   let currentResponse = response;
@@ -600,6 +648,9 @@ async function answerReads(
   for (let i = 0; i < MAX_READ_TURNS; i += 1) {
     const reads = readCallsOf(currentResponse);
     if (reads.length === 0) return currentResponse;
+    for (const call of currentResponse.toolCalls) {
+      if (call.name === LIST_TOOL || call.name === READ_TOOL) countServed(census, call.name);
+    }
 
     const answers = reads.map((read) => answerRead(options, read));
     current = withEvidence(current, answers);
@@ -706,4 +757,27 @@ function withEvidence(
     ...frame,
     evidence: [...frame.evidence, ...added].map((e, i) => ({ ...e, seq: i + 1 })),
   };
+}
+
+/**
+ * A census of the verbs in one conversation, built as the conversation happens.
+ *
+ * Counts rather than a set, because "the model asked twice" and "the model asked
+ * once and retried" are different shapes of interaction and a set would hide the
+ * difference.
+ */
+function censusOf(response: ModelResponse): MutableCensus {
+  return { requested: {}, honoured: {}, unsupported: [], turns: 0 };
+}
+
+type MutableCensus = {
+  requested: Record<string, number>;
+  honoured: Record<string, number>;
+  unsupported: string[];
+  turns: number;
+};
+
+/** Fold a read answer into the census, so a served verb is counted as served. */
+function countServed(census: MutableCensus, name: string): void {
+  census.honoured[name] = (census.honoured[name] ?? 0) + 1;
 }
