@@ -22,6 +22,7 @@
  */
 
 import { describe, it } from "node:test";
+import { childEnv as hermeticChildEnv, CANARY } from "./fixtures/hermetic-env.ts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -60,18 +61,8 @@ function sandbox(): { root: string; sessions: string; home: string; cwd: string 
  * failure looked like a broken CLI. A hermetic environment that cannot start
  * the program under test proves nothing about the program.
  */
-const NODE_DIR = dirname(process.execPath);
-
-const CLEAN_ENV = (sandboxEnv: { sessions: string; home: string; cwd: string }) => ({
-  // Deliberately not spread from process.env. Everything below is named.
-  PATH: `${NODE_DIR}:/usr/bin:/bin`,
-  NODE_NO_WARNINGS: "1",
-  CUESHEET_SESSIONS: sandboxEnv.sessions,
-  HOME: sandboxEnv.home,
-  // No OPENROUTER_API_KEY, no ANTHROPIC_API_KEY, no provider config of any kind.
-  // A run must therefore reach its own bookkeeping and stop there, and every
-  // claim below is about Cuesheet's own behaviour rather than about a network.
-});
+const CLEAN_ENV = (sandboxEnv: { sessions: string; home: string; cwd: string }) =>
+  hermeticChildEnv(sandboxEnv);
 
 interface Run {
   out: string;

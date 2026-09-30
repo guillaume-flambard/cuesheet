@@ -23,8 +23,12 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+import { CANARY, childEnv } from "./fixtures/hermetic-env.ts";
 
 const TEST_DIR = join(process.cwd(), "test");
 
@@ -123,20 +127,23 @@ describe("hermeticity: a test does not inherit what it did not ask for", () => {
         .replace(/^\s*\/\/.*$/gm, "");
       if (!/spawnSync|spawn\(|execFileSync/.test(source)) continue;
 
-      // A child whose cwd is this checkout and whose output depends on it reads
-      // the real `src/`, so its result changes with what the developer has
-      // uncommitted. `cwd: process.cwd()` alone is not that: a loadability probe
+      // A child pointed at the real checkout depends on what the developer has
+      // uncommitted, so its result is a property of the machine rather than of
+      // the program. `cwd: process.cwd()` alone is not that: a loadability probe
       // and a chat smoke test both launch the repository's own entry point from
-      // here, which is reading the code under test, not reaching outward.
+      // here, which is reading the code under test rather than reaching outward.
       //
-      // What is forbidden is depending on the checkout's *environment*: the
-      // portfolio view, the sessions, the developer's uncommitted state. Those
-      // arrive through `CUESHEET_SESSIONS` or through `--in`, never through cwd.
-      const dependsOnCheckout = /["']--in["']/.test(source)
-        && /process\.cwd\(\)|["']\.["']/.test(source);
-      if (!dependsOnCheckout) continue;
-      // An explicit throwaway `--in` is the hermetic form.
-      const hermetic = /mkdtempSync/.test(source) && /CUESHEET_SESSIONS/.test(source);
+      // So what is forbidden is naming the checkout as the *target of work*,
+      // which is what `--in` and `CUESHEET_SESSIONS` carry. A throwaway `--in`
+      // is the hermetic form and appears on the very same line as the forbidden
+      // one, so the check has to look at where the value comes from rather than
+      // whether the flag is present. An earlier version of this rule flagged
+      // `test/e2e-real-path.ts`, which passes `--in` a `mkdtemp` directory.
+      const namesCheckout = /["']--in["']\s*,\s*(process\.cwd\(\)|["']\.["'])/.test(source)
+        || /CUESHEET_SESSIONS:\s*join\(\s*homedir/.test(source);
+      if (!namesCheckout) continue;
+      // The sandboxed form names a throwaway, and that is accepted.
+      const hermetic = /mkdtempSync|sandboxDir/.test(source);
       if (!hermetic) offenders.push(file.replace(`${process.cwd()}/`, ""));
     }
     assert.deepEqual(
@@ -180,6 +187,74 @@ describe("hermeticity: a test does not inherit what it did not ask for", () => {
     );
     assert.notEqual(REAL_HOME, "", "this machine has a home to protect");
     assert.ok(REPO_PATH.length > 0, "and a checkout to keep a test out of");
+  });
+});
+
+/**
+ * The runtime proof, which the static one cannot give.
+ *
+ * The static check catches the known shape. It cannot catch a variable nobody
+ * thought of, and it cannot catch a helper that looks hermetic and forwards
+ * something. So this sets a canary in the real parent process and runs a real
+ * child, and checks the child does not see it.
+ *
+ * Both proofs are needed and neither replaces the other:
+ *
+ * ```text
+ * static   no test contains the dangerous pattern
+ * runtime  a capability genuinely present in the parent does not arrive
+ * ```
+ */
+describe("a canary in the parent does not reach a child", () => {
+  const UNIQUE = "canary-value-that-must-not-travel";
+
+  it("a real child reports it never saw the canary", () => {
+    // The parent genuinely has it. If it did not, this proof would be vacuous,
+    // which is the failure mode of every canary that is not actually armed.
+    process.env[CANARY] = UNIQUE;
+    assert.equal(process.env[CANARY], UNIQUE, "the canary is armed in the parent");
+
+    const sessions = mkdtempSync(join(tmpdir(), "cuesheet-canary-s-"));
+    const home = mkdtempSync(join(tmpdir(), "cuesheet-canary-h-"));
+
+    // A real child, a real spawn, through the shared environment builder that
+    // every test uses. It prints what it sees rather than what it was sent, so
+    // the assertion is about arrival and not about construction.
+    const r = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        "process.stdout.write(JSON.stringify({canary: process.env[process.argv[1]] ?? null, keys: Object.keys(process.env).length}));",
+        CANARY,
+      ],
+      {
+        encoding: "utf8",
+        env: childEnv({ sessions, home }),
+      },
+    );
+
+    assert.equal(r.status, 0, `the child ran: ${r.stderr}`);
+    const seen = JSON.parse(r.stdout) as { canary: string | null; keys: number };
+    assert.equal(seen.canary, null, "the child did not receive the canary");
+    // And the child's world really is smaller than the parent's, which is the
+    // point: a capability is absent until it is granted.
+    assert.ok(seen.keys < Object.keys(process.env).length + 1, "the child sees fewer variables");
+    delete process.env[CANARY];
+  });
+
+  it("the same child does see what was granted, or the proof is meaningless", () => {
+    // A canary test that passes because nothing works is not a proof. This one
+    // arrives, so the previous one arriving nothing means the environment is
+    // doing the filtering rather than the child being broken.
+    const sessions = mkdtempSync(join(tmpdir(), "cuesheet-canary2-s-"));
+    const home = mkdtempSync(join(tmpdir(), "cuesheet-canary2-h-"));
+    const r = spawnSync(
+      process.execPath,
+      ["--input-type=module", "-e", "process.stdout.write(process.env.CUESHEET_SESSIONS ?? 'none');"],
+      { encoding: "utf8", env: childEnv({ sessions, home }) },
+    );
+    assert.equal(r.stdout.trim(), sessions, "a granted variable does arrive");
   });
 });
 

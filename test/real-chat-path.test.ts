@@ -33,27 +33,13 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { childEnv as hermeticChildEnv } from "./fixtures/hermetic-env.ts";
 
 const CHAT = join(process.cwd(), "src", "chat.ts");
 
-/**
- * The child environment, assembled by naming.
- *
- * The first version of this file spread `process.env` and deleted the provider
- * key afterwards, which worked until a second key existed. Everything the child
- * is allowed to see is written here, so nothing it was never told about can
- * reach it.
- *
- * `PATH` keeps node's own directory: a hermetic environment that cannot start
- * the program under test proves nothing about the program, which is the mistake
- * the first version of `test/e2e-real-path.ts` made with `/usr/bin:/bin`.
- */
-const childEnv = (sessions: string, home: string) => ({
-  PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
-  NODE_NO_WARNINGS: "1",
-  CUESHEET_SESSIONS: sessions,
-  HOME: home,
-});
+/** One definition of the child's environment, shared by every test. */
+const childEnv = (sessions: string, home: string) =>
+  hermeticChildEnv({ sessions, home });
 
 /**
  * Drive the real chat, isolated.

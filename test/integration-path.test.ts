@@ -22,21 +22,13 @@ import { dirname, join } from "node:path";
 import { deriveState } from "../src/state.ts";
 import { affordancesOf } from "../src/affordances.ts";
 import { effectRequested, effectObserved, effectStatuses } from "../src/effects.ts";
+import { childEnv as hermeticChildEnv } from "./fixtures/hermetic-env.ts";
 import { EventStore, type Event } from "../src/core/store.ts";
 
 const CHAT = join(process.cwd(), "src", "chat.ts");
 
-/**
- * The child environment, assembled by naming rather than inherited and pruned.
- *
- * Same rule as `test/entrypoint-symlink.ts`, for the same reason.
- */
-const childEnv = (root: string) => ({
-  PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
-  NODE_NO_WARNINGS: "1",
-  CUESHEET_SESSIONS: root,
-  HOME: root,
-});
+/** One definition of the child's environment, shared by every test. */
+const childEnv = (root: string) => hermeticChildEnv({ sessions: root, home: root });
 
 /** Drive the real binary against a throwaway session root. */
 function say(lines: string[]): { out: string; code: number; root: string } {

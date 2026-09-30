@@ -33,7 +33,8 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { lstatSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { childEnv as hermeticChildEnv, sandboxDir } from "./fixtures/hermetic-env.ts";
 
 const SRC = join(process.cwd(), "src");
 
@@ -58,20 +59,9 @@ const ENTRIES: Array<{ file: string; args: string[]; answers: RegExp }> = [
   { file: "frontier-cli.ts", args: [], answers: /cuesheet-frontier|ENOENT|object|frontier/i },
 ];
 
-/**
- * The child environment, assembled by naming.
- *
- * `{ ...process.env }` was the shape that leaked a provider key in
- * `test/real-chat-path.ts` and made a test cost 17 seconds of somebody else's
- * latency. This lists what the child may see instead, so a key it was never
- * told about cannot reach it.
- */
-const childEnv = (sessions: string) => ({
-  PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
-  NODE_NO_WARNINGS: "1",
-  CUESHEET_SESSIONS: sessions,
-  HOME: mkdtempSync(join(tmpdir(), "cuesheet-symlink-home-")),
-});
+/** One definition of the child's environment, shared by every test. */
+const childEnv = (sessions: string) =>
+  hermeticChildEnv({ sessions, home: sandboxDir("symlink-home") });
 
 /** Run an entry point through a symlink, in a throwaway sessions root. */
 function throughSymlink(file: string, args: string[]): { out: string; err: string; code: number } {
