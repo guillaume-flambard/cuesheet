@@ -50,6 +50,8 @@ import { basename, join } from "node:path";
 
 import { childEnv } from "./fixtures/hermetic-env.ts";
 import { SessionStore, type SessionStoreError } from "../src/adapters/session-store.ts";
+
+/** The repository root, for the one check that reads source rather than state. */
 import { EventStore, type Event } from "../src/core/store.ts";
 
 /** The store, imported by every child this file starts. */
@@ -831,5 +833,90 @@ describe("what this file cannot show", () => {
       ["../core/store.ts"],
       "and no dependency grew to answer it: the store reaches node builtins and one type, and nothing else",
     );
+  });
+});
+
+describe("the sequence belongs to the store, structurally", () => {
+  it("append takes a fact and assigns its own order", () => {
+    // The rule is now a signature, not a convention. A caller that supplied
+    // `seq` would be choosing its place in the durable order, and three call
+    // sites did exactly that before this changed: the adapter, the surface and
+    // the run CLI each computed `revision + 1` and each got the off-by-one
+    // independently at one point.
+    const written = withRoot((root) => {
+      const store = new SessionStore({ root });
+      store.create("s", []);
+      return store.append("s", {
+        kind: "note",
+        subject: "a fact",
+        data: { text: "the store decides where this goes" },
+        at: 1000,
+      } as Omit<Event, "seq">);
+    });
+    assert.equal(written.seq, 1, "first fact, sequence 1, decided here");
+  });
+
+  it("a caller cannot smuggle a sequence number in", () => {
+    // `seq` is not a parameter, so this does not typecheck and does not run.
+    // Asserting the absence at runtime would be theatre; the signature is the
+    // proof and it is what the compiler enforces.
+    const appendArity = SessionStore.prototype.append.length;
+    const appendFactArity = SessionStore.prototype.appendFact.length;
+    // sessionId + event, and sessionId + event: two each, with no `expectedSeq`
+    // anywhere in either signature.
+    assert.equal(appendArity, 2, "append(sessionId, fact)");
+    assert.equal(appendFactArity, 2, "appendFact(sessionId, fact)");
+  });
+
+  it("the surface no longer computes a sequence", () => {
+    // The specific debt Agent C named as owed: `chat.ts` assigned order outside
+    // the adapter, so locking the store could not close the invariant. Checked
+    // against the source because the defect was a line of code, not a behaviour
+    // a fixture could reach without running a whole chat session.
+    //
+    // The first version of this test read `STORE_PATH` and asserted on
+    // `session-store.ts`, so it passed while checking a file that was never the
+    // problem. It is the same shape as the canary that was never armed: an
+    // assertion about the wrong subject, green either way.
+    const source = readFileSync(
+      new URL("../src/chat.ts", import.meta.url).pathname,
+      "utf8",
+    );
+    assert.equal(
+      /revision\(sessionId\)\s*\+/.test(source),
+      false,
+      "chat.ts still computes revision + 1 somewhere; the store owns the sequence",
+    );
+    assert.equal(
+      /seq:\s*at\s*</.test(source),
+      false,
+      "chat.ts still assigns a seq by hand",
+    );
+  });
+
+  it("replay preserves a sequence and refuses a gap", () => {
+    withRoot((root) => {
+      const store = new SessionStore({ root });
+      store.create("s", []);
+      const event = (seq: number, text: string): Event => ({
+        kind: "note",
+        subject: "",
+        data: { text },
+        seq,
+        at: 1000 + seq,
+      });
+      // A replay that renumbers would rewrite the history it is replaying.
+      store.replayAll("s", [event(1, "a"), event(2, "b")]);
+      assert.deepEqual(
+        store.read("s").map((e) => e.data.text),
+        ["a", "b"],
+      );
+      // And a gap is damage, not something to close up silently.
+      assert.throws(
+        () => store.replayAll("s2", [event(1, "a"), event(3, "c")]),
+        /expected sequence 2 and found 3/,
+        "a replay with a hole is refused rather than renumbered",
+      );
+    });
   });
 });

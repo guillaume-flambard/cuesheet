@@ -141,9 +141,10 @@ async function cmdRun(argv: string[]): Promise<number> {
   // Persist whatever the loop appended, so the session outlives this process.
   const before = durable.read(sessionId).length;
   const all = outcome.session.events;
-  for (const event of all.slice(before)) {
-    durable.append(sessionId, event);
-  }
+  // These are already-sequenced events coming out of the loop's own store, so
+  // their order is history rather than something to re-derive. Replay preserves
+  // it; `append` would renumber and rewrite it.
+  durable.replayAll(sessionId, all.slice(before));
 
   printOutcome(outcome, sessionId, dir);
   return outcome.stop.reason === "blocked" ? 1 : 0;

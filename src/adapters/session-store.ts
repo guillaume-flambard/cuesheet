@@ -277,8 +277,74 @@ export class SessionStore {
     );
   }
 
-  /** Append one event durably. Returns only after the bytes are on disk. */
-  append(sessionId: string, event: Event): void {
+  /**
+   * Append one fact durably. The store gives it its place.
+   *
+   * `seq` is not a parameter, and that is the whole point. Three call sites used
+   * to compute `revision + 1` themselves, which made the sequence a value three
+   * files agreed on rather than one the store owned. `chat.ts` still does, and
+   * it is why the duplicate-sequence invariant could not be closed in the
+   * adapter alone: locking the store fixed the store's own path and left the
+   * surface's untouched.
+   *
+   * So the rule is now structural rather than conventional. A caller supplies a
+   * fact; the store assigns its order. A caller that already holds a sequenced
+   * event is replaying, not writing, and uses `replayAll`.
+   *
+   * Returns the stored event, so a caller that needs to know where its fact
+   * landed can read it rather than having predicted it.
+   */
+  append(sessionId: string, event: Omit<Event, "seq">): Event {
+    const stamped: Event = { ...event, seq: this.nextSeq(sessionId) } as Event;
+    this.appendStamped(sessionId, stamped);
+    return stamped;
+  }
+
+  /**
+   * The sequence this fact will occupy, and nothing else decides.
+   *
+   * `revision + 1` for a journal that has events, and 1 for one that has none:
+   * an empty journal sits at -1 because sequence 1 is the first event, so a plain
+   * `revision + 1` would make the first event sequence 0. Three call sites had
+   * that off-by-one independently at one point or another, which is what happens
+   * when a value is recomputed instead of read from its owner.
+   */
+  nextSeq(sessionId: string): number {
+    const at = this.revision(sessionId);
+    return at < 0 ? 1 : at + 1;
+  }
+
+  /**
+   * Write a sequence of already-sequenced events, in order.
+   *
+   * Replay is the one place a caller legitimately knows the order, because the
+   * order comes from the log being replayed. Re-numbering would rewrite history,
+   * so the sequences are preserved and a gap is an error rather than something
+   * to paper over.
+   */
+  replayAll(sessionId: string, events: readonly Event[]): void {
+    let expected = 1;
+    for (const event of events) {
+      if (event.seq !== expected) {
+        throw new SessionStoreError(
+          "journal_damaged",
+          `replay into ${sessionId} expected sequence ${expected} and found ${event.seq}`,
+        );
+      }
+      this.appendStamped(sessionId, event);
+      expected += 1;
+    }
+  }
+
+  /**
+   * Write an event that already has its place in the history.
+   *
+   * Only for replay, where the sequence comes from the log being replayed and
+   * inventing a new one would rewrite history. Nothing else should call it: a
+   * live write that went through here would be a caller choosing its own order,
+   * which is the defect this file now prevents.
+   */
+  private appendStamped(sessionId: string, event: Event): void {
     const file = this.path(sessionId);
     // Every write path funnels through here, so this is the one place that has
     // to know appending onto unattested bytes is unsafe: the new sequence would
@@ -343,7 +409,7 @@ export class SessionStore {
     try {
       if (this.revision(sessionId) !== expectedRevision) return null;
       const stamped: Event = { ...event, seq: expectedRevision + 1 };
-      this.append(sessionId, stamped);
+      this.appendStamped(sessionId, stamped);
       return stamped;
     } finally {
       closeSync(fd);
@@ -466,8 +532,8 @@ export class SessionStore {
    * collide with bytes nobody can read.
    */
   appendFact(sessionId: string, event: Omit<Event, "seq" | "at">): Event {
-    const stamped: Event = { ...event, seq: this.revision(sessionId) + 1, at: Date.now() };
-    this.append(sessionId, stamped);
+    const stamped: Event = { ...event, seq: this.nextSeq(sessionId), at: Date.now() };
+    this.appendStamped(sessionId, stamped);
     return stamped;
   }
 
@@ -552,9 +618,9 @@ export class SessionStore {
     // second create silently succeeds and destroys the first one's identity.
     const fd = openSync(file, "a");
     closeSync(fd);
-    for (const event of seed) {
-      this.append(sessionId, event);
-    }
+    // A seed is a history being replayed, so its sequences are preserved rather
+    // than re-derived. `replayAll` checks them instead of trusting them.
+    this.replayAll(sessionId, seed);
   }
 }
 

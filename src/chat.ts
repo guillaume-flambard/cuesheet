@@ -233,16 +233,18 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // readable on its own before any run happens.
   const sessionId = newId("chat");
   durable.create(sessionId, []);
+  /**
+   * Record a fact of the surface. The store gives it its place.
+   *
+   * This function used to compute `seq` itself, and that was the defect Agent C
+   * named: with the surface and the adapter each assigning order, locking the
+   * store could not close the duplicate-sequence invariant, because two of the
+   * three authorities were outside it. The off-by-one came from here too, twice.
+   *
+   * So the surface writes what happened and the store decides where it goes.
+   */
   const appendSurface = (event: Omit<Event, "seq" | "at">) => {
-    // The next sequence after the last event, and 1 for a log that has none.
-    //
-    // `-1` is the revision of an empty log rather than a real revision, so
-    // `revision + 2` would be right for the first event and wrong for every one
-    // after it. Both mistakes were made: `+ 1` wrote a log starting at sequence
-    // 0, and `+ 2` left a hole at 2. The mapping is stated once, here, instead
-    // of being an arithmetic trick twice.
-    const at = durable.revision(sessionId);
-    durable.append(sessionId, { ...event, seq: at < 0 ? 1 : at + 1, at: Date.now() });
+    durable.append(sessionId, { ...event, at: Date.now() } as Omit<Event, "seq">);
   };
   /**
    * Append only if the journal is still where the caller read it.
