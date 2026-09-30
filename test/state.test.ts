@@ -202,3 +202,75 @@ describe("VIEW the state, and what a view may do to it", () => {
     assert.equal(state.running, 1, "one subject, counted once");
   });
 });
+
+
+describe("the intention is folded, not held by the surface", () => {
+  const goal = (seq: number, staged = true) =>
+    event({ seq, kind: "goal", subject: "", data: { text: "fix the display", ...(staged ? { staged: true } : {}) } });
+  const requested = (seq: number, id: string) =>
+    event({
+      seq,
+      kind: "effect_requested",
+      subject: "fix the display",
+      data: { effect: "SpawnAgent", effectId: id, affordance: "APPROVE_GOAL", reads: {} },
+    });
+  const observed = (seq: number, id: string, outcome: string) =>
+    event({ seq, kind: "effect_observed", subject: "fix the display", data: { effectId: id, outcome } });
+  const closed = (seq: number) =>
+    event({ seq, kind: "evidence", subject: "", data: { claim: "intention discarded", source: "s", goalClosed: true } });
+
+  it("VIEW-07 a staged intention is in the log, so the surface need not know it", () => {
+    // The surface used to hold `staged` in a variable and hand the affordances
+    // a state whose `goal` it had overwritten with a fabricated event
+    // sequenced 0. This is the log saying it instead, with nothing spliced.
+    const state = deriveState([goal(1)], "s", "complete");
+    assert.deepEqual(state.goal.value, { text: "fix the display", open: true });
+  });
+
+  it("VIEW-08 a failed effect leaves the intention to decide", () => {
+    // EFF-06, seen by the fold rather than asserted by a surface variable.
+    const state = deriveState(
+      [goal(1), requested(2, "E42"), observed(3, "E42", "failed")],
+      "s",
+      "complete",
+    );
+    assert.deepEqual(state.goal.value, { text: "fix the display", open: true });
+    assert.equal(state.pendingEffect.value, false, "and nothing is in flight");
+  });
+
+  it("VIEW-09 a succeeded effect spends the intention", () => {
+    const state = deriveState(
+      [goal(1), requested(2, "E43"), observed(3, "E43", "succeeded")],
+      "s",
+      "complete",
+    );
+    assert.equal(state.goal.known, false, "nothing left to decide");
+    assert.equal(state.goal.why.includes("handed"), true);
+  });
+
+  it("VIEW-10 a discarded intention does not come back as staged", () => {
+    // The regression this removes: `clearIt` wrote an evidence claim the fold
+    // did not read as a close, so the intention stayed visible and reappeared
+    // as something to decide.
+    const state = deriveState([goal(1), closed(2)], "s", "complete");
+    assert.equal(state.goal.known, false);
+    assert.equal(state.goal.why.includes("closed"), true);
+  });
+
+  it("VIEW-11 an observation naming an effect nobody requested spends nothing", () => {
+    // The world talked about an effect that does not exist. Inventing a request
+    // from it, or a spent intention from it, would both be inferences nobody
+    // observed.
+    const state = deriveState([goal(1), observed(2, "E99", "succeeded")], "s", "complete");
+    assert.deepEqual(state.goal.value, { text: "fix the display", open: true });
+  });
+
+  it("VIEW-12 the last intention wins", () => {
+    const state = deriveState(
+      [goal(1), goal(2, false), { ...goal(3), data: { text: "ship the thing" } } as Event],
+      "s",
+      "complete",
+    );
+    assert.equal(state.goal.value?.text, "ship the thing");
+  });
+});

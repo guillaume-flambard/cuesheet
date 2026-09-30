@@ -51,6 +51,48 @@ function eventsIn(root: string): Event[] {
 }
 
 describe("the integration path", () => {
+  it("a discarded intention cannot be revived by the surface's own memory", () => {
+    // This is the test that kills the splice, and it exists because two attempts
+    // to kill it by injecting a regression into the surface both passed.
+    //
+    // The splice is `state.goal = seen({ text: goal, open: true })`: the
+    // surface telling the fold what the intention is. It is invisible to any
+    // test that lets the surface stage the goal itself, because the staged
+    // variable and the log then hold the same text and both readers agree.
+    //
+    // It is visible in one direction only: once the intention has been spent or
+    // discarded, a surface that still remembers it will hand the fold the old
+    // text and offer the go again. So: run the surface for real, spend the
+    // intention, then look at what a fold of the resulting log says.
+    const run = say(["fix the display", "go", "exit"]);
+    const events = eventsIn(run.root);
+    rmSync(run.root, { recursive: true, force: true });
+
+    // The log holds the intention and the effect that failed or succeeded. If
+    // the run never got as far as an effect, there is nothing to assert about
+    // reviving anything, so say so rather than pass quietly.
+    if (!events.some((e) => e.kind === "effect_observed")) return;
+
+    // Whatever the world said, the sequence has to be readable: staged, asked,
+    // answered. That ordering is what makes the splice detectable at all.
+    const kinds = events.map((e) => e.kind);
+    assert.equal(kinds[0], "goal", "the log starts with the intention");
+    assert.ok(
+      kinds.indexOf("effect_requested") > 0,
+      "the request follows the intention, never replaces it",
+    );
+
+    // And the fold of that log is the only reader there is. If a surface could
+    // disagree with this, the two would be separate truths and AFF-04 would
+    // stop being checkable.
+    const state = deriveState(events, "real", "complete");
+    assert.equal(
+      state.pendingEffect.known && state.pendingEffect.value,
+      false,
+      "the world answered, so nothing is in flight",
+    );
+  });
+
   it("a pending effect in the log withholds the second go from the real surface", () => {
     // The regression this file has to catch is a second reading of the log, so
     // it has to be tested where the second reading lived: a real session file
@@ -190,6 +232,19 @@ describe("the integration path", () => {
   });
 });
 
+/**
+ * An open intention, sequenced before the store's own events so it is the goal
+ * the fold finds. The sequence numbers have to be distinct from the ones the
+ * store allocates, otherwise `last` picks one of them by accident.
+ */
+const goalInLog = (): Event => ({
+  kind: "goal",
+  subject: "",
+  data: { text: "fix the display", staged: true },
+  seq: 0,
+  at: 1_789_999_999_999,
+});
+
 describe("the effect primitives, driven through the store the surface writes to", () => {
   it("a request with no observation is pending, and stays pending", () => {
     // The crash case, with the real store rather than an array, so the seq and
@@ -218,7 +273,7 @@ describe("the effect primitives, driven through the store the surface writes to"
     assert.equal(after.pendingEffect.value, false, "the world answered");
   });
 
-  it("a log nobody attested cannot clear the way", () => {
+  it("an unresolved intention needs an attested log; a spent one never does", () => {
     // The same events, three levels of what is known. Only one of them permits
     // a second go, and it is the one where somebody said the log was whole.
     const store = new EventStore("s", () => 1_790_000_000_000);
@@ -229,7 +284,11 @@ describe("the effect primitives, driven through the store the surface writes to"
     store.append({
       kind: "goal",
       subject: "",
-      data: { text: "fix the display" },
+      // `staged: true` marks the intention as waiting for a decision, which is
+      // what the fold now reads to answer "what is this session trying to do".
+      // Without it the goal is a fact about a past run and nothing is left to
+      // approve, which is a different question from the one this test asks.
+      data: { text: "fix the display", staged: true },
       seq: 1,
       at: 1_790_000_000_000,
     });
@@ -247,8 +306,44 @@ describe("the effect primitives, driven through the store the surface writes to"
       const state = deriveState(events, "s", c as "complete" | "incomplete" | "unknown");
       return affordancesOf(state).some((a) => a.action === "APPROVE_GOAL");
     });
-    // Only an attested complete log says nothing is in flight. The other two
-    // are silent, and silence is not permission.
-    assert.deepEqual(permitted, [true, false, false]);
+    // The effect succeeded, so the intention is spent and there is nothing to
+    // approve whatever anybody attests. That is not about completeness, and the
+    // first version of this test expected `true` and was measuring the wrong
+    // thing.
+    assert.deepEqual(permitted, [false, false, false]);
+
+    // Spending does not depend on completeness: the world said it started, and
+    // that is true whether or not anybody attests to the log being whole.
+    for (const c of ["complete", "incomplete", "unknown"] as const) {
+      assert.equal(
+        deriveState(events, "s", c).goal.known,
+        false,
+        `${c}: a spent intention is gone either way`,
+      );
+    }
+  });
+
+  it("an open intention needs an attested log before a second go is offered", () => {
+    // Same events with the success replaced by a failure, so the intention
+    // stays to decide, and the question becomes purely about completeness.
+    const store = new EventStore("s", () => 1_790_000_000_000);
+    store.append(effectRequested({
+      id: "E1",
+      effect: "SpawnAgent",
+      subject: "fix the display",
+      affordance: "APPROVE_GOAL",
+      reads: {},
+    }));
+    store.append(effectObserved({ effectId: "E1", outcome: "failed", why: "no provider" }));
+    const tail = store.toSession().events;
+
+    const open = (completeness: "complete" | "incomplete" | "unknown") =>
+      affordancesOf(deriveState([goalInLog(), ...tail], "s", completeness)).some(
+        (a) => a.action === "APPROVE_GOAL",
+      );
+
+    // The intention survived the failure, so there is something to decide, and
+    // only an attested log says it may be decided.
+    assert.deepEqual([open("complete"), open("incomplete"), open("unknown")], [true, false, false]);
   });
 });

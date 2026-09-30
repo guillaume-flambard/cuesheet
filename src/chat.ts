@@ -247,7 +247,30 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // pipe, because each call waits for a line event that already fired before
   // it was registered. The async iterator consumes every line in order, from
   // a TTY and from a script, which also makes a piped session testable.
+  /**
+   * The intention in front of the person, and the fold's own view of it.
+   *
+   * `staged` is a cache of what the log says, not a parallel truth: `stageIt`
+   * writes the event and then sets this, so the two cannot disagree and the
+   * only way to read it without writing would be the folding this repo just
+   * removed everywhere else.
+   */
   let staged: string | null = null;
+  const stageIt = (text: string) => {
+    appendSurface({ kind: "goal", subject: "", data: { text, staged: true } });
+    staged = text;
+  };
+  const clearIt = (why: "approved" | "discarded" | "session-ended") => {
+    // Spending or discarding the intention is a fact, not a variable going
+    // quiet. The first version wrote an `evidence` claim, which the fold does
+    // not read as a close, so a cleared intention stayed visible in the state.
+    appendSurface({
+      kind: "evidence",
+      subject: "",
+      data: { claim: `intention ${why}`, source: sessionId, goalClosed: true },
+    });
+    staged = null;
+  };
 
   /**
    * The prompt carries the pending intention.
@@ -330,17 +353,22 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
       // either has the session or has none: `read` returns the whole file or
       // an empty array, and there is no partial read. That is an argument, not
       // a guarantee, so it is written down here where it can be checked.
-      const surfaceState = deriveState(durable.read(sessionId), sessionId, "complete");
-      const stagedState = deriveState(
-        [{ kind: "goal", subject: "", data: { text: goal }, seq: 0, at: 0 }],
-        sessionId,
-        "complete",
-      );
+      //
+      // The staged intention is folded from the log, not spliced into a state.
+      //
+      // P8 closed the pending reading and left this one: `staged` was a
+      // variable in this file, and the affordances were handed a state with
+      // `goal` overwritten by a fabricated event sequenced 0. So the surface
+      // still knew something the fold did not, which is the same shape of
+      // problem one level over, and it is why this surface needed a fake event
+      // at all.
+      //
+      // Staging writes a real `goal` event with `staged: true`, so the fold
+      // sees it and the splice disappears. The fake event is gone.
       const permits = (a: Affordance) =>
-        affordancesOf({
-          ...surfaceState,
-          goal: stagedState.goal,
-        }).some((x) => x.action === a);
+        affordancesOf(deriveState(durable.read(sessionId), sessionId, "complete")).some(
+          (x) => x.action === a,
+        );
 
       if (permits("APPROVE_GOAL") && decision.kind === "confirm") {
         // EFF-01: the emission is not the outcome. The request goes into the
@@ -366,7 +394,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           appendSurface(effectRequested(request));
           await runGoal(goal, false, durable, cwd);
           appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
-          staged = null;
+          clearIt("approved");
         } catch (cause) {
           appendSurface(
             effectObserved({
@@ -383,13 +411,13 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         continue;
       }
       if (permits("REJECT_GOAL") && decision.kind === "cancel") {
-        staged = null;
+        clearIt("discarded");
         console.log(`discarded: ${goal}`);
         paintPrompt();
         continue;
       }
       if (permits("CANCEL_SESSION") && decision.kind === "exit") {
-        staged = null;
+        clearIt("session-ended");
       }
       if (permits("REPLACE_GOAL") && decision.kind === "goal") {
         // A new intention supersedes the staged one, and the new one is staged
@@ -480,7 +508,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         // A recommendation, not a menu. The first is offered as the default so
         // the next word can be "go", which is cheaper than a decision.
         const first = snap.free[0]!;
-        staged = `open ${first}`;
+        stageIt(`open ${first}`);
         console.log(`next  ${first}`);
         console.log(`go    to open it, or name another.`);
         break;
@@ -627,7 +655,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           await runGoal(intent.text, true, durable, cwd);
           break;
         }
-        staged = intent.text;
+        stageIt(intent.text);
         console.log(`goal    ${intent.text}`);
         console.log(`scope   ${cwd}`);
         console.log("run     type go to run it, or name another intention to replace it.");

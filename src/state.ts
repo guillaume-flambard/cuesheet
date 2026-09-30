@@ -110,7 +110,20 @@ export function deriveState(
   id = "session",
   completeness: LogCompleteness = LOG_UNKNOWN,
 ): SessionState {
-  const goalEvent = last(events, (e) => e.kind === "goal");
+  // An intention that has been staged, and one that has been spent, are both
+  // `goal` events and they are not the same fact. `staged: true` marks the
+  // first; an effect request and its observation settle the second. Without
+  // the distinction the fold cannot tell a decision waiting for a person from
+  // a goal already handed to the world, which is the difference between an
+  // affordance being offered and being withheld.
+  const goalEvent = last(
+    events,
+    (e) => e.kind === "goal" && e.data.staged !== true,
+  );
+  const stagedEvent = last(
+    events,
+    (e) => e.kind === "goal" && e.data.staged === true,
+  );
   const goalOpen = events.some(
     (e) => e.kind === "evidence" && e.data.goalClosed === true,
   );
@@ -138,14 +151,44 @@ export function deriveState(
     }
   }
 
+  // An intention is spent once the world said it started. A failure does not
+  // spend it: the person still wants it, which is EFF-06, and keying on the
+  // observation's outcome rather than on its presence is what keeps that true.
+  const spent = events.some(
+    (e) =>
+      e.kind === "effect_observed" &&
+      e.data.outcome === "succeeded" &&
+      typeof e.data.effectId === "string" &&
+      requestsById(events).has(e.data.effectId as string),
+  );
+
+  // The intention in the log, if there is one. `staged: true` marks the fact
+  // that a person decided something and the world has not taken it yet, but the
+  // decision and the handover are the same kind of fact here, because both
+  // answer "what is this session trying to do".
+  const intent = last(
+    events,
+    (e) => e.kind === "goal" && typeof e.data.text === "string",
+  );
+
   return {
     id,
-    goal: goalEvent
+    // Gone once it is closed or spent, not merely marked closed. A closed
+    // intention is a decision already taken, so leaving it in `goal` makes it
+    // reappear as something to decide, which is how a discarded goal used to
+    // come back as a staged one.
+    goal: intent && !spent && !goalOpen
       ? seen({
-          text: typeof goalEvent.data.text === "string" ? goalEvent.data.text : goalEvent.subject,
-          open: !goalOpen,
+          text: intent.data.text as string,
+          open: true,
         })
-      : unknown("no goal was staged in this log"),
+      : intent
+        ? unknown(
+            spent
+              ? "the intention was handed to the world and nothing remains to decide"
+              : "the intention was closed and nothing remains to decide",
+          )
+        : unknown("no goal was staged in this log"),
     subjects: [...subjects.values()].sort((a, b) => a.subject.localeCompare(b.subject)),
     proven,
     // Both counts come from the same pass, so they cannot disagree. A subject
@@ -157,6 +200,17 @@ export function deriveState(
     recent: events.slice(-RECENT),
     pendingEffect: pendingEffectOf(events, completeness),
   };
+}
+
+/** Every effect id the log asked for, so an observation can be matched to one. */
+function requestsById(events: Event[]): Set<string> {
+  const out = new Set<string>();
+  for (const e of events) {
+    if (e.kind === "effect_requested" && typeof e.data.effectId === "string") {
+      out.add(e.data.effectId);
+    }
+  }
+  return out;
 }
 
 /**
