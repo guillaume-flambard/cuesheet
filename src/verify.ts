@@ -97,6 +97,77 @@ export interface WorkArtifact {
  */
 export type VerificationVerdict = "VERIFIED" | "REJECTED" | "INCONCLUSIVE";
 
+/**
+ * The three dimensions of an artifact's standing, kept apart on purpose.
+ *
+ * EXP-06 produced a single artifact that was `yes` on the first and the third and
+ * `no` on the second, and it is the sharpest result this repository has:
+ *
+ * ```text
+ * 1. INTEGRITY           do the bytes match the artifact's own name?
+ * 2. TEMPORAL COHERENCE  were those bytes ever simultaneously true in the source?
+ * 3. CONTRACT CONFORMANCE does the artifact satisfy the declared requirement?
+ * ```
+ *
+ * ```text
+ * measured, on the chimera
+ *   INTEGRITY             yes   the digest is correct
+ *   TEMPORAL COHERENCE    no    a@v1 with b@v2 never coexisted
+ *   CONTRACT CONFORMANCE   yes   the requirement only concerned a.mjs
+ *   VERDICT               VERIFIED, and that verdict was right
+ * ```
+ *
+ * The reason this is a type rather than a comment is the accident it prevents.
+ * A single `artifactDigest` field is one word long and invites being read as
+ * "proof of what the workspace was". It is proof of what the artifact is. An
+ * artifact that satisfies all three still says nothing about whether the work
+ * was useful, and one that fails only the second is not corrupt, it is a
+ * chimera, and those two need different responses.
+ *
+ * Conformance is established by the verifier. Integrity is established by the
+ * content address. Temporal coherence is established by nothing here yet, which
+ * is why it is declared and not implemented: a reader must be able to see the
+ * hole in the type rather than infer it from an absent field.
+ */
+export interface ArtifactStanding {
+  /** The bytes are the bytes this artifact names. */
+  readonly integrity: "holds" | "violated";
+  /** The bytes were, at some instant, simultaneously true in the source. */
+  readonly temporalCoherence: "holds" | "violated" | "not-established";
+  /** The bytes satisfy the declared requirement. */
+  readonly conformance: VerificationVerdict;
+}
+
+/**
+ * What an effect's work is, and the two mistakes EXP-03A found beside it.
+ *
+ * A process died between committing the work and filing the receipt. The disk
+ * held the completed edit; no receipt existed; `finish` had never been handled.
+ * The system reported `INCONCLUSIVE`, which is correct and is the most it can
+ * honestly say: it can neither call the work successful nor call it failed.
+ *
+ * The two errors live on either side of that answer, and both are available to a
+ * well-meaning implementation.
+ *
+ * ```text
+ * no finish                 -> no work happened        WRONG, the disk says otherwise
+ * bytes changed             -> completed work          WRONG, bytes have no provenance
+ * ```
+ *
+ * The second one is the dangerous one, because it is so easy to implement. A
+ * capture taken after the crash is a perfectly valid artifact with a correct
+ * digest, and it is indistinguishable from a capture of a workspace nobody
+ * touched. The bytes are real. What is missing is the chain: that an approved
+ * effect produced them, and that it produced them and nothing else.
+ *
+ * So work observed and work declared complete are separate facts, and neither
+ * substitutes for the other. The producer is the only thing that may write
+ * `CONFIRMED_COMPLETE`, and it may do so only by having survived to file the
+ * receipt. A crash cannot be laundered into a completion by inspecting the disk
+ * afterwards.
+ */
+export type WorkStanding = "CONFIRMED_COMPLETE" | "CONFIRMED_FAILED" | "INCONCLUSIVE";
+
 /** One thing the verifier actually looked at. */
 export interface VerificationEvidence {
   readonly kind:

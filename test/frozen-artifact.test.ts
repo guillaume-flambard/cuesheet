@@ -32,6 +32,7 @@ import { launch } from "../src/adapters/worker-launcher.ts";
 import { EventStore } from "../src/core/store.ts";
 import { mintIdentity } from "../src/spawn.ts";
 import type { CapturedArtifact } from "../src/adapters/artifact-capture.ts";
+import type { ArtifactStanding, VerificationVerdict } from "../src/verify.ts";
 
 const REPO = join(process.cwd(), "test", "fixtures", "repo");
 const WORKER = join(process.cwd(), "test", "fixtures", "code-worker.ts");
@@ -503,6 +504,77 @@ describe("EXP-06 a capture is a set of reads, not a snapshot of a moment", () =>
       );
     }
     cleanup(b);
+  });
+});
+
+/**
+ * EXP-06's result, frozen as a named shape rather than as a story.
+ *
+ * The chimera test above can win or lose its race, so it proves the possibility
+ * is real but it does not reliably re-measure it. This test measures the
+ * *standing* instead, which is timing independent: an artifact whose integrity
+ * holds and whose conformance is VERIFIED, and whose temporal coherence is not
+ * established. That combination is what EXP-06 measured, and it is the shape a
+ * future reader must recognise rather than re-derive.
+ *
+ * The point of the shape is that all three fields are answerable without the
+ * other two, and that `not-established` is a first-class answer rather than a
+ * missing value. A capture that cannot speak about temporal coherence must say
+ * so, because silence reads as permission.
+ */
+describe("EXP-06 integrity, temporal coherence and conformance are three questions", () => {
+  it("a chimera answers yes, no, and yes, and the verdict is still right", () => {
+    // The standing EXP-06 measured. Written as data because it is a fact about
+    // what the system can produce, not a scenario to be arranged.
+    const standing: ArtifactStanding = {
+      integrity: "holds",
+      temporalCoherence: "not-established",
+      conformance: "VERIFIED",
+    };
+
+    assert.equal(standing.integrity, "holds");
+    assert.equal(standing.temporalCoherence, "not-established");
+    assert.equal(standing.conformance, "VERIFIED");
+    // The load-bearing consequence: a VERIFIED conformance is not a claim about
+    // coherence, and nothing in the type lets it be read as one.
+    assert.notEqual(standing.temporalCoherence, "holds");
+  });
+
+  it("the capture declares all three, so the hole travels with the artifact", async () => {
+    const b = bench();
+    await runCodeWorker(b, "fix", "E74");
+    const artifact = capture({ sessionId: SESSION, effectId: "E74", workspace: b.workspace, root: b.root });
+
+    // Integrity is answerable here and now, from the artifact's own bytes, so it
+    // is asked before the bench is torn down rather than after.
+    const standing: ArtifactStanding = {
+      integrity: verifyCapture(artifact) ? "holds" : "violated",
+      // Not established by anything this repository does, and said so.
+      temporalCoherence: "not-established",
+      conformance: "INCONCLUSIVE",
+    };
+    assert.equal(standing.integrity, "holds");
+    assert.equal(standing.temporalCoherence, "not-established");
+    assert.ok(
+      artifact.doesNotCover.some((c) => c.includes("simultaneously true")),
+      "and the artifact states the same limit in words a person reads",
+    );
+    cleanup(b);
+  });
+
+  it("conformance alone never implies coherence, in either direction", () => {
+    // A chimera can be VERIFIED, because the requirement was narrow.
+    assert.notEqual("VERIFIED" as VerificationVerdict, "not-established");
+    // And a coherent artifact can be REJECTED, because the work was wrong.
+    // Neither verdict is evidence about the other dimension, and a system that
+    // ever needs them to be correlated has built a new implicit authority.
+    const rejectedButCoherent: ArtifactStanding = {
+      integrity: "holds",
+      temporalCoherence: "holds",
+      conformance: "REJECTED",
+    };
+    assert.equal(rejectedButCoherent.conformance, "REJECTED");
+    assert.equal(rejectedButCoherent.temporalCoherence, "holds");
   });
 });
 

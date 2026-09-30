@@ -42,7 +42,8 @@ import {
   writesFromResponse,
   type ProduceOptions,
 } from "../src/adapters/llm-producer.ts";
-import { capture } from "../src/adapters/artifact-capture.ts";
+import { capture, verifyCapture, type CapturedArtifact } from "../src/adapters/artifact-capture.ts";
+import type { ArtifactStanding } from "../src/verify.ts";
 import { runAgainstArtifact } from "../src/adapters/artifact-verifier.ts";
 import { readReceipt, workOutcomeOf } from "../src/work.ts";
 import { OpenRouterAdapter } from "../src/adapters/openrouter.ts";
@@ -329,6 +330,99 @@ describe("A4 the provider never answers", () => {
     assert.equal(actuallyFixed, 0, "the work really is on disk: it is recoverable, not lost");
     assert.equal(anyReceipt, false, "and no receipt claims otherwise");
     assert.equal(outcome.outcome, "INCONCLUSIVE", "so the effect is unknown, not failed and not complete");
+  });
+});
+
+/**
+ * EXP-03A: the other mistake, which is easier to make and worse to hold.
+ *
+ * The test above proves the system does not call a crashed effect successful. It
+ * does not stop the next person from fixing that by inspecting the disk, and the
+ * fix would look like this:
+ *
+ * ```text
+ * the work is on disk, therefore it happened, therefore CONFIRMED_COMPLETE
+ * ```
+ *
+ * That is a capture. It produces a real artifact with a correct digest, and the
+ * artifact is indistinguishable from a capture of a workspace nobody ever
+ * touched. The bytes are genuine. The provenance is not there, and no amount of
+ * looking at the bytes will produce it.
+ *
+ * So the test below builds the laundering attempt and refuses it.
+ */
+describe("EXP-03A bytes on disk are not provenance, and a capture cannot supply it", () => {
+  it("a capture of crashed work is a valid artifact that establishes nothing about the effect", async () => {
+    const b = bench("E81");
+    const model = new ScriptedModel({ text: BOAST, toolCalls: [write("add.mjs", CORRECT_ADD)] });
+
+    await assert.rejects(
+      () => produce(optionsFor(b, model, { afterApply: () => { throw new Error("killed mid-flight"); } })),
+      /killed mid-flight/,
+    );
+
+    // The workspace now holds the completed edit and no receipt exists. Exactly
+    // the state a recovery routine would find.
+    const orphan = capture({
+      sessionId: "S",
+      effectId: "E81",
+      workspace: b.workspace,
+      root: b.root,
+    });
+    const holdsTheWork = readFileSync(join(orphan.location, "add.mjs"), "utf8") === CORRECT_ADD;
+    // Asked before the teardown, because integrity is a question about bytes that
+    // have to still be there to answer it.
+    const digestHolds = verifyCapture(orphan);
+    const stillUnknown = outcomeOf(b).outcome;
+    b.cleanup();
+
+    assert.equal(holdsTheWork, true, "the artifact really does contain the completed work");
+    assert.equal(digestHolds, true, "and its digest is correct");
+    assert.equal(
+      stillUnknown,
+      "INCONCLUSIVE",
+      "so the effect is still unknown: the artifact did not resolve it",
+    );
+  });
+
+  it("a capture of a workspace nobody touched has the same shape as the crashed one", async () => {
+    // The comparison that makes the point. Both are valid artifacts. Both are
+    // `holds` on integrity. Neither says anything about which effect, or whose
+    // approval, produced the bytes. If a recovery path can tell them apart it is
+    // reading something other than the artifact, and that something has to be
+    // named.
+    const crashed = bench("E82");
+    const model = new ScriptedModel({ text: BOAST, toolCalls: [write("add.mjs", CORRECT_ADD)] });
+    // Awaited rather than floated: the capture below has to happen after the
+    // write is on disk, which is the whole comparison.
+    await assert.rejects(
+      () => produce(optionsFor(crashed, model, { afterApply: () => { throw new Error("killed"); } })),
+      /killed/,
+    );
+    const touched = capture({ sessionId: "S", effectId: "E82", workspace: crashed.workspace, root: crashed.root });
+    const touchedHolds = verifyCapture(touched);
+    crashed.cleanup();
+
+    const untouched = bench("E83");
+    const idle = capture({ sessionId: "S", effectId: "E83", workspace: untouched.workspace, root: untouched.root });
+    const idleHolds = verifyCapture(idle);
+    // The file counts differ and that is fine. The point is not that the two
+    // workspaces resemble each other; the point is that an artifact cannot tell
+    // you whether the work in it came from an approved effect or from nobody.
+    const sameFields = Object.keys(touched).sort().join() === Object.keys(idle).sort().join();
+    untouched.cleanup();
+
+    assert.equal(touchedHolds, true, "the crashed workspace yields a valid artifact");
+    assert.equal(idleHolds, true, "and so does an untouched one");
+    assert.ok(sameFields, "both artifacts carry the same fields, so those fields cannot answer the question");
+    // The standing of both is identical on the dimensions an artifact carries,
+    // which is exactly why neither can be laundered into a work outcome.
+    const standingOf = (a: CapturedArtifact): ArtifactStanding => ({
+      integrity: verifyCapture(a) ? "holds" : "violated",
+      temporalCoherence: "not-established",
+      conformance: "INCONCLUSIVE",
+    });
+    assert.deepEqual(standingOf(touched), standingOf(idle));
   });
 });
 
