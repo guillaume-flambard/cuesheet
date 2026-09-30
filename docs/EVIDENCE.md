@@ -977,3 +977,120 @@ The rule this table encodes, and the only one needed:
 
 The corollary is the one that keeps costing: **a green suite is a statement about
 the scenarios in it**, and the three findings above were each green somewhere.
+
+---
+
+## The experiment matrix, and the freeze
+
+Sixteen milestones built a core. Then a series of experiments tried to break it,
+and the results below are what they found. This section is the state of the
+system, not a plan.
+
+The protocol is frozen at four verbs because five observed tasks of different
+shapes needed no fifth, and the task where exploration paid spent an extra
+`read_file` rather than asking for a capability. That is a real observation and a
+small sample, so it is recorded as `5 observed tasks required no fifth verb` and
+not as a law.
+
+### PROVEN
+
+```text
+real provider reached                              LIVE-01, LIVE-02A
+real LLM inspected a workspace                     LIVE-02A
+real LLM produced code                             LIVE-02A, EXP-01, EXP-02
+relational multi-file work                         EXP-02   encode+decode, a relation
+frozen content-addressed artifact                  P15
+independent verification                           P14, and every experiment above
+restart recovery of a real artifact                EXP-05
+downstream discharge without history rewrite       EXP-05B
+false claims rejected, controlled producers        P14
+narrow and wide requirements give different
+  and individually correct verdicts                EXP-02
+VERIFIED never implies temporal coherence          EXP-06, EXP-02, EXP-08
+live provider failure before any work              EXP-08 W1
+live provider failure during exploration           EXP-08 W2
+live process death after the write                 EXP-08 W3
+correct artifact plus dead producer stays
+  INCONCLUSIVE                                     EXP-03A, EXP-08 W3
+installability                                     PORT
+decision concurrency                               OCC
+durable sequencing, damaged-session reporting      SessionStore
+```
+
+### UNPROVEN
+
+```text
+real LLM false claim observed naturally            EXP-04, a watch condition
+```
+
+EXP-04 is not a task. It is a note to take during real use, and it stays open
+until a real run produces `claim = "done, tests pass"` next to
+`verification = REJECTED` without anyone arranging it. No experiment will be built
+to provoke a lie, because a provoked lie proves nothing about the model and
+something about the fixture.
+
+### NOT SOLVED
+
+```text
+temporal coherence                                EXP-06
+```
+
+`not-established` is the current answer and it is a feature, not a debt. EXP-06
+produced an artifact that was `holds` on integrity, `violated` on coherence and
+`VERIFIED` on conformance, which is a state most systems collapse into `success`.
+Closing this would need a snapshot, a lock, a double acquisition or a mutation
+journal. No observed result says that cost should be paid yet.
+
+### OUTSIDE THE CURRENT THREAT MODEL
+
+```text
+hostile OS process containment
+```
+
+The producer is semantically unreliable, not a hostile process with host access.
+Containment is a different threat model and a different cost.
+
+### NOT YET NEEDED
+
+```text
+multi-agent runtime semantics
+```
+
+One goal, one session, one producer, one artifact, one verifier has covered every
+result in this file.
+
+### SEPARATE CLAIM
+
+```text
+publishability                                     INSTALLABLE is PROVEN, PUBLISHABLE is not
+```
+
+## The admission rule
+
+> No new core primitive without a real counterexample observed during use.
+
+Proposed and not admitted until a failure demands it: `search_text`, a multi-agent
+scheduler, a dependency graph, a retry engine, a context compiler, shell access, a
+planner, a memory layer.
+
+The first question about any of these is `which observed failure requires it?`.
+This is the project confronting the failure it exists to prevent: continuing to
+build because building is possible. Every primitive in this repository arrived
+the same way, from a contradiction rather than from a category.
+
+## Two layers, and the reason the second one exists
+
+```text
+CONTROLLED PRODUCERS   reproducible regression, targeted falsification, free
+LIVE LLM RUNS          discovery of execution shapes nobody anticipated, paid
+```
+
+Neither replaces the other, and EXP-08 W2 is the proof. A scripted fake can be told
+to fail on turn 1 and it will. It cannot be told to fail on turn 2 inside the read
+loop, because the number of turns is a property of a conversation rather than of a
+test. The bug EXP-08 found, an `await` outside the `try` that made a `catch` dead
+code, was only reachable because a real model's length was unknown in advance.
+A fake would have reported green forever.
+
+The converse is equally true: the fake is what makes P14 and the crash adversary
+reproducible, and a live model is neither cheap nor schedulable.
