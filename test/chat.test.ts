@@ -93,11 +93,43 @@ describe("the chat surface", () => {
     assert.match(out, /held means someone is in it or left work behind/);
   });
 
-  it("a stray word does not discard the staged goal", () => {
+  it("a greeting does not discard or announce the staged goal", () => {
     // Discarding work on a keystroke that was neither approval nor refusal is
     // its own kind of loss, and it is the failure the four-word go list had.
-    const { out } = say(["on bosse sur quoi", "hey there", "exit"], homedir());
-    assert.match(out, /still staged:/);
+    // Now that a greeting is non-destructive, it also has nothing to announce:
+    // saying "still staged" after every greeting would be noise, and the goal
+    // is already visible in the prompt on a real terminal.
+    const { out } = say(["on bosse sur quoi", "hey there", "hey again", "non", "exit"], homedir());
+    assert.doesNotMatch(out, /still staged/);
+    assert.match(out, /discarded: open /, "the goal survived two greetings");
+  });
+
+  it("a question does not touch the staged goal, in either direction", () => {
+    // The rule, stated once: a staged intention changes only on APPROVE,
+    // REJECT, REPLACE_GOAL or CANCEL_SESSION. Everything else, and questions
+    // above all, is non-destructive. A question is not an order on the goal,
+    // and losing waiting work to an information request is a loss with no
+    // mistake to point at.
+    const { out } = say(["fix the test", "capabilities", "non", "exit"], process.cwd());
+    assert.match(out, /goal\s+fix the test/, "the goal was staged");
+    assert.match(out, /capabilities in the live registry/, "the question was answered");
+    assert.match(out, /discarded: fix the test/, "the refusal consumed it, and only then");
+    assert.doesNotMatch(out, /still staged/, "an informative line must not announce a staged goal");
+  });
+
+  it("a new goal replaces the old one and says so", () => {
+    const { out } = say(["fix the test", "write the plan", "non", "exit"], process.cwd());
+    assert.match(out, /replaced: fix the test/);
+    assert.match(out, /discarded: write the plan/);
+  });
+
+  it("a banner is not a prompt, and a prompt is not a banner", () => {
+    // A prompt written to a pipe becomes transcript, which is output a script
+    // reads and a test cannot assert on. The state in the prompt is an
+    // interactive affordance, so it is gated on the terminal being one.
+    const { out } = say(["exit"], process.cwd());
+    assert.doesNotMatch(out, /^cuesheet> /m, "a piped session must not emit prompts");
+    assert.doesNotMatch(out, /^go\? /m);
   });
 
   it("the inventory is still one word away", () => {

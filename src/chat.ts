@@ -196,11 +196,15 @@ async function runGoal(
   console.log(`  resume with: cuesheet resume ${sessionId} --in ${cwd}`);
 }
 
+/** Short enough to sit in a prompt line, long enough to recognise the goal. */
+function truncate(text: string, max = 48): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
+}
+
 /** The full chat surface. Returns the process exit code. */
 export async function chat(cwd: string = process.cwd()): Promise<number> {
   const durable = new SessionStore({ root: SESSION_ROOT });
   const rl = createInterface({ input: process.stdin, output: process.stdout });
-  rl.setPrompt("cuesheet> ");
   let done = false;
   rl.on("SIGINT", () => {
     done = true;
@@ -242,8 +246,29 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // pipe, because each call waits for a line event that already fired before
   // it was registered. The async iterator consumes every line in order, from
   // a TTY and from a script, which also makes a piped session testable.
-  rl.prompt();
   let staged: string | null = null;
+
+  /**
+   * The prompt carries the pending intention.
+   *
+   * The rule this encodes: if cuesheet keeps an intention, the person should
+   * never have to remember that it exists. A goal waiting for approval is a
+   * commitment the surface made on their behalf, and a prompt that says only
+   * "cuesheet>" makes them hold it in their head. Readline redraws the prompt
+   * on every line, so the state is visible at the moment it is relevant rather
+   * than printed once and forgotten.
+   */
+  const paintPrompt = () => {
+    // A prompt is only a prompt on a terminal. Writing it to a pipe puts the
+    // prompt in the transcript, where a script reads it as output and a test
+    // cannot assert on the surface at all. Interactive sessions get the state
+    // in their prompt; scripted ones get a clean stdout.
+    if (!process.stdout.isTTY) {
+      return;
+    }
+    rl.setPrompt(staged === null ? "cuesheet> " : `go? ${truncate(staged)}> `);
+    rl.prompt();
+  };
   /** How many greetings were answered, so a second one gets a different reply. */
   let conversationalCount = 0;
   /**
@@ -280,35 +305,46 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
     if (staged !== null) {
       const goal = staged;
       const decision = routeIntention(line);
-      // An approval or a refusal consumes the staged goal. A question does
-      // not: asking "projects" while a goal waits is asking for information,
-      // and answering it while quietly dropping the goal would lose work on an
-      // information request. Such a question is served and the goal stays.
-      if (decision.kind === "confirm") {
-        staged = null;
-        await runGoal(goal, false, durable, cwd);
-        if (done) break;
-        rl.prompt();
-        continue;
-      }
-      if (decision.kind === "cancel") {
-        staged = null;
-        console.log(`discarded: ${goal}`);
-        rl.prompt();
-        continue;
-      }
-      const isQuestion = decision.kind === "ownership" || decision.kind === "next";
-      if (decision.kind !== "empty" && decision.kind !== "exit" && !isQuestion) {
-        console.log(`still staged: ${goal}`);
-        console.log("        go to run it, or name a new intention and it stays there.");
-        rl.prompt();
-        continue;
-      }
-      // Leaving is always leaving. A staged goal must not hold the process
-      // open, so exit and an empty line both fall through with the goal
-      // dropped rather than silently carried into a session that is closing.
-      if (decision.kind === "exit") {
-        staged = null;
+
+      // What a line may do to a staged intention. The list is deliberately
+      // short and it is written out rather than implied by a branch order,
+      // because the default was wrong twice: once every non-approval
+      // discarded the goal, and once every non-approval refused to answer.
+      //
+      //   APPROVE        the goal runs and is consumed
+      //   REJECT         the goal is dropped on purpose
+      //   REPLACE_GOAL   a new goal supersedes it
+      //   CANCEL_SESSION leaving takes it, because a staged goal must not
+      //                 hold the process open
+      //
+      // Everything else is non-destructive. A question, a greeting and a
+      // request for capabilities all leave the goal exactly where it was,
+      // because an informative interaction that mutates a pending intention
+      // loses work with no mistake to point at.
+      switch (decision.kind) {
+        case "confirm":
+          staged = null;
+          await runGoal(goal, false, durable, cwd);
+          if (done) break;
+          paintPrompt();
+          continue;
+        case "cancel":
+          staged = null;
+          console.log(`discarded: ${goal}`);
+          paintPrompt();
+          continue;
+        case "exit":
+          staged = null;
+          break;
+        case "goal":
+          // A new intention supersedes the staged one, and the new one is
+          // staged below so the person still gets to see it before it runs.
+          console.log(`replaced: ${goal}`);
+          break;
+        case "empty":
+          break;
+        default:
+          break;
       }
     }
 
@@ -421,8 +457,8 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         if (listing.anyRootUnreadable) {
           console.log("  at least one skill root could not be read: absence is not evidence");
         }
-        if (caps.length > 30) {
-          console.log(`  ... and ${caps.length - 30} more`);
+        if (listing.capabilities.length > 30) {
+          console.log(`  ... and ${listing.capabilities.length - 30} more`);
         }
         break;
       }
@@ -534,12 +570,12 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         staged = intent.text;
         console.log(`goal    ${intent.text}`);
         console.log(`scope   ${cwd}`);
-        console.log("run     type go to run it. anything else discards it. ! before a line runs it past a refusal.");
+        console.log("run     type go to run it, or name another intention to replace it.");
         break;
     }
 
     if (done) break;
-    rl.prompt();
+    paintPrompt();
   }
 
   rl.close();

@@ -88,7 +88,7 @@ src/core/memory.ts        durable objects and the conditions that wake them.
 src/adapters/             the only places allowed to do I/O.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     204 tests
+test/                     212 tests
 ```
 
 ## The primitive

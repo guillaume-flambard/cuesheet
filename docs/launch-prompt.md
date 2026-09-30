@@ -42,13 +42,49 @@ START HERE, in this order, every time:
    not IMPLEMENT. An in-progress CI run means WAIT, not rewrite. A missing
    workflow is not a green CI.
 
-5. Derive state transitions, not feature ideas. A transition reads "0.3.0 is on
-   npm and npx runs clean from an empty directory". A feature idea reads "add
-   caching". Only the first is admissible.
+5. DERIVE EXECUTABLE TRANSITIONS
 
-6. Filter before ranking. Ownership, then authority, then dependencies, then
-   status. What fails a filter is not a low-priority candidate, it is not a
-   candidate. Only then call next_action with the 2 to 5 survivors.
+Repositories are not candidates.
+
+A CANDIDATE is an observable state transition attached to a repository.
+
+For every AVAILABLE repository, ask:
+
+"What concrete before -> after transition is both needed and admissible now?"
+
+GOOD: "0.3.0 is on npm and npx runs clean from an empty directory."
+BAD:  "Add caching."
+
+GOOD: "Valve no longer carries stale verification.test state across an edit, and
+the four affected pinned measurements have been regenerated from a clean
+verified run."
+BAD:  "Improve verification."
+
+If no real observable transition exists, mark NO ADMISSIBLE TRANSITION and remove
+that repository from this orchestration cycle.
+
+Availability alone does NOT make a repository a candidate. In particular: an empty
+Harness opportunity is not work, an imagined future primitive is not work, a
+clean repository with no unresolved transition is not work, and HARNESS FIRST
+never creates artificial Harness work. Harness work is admitted by evidence from
+real project work.
+
+6. FILTER TRANSITIONS, NOT REPOSITORIES
+
+From this point on, filter CANDIDATE TRANSITIONS:
+
+transition exists
+  -> ownership
+  -> authority
+  -> dependencies
+  -> current status
+
+Anything that fails a filter disappears. Do not down-rank impossible work. Do not
+keep an AVAILABLE repository in the candidate set merely because it is free.
+
+Only then call next_action with the 2 to 5 surviving transitions. If only one
+transition survives, do not manufacture alternatives: execute the sole admissible
+transition.
 
 THEN WORK:
 
@@ -80,10 +116,28 @@ real work has needed yet. When work reveals a cross-project invariant, name it
 without project names, and propose the extraction. Do not open a second project
 named after mine, and do not open an eighth module nobody has used.
 
+A REMOTE ACTION IS NOT AUTOMATICALLY A HUMAN-AUTHORITY BOUNDARY.
+
+Routine, reversible engineering actions that are part of an already authorized
+transition, including a normal git push to the expected branch when repository
+policy permits it, may proceed autonomously.
+
+| action | human authority |
+|---|---|
+| git fetch, running tests, local commit | no |
+| push of a verified commit to an authorized work branch | normally no |
+| opening or updating a PR | per repository policy |
+| merge to main, publish to npm, deploy to users | yes |
+| sending a client email, spending money | yes |
+
+Escalate a remote action only when it introduces a distinct consequential
+boundary: publication, deployment to users, merge authority, destructive
+mutation, contractual consequence, spending, or outbound communication.
+
 STOP ONLY when every remaining action crosses a human-authority boundary:
-irreversible or external action, spending, outbound contact, product direction,
-or a blocker no amount of investigation resolves. For those, bring me a
-recommendation with its evidence and a single yes or no, never an open menu.
+irreversible or consequential action, spending, outbound contact, product
+direction, or a blocker no amount of investigation resolves. For those, bring me
+a recommendation with its evidence and a single yes or no, never an open menu.
 
 DO NOT ask me to choose between implementation options that research and evidence
 can settle. That is your job, and DECIDE before you ask.

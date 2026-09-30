@@ -11,6 +11,7 @@ cost, and the cost was never measured, so nobody knew it existed.
 | Full suite, as measured first | **28.6 s** | `/usr/bin/time -p npm test` |
 | Full suite, after the three fixes below | **20.9 s** | same |
 | Full suite, with the observation counter added | **30.8 s** | 4.7 s of that is the counter |
+| Full suite, after the staged-state work | **15.5 s** | the `next` and `ownership` paths now share one read |
 | `test/frontier.test.ts` alone | **13.1 s** | same, isolated |
 | Repositories probed | **45** | `snapshot().projects.length` |
 | Git subprocesses per snapshot | **180** | 45 repos x 4 calls |
@@ -184,3 +185,28 @@ taken rather than about now. If the world changed, the session reads again.
 That is the same shape the incremental work needs, and it is the smallest
 version of it that is actually true today: observe once, derive many times, and
 read again when the moment has passed.
+
+
+## The rule the fourth defect produced
+
+A staged intention changes on four things and nothing else:
+
+```text
+APPROVE         the goal runs and is consumed
+REJECT          the goal is dropped on purpose
+REPLACE_GOAL    a new goal supersedes it
+CANCEL_SESSION  leaving takes it, since a staged goal must not hold the process
+```
+
+Everything else is non-destructive. A question, a greeting, a request for
+capabilities: all of them leave the goal exactly where it was. Written out as a
+switch rather than implied by a branch order, because the default was wrong
+twice in one session: once every non-approval discarded the goal, and once
+every non-approval refused to answer. The first cost a keystroke, the second
+cost an information request.
+
+The consequence for the surface: an informative line has nothing to announce.
+When a greeting was refused the staged goal, the answer was "still staged",
+which meant every greeting in a session carried a line about a goal the person
+could already see. A goal that is visible in the prompt does not need to be
+restated in prose.
