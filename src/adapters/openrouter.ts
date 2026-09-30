@@ -12,7 +12,7 @@
  * adapter below is also the template for a direct OpenAI adapter.
  */
 
-import type { ContextFrame, ModelAdapter, ModelResponse, ToolRequest } from "../src/core/loop.ts";
+import type { ContextFrame, ModelAdapter, ModelResponse, ToolRequest } from "../core/loop.ts";
 import { FailureWithOrigin } from "../effects.ts";
 
 export interface OpenRouterOptions {

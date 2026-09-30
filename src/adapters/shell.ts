@@ -18,7 +18,7 @@ import { execFile } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 
-import type { ToolRequest, ToolResult } from "../src/core/loop.ts";
+import type { ToolRequest, ToolResult } from "../core/loop.ts";
 
 export interface ShellToolRunnerOptions {
   /** Commands that may run. Anything else is refused by name. */

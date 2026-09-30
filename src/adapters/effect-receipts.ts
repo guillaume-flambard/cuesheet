@@ -45,8 +45,8 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 
-import type { RealityObservation } from "../src/reconcile.ts";
-import type { ExitedReceipt, StartedReceipt } from "../src/spawn.ts";
+import type { RealityObservation } from "../reconcile.ts";
+import type { ExitedReceipt, StartedReceipt } from "../spawn.ts";
 
 export interface ReceiptStoreOptions {
   /** Directory holding one subdirectory per session. */
