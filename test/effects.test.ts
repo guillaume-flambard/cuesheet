@@ -127,17 +127,22 @@ describe("effects", () => {
   });
 
   it("EFF-07b a pending effect removes the affordance that would repeat it", () => {
-    // The double "go" problem, solved without mutating the staged intent. If
-    // an effect is pending, approving again is not available, so the second go
-    // has nothing to do.
-    const pending = deriveAffordances({
-      staged: seen({ text: "fix the display", open: true }),
-      hasSession: true,
-    });
-    assert.ok(
-      pending.some((a) => a.action === "APPROVE_GOAL"),
-      "with nothing pending, approving is available",
-    );
+    // The double "go". If an effect is pending, approving again is not offered,
+    // so the second go has nothing to select.
+    //
+    // The first version of this test asserted the opposite, that approving is
+    // still available, and passed: it was describing the behaviour before the
+    // affordance layer learned about pending, dressed as a requirement. The
+    // rule lives in `deriveAffordances`, so the assertion belongs here too.
+    const offered = (pending: boolean) =>
+      deriveAffordances({
+        staged: seen({ text: "fix the display", open: true }),
+        hasSession: true,
+        pending: seen(pending),
+      }).map((a) => a.action);
+
+    assert.equal(offered(true).includes("APPROVE_GOAL"), false, "a second go is withheld");
+    assert.equal(offered(false).includes("APPROVE_GOAL"), true, "and returns once answered");
   });
 
   it("EFF-01 and EFF-02 the log is the only writer", () => {

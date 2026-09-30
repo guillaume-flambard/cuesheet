@@ -32,6 +32,19 @@ export interface AffordanceInput {
   staged: Observed<{ text: string; open: boolean }>;
   /** Whether a session exists to inspect at all. */
   hasSession: boolean;
+  /**
+   * Whether an effect was asked for and has not been answered.
+   *
+   * Observed rather than boolean, and that is the whole point. A caller that
+   * never looked cannot say "nothing is in flight": not knowing is not the same
+   * as knowing there is nothing, which is REGISTRY_UNVERIFIED in the execution
+   * path and EFF-07 in this one. Only an observed `false` clears the way.
+   *
+   * So `pending` is required. An optional one would let every pre-P7 caller
+   * keep compiling and silently mean `false`, and the double approval would
+   * come back without anyone touching the code that allows it.
+   */
+  pending: Observed<boolean>;
 }
 
 export type Affordance =
@@ -112,14 +125,24 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
     stagedOpen: "known" as const,
   };
   /** The names an action may read, so AFF-06 can be checked mechanically. */
-  const FACT_NAMES = new Set(["staged", "stagedOpen", "hasSession"]);
+  const FACT_NAMES = new Set(["staged", "stagedOpen", "hasSession", "pending"]);
   for (const key of Object.keys(reads)) {
     if (!FACT_NAMES.has(key)) {
       throw new Error(`affordance read an unknown fact: ${key}`);
     }
   }
   if (open) {
-    out.push({ action: "APPROVE_GOAL", reads, mutates: true });
+    // Approving is the one action that starts an effect, so it is the one
+    // action a pending effect suspends. Everything else stays: a person whose
+    // spawn has not come back yet must still be able to replace the goal,
+    // discard it, or leave. Only the thing that would start a second one of the
+    // same kind is withheld, and only while the first is unanswered.
+    //
+    // Withheld as absence, not as a flag: the affordance is not in the list at
+    // all, so a surface cannot render it and an agent cannot select it.
+    if (input.pending.value === false) {
+      out.push({ action: "APPROVE_GOAL", reads, mutates: true });
+    }
     out.push({ action: "REJECT_GOAL", reads, mutates: true });
     out.push({ action: "REPLACE_GOAL", reads, mutates: true });
     out.push({ action: "CANCEL_SESSION", reads: { staged: "known" as const }, mutates: true });
@@ -138,14 +161,33 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
   return out;
 }
 
-/** The affordances of a session, from the fold that produced it. */
-export function affordancesOf(state: SessionState): AvailableAction[] {
-  return deriveAffordances({ staged: state.goal, hasSession: state.events > 0 });
+/**
+ * The affordances of a session, from the fold that produced it.
+ *
+ * `pending` comes out of the same log the state came out of, so a surface that
+ * renders from a fold cannot disagree with itself about whether something is
+ * in flight.
+ */
+export function affordancesOf(state: SessionState, pending: Observed<boolean>): AvailableAction[] {
+  return deriveAffordances({ staged: state.goal, hasSession: state.events > 0, pending });
 }
 
-/** True when the state permits the action. A surface asks; it does not decide. */
-export function allows(state: SessionState, action: Affordance): boolean {
-  return affordancesOf(state).some((a) => a.action === action);
+/**
+ * True when the state permits the action. A surface asks; it does not decide.
+ *
+ * `pending` is a required parameter, for the same reason
+ * `AffordanceInput.pending` is: making it derivable from the fold alone would
+ * mean a caller holding a state from an older log gets a confident answer about
+ * an effect it never saw. The first version defaulted it to `false`, which is
+ * the exact claim EFF-07 forbids, so every call site compiled unchanged and
+ * every one of them was asserting that nothing was in flight.
+ */
+export function allows(
+  state: SessionState,
+  action: Affordance,
+  pending: Observed<boolean>,
+): boolean {
+  return affordancesOf(state, pending).some((a) => a.action === action);
 }
 
 export const AFFORDANCE_LABEL: Record<Affordance, string> = {

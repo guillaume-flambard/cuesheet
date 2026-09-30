@@ -21,13 +21,16 @@ const has = (input: AffordanceInput, action: string) =>
 const stagedOpen: AffordanceInput = {
   staged: seen({ text: "fix the display", open: true }),
   hasSession: true,
+  pending: seen(false),
 };
 const nothingStaged: AffordanceInput = {
   staged: unknown("no goal was staged"),
   hasSession: true,
+  pending: seen(false),
 };
 const unobserved: AffordanceInput = {
   staged: unknown(),
+  pending: seen(false),
   hasSession: true,
 };
 
@@ -97,11 +100,60 @@ describe("affordances", () => {
     const state = deriveState([
       event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
     ]);
-    const fromState = affordancesOf(state).map((a) => a.action);
-    const fromInput = deriveAffordances({ staged: state.goal, hasSession: true }).map(
-      (a) => a.action,
-    );
+    const fromState = affordancesOf(state, seen(false)).map((a) => a.action);
+    const fromInput = deriveAffordances({
+      staged: state.goal,
+      hasSession: true,
+      pending: seen(false),
+    }).map((a) => a.action);
     assert.deepEqual(fromState, fromInput);
+  });
+
+  it("AFF-07 a pending effect withholds approving and nothing else", () => {
+    // The double "go". While an effect is asked for and unanswered, approving
+    // again is not in the list at all, so a surface cannot render it and an
+    // agent cannot select it. Everything else survives: a person whose spawn
+    // has not come back yet must still be able to change their mind.
+    const inFlight = deriveAffordances({
+      staged: seen({ text: "fix the display", open: true }),
+      hasSession: true,
+      pending: seen(true),
+    }).map((a) => a.action);
+
+    assert.equal(inFlight.includes("APPROVE_GOAL"), false, "a second go is not offered");
+    assert.equal(inFlight.includes("REJECT_GOAL"), true, "discarding still works");
+    assert.equal(inFlight.includes("REPLACE_GOAL"), true, "changing the mind still works");
+    assert.equal(inFlight.includes("CANCEL_SESSION"), true, "leaving still works");
+    assert.equal(inFlight.includes("EXIT"), true, "and quitting is never a lock");
+
+    // Withheld as absence rather than as a flag, which is AFF-02 applied to
+    // an effect: there is nothing to render and nothing to select.
+    assert.equal(inFlight.includes("APPROVE_GOAL"), false);
+
+    // Once the world answers, approving comes back. Observed false, not absent.
+    const answered = deriveAffordances({
+      staged: seen({ text: "fix the display", open: true }),
+      hasSession: true,
+      pending: seen(false),
+    }).map((a) => a.action);
+    assert.equal(answered.includes("APPROVE_GOAL"), true);
+  });
+
+  it("AFF-08 an unobserved pending effect withholds approving too", () => {
+    // The doctrine, one level up. Not knowing whether something is in flight is
+    // not the same as knowing nothing is, so a caller who never looked cannot
+    // start an effect. If this ever relaxed, every surface that forgot to look
+    // would silently get the double "go" back.
+    const neverLooked = deriveAffordances({
+      staged: seen({ text: "fix the display", open: true }),
+      hasSession: true,
+      pending: unknown("nobody checked the log"),
+    }).map((a) => a.action);
+
+    assert.equal(neverLooked.includes("APPROVE_GOAL"), false);
+    // And the refusal to start is not a lock on everything else.
+    assert.equal(neverLooked.includes("REJECT_GOAL"), true);
+    assert.equal(neverLooked.includes("EXIT"), true);
   });
 
   it("AFF-05 an unknown state enables nothing that mutates the intent", () => {
@@ -172,9 +224,13 @@ describe("affordances", () => {
       event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
       event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
     ]);
-    assert.equal(allows(state, "APPROVE_GOAL"), true);
-    assert.equal(allows(state, "INSPECT"), true);
-    assert.equal(allows(deriveState([]), "APPROVE_GOAL"), false);
-    assert.equal(allows(deriveState([]), "INSPECT"), false, "no events, nothing to inspect");
+    assert.equal(allows(state, "APPROVE_GOAL", seen(false)), true);
+    assert.equal(allows(state, "INSPECT", seen(false)), true);
+    assert.equal(allows(deriveState([]), "APPROVE_GOAL", seen(false)), false);
+    assert.equal(
+      allows(deriveState([]), "INSPECT", seen(false)),
+      false,
+      "no events, nothing to inspect",
+    );
   });
 });

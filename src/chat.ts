@@ -32,7 +32,13 @@ import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
 import { deriveState, seen, stateReport } from "./state.ts";
 import { deriveAffordances, type Affordance } from "./affordances.ts";
-import { effectObserved, effectRequested, type EffectRequest } from "./effects.ts";
+import {
+  effectObserved,
+  effectRequested,
+  effectStatuses,
+  unobservedEffects,
+  type EffectRequest,
+} from "./effects.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
 import {
   resolveCapabilities,
@@ -189,6 +195,17 @@ function truncate(text: string, max = 48): string {
 /** The full chat surface. Returns the process exit code. */
 export async function chat(cwd: string = process.cwd()): Promise<number> {
   const durable = new SessionStore({ root: SESSION_ROOT });
+  // The chat's own session, so the effects it requests have a durable home with
+  // a sequence of their own. `runGoal` allocates one per run; these events
+  // belong to the surface, not to the goal, and EFF-07 needs the request
+  // readable on its own before any run happens.
+  const sessionId = newId("chat");
+  const surface = new EventStore(sessionId, () => Date.now());
+  durable.create(sessionId, []);
+  const appendSurface = (event: Omit<Event, "seq" | "at">) => {
+    surface.append(event);
+    durable.append(sessionId, surface.toSession().events.at(-1)!);
+  };
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   let done = false;
   rl.on("SIGINT", () => {
@@ -303,10 +320,18 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
       // answer. It is a pure function of the state now, so a CLI, a TUI, an
       // API and an agent all get the same answer, and the surface only renders
       // what it is given. See src/affordances.ts.
+      // Read from the log rather than answered in the file. The first version
+      // said `pending: seen(false)`, which is a claim that nothing is in
+      // flight made by a surface that had not looked, and it is the reason the
+      // double "go" was still reachable at runtime after the rule existed.
+      const pendingEffects = unobservedEffects(
+        effectStatuses(durable.read(sessionId)),
+      );
       const permits = (a: Affordance) =>
         deriveAffordances({
           staged: seen({ text: goal, open: true }),
           hasSession: durable.list().length > 0,
+          pending: seen(pendingEffects.length > 0),
         }).some((x) => x.action === a);
 
       if (permits("APPROVE_GOAL") && decision.kind === "confirm") {
@@ -326,21 +351,16 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         const pending = `request ${request.id} asked; the world has not answered`;
         paintPrompt();
         // Sequenced and stamped before the world is asked, so a crash leaves a
-        // complete request on disk rather than a fragment. EFF-07 needs the
-        // request to be readable on its own.
-        const stamp = () => Date.now();
-        let sequence = 0;
-        const appendEffect = (event: Omit<Event, "seq" | "at">) => {
-          sequence += 1;
-          durable.append(sessionId, { ...event, seq: sequence, at: stamp() });
-        };
+        // complete request on disk rather than a fragment. The first version
+        // kept a local counter starting at 0, which restarts the sequence in
+        // the middle of a log that `runGoal` is about to extend.
         try {
-          appendEffect(effectRequested(request));
+          appendSurface(effectRequested(request));
           await runGoal(goal, false, durable, cwd);
-          appendEffect(effectObserved({ effectId: request.id, outcome: "succeeded" }));
+          appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
           staged = null;
         } catch (cause) {
-          appendEffect(
+          appendSurface(
             effectObserved({
               effectId: request.id,
               outcome: "failed",
