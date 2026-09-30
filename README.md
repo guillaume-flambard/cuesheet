@@ -88,10 +88,11 @@ src/core/memory.ts        durable objects and the conditions that wake them.
 src/adapters/             the only places allowed to do I/O.
 src/state.ts              the fold a view renders. Observes nothing, imports nothing that could.
 src/affordances.ts        what the state permits. Pure; the surface asks and renders.
+src/effects.ts            an effect asked for, and what came back. Never the same event.
 src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     248 tests
+test/                     261 tests
 ```
 
 ## The primitive

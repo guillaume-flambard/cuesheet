@@ -23,7 +23,7 @@
  * consumer of a log, the same way a script is.
  */
 
-import type { Event, EventKind } from "./core/store.ts";
+import { EVENT_KINDS_OF_STORE, type Event, type EventKind } from "./core/store.ts";
 
 export type RenderMode = "interactive" | "machine";
 
@@ -127,14 +127,12 @@ export function render(events: Event[], projection: Projection): string {
   return events.map((e) => projection.line(e)).join("\n");
 }
 
-/** Every kind the log can carry, for a consumer that switches on it. */
-export const EVENT_KINDS: EventKind[] = [
-  "goal",
-  "capability",
-  "directive",
-  "observation",
-  "action",
-  "evidence",
-  "model",
-  "note",
-];
+/**
+ * Every kind the log can carry.
+ *
+ * Derived from the core's closed union rather than restated. A hand-kept list
+ * is a second truth that goes stale the moment a kind is added, and it failed
+ * that way the moment `effect_requested` arrived: the core grew the kind, this
+ * list did not, and the test asserting "closed and complete" passed.
+ */
+export const EVENT_KINDS = EVENT_KINDS_OF_STORE;

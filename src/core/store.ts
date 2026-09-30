@@ -45,7 +45,36 @@ export type EventKind =
   | "action"
   | "evidence"
   | "model"
-  | "note";
+  | "note"
+  | // An effect the world was asked to perform. Recording the request is not
+    // recording its outcome, and the two must never be the same fact: the whole
+    // point of an id here is that a request can be observed, or never observed,
+    // and those are three states rather than two.
+    "effect_requested"
+  | // What the world answered about one effect. Carries the id of the request
+    // it answers, so a crash between the two leaves an unanswered request
+    // rather than a guess.
+    "effect_observed";
+
+/**
+ * Every kind, as a value.
+ *
+ * The union above is what a consumer switches on. This is the same list as a
+ * value, so a projection or a validator can enumerate it without restating it
+ * and drifting from the definition.
+ */
+export const EVENT_KINDS_OF_STORE = [
+  "goal",
+  "capability",
+  "directive",
+  "observation",
+  "action",
+  "evidence",
+  "model",
+  "note",
+  "effect_requested",
+  "effect_observed",
+] as const satisfies readonly EventKind[];
 
 /** A thing being appended, before the store has given it a sequence. */
 export type NewEvent = Omit<Event, "seq" | "at"> & { at?: number };

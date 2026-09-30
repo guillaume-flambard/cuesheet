@@ -127,8 +127,12 @@ describe("projections", () => {
     assert.equal(projectionFor("interactive").mode, "interactive");
   });
 
-  it("the vocabulary is closed and complete", () => {
+  it("the vocabulary is the core's, not a second copy of it", () => {
     // A consumer switches on the kind, so the list is part of the contract.
+    // The projection list is derived from the core's union: the first version
+    // kept its own copy, `effect_requested` arrived in the core, and this
+    // assertion passed while the projection disagreed with it. That is the
+    // whole failure mode of a restated list.
     assert.deepEqual(EVENT_KINDS, [
       "goal",
       "capability",
@@ -138,6 +142,9 @@ describe("projections", () => {
       "evidence",
       "model",
       "note",
+      "effect_requested",
+      "effect_observed",
     ]);
+    assert.equal(EVENT_KINDS.length, new Set(EVENT_KINDS).size, "no duplicate kinds");
   });
 });

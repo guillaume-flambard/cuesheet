@@ -32,6 +32,7 @@ import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
 import { deriveState, seen, stateReport } from "./state.ts";
 import { deriveAffordances, type Affordance } from "./affordances.ts";
+import { effectObserved, effectRequested, type EffectRequest } from "./effects.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
 import {
   resolveCapabilities,
@@ -40,7 +41,7 @@ import {
   type Requirement,
 } from "./core/capability.ts";
 import { runAgentLoop, type ModelAdapter, type ToolRunner } from "./core/loop.ts";
-import { EventStore } from "./core/store.ts";
+import { EventStore, type Event } from "./core/store.ts";
 import { OpenRouterAdapter } from "./adapters/openrouter.ts";
 import { SessionStore } from "./adapters/session-store.ts";
 import { ShellToolRunner } from "./adapters/shell.ts";
@@ -309,8 +310,46 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         }).some((x) => x.action === a);
 
       if (permits("APPROVE_GOAL") && decision.kind === "confirm") {
-        staged = null;
-        await runGoal(goal, false, durable, cwd);
+        // EFF-01: the emission is not the outcome. The request goes into the
+        // log, the world is asked, and only what the world answers clears the
+        // intention. `runGoal` returning is a fact about the process; the goal
+        // being started is a fact about the world, and only an observation can
+        // clear it. A spawn that fails keeps the intention, because the person
+        // still wants it.
+        const request: EffectRequest = {
+          id: `E${Date.now().toString(36)}`,
+          effect: "SpawnAgent",
+          subject: goal,
+          affordance: "APPROVE_GOAL",
+          reads: { staged: "known", stagedOpen: "known" },
+        };
+        const pending = `request ${request.id} asked; the world has not answered`;
+        paintPrompt();
+        // Sequenced and stamped before the world is asked, so a crash leaves a
+        // complete request on disk rather than a fragment. EFF-07 needs the
+        // request to be readable on its own.
+        const stamp = () => Date.now();
+        let sequence = 0;
+        const appendEffect = (event: Omit<Event, "seq" | "at">) => {
+          sequence += 1;
+          durable.append(sessionId, { ...event, seq: sequence, at: stamp() });
+        };
+        try {
+          appendEffect(effectRequested(request));
+          await runGoal(goal, false, durable, cwd);
+          appendEffect(effectObserved({ effectId: request.id, outcome: "succeeded" }));
+          staged = null;
+        } catch (cause) {
+          appendEffect(
+            effectObserved({
+              effectId: request.id,
+              outcome: "failed",
+              why: cause instanceof Error ? cause.message : String(cause),
+            }),
+          );
+          console.log(`${pending}, and it failed: ${String(cause)}`);
+          console.log("        the intention is still staged; go again when the world can answer.");
+        }
         if (done) break;
         paintPrompt();
         continue;
