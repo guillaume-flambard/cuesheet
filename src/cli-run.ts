@@ -215,14 +215,36 @@ function cmdSessions(): number {
     console.log("no sessions yet");
     return 0;
   }
+  // One damaged session must not make the others unreachable.
+  //
+  // `read()` throws on a journal whose tail was never committed, so a listing
+  // that used it showed nothing at all: the one broken file removed the ability
+  // to see the healthy ones. And the fix must not go the other way either, by
+  // treating an unreadable session as an empty one, which is the same silence
+  // from the opposite direction. So damage is shown as damage.
+  let damaged = 0;
   for (const file of files) {
     const id = file.replace(/\.jsonl$/, "");
-    const events = durable.read(id);
+    const attested = durable.attest(id);
+    if (attested.damage) {
+      damaged += 1;
+      // The intact prefix is real and worth showing, because "I could not read
+      // all of it" and "there was nothing there" are different facts.
+      console.log(
+        `${id}  DAMAGED  ${attested.damage.why}${attested.damage.line ? ` at line ${attested.damage.line}` : ""}` +
+          `  (${attested.events.length} event(s) readable)`,
+      );
+      continue;
+    }
+    const events = attested.events;
     const goal = events.find((e) => e.kind === "goal");
     const evidence = events.filter((e) => e.kind === "evidence").length;
     console.log(
       `${id}  events=${String(events.length).padStart(3)}  evidence=${evidence}  ${String(goal?.data.text ?? "").slice(0, 60)}`,
     );
+  }
+  if (damaged > 0) {
+    console.log(`\n${damaged} session(s) damaged. cuesheet inspect <id> for what survived.`);
   }
   return 0;
 }

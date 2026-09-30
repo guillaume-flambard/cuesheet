@@ -33,7 +33,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { spawn, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import {
   chmodSync,
   existsSync,
@@ -42,8 +42,8 @@ import {
   openSync,
   readdirSync,
   readFileSync,
-  rmSync,
   writeFileSync,
+  rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
@@ -57,6 +57,8 @@ import { EventStore, type Event } from "../src/core/store.ts";
 /** The store, imported by every child this file starts. */
 const STORE_URL = new URL("../src/adapters/session-store.ts", import.meta.url).href;
 const STORE_PATH = new URL("../src/adapters/session-store.ts", import.meta.url).pathname;
+/** The repository root, for the one check that reads source rather than state. */
+const ROOT_DIR2 = new URL("..", import.meta.url).pathname;
 
 const NOW = 1_790_000_000_000;
 
@@ -918,5 +920,72 @@ describe("the sequence belongs to the store, structurally", () => {
         "a replay with a hole is refused rather than renumbered",
       );
     });
+  });
+});
+
+describe("one damaged session does not hide the healthy ones", () => {
+  it("the listing names the damage and still lists the rest", () => {
+    // `sessions list` used to read through `read()`, which throws on a torn
+    // tail, so one broken file removed the ability to see every healthy session.
+    // And the other direction is just as wrong: reporting an unreadable session
+    // as an empty one. Damage is shown as damage, with what survived counted.
+    withRoot((root) => {
+      const store = new SessionStore({ root });
+      for (const id of ["healthy-1", "healthy-2"]) {
+        store.create(id, []);
+        store.append(id, { kind: "goal", subject: "", data: { text: "a real goal" }, at: 1 });
+      }
+      store.create("torn", []);
+      store.append("torn", { kind: "goal", subject: "", data: { text: "survives" }, at: 1 });
+      store.append("torn", { kind: "note", subject: "", data: { text: "also survives" }, at: 2 });
+
+      // What a crash mid-write leaves: the last line never finished.
+      const path = join(root, "torn.jsonl");
+      writeFileSync(path, readFileSync(path, "utf8") + '{"kind":"note","subject":"","data":{"text":"trunc');
+
+      const attested = store.attest("torn");
+      assert.ok(attested.damage, "the damage is known");
+      assert.equal(attested.damage!.why, "unreadable");
+      assert.equal(attested.events.length, 2, "and the intact prefix is still readable");
+      assert.equal(
+        attested.events.some((e) => e.data.text === "survives"),
+        true,
+        "including the goal, so the session is not reported as empty",
+      );
+    });
+  });
+
+  it("a listing with one damaged session exits cleanly", () => {
+    // The whole point: the CLI stays usable. A non-zero exit here would mean a
+    // person cannot inspect the healthy sessions without first repairing the
+    // broken one, which is the opposite of useful.
+    const dir = mkdtempSync(join(tmpdir(), "cuesheet-listing-"));
+    try {
+      execFileSync(process.execPath, [join(ROOT_DIR2, "src", "cli-run.ts"), "sessions", "list"], {
+        encoding: "utf8",
+        env: childEnv({ sessions: dir, home: dir }),
+      });
+      // Seed through the store so the damage is real rather than hand-written
+      // into a file the format does not describe.
+      const store = new SessionStore({ root: dir });
+      store.create("ok", []);
+      store.append("ok", { kind: "goal", subject: "", data: { text: "visible" }, at: 1 });
+      store.create("bad", []);
+      store.append("bad", { kind: "goal", subject: "", data: { text: "partial" }, at: 1 });
+      const bad = join(dir, "bad.jsonl");
+      writeFileSync(bad, readFileSync(bad, "utf8") + "{not json");
+
+      const out = execFileSync(process.execPath, [join(ROOT_DIR2, "src", "cli-run.ts"), "sessions", "list"], {
+        encoding: "utf8",
+        env: childEnv({ sessions: dir, home: dir }),
+      });
+      assert.match(out, /ok\s+events=/, "the healthy session is listed");
+      assert.match(out, /DAMAGED/, "the damaged one is named as damaged");
+      assert.match(out, /visible/, "with its goal, not replaced by a count");
+      // And the damage is not laundered into emptiness.
+      assert.equal(/bad\s+DAMAGED\s+unreadable/.test(out), true, "the reason is shown");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
