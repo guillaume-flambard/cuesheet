@@ -22,6 +22,7 @@ const request = (over: Partial<EffectRequest> = {}): EffectRequest => ({
   subject: "fix the display",
   affordance: "APPROVE_GOAL",
   reads: { staged: "known", stagedOpen: "known" },
+  revision: 1,
   ...over,
 });
 

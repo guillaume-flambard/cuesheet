@@ -89,10 +89,11 @@ src/adapters/             the only places allowed to do I/O.
 src/state.ts              the fold a view renders. Observes nothing, imports nothing that could.
 src/affordances.ts        what the state permits. Pure; the surface asks and renders.
 src/effects.ts            an effect asked for, and what came back. Never the same event.
+src/reconcile.ts           what happened to an effect nobody watched. Five answers, one null.
 src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     290 tests
+test/                     301 tests
 ```
 
 ## The primitive

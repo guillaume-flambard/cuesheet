@@ -399,7 +399,11 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           effect: "SpawnAgent",
           subject: goal,
           affordance: "APPROVE_GOAL",
-          reads: { staged: "known", stagedOpen: "known" },
+          // The read-set names what it read; the revision names when. CON-01
+          // needs both, and the request outlives this process, so it has to
+          // carry them rather than borrow them from a variable in this file.
+          reads: { goal: "known", pendingEffect: "known" },
+          revision: readState().revision,
         };
         const pending = `request ${request.id} asked; the world has not answered`;
         paintPrompt();

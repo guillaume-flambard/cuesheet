@@ -41,6 +41,27 @@ export interface EffectRequest {
   /** The affordance that permitted this, and the facts it read to do so. */
   affordance: string;
   reads: Record<string, "known">;
+  /**
+   * The revision this request was committed against, as CON-01 requires.
+   *
+   * It is part of the request rather than of the surrounding append because a
+   * request outlives the process that made it: the whole point of P11 is
+   * reading this record again after a restart, and a record that cannot say
+   * which state it was judged against is a decision nobody can audit.
+   */
+  revision: number;
+  /**
+   * An identifier the world will still recognise after a restart, when the
+   * adapter can genuinely look the effect up by it.
+   *
+   * Optional, and the default, because it is a claim about an external system
+   * that only an adapter with real knowledge may make. A PID that has exited is
+   * not proof the spawn failed, and a key that resolves to nothing is not proof
+   * it never started. So this field exists only when something can honour it,
+   * and its absence is itself meaningful: without one, reconciliation can only
+   * be INCONCLUSIVE.
+   */
+  reconciliationKey?: string;
 }
 
 /** What the world answered. Never derived from the request. */
@@ -76,7 +97,17 @@ export function effectRequested(request: EffectRequest): Omit<Event, "seq" | "at
   return {
     kind: "effect_requested",
     subject: request.subject,
-    data: { effect: request.effect, effectId: request.id, affordance: request.affordance, reads: request.reads },
+    data: {
+      effect: request.effect,
+      effectId: request.id,
+      affordance: request.affordance,
+      reads: request.reads,
+      // Recorded, not trusted on the way back in: a log that says it was
+      // committed at 41 is evidence for a human reading it, and the fold
+      // re-derives the real revision from the sequence anyway.
+      revision: request.revision,
+      ...(request.reconciliationKey ? { reconciliationKey: request.reconciliationKey } : {}),
+    },
   };
 }
 
