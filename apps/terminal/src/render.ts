@@ -17,6 +17,7 @@
 
 import { bindProject, type Binding } from "../../../src/adapters/project-binding.ts";
 import { snapshotPortfolio } from "../../../src/adapters/frontier.ts";
+import { readTurn } from "./turn.ts";
 import { routeIntention } from "../../../src/core/intent.ts";
 
 // ─── the slice's states ────────────────────────────────────────────────────
@@ -27,6 +28,10 @@ export type Slice =
   | { readonly at: "ambiguous"; readonly said: string; readonly binding: Extract<Binding, { kind: "unbound" }> }
   | { readonly at: "unresolved"; readonly said: string }
   | { readonly at: "question"; readonly said: string; readonly suggestions: readonly Suggestion[]; readonly held: number }
+  | { readonly at: "uncertain"; readonly said: string; readonly suggestions: readonly Suggestion[] }
+  | { readonly at: "cancelled"; readonly said: string }
+  | { readonly at: "show-me"; readonly said: string; readonly suggestions: readonly Suggestion[]; readonly held: number }
+  | { readonly at: "help"; readonly said: string }
   | { readonly at: "greeting"; readonly said: string }
   | { readonly at: "bound"; readonly said: string; readonly project: string; readonly path: string }
   | { readonly at: "refused"; readonly said: string };
@@ -50,6 +55,39 @@ export interface Suggestion {
  * `project-binding.ts` and re-deciding them here would create a second opinion.
  */
 export function resolve(said: string): Slice {
+  // OBS-3. The turn is read before anything is bound, because five observed
+  // answers to "which project" were all being handed to the project binder as if
+  // they were directory paths. "je sais pas" became "I don't know that one", and
+  // a person admitting they did not know was told that Cuesheet did not either,
+  // and then told what to type.
+  const turn = readTurn(said);
+  if (turn.kind === "CANCEL") {
+    return { at: "cancelled", said };
+  }
+  if (turn.kind === "HELP") {
+    return { at: "help", said };
+  }
+  if (turn.kind === "SHOW_ME") {
+    const snap = snapshotPortfolio();
+    return {
+      at: "show-me",
+      said,
+      held: snap.held.length,
+      suggestions: snap.free.slice(0, 8).map((path) => ({ name: path.split("/").pop() ?? path, path: path.includes("/") ? path : "" })),
+    };
+  }
+  if (turn.kind === "UNCERTAINTY") {
+    // The offer is concrete rather than a re-ask. The person does not know which
+    // project, so the useful thing is to make choosing cheaper, not to repeat the
+    // question with the same expected answer.
+    const snap = snapshotPortfolio();
+    return {
+      at: "uncertain",
+      said,
+      suggestions: snap.free.slice(0, 3).map((path) => ({ name: path.split("/").pop() ?? path, path: path.includes("/") ? path : "" })),
+    };
+  }
+
   // The question comes first, because OBS-1 was this line asked in the wrong
   // order. "on fait quoi ?" is not a failed project lookup; it is a question
   // about the portfolio, and the router in `core/intent.ts` has known that since
@@ -125,12 +163,60 @@ export function render(slice: Slice, typed: string): string[] {
         "",
       ];
 
+    // OBS-3. The message this replaces was "I don't know that one. Name a
+    // project.", which was a claim about the sentence rather than an offer, and
+    // which turned not knowing into a mistake the person had made. Now an
+    // unfamiliar line is just unfamiliar, and the way out is named.
     case "unresolved":
       return [
         `${slice.said}`,
         "",
-        "I don't know that one.",
-        "Name a project, or ask me what we're working on.",
+        "Je n'ai pas de projet sous ce nom-la.",
+        "Tu peux m'en dire plus, ou me demander la liste.",
+        "",
+      ];
+
+    // A person who does not know which project, and is told to name one. The
+    // useful reply makes choosing cheaper instead of repeating the question with
+    // the same expected shape of answer.
+    case "uncertain": {
+      if (slice.suggestions.length === 0) {
+        return [`${slice.said}`, "", "Aucun projet n'est libre pour l'instant.", "Decris-moi ce que tu veux faire, on verra apres.", ""];
+      }
+      return [
+        `${slice.said}`,
+        "",
+        "Pas grave. Quelques projets ici :",
+        "",
+        ...slice.suggestions.map((s) => `  ${s.name}`),
+        "",
+        "Un de ceux-la, ou dis-moi ce que tu voulais faire.",
+        "",
+      ];
+    }
+
+    case "cancelled":
+      return [`${slice.said}`, "", "D'accord, on laisse. Dis-moi quand tu veux repartir.", ""];
+
+    case "show-me": {
+      const held = slice.held > 0 ? `  ${slice.held} occupes.` : "";
+      return [
+        `${slice.said}`,
+        "",
+        `${slice.suggestions.length} libres a l'ecriture.`,
+        ...(held ? [held] : []),
+        "",
+        ...slice.suggestions.map((s) => `  ${s.name}`),
+        "",
+      ];
+    }
+
+    case "help":
+      return [
+        `${slice.said}`,
+        "",
+        "Donne-moi un projet et une tache, je m'en occupe.",
+        "Je peux aussi te montrer la liste, si tu veux.",
         "",
       ];
 
@@ -150,11 +236,11 @@ export function render(slice: Slice, typed: string): string[] {
       // The held count sits with the count it explains, not spliced into the
       // middle of the list, which is what an earlier version did and which put
       // it between two projects.
-      const held = slice.held > 0 ? `  ${slice.held} held, so not listed.` : "";
+      const held = slice.held > 0 ? `  ${slice.held} occupes, donc absents de la liste.` : "";
       return [
         `${slice.said}`,
         "",
-        `${slice.suggestions.length} ready to write.`,
+        `${slice.suggestions.length} libres a l'ecriture.`,
         ...(held ? [held] : []),
         "",
         ...slice.suggestions.map((s) => `  ${s.name}  ${MUTED_MARK}${s.path}`),
@@ -173,7 +259,7 @@ export function render(slice: Slice, typed: string): string[] {
         "",
         `${slice.project}  ${MUTED_MARK}${slice.path}`,
         "",
-        "What do you want to look at?",
+        "Qu'est-ce qu'on y fait ?",
         "",
       ];
 

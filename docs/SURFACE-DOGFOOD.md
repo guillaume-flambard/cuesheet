@@ -4,9 +4,13 @@ The next source of information is use. Not a milestone, not a design question.
 
 ```text
 observed:
-  1. "on fait quoi ?"     -> "I can't tell which one you mean."   (fixed)
-  2. "on fait quoi ?"     -> "Your projects are in ~/projects."    (fixed)
-  3. "a toi de me dire"   -> "I don't know that one."             (open)
+  1. "on fait quoi ?"   -> "I can't tell which one you mean."    (fixed)
+  2. "on fait quoi ?"   -> "Your projects are in ~/projects."     (fixed)
+  3. "je sais pas"      -> "I don't know that one."              (fixed)
+  4. "laisse tomber"    -> "I don't know that one."              (fixed)
+  5. "montre-moi"       -> "I don't know that one."              (fixed)
+  6. "aide"             -> "I don't know that one."              (fixed)
+  7. "a toi de me dire" -> "I don't know that one."              (open)
 ```
 
 ### OBS-1, the first one, on the first run
@@ -75,25 +79,91 @@ why binding costs 1 ms. "What can we work on" is a question about writing, so
 the answer has to come from the repositories' real state. Two questions, two
 costs, and the cheap one is not the expensive one.
 
-### OBS-3, still open
+### OBS-3, five answers, one message, and the surface was a form
+
+The third observation is the one that reached the structure. It is worth
+preserving in full because the two before it were both misread as wording.
 
 ```text
-> a toi de me dire
+> je sais pas
 I don't know that one.
 Name a project, or ask me what we're working on.
 ```
 
-A second attempt at the same question, in different words, is not recognised as a
-question. The router has a fixed phrase list, and "c'est toi de me dire" is not
-on it. So the answer to a request for a recommendation is "I don't know that
-one", which is both unhelpful and technically true.
+Five different answers to the same question all received the same reply:
 
-This one is not fixed. A fixed phrase list is the same class of defect as a
-single interpretation of every line, and the fix for that was to ask a router
-that understands more than one form. The question is whether a second round of
-observations is what shows the router is too narrow, or whether this is the
-router being right and the surface needing to understand that a person repeating
-a question is still asking it.
+```text
+"je sais pas"     -> I don't know that one.
+"aucun"           -> I don't know that one.
+"laisse tomber"   -> I don't know that one.
+"montre-moi"      -> I don't know that one.
+"aide"            -> I don't know that one.
+```
+
+Every one of those is a valid human answer. Every one was handed to the project
+binder as if it were a directory path, because the surface had exactly one
+interpretation of every line. A person who did not know the answer was told that
+Cuesheet did not either, and then told what to type. That is not an assistant
+with a gap in it, it is a form with a text field.
+
+The rule this produced, and the one the tests now hold:
+
+> A clarification never constrains the shape of the answer.
+
+A person may answer "which project" with a project, with not knowing, with
+asking to stop, with asking to see the list, or with something else entirely.
+The question does not get to decide which of those is grammatical.
+
+The fix is a small closed layer in front of the binder, five intents because five
+were observed:
+
+```text
+PROJECT_CANDIDATE   the default, and the only one that reaches the binder
+UNCERTAINTY         "je sais pas", "aucun"
+CANCEL              "laisse tomber"
+SHOW_ME             "montre-moi"
+HELP                "aide"
+```
+
+No model, and no claim that a phrase list over French is the right general
+answer. A sixth intent is not admitted until a sixth is observed.
+
+### What the other terminal does with the same moment
+
+The developer machine has a second terminal, and it was worth asking what it does
+with the same line rather than guessing:
+
+```text
+> je sais pas
+Qu'est-ce que tu veux faire ou savoir ?
+
+> laisse tomber
+D'accord, j'arrête. Dis-moi quand tu veux relancer.
+
+> montre-moi tes projets
+[the portfolio, with the free and held counts]
+```
+
+It asks a question, it accepts a cancellation, and it shows the list on request.
+It never says "I don't know that one", because that is a claim about the sentence
+rather than an offer of what comes next.
+
+### OBS-7, still open
+
+```text
+> a toi de me dire
+I don't know that one.
+```
+
+The same request as OBS-3, in different words, and the phrase list does not
+contain it. This is now the second observation to show that a list of observed
+phrases is a list, not an understanding, so the next move is not a longer list. It
+is either a router that can be asked what a line is trying to do, or an admission
+that a person repeating a question is still asking it and the surface should
+carry the conversation rather than the sentence.
+
+Recorded, not fixed, because one more list entry would make the failure rarer
+without making it different.
 
 ## What counts as an observation
 

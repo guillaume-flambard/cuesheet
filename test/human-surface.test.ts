@@ -116,7 +116,7 @@ describe("the founding transcript, from $HOME", () => {
 
   it("an unresolved project asks for a name, and never says the line was not a goal", () => {
     const out = linesFor(unresolvedSlice());
-    assert.match(out, /Name a project/);
+    assert.match(out, /m'en dire plus|demander la liste/);
     // The exact sentence the old surface printed, which was a lie about the
     // intention rather than a description of the scope.
     assert.doesNotMatch(out, /not a goal/i);
@@ -215,14 +215,14 @@ describe("OBS-1 a question is answered as a question", () => {
     // lying, and it was still wrong: "your projects are in ~/projects, name one"
     // hands the question straight back to the person who asked it. The surface
     // can read the portfolio, so it can propose.
-    assert.doesNotMatch(out, /Name one and we'?ll work there/, "no redirect");
+    assert.doesNotMatch(out, /Name one and we|vos projets sont/i, "no redirect in any language");
     assert.doesNotMatch(out, /can't tell which one you mean/i, "no false claim either");
     assert.doesNotMatch(out, /~\/projects/, "and no directory listing in place of an answer");
 
     // A proposal with a reason. Five eligible projects, and the count of the
     // ones left out, because 29 held projects is the reason the list is short.
-    assert.match(out, /ready to write/, "it says what it knows");
-    assert.match(out, /held, so not listed/, "and says why the list is short");
+    assert.match(out, /libres a l'ecriture/, "it says what it knows");
+    assert.match(out, /occupes, donc absents/, "and says why the list is short");
     assert.match(out, /\?$/m, "and offers a default, so the next word can be a name");
     // It has to NAME something. An answer with a count and a question mark but no
     // project in it is the redirect again, wearing a different hat.
@@ -264,5 +264,93 @@ describe("OBS-1 a question is answered as a question", () => {
     const bindAt = source.indexOf("bindProject(");
     assert.ok(routeAt > 0 && bindAt > 0, "both are called");
     assert.ok(routeAt < bindAt, "the router answers first, which is the whole fix");
+  });
+});
+
+
+/**
+ * OBS-3, the counter-example that reached the structure.
+ *
+ * ```text
+ * > je sais pas
+ * I don't know that one.
+ * Name a project, or ask me what we're working on.
+ * ```
+ *
+ * Five different answers, one message. Every one is a valid human reply to a
+ * question, and every one was fed to the project binder as a directory path:
+ *
+ * ```text
+ * "je sais pas"     -> I don't know that one.
+ * "aucun"           -> I don't know that one.
+ * "laisse tomber"   -> I don't know that one.
+ * "montre-moi"      -> I don't know that one.
+ * "aide"            -> I don't know that one.
+ * ```
+ *
+ * The surface had one interpretation of every line, so a person who did not know
+ * the answer was told that Cuesheet did not either, and then told what to type.
+ *
+ * The rule this file holds:
+ *
+ * > A clarification never constrains the shape of the answer.
+ */
+describe("OBS-3 a clarification never constrains the answer", () => {
+  it("the five observed answers are five different turns, not one", () => {
+    const cases: Array<[string, string]> = [
+      ["je sais pas", "uncertain"],
+      ["aucun", "uncertain"],
+      ["laisse tomber", "cancelled"],
+      ["montre-moi", "show-me"],
+      ["aide", "help"],
+    ];
+    for (const [said, expected] of cases) {
+      const slice = resolve(said);
+      assert.equal(slice.at, expected, `"${said}" is a ${expected} turn`);
+      const out = render(slice, "").join("\n");
+      assert.doesNotMatch(
+        out,
+        /I don't know that one|Name a project, or ask me/i,
+        `"${said}" was answered with the robotic redirect`,
+      );
+    }
+  });
+
+  it("uncertainty offers a project rather than repeating the question", () => {
+    // The difference between an assistant and a form: not knowing is answered by
+    // making choosing cheaper, not by asking again with the same expected answer.
+    const out = render(resolve("je sais pas"), "").join("\n");
+    assert.doesNotMatch(out, /Give me its name|Name a project/i, "no re-ask");
+    const slice = resolve("je sais pas");
+    if (slice.at !== "uncertain") return;
+    assert.ok(slice.suggestions.length > 0, "it offers something to choose from");
+    for (const s of slice.suggestions) {
+      assert.ok(out.includes(s.name), `${s.name} is actually on screen`);
+    }
+  });
+
+  it("cancelling ends the turn instead of asking for a project", () => {
+    const out = render(resolve("laisse tomber"), "").join("\n");
+    assert.match(out, /on laisse/i);
+    assert.doesNotMatch(out, /Name a project|projects are in/i);
+  });
+
+  it("being asked for help does not become a project lookup", () => {
+    const out = render(resolve("aide"), "").join("\n");
+    assert.match(out, /projet/i, "it explains what it is for");
+    assert.doesNotMatch(out, /I don't know that one/i);
+  });
+
+  it("the binder is never reached for a non-project turn", () => {
+    // Read off the source: `readTurn` returns before `bindProject` can be
+    // reached for these five, and a sixth phrase is not admitted until observed.
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "..", "apps", "terminal", "src", "render.ts"),
+      "utf8",
+    );
+    const turnAt = source.indexOf("readTurn(said)");
+    const bindAt = source.indexOf("bindProject(said)");
+    assert.ok(turnAt > 0 && bindAt > 0);
+    assert.ok(turnAt < bindAt, "the turn is read before anything is bound");
   });
 });
