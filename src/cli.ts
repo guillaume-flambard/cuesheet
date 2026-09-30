@@ -305,4 +305,11 @@ function main(): void {
   );
 }
 
-main();
+/**
+ * Run only when this file is the program. See the same guard in cli-run.ts:
+ * without it, importing this module ran the ownership report and exited, which
+ * is invisible to every caller because they all spawn it as a process.
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

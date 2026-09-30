@@ -275,9 +275,20 @@ async function main(): Promise<number> {
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error: unknown) => {
-    console.error(`cuesheet: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
-  });
+/**
+ * Run only when this file is the program, not when it is imported.
+ *
+ * The other two entry scripts in this repository already carry this guard.
+ * Without it, importing `cli-run.ts` runs the whole command dispatcher against
+ * whatever `process.argv` happens to be, which is why it could not be loaded
+ * by test/loadability.test.ts and why nothing noticed: every caller spawns it
+ * as a process, so the missing guard was invisible from the outside.
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main()
+    .then((code) => process.exit(code))
+    .catch((error: unknown) => {
+      console.error(`cuesheet: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    });
+}

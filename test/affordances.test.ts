@@ -114,7 +114,7 @@ describe("affordances", () => {
     assert.equal(has(unobserved, "INSPECT"), true);
   });
 
-  it("AFF-06 an action that mutates names the precondition it consumed", () => {
+  it("AFF-06 an action that mutates names the precondition it read", () => {
     // No exemption, which is what the first version of this test got wrong by
     // skipping EXIT. Leaving does change the state, so it has to say what it
     // read to decide it was allowed, and the honest answer for it is nothing:
@@ -126,26 +126,26 @@ describe("affordances", () => {
         if (!a.mutates) continue;
         // The set of consumable names is fixed and small, and the module
         // asserts it internally, so this checks the two are the same list.
-        for (const key of Object.keys(a.consumed)) {
+        for (const key of Object.keys(a.reads)) {
           assert.ok(
             ["staged", "stagedOpen", "hasSession"].includes(key),
-            `${a.action} consumed "${key}", which is not a fact of the state`,
+            `${a.action} read "${key}", which is not a fact of the state`,
           );
-          assert.equal(a.consumed[key], "known", `${a.action} consumed an unknown`);
+          assert.equal(a.reads[key], "known", `${a.action} read an unknown`);
         }
         if (a.action === "EXIT") {
-          assert.deepEqual(a.consumed, {}, "leaving consumes nothing, and says so");
+          assert.deepEqual(a.reads, {}, "leaving consumes nothing, and says so");
         } else {
           assert.ok(
-            Object.keys(a.consumed).length > 0,
-            `${a.action} mutates and names nothing it consumed`,
+            Object.keys(a.reads).length > 0,
+            `${a.action} mutates and names nothing it read`,
           );
         }
       }
     }
-    // Approving a staged goal consumed exactly the fact that one was staged.
+    // Approving a staged goal read exactly the fact that one was staged.
     const approve = deriveAffordances(stagedOpen).find((a) => a.action === "APPROVE_GOAL");
-    assert.deepEqual(approve?.consumed, { staged: "known", stagedOpen: "known" });
+    assert.deepEqual(approve?.reads, { staged: "known", stagedOpen: "known" });
   });
 
   it("the answering actions come as a set, never as a wall", () => {

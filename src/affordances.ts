@@ -45,7 +45,7 @@ export type Affordance =
 /**
  * An action, and the state it was derived from.
  *
- * `consumed` is the part that matters for what comes next. An action that
+ * `reads` is the part that matters for what comes next. An action that
  * changes the state has just used a precondition to decide it was allowed, and
  * that precondition is the thing to record: it is what an audit needs, and it
  * is what tells a later reader why the action existed at all. Without it, the
@@ -53,8 +53,21 @@ export type Affordance =
  */
 export interface AvailableAction {
   action: Affordance;
-  /** The state facts this action's availability was computed from. */
-  consumed: Record<string, "known" | "unknown">;
+  /**
+   * The state facts this action's availability was computed from, which is its
+   * read-set.
+   *
+   * It answers a second question, and the second one is the interesting one:
+   * not only "is this action permitted" but "which observed facts permitted it".
+   * That is what makes an action auditable before anything runs: the trace of a
+   * decision is the precondition it was allowed by, not the fact that it
+   * happened.
+   *
+   * Deliberately a flat list of names and nothing more. No dependency graph, no
+   * invalidation, no hashing: the shape is already enough to answer "was this
+   * still true", and anything richer would be a second truth to keep in step.
+   */
+  reads: Record<string, "known">;
   /** True when this action would change the state it was derived from. */
   mutates: boolean;
 }
@@ -79,14 +92,14 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
     if (input.hasSession) {
       out.push({
         action: "INSPECT",
-        consumed: { hasSession: "known" as const },
+        reads: { hasSession: "known" as const },
         mutates: false,
       });
     }
     // Consumes nothing, and says so: a state nobody observed cannot refuse the
     // ability to quit. That is a precondition of the empty set, which is more
     // useful to a reader than inventing one.
-    out.push({ action: "EXIT", consumed: {}, mutates: true });
+    out.push({ action: "EXIT", reads: {}, mutates: true });
     return out;
   }
 
@@ -94,33 +107,33 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
   // Flat on purpose. `stagedOpen` is a field *of* the staged intention rather
   // than a fact of its own, and a consumer checking "did this action read
   // anything it was not given" needs a flat set of names to check against.
-  const consumed = {
+  const reads = {
     staged: "known" as const,
     stagedOpen: "known" as const,
   };
-  /** The names an action may consume, so AFF-06 can be checked mechanically. */
+  /** The names an action may read, so AFF-06 can be checked mechanically. */
   const FACT_NAMES = new Set(["staged", "stagedOpen", "hasSession"]);
-  for (const key of Object.keys(consumed)) {
+  for (const key of Object.keys(reads)) {
     if (!FACT_NAMES.has(key)) {
-      throw new Error(`affordance consumed an unknown fact: ${key}`);
+      throw new Error(`affordance read an unknown fact: ${key}`);
     }
   }
   if (open) {
-    out.push({ action: "APPROVE_GOAL", consumed, mutates: true });
-    out.push({ action: "REJECT_GOAL", consumed, mutates: true });
-    out.push({ action: "REPLACE_GOAL", consumed, mutates: true });
-    out.push({ action: "CANCEL_SESSION", consumed: { staged: "known" as const }, mutates: true });
+    out.push({ action: "APPROVE_GOAL", reads, mutates: true });
+    out.push({ action: "REJECT_GOAL", reads, mutates: true });
+    out.push({ action: "REPLACE_GOAL", reads, mutates: true });
+    out.push({ action: "CANCEL_SESSION", reads: { staged: "known" as const }, mutates: true });
   } else {
-    out.push({ action: "REPLACE_GOAL", consumed, mutates: true });
+    out.push({ action: "REPLACE_GOAL", reads, mutates: true });
   }
 
   if (input.hasSession) {
-    out.push({ action: "INSPECT", consumed: { hasSession: "known" as const }, mutates: false });
+    out.push({ action: "INSPECT", reads: { hasSession: "known" as const }, mutates: false });
   }
 
   // Leaving is always permitted and consumes nothing: it cannot be refused by
   // a state that has not been observed, because refusing it would be a lock.
-  out.push({ action: "EXIT", consumed: {}, mutates: true });
+  out.push({ action: "EXIT", reads: {}, mutates: true });
 
   return out;
 }

@@ -91,7 +91,7 @@ src/affordances.ts        what the state permits. Pure; the surface asks and ren
 src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     242 tests
+test/                     248 tests
 ```
 
 ## The primitive
