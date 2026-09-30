@@ -22,6 +22,7 @@ import {
   openSync,
   readdirSync,
   readFileSync,
+  unlinkSync,
   writeSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -62,6 +63,62 @@ export class SessionStore {
       fsyncSync(fd);
     } finally {
       closeSync(fd);
+    }
+  }
+
+  /**
+   * The revision on disk: the sequence of the last event in the file.
+   *
+   * `-1` for a session that does not exist, which is the honest value: there
+   * was nothing to read, and a caller that read nothing must not claim to have
+   * read revision 0.
+   */
+  revision(sessionId: string): number {
+    const events = this.read(sessionId);
+    return events.length === 0 ? -1 : events[events.length - 1]!.seq;
+  }
+
+  /**
+   * Append only if the file is still where the caller read it.
+   *
+   * Two surfaces in one process would be handled by the in-memory store. Two
+   * *processes* share only the file, and reading it then appending is itself a
+   * race: both could read 41, both could write 42, and the log would then hold
+   * two events claiming the same sequence with one of them silently lost.
+   *
+   * So the check and the append happen under an exclusive lock file. Creating a
+   * file with `wx` fails if it already exists, which the filesystem guarantees
+   * atomically, and that is the only primitive here doing the work. It is not a
+   * waiting lock: a second writer is told the state moved and goes away, which
+   * is the right answer for a decision that was made against something else.
+   *
+   * Returns the event written, or null when the journal had moved. Null wrote
+   * nothing at all, so the losing surface can re-read without having to undo.
+   */
+  appendIfCurrent(sessionId: string, expectedRevision: number, event: Event): Event | null {
+    const lock = `${this.path(sessionId)}.lock`;
+    let fd: number;
+    try {
+      fd = openSync(lock, "wx");
+    } catch {
+      // Another writer holds it. They are committing right now, so the journal
+      // is about to move; refusing is the honest answer, not a retry here.
+      return null;
+    }
+    try {
+      if (this.revision(sessionId) !== expectedRevision) return null;
+      const stamped: Event = { ...event, seq: expectedRevision + 1 };
+      this.append(sessionId, stamped);
+      return stamped;
+    } finally {
+      closeSync(fd);
+      try {
+        unlinkSync(lock);
+      } catch {
+        // A lock that cannot be removed is a lock that will refuse every
+        // future writer. Better to fail loudly here than to strand the session.
+        throw new Error(`could not release the session lock: ${lock}`);
+      }
     }
   }
 

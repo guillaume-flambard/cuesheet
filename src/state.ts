@@ -78,6 +78,19 @@ export interface SessionState {
    * and it is the claim that starts a second spawn.
    */
   pendingEffect: Observed<boolean>;
+  /**
+   * The revision this state was folded from: the sequence of the last event.
+   *
+   * `-1` for an empty log, because there was nothing to read and a caller that
+   * read nothing must not claim to have read revision 0.
+   *
+   * This is what an affordance is authorised against. The decision to act says
+   * "I judged this at revision 41", and the append refuses if the journal is
+   * no longer there. Without it, two surfaces can both read a state where
+   * approving is allowed and both be right about what they saw, and one of them
+   * wrong by the time it writes.
+   */
+  revision: number;
 }
 
 /**
@@ -199,6 +212,7 @@ export function deriveState(
     events: events.length,
     recent: events.slice(-RECENT),
     pendingEffect: pendingEffectOf(events, completeness),
+    revision: events.length === 0 ? -1 : events[events.length - 1]!.seq,
   };
 }
 

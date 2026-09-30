@@ -199,12 +199,31 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // belong to the surface, not to the goal, and EFF-07 needs the request
   // readable on its own before any run happens.
   const sessionId = newId("chat");
-  const surface = new EventStore(sessionId, () => Date.now());
   durable.create(sessionId, []);
   const appendSurface = (event: Omit<Event, "seq" | "at">) => {
-    surface.append(event);
-    durable.append(sessionId, surface.toSession().events.at(-1)!);
+    // The next sequence after the last event, and 1 for a log that has none.
+    //
+    // `-1` is the revision of an empty log rather than a real revision, so
+    // `revision + 2` would be right for the first event and wrong for every one
+    // after it. Both mistakes were made: `+ 1` wrote a log starting at sequence
+    // 0, and `+ 2` left a hole at 2. The mapping is stated once, here, instead
+    // of being an arithmetic trick twice.
+    const at = durable.revision(sessionId);
+    durable.append(sessionId, { ...event, seq: at < 0 ? 1 : at + 1, at: Date.now() });
   };
+  /**
+   * Append only if the journal is still where the caller read it.
+   *
+   * Returns the event written, or null when something moved underneath. The
+   * in-memory EventStore this used to keep is gone: it could number the events
+   * but it could not enforce anything, and a second surface writing the same
+   * file would have produced two events claiming the same sequence with one of
+   * them silently dropped. The file is the log, so the file is what arbitrates.
+   */
+  const appendIfCurrent = (
+    expectedRevision: number,
+    event: Omit<Event, "seq" | "at">,
+  ): Event | null => durable.appendIfCurrent(sessionId, expectedRevision, { ...event, at: Date.now() } as Event);
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   let done = false;
   rl.on("SIGINT", () => {
@@ -365,10 +384,8 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
       //
       // Staging writes a real `goal` event with `staged: true`, so the fold
       // sees it and the splice disappears. The fake event is gone.
-      const permits = (a: Affordance) =>
-        affordancesOf(deriveState(durable.read(sessionId), sessionId, "complete")).some(
-          (x) => x.action === a,
-        );
+      const readState = () => deriveState(durable.read(sessionId), sessionId, "complete");
+      const permits = (a: Affordance) => affordancesOf(readState()).some((x) => x.action === a);
 
       if (permits("APPROVE_GOAL") && decision.kind === "confirm") {
         // EFF-01: the emission is not the outcome. The request goes into the
@@ -391,7 +408,22 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         // kept a local counter starting at 0, which restarts the sequence in
         // the middle of a log that `runGoal` is about to extend.
         try {
-          appendSurface(effectRequested(request));
+          // P10: the decision is made against the revision this surface read,
+          // and the write is conditional on that revision still being current.
+          // Two surfaces can both find approving allowed; only one of them can
+          // have been right by the time it lands.
+          const basis = readState().revision;
+          const committed = appendIfCurrent(basis, effectRequested(request));
+          if (committed === null) {
+            // Nothing was written. Another surface moved the journal between the
+            // read and here, so this decision was made about a state that no
+            // longer exists. Re-read and let the person decide again, rather
+            // than retrying on their behalf.
+            console.log("another surface changed this session first; nothing was started.");
+            console.log("        the intention is still staged; look again and decide.");
+            paintPrompt();
+            continue;
+          }
           await runGoal(goal, false, durable, cwd);
           appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
           clearIt("approved");

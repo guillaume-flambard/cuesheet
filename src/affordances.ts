@@ -48,6 +48,11 @@ export interface AffordanceInput {
    * anyone touching the code that allows it.
    */
   pending: Observed<boolean>;
+  /**
+   * The revision the caller read. Required, because an affordance that does not
+   * say when it was judged cannot be committed against anything.
+   */
+  revision: number;
 }
 
 export type Affordance =
@@ -84,6 +89,22 @@ export interface AvailableAction {
    * still true", and anything richer would be a second truth to keep in step.
    */
   reads: Record<string, "known">;
+  /**
+   * The revision this action's availability was derived from, or `null` when
+   * the action reads nothing and therefore depends on no revision.
+   *
+   * This is `reads` plus a `when`. `reads` says which facts were consulted;
+   * this says which *moment* they were consulted at. The gap it closes is
+   * TOCTOU: an action permitted by the state at revision 41 is not permitted by
+   * the state at revision 43, and without a revision the surface has only a
+   * description of what it read, not a claim about when.
+   *
+   * `null` is not a missing value. An action whose read-set is empty consumes
+   * nothing, so there is no precondition that could have gone stale, and
+   * forcing a revision on it would be a claim it does not make. EXIT is the
+   * case: leaving reads nothing, so it depends on nothing.
+   */
+  revision: number | null;
   /** True when this action would change the state it was derived from. */
   mutates: boolean;
 }
@@ -109,13 +130,16 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
       out.push({
         action: "INSPECT",
         reads: { hasSession: "known" as const },
+        revision: input.revision,
         mutates: false,
       });
     }
     // Consumes nothing, and says so: a state nobody observed cannot refuse the
     // ability to quit. That is a precondition of the empty set, which is more
     // useful to a reader than inventing one.
-    out.push({ action: "EXIT", reads: {}, mutates: true });
+    // EXIT consumes nothing, so it depends on no revision. That is the point of
+    // `null`: refusing to leave because the state moved would be a lock.
+    out.push({ action: "EXIT", reads: {}, revision: null, mutates: true });
     return out;
   }
 
@@ -144,22 +168,32 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
     // Withheld as absence, not as a flag: the affordance is not in the list at
     // all, so a surface cannot render it and an agent cannot select it.
     if (input.pending.value === false) {
-      out.push({ action: "APPROVE_GOAL", reads, mutates: true });
+      out.push({ action: "APPROVE_GOAL", reads, revision: input.revision, mutates: true });
     }
-    out.push({ action: "REJECT_GOAL", reads, mutates: true });
-    out.push({ action: "REPLACE_GOAL", reads, mutates: true });
-    out.push({ action: "CANCEL_SESSION", reads: { staged: "known" as const }, mutates: true });
+    out.push({ action: "REJECT_GOAL", reads, revision: input.revision, mutates: true });
+    out.push({ action: "REPLACE_GOAL", reads, revision: input.revision, mutates: true });
+    out.push({
+      action: "CANCEL_SESSION",
+      reads: { staged: "known" as const },
+      revision: input.revision,
+      mutates: true,
+    });
   } else {
-    out.push({ action: "REPLACE_GOAL", reads, mutates: true });
+    out.push({ action: "REPLACE_GOAL", reads, revision: input.revision, mutates: true });
   }
 
   if (input.hasSession) {
-    out.push({ action: "INSPECT", reads: { hasSession: "known" as const }, mutates: false });
+    out.push({
+      action: "INSPECT",
+      reads: { hasSession: "known" as const },
+      revision: input.revision,
+      mutates: false,
+    });
   }
 
   // Leaving is always permitted and consumes nothing: it cannot be refused by
   // a state that has not been observed, because refusing it would be a lock.
-  out.push({ action: "EXIT", reads: {}, mutates: true });
+  out.push({ action: "EXIT", reads: {}, revision: null, mutates: true });
 
   return out;
 }
@@ -176,6 +210,7 @@ export function affordancesOf(state: SessionState): AvailableAction[] {
     staged: state.goal,
     hasSession: state.events > 0,
     pending: state.pendingEffect,
+    revision: state.revision,
   });
 }
 

@@ -11,6 +11,7 @@ import {
   type AffordanceInput,
 } from "../src/affordances.ts";
 import { deriveState, seen, unknown } from "../src/state.ts";
+import { EventStore } from "../src/core/store.ts";
 import type { Event } from "../src/core/store.ts";
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
@@ -39,15 +40,18 @@ const stagedOpen: AffordanceInput = {
   staged: seen({ text: "fix the display", open: true }),
   hasSession: true,
   pending: seen(false),
+  revision: 7,
 };
 const nothingStaged: AffordanceInput = {
   staged: unknown("no goal was staged"),
   hasSession: true,
   pending: seen(false),
+  revision: 7,
 };
 const unobserved: AffordanceInput = {
   staged: unknown(),
   pending: seen(false),
+  revision: 7,
   hasSession: true,
 };
 
@@ -285,6 +289,69 @@ describe("affordances", () => {
       allows(deriveState([]), "INSPECT"),
       false,
       "no events, nothing to inspect",
+    );
+  });
+});
+
+
+describe("CON: an affordance says when it was judged", () => {
+  it("CON-01 every action that reads something names the revision it read", () => {
+    // An action with a read-set and no revision describes what it consulted but
+    // not when, and "when" is what makes it committable. This is the assertion
+    // that would have caught `revision` being optional.
+    for (const input of [stagedOpen, nothingStaged, unobserved]) {
+      for (const a of deriveAffordances(input)) {
+        if (Object.keys(a.reads).length === 0) {
+          assert.equal(a.revision, null, `${a.action} reads nothing, so it needs no revision`);
+        } else {
+          assert.equal(a.revision, input.revision, `${a.action} names the revision it read`);
+          assert.equal(typeof a.revision, "number");
+        }
+      }
+    }
+  });
+
+  it("CON-06 an action that reads nothing is explicitly revision-independent", () => {
+    // `null`, not a number that happens to match. The distinction matters
+    // because a number would make "leaving" look conditional on a state that
+    // it never consulted, and refusing to leave on a moved state is a lock.
+    const [exit] = deriveAffordances(stagedOpen).filter((a) => a.action === "EXIT");
+    assert.equal(exit!.revision, null);
+    assert.deepEqual(exit!.reads, {}, "and it reads nothing, which is the same statement");
+
+    // Same for an empty state: quitting is never gated.
+    for (const input of [nothingStaged, unobserved]) {
+      assert.equal(
+        deriveAffordances(input).find((a) => a.action === "EXIT")!.revision,
+        null,
+        "leaving is never revision-dependent",
+      );
+    }
+  });
+
+  it("CON-02 the revision an affordance carries is the one the fold reported", () => {
+    // The affordance layer must not invent or reuse a revision. If it kept its
+    // own counter it would drift from the log, and a commit against it would be
+    // refused for reasons that have nothing to do with reality.
+    const store = new EventStore("s", () => 1_790_000_000_000);
+    store.append({ kind: "goal", subject: "", data: { text: "fix the display", staged: true } });
+    const state = deriveState(store.toSession().events, "s", "complete");
+    assert.equal(state.revision, 1);
+
+    for (const a of affordancesOf(state)) {
+      if (Object.keys(a.reads).length > 0) {
+        assert.equal(a.revision, state.revision, `${a.action} carries the fold's revision`);
+      }
+    }
+
+    // Append, re-fold, and the affordances move with it.
+    store.append({ kind: "note", subject: "", data: { text: "later" } });
+    const later = deriveState(store.toSession().events, "s", "complete");
+    assert.equal(later.revision, 2);
+    assert.equal(
+      affordancesOf(later).find((a) => a.action === "APPROVE_GOAL")!.revision,
+      2,
+      "and an approval read at the newer revision is committable at it",
     );
   });
 });

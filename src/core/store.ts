@@ -164,6 +164,45 @@ export class EventStore {
   }
 
   /**
+   * The revision this store is at: the sequence of the last event appended.
+   *
+   * A number, not a hash. The journal is already sequenced, so "is what I read
+   * still current" is a comparison, not a recomputation. A state hash would
+   * detect a change this revision detects, and would also cost a pass over the
+   * whole log to detect nothing, so there is no reason to have one until a
+   * case appears that sequence cannot express.
+   */
+  get revision(): number {
+    // -1 rather than 0 for the empty journal, and it has to match the fold:
+    // sequence 1 is the first event, so "the last event there is" is undefined
+    // rather than zero. Returning 0 would let a caller that read nothing claim
+    // to have read revision 0, which nothing ever occupies.
+    return this.events.length === 0 ? -1 : this.events[this.events.length - 1]!.seq;
+  }
+
+  /**
+   * Append only if the journal is still where the caller read it.
+   *
+   * This is the whole of P10. A surface derives an affordance from the state it
+   * read; between that read and the decision to act, another surface may have
+   * appended. Both decisions were locally valid against what each had seen, and
+   * the second one would be wrong by the time it lands. That is TOCTOU, and it
+   * is fixed by making the check and the append one operation rather than two.
+   *
+   * `expectedRevision` is the revision the caller's affordance was derived
+   * from. `-1` is the empty journal, which is the honest value for "there was
+   * nothing to read".
+   *
+   * Returns the event that was appended, or null when the check failed. Null is
+   * a refusal, not an error: the caller re-reads and decides again, and nothing
+   * was written, which is CON-03.
+   */
+  appendIfCurrent(expectedRevision: number, event: NewEvent): Event | null {
+    if (this.revision !== expectedRevision) return null;
+    return this.append(event);
+  }
+
+  /**
    * Fold the log into a session. The log is the truth, so this is a pure
    * projection: calling it twice on the same log gives the same session, and
    * adding events earlier in the sequence changes nothing about how later ones
