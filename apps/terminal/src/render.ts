@@ -22,7 +22,7 @@ import { bindProject, type Binding } from "../../../src/adapters/project-binding
 export type Slice =
   | { readonly at: "greeting" }
   | { readonly at: "resolving" }
-  | { readonly at: "ambiguous"; readonly said: string; readonly binding: Binding }
+  | { readonly at: "ambiguous"; readonly said: string; readonly binding: Extract<Binding, { kind: "unbound" }> }
   | { readonly at: "unresolved"; readonly said: string }
   | { readonly at: "bound"; readonly said: string; readonly project: string; readonly path: string }
   | { readonly at: "refused"; readonly said: string };

@@ -30,23 +30,6 @@ import { render, resolve, type Slice } from "./render.ts";
  */
 const ACCENT = "cyan";
 
-// ─── the slice's states ────────────────────────────────────────────────────
-
-type Slice =
-  | { readonly at: "greeting" }
-  | { readonly at: "resolving" }
-  | { readonly at: "ambiguous"; readonly said: string; readonly binding: Binding }
-  | { readonly at: "unresolved"; readonly said: string }
-  | { readonly at: "bound"; readonly said: string; readonly project: string; readonly path: string }
-  | { readonly at: "refused"; readonly said: string };
-
-/**
- * The one decision this slice makes: is this sentence about a project, and
- * which one. It delegates, because BIND-01 through BIND-06 already live in
- * `project-binding.ts` and re-deciding them here would create a second opinion.
- */
-// ─── the terminal ──────────────────────────────────────────────────────────
-
 export function Slice_() {
   const { exit } = useApp();
   const [slice, setSlice] = useState<Slice>({ at: "greeting" });
