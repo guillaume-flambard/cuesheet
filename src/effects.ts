@@ -68,6 +68,55 @@ export interface EffectRequest {
   reconciliationKey?: string;
 }
 
+/**
+ * Why an effect failed, in a form somebody can act on.
+ *
+ * An honest failure is not an explained one. Cuesheet reported
+ * `registry is not defined` faithfully as `outcome: "failed"`, kept the
+ * intention, and was still impossible to diagnose: the message said what
+ * happened and nothing about which stage failed, whether the world refused or
+ * our own wiring broke, or what kind of thing would fix it.
+ *
+ * So a failure names three things instead of carrying a sentence:
+ *
+ * ```text
+ * step     where it broke, from a closed set
+ * origin   whose fault, which is a different question from what broke
+ * why      the detail, free text, because detail is not a classification
+ * ```
+ *
+ * `origin` is the load-bearing field. `Cuesheet` means our wiring is broken and
+ * no world would have helped; `world` means the world answered no. Those need
+ * opposite responses and they used to be the same string.
+ */
+export type FailureStep =
+  /** Preparing the effect: identity, directory, input. */
+  | "prepare"
+  /** Starting the process. */
+  | "launch"
+  /** The effect ran and did not finish. */
+  | "run"
+  /** Reading what came back. */
+  | "observe"
+  /** Reconciling after a restart. */
+  | "reconcile";
+
+/**
+ * Whose failure this is.
+ *
+ * `cuesheet` is the one that was invisible. Every other value describes the
+ * world, and the world refusing is a normal outcome that the intention survives.
+ * Our wiring breaking is not a normal outcome, and treating it as one is how a
+ * broken feature reports success for hundreds of tests.
+ */
+export type FailureOrigin = "world" | "cuesheet" | "provider" | "unknown";
+
+export interface FailureCause {
+  readonly step: FailureStep;
+  readonly origin: FailureOrigin;
+  readonly why: string;
+}
+
 /** What the world answered. Never derived from the request. */
 export interface EffectObservation {
   /** The request this answers. An unmatched observation is a fact, too. */
@@ -75,6 +124,14 @@ export interface EffectObservation {
   outcome: EffectOutcome;
   /** Why it failed, when it failed. Absence is not a reason. */
   why?: string;
+  /**
+   * The structured cause, required whenever the outcome is `failed`.
+   *
+   * Required rather than optional because the first version made it optional and
+   * a failure without one is a failure nobody can act on, which is the case this
+   * type exists to rule out.
+   */
+  failure?: FailureCause;
 }
 
 /**
@@ -92,6 +149,15 @@ export type EffectStatus =
       readonly request: EffectRequest;
       readonly at: number;
       readonly why: string | null;
+      /**
+       * The classified cause, when the record carried one.
+       *
+       * Optional rather than required, because a log written before this field
+       * existed carries a `why` and nothing else. That is a real record and
+       * inventing an origin for it would be guessing, which is the same rule as
+       * `revision: number | null` applied to a cause.
+       */
+      readonly failure?: FailureCause;
     };
 
 export type { EffectRequest as Effect };
@@ -120,8 +186,33 @@ export function effectObserved(observation: EffectObservation): Omit<Event, "seq
   return {
     kind: "effect_observed",
     subject: observation.effectId,
-    data: { effectId: observation.effectId, outcome: observation.outcome, why: observation.why ?? null },
+    data: {
+      effectId: observation.effectId,
+      outcome: observation.outcome,
+      why: observation.why ?? null,
+      // Recorded as a nested object rather than flattened into the event, so a
+      // reader can tell "no cause given" from "cause given and it is null".
+      failure: observation.failure ?? null,
+    },
   };
+}
+
+/**
+ * Is this a usable cause?
+ *
+ * Checked on the way back in rather than trusted, because the log is read by
+ * whatever version comes next and a record written by a future one may carry
+ * fields this one does not know. An unknown shape is dropped rather than
+ * half-accepted, which keeps a failure's origin from being guessed.
+ */
+function isFailureCause(value: unknown): value is FailureCause {
+  if (typeof value !== "object" || value === null) return false;
+  const c = value as Record<string, unknown>;
+  return (
+    typeof c.step === "string" &&
+    typeof c.origin === "string" &&
+    typeof c.why === "string"
+  );
 }
 
 function readRequest(event: Event): EffectRequest | null {
@@ -188,6 +279,7 @@ export function effectStatuses(events: Event[]): Map<string, EffectStatus> {
           request: previous.request,
           at: event.at,
           why: typeof event.data.why === "string" ? event.data.why : null,
+          ...(isFailureCause(event.data.failure) ? { failure: event.data.failure } : {}),
         });
       }
     }
@@ -198,4 +290,39 @@ export function effectStatuses(events: Event[]): Map<string, EffectStatus> {
 /** Effects that were asked for and never answered. */
 export function unobservedEffects(statuses: Map<string, EffectStatus>): EffectStatus[] {
   return [...statuses.values()].filter((s) => s.status === "requested");
+}
+
+/**
+ * Work out whether a failure is the world's or ours.
+ *
+ * The distinction is not cosmetic. Every value of `origin` except `cuesheet`
+ * describes a world that answered, and a world refusing is a normal outcome the
+ * intention survives. `cuesheet` means our own wiring broke, and retrying into it
+ * is pointless. A throw inside the run is the second: no world was ever asked.
+ *
+ * A programming error is recognisable by its own shape rather than by its name,
+ * because names are what the `registry` defect got wrong. `ReferenceError` and
+ * `TypeError` mean a name or a shape did not exist, which is never something
+ * the world does.
+ */
+export function classifyFailure(cause: unknown): {
+  step: FailureStep;
+  origin: FailureOrigin;
+  why: string;
+} {
+  const why = cause instanceof Error ? cause.message : String(cause);
+
+  if (cause instanceof ReferenceError || cause instanceof SyntaxError) {
+    return { step: "launch", origin: "cuesheet", why };
+  }
+  if (cause instanceof TypeError) {
+    return { step: "launch", origin: "cuesheet", why };
+  }
+  if (cause instanceof Error && /OPENROUTER_API_KEY|provider|api key|unauthorized|401/i.test(why)) {
+    return { step: "launch", origin: "provider", why };
+  }
+  if (cause instanceof Error && /ENOENT|EACCES|EPERM|ETIMEDOUT|ECONNREFUSED|ENOTFOUND/i.test(why)) {
+    return { step: "run", origin: "world", why };
+  }
+  return { step: "run", origin: "unknown", why };
 }

@@ -17,7 +17,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { deriveState } from "../src/state.ts";
 import { affordancesOf } from "../src/affordances.ts";
@@ -26,13 +26,25 @@ import { EventStore, type Event } from "../src/core/store.ts";
 
 const CHAT = join(process.cwd(), "src", "chat.ts");
 
+/**
+ * The child environment, assembled by naming rather than inherited and pruned.
+ *
+ * Same rule as `test/entrypoint-symlink.ts`, for the same reason.
+ */
+const childEnv = (root: string) => ({
+  PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
+  NODE_NO_WARNINGS: "1",
+  CUESHEET_SESSIONS: root,
+  HOME: root,
+});
+
 /** Drive the real binary against a throwaway session root. */
 function say(lines: string[]): { out: string; code: number; root: string } {
   const root = mkdtempSync(join(tmpdir(), "cuesheet-smoke-"));
   const r = spawnSync(process.execPath, [CHAT], {
     encoding: "utf8",
     input: `${lines.join("\n")}\n`,
-    env: { ...process.env, CUESHEET_SESSIONS: root, HOME: root },
+    env: childEnv(root),
     cwd: process.cwd(),
   });
   return { out: r.stdout, code: r.status ?? 1, root };
@@ -126,7 +138,7 @@ describe("the integration path", () => {
     const r = spawnSync(process.execPath, [CHAT], {
       encoding: "utf8",
       input: "fix the display\ngo\nexit\n",
-      env: { ...process.env, CUESHEET_SESSIONS: root, HOME: root },
+      env: childEnv(root),
       cwd: process.cwd(),
     });
     rmSync(root, { recursive: true, force: true });

@@ -9,6 +9,7 @@ import {
   type EffectRequest,
 } from "../src/effects.ts";
 import { deriveState } from "../src/state.ts";
+import { classifyFailure } from "../src/effects.ts";
 import { deriveAffordances } from "../src/affordances.ts";
 import { seen } from "../src/state.ts";
 import { EventStore } from "../src/core/store.ts";
@@ -219,5 +220,63 @@ describe("a request read back out of the log", () => {
     const recovered = effectStatuses(store.toSession().events).get("E8")?.request;
     assert.equal(recovered?.revision, null, "unknown, not invented");
     assert.equal(recovered?.reconciliationKey, undefined, "and no key either");
+  });
+});
+
+describe("a failure names a step and an origin", () => {
+  it("our own defect is not reported as the world refusing", () => {
+    // The distinction the whole type exists for. `registry is not defined` was
+    // recorded faithfully as `failed` and the person was told to "go again when
+    // the world can answer", which is nonsense about our own bug and is how the
+    // defect survived a green suite. Honest and explained are not the same.
+    const reference = classifyFailure(new ReferenceError("registry is not defined"));
+    assert.equal(reference.origin, "cuesheet");
+    assert.equal(typeof reference.step, "string");
+    assert.equal(reference.why, "registry is not defined", "the detail is kept, not swallowed");
+
+    // A provider that will not answer is not our wiring either, and the two
+    // need opposite advice.
+    assert.equal(classifyFailure(new Error("OPENROUTER_API_KEY is not set")).origin, "provider");
+    assert.equal(classifyFailure(new Error("spawn E1 ENOENT")).origin, "world");
+    assert.equal(classifyFailure(new Error("something odd")).origin, "unknown");
+  });
+
+  it("the cause survives the round trip through the log", () => {
+    const store = log();
+    store.append(effectRequested(request()));
+    store.append(
+      effectObserved({
+        effectId: "E42",
+        outcome: "failed",
+        why: "registry is not defined",
+        failure: { step: "launch", origin: "cuesheet", why: "registry is not defined" },
+      }),
+    );
+    const status = effectStatuses(store.toSession().events).get("E42");
+    // `status`, not `outcome`: the fold's field is `status`, and the first
+    // version of this line read a field that does not exist, so the conjunction
+    // was false and the assertion failed for a reason of its own.
+    assert.equal(status?.status === "failed" && status.failure?.origin, "cuesheet");
+    assert.equal(status?.status === "failed" && status.failure?.step, "launch");
+  });
+
+  it("a cause with an unknown shape is dropped rather than half-accepted", () => {
+    // The log is read by whatever version comes next. A record written by a
+    // future one may carry fields this one does not know, and guessing at them
+    // would invent an origin nobody observed.
+    const store = log();
+    store.append(effectRequested(request()));
+    store.append({
+      kind: "effect_observed",
+      subject: "g",
+      data: {
+        effectId: "E42",
+        outcome: "failed",
+        why: "x",
+        failure: { origin: "cuesheet", weird: true },
+      },
+    });
+    const status = effectStatuses(store.toSession().events).get("E42");
+    assert.equal(status?.failure, undefined, "an incomplete cause is not a cause");
   });
 });

@@ -32,7 +32,7 @@ import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
 import { deriveState, seen, stateReport } from "./state.ts";
 import { affordancesOf, type Affordance } from "./affordances.ts";
-import { effectObserved, effectRequested, type EffectRequest } from "./effects.ts";
+import { classifyFailure, effectObserved, effectRequested, type EffectRequest } from "./effects.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
 import {
   resolveCapabilities,
@@ -464,15 +464,28 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
           clearIt("approved");
         } catch (cause) {
+          // Classify before printing, because the two failures need different
+          // sentences. A `ReferenceError` is our wiring, and telling the person
+          // to "go again when the world can answer" about our own bug is how the
+          // registry defect survived 352 green tests: the report was faithful
+          // and the advice was nonsense.
+          const failure = classifyFailure(cause);
           appendSurface(
             effectObserved({
               effectId: request.id,
               outcome: "failed",
-              why: cause instanceof Error ? cause.message : String(cause),
+              why: failure.why,
+              failure: { step: failure.step, origin: failure.origin, why: failure.why },
             }),
           );
-          console.log(`${pending}, and it failed: ${String(cause)}`);
-          console.log("        the intention is still staged; go again when the world can answer.");
+          if (failure.origin === "cuesheet") {
+            console.log(`${pending}, and it failed inside Cuesheet: ${failure.why}`);
+            console.log("        this is a defect in the surface, not something the world refused.");
+            console.log("        the intention is still staged.");
+          } else {
+            console.log(`${pending}, and it failed: ${failure.why}`);
+            console.log("        the intention is still staged; go again when the world can answer.");
+          }
         }
         if (done) break;
         paintPrompt();

@@ -33,7 +33,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { lstatSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const SRC = join(process.cwd(), "src");
 
@@ -58,6 +58,21 @@ const ENTRIES: Array<{ file: string; args: string[]; answers: RegExp }> = [
   { file: "frontier-cli.ts", args: [], answers: /cuesheet-frontier|ENOENT|object|frontier/i },
 ];
 
+/**
+ * The child environment, assembled by naming.
+ *
+ * `{ ...process.env }` was the shape that leaked a provider key in
+ * `test/real-chat-path.ts` and made a test cost 17 seconds of somebody else's
+ * latency. This lists what the child may see instead, so a key it was never
+ * told about cannot reach it.
+ */
+const childEnv = (sessions: string) => ({
+  PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
+  NODE_NO_WARNINGS: "1",
+  CUESHEET_SESSIONS: sessions,
+  HOME: mkdtempSync(join(tmpdir(), "cuesheet-symlink-home-")),
+});
+
 /** Run an entry point through a symlink, in a throwaway sessions root. */
 function throughSymlink(file: string, args: string[]): { out: string; err: string; code: number } {
   const dir = mkdtempSync(join(tmpdir(), "cuesheet-symlink-"));
@@ -79,7 +94,7 @@ function throughSymlink(file: string, args: string[]): { out: string; err: strin
   const resolved = args.map((a) => (a === "<empty>" ? emptyRoot : a));
   const r = spawnSync(process.execPath, [link, ...resolved], {
     encoding: "utf8",
-    env: { ...process.env, CUESHEET_SESSIONS: sessions },
+    env: childEnv(sessions),
   });
   return { out: r.stdout, err: r.stderr, code: r.status ?? 1 };
 }
@@ -160,7 +175,7 @@ describe("an entry point reached through a symlink still dispatches", () => {
     const sessions = mkdtempSync(join(tmpdir(), "cuesheet-direct-home-"));
     const r = spawnSync(process.execPath, [join(SRC, "cli-run.ts"), "sessions", "list"], {
       encoding: "utf8",
-      env: { ...process.env, CUESHEET_SESSIONS: sessions },
+      env: childEnv(sessions),
     });
     // `status`, not `code`: `code` is my wrapper field, and reading it here
     // compared undefined against 0 on a perfectly healthy run.
