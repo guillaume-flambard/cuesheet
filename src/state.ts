@@ -64,7 +64,35 @@ export interface SessionState {
   events: number;
   /** The tail, for a view that wants a trace. History, never current state. */
   recent: Event[];
+  /**
+   * Whether an effect was asked for and has not been answered.
+   *
+   * Derived here rather than beside the fold, because a second reading of the
+   * same log is a second place for the truth to be wrong. The only fold in the
+   * repository answers what the session permits.
+   *
+   * Observed, and `unknown` unless the caller can attest that the log it holds
+   * is the whole log. A file that exists is not a log that is complete: a
+   * truncated write, a resumed session, an event still buffered in a process
+   * that died. Saying `false` in any of those cases is a claim nobody checked,
+   * and it is the claim that starts a second spawn.
+   */
+  pendingEffect: Observed<boolean>;
 }
+
+/**
+ * Whether the events handed to the fold are the whole session.
+ *
+ * An enum rather than a boolean because the three states are not two, and a
+ * boolean makes the caller write `true` or lie. `completeness: "unknown"` is
+ * the default, so a caller that says nothing gets the honest answer.
+ */
+export type LogCompleteness =
+  | "complete"
+  | "incomplete"
+  | "unknown";
+
+export const LOG_UNKNOWN: LogCompleteness = "unknown";
 
 /** How many trailing events a view is entitled to show as "recent". */
 const RECENT = 8;
@@ -77,7 +105,11 @@ const RECENT = 8;
  * `now` is absent by construction, which is the cheapest way to keep it that
  * way.
  */
-export function deriveState(events: Event[], id = "session"): SessionState {
+export function deriveState(
+  events: Event[],
+  id = "session",
+  completeness: LogCompleteness = LOG_UNKNOWN,
+): SessionState {
   const goalEvent = last(events, (e) => e.kind === "goal");
   const goalOpen = events.some(
     (e) => e.kind === "evidence" && e.data.goalClosed === true,
@@ -123,7 +155,60 @@ export function deriveState(events: Event[], id = "session"): SessionState {
     waiting: [...subjects.values()].filter((s) => s.state === "waiting").length,
     events: events.length,
     recent: events.slice(-RECENT),
+    pendingEffect: pendingEffectOf(events, completeness),
   };
+}
+
+/**
+ * Is there an effect asked for and not answered?
+ *
+ * The whole rule, in order:
+ *
+ *   requested E42                  -> known(true)
+ *   requested E42, observed failed -> known(false)
+ *   requested E42, observed ok     -> known(false)
+ *   the log is not known complete -> unknown
+ *
+ * The completeness check comes first and short-circuits on purpose. If the log
+ * might be missing its tail, then "no pending effect appears here" is a fact
+ * about this file, not about the session, and the difference between those two
+ * is the entire effect. So an incomplete log answers `unknown` even when the
+ * effects it does contain are all resolved, which is the case that a naive
+ * "scan for unresolved requests" would get wrong.
+ *
+ * A terminal observation matches a request by `effectId`, and only one. An
+ * observation naming an id nobody requested resolves nothing: the world talked
+ * about an effect that does not exist, and inventing the request from it would
+ * be the mirror of EFF-04b.
+ */
+function pendingEffectOf(
+  events: Event[],
+  completeness: LogCompleteness,
+): Observed<boolean> {
+  if (completeness !== "complete") {
+    return unknown(
+      completeness === "incomplete"
+        ? "the log is incomplete, so a missing observation cannot be ruled out"
+        : "nobody attested that this log is the whole log",
+    );
+  }
+
+  const requested = new Set<string>();
+  for (const e of events) {
+    if (e.kind === "effect_requested") {
+      const id = typeof e.data.effectId === "string" ? e.data.effectId : null;
+      if (id) requested.add(id);
+    }
+  }
+  for (const e of events) {
+    if (e.kind === "effect_observed") {
+      const id = typeof e.data.effectId === "string" ? e.data.effectId : null;
+      if (id) requested.delete(id);
+    }
+  }
+
+  // An empty log is a complete log that asked for nothing.
+  return seen(requested.size > 0);
 }
 
 /** Derive from an already-folded session, for a caller that has one. */

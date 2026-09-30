@@ -31,14 +31,8 @@ import { routeIntention } from "./core/intent.ts";
 import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
 import { deriveState, seen, stateReport } from "./state.ts";
-import { deriveAffordances, type Affordance } from "./affordances.ts";
-import {
-  effectObserved,
-  effectRequested,
-  effectStatuses,
-  unobservedEffects,
-  type EffectRequest,
-} from "./effects.ts";
+import { affordancesOf, type Affordance } from "./affordances.ts";
+import { effectObserved, effectRequested, type EffectRequest } from "./effects.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
 import {
   resolveCapabilities,
@@ -52,7 +46,12 @@ import { OpenRouterAdapter } from "./adapters/openrouter.ts";
 import { SessionStore } from "./adapters/session-store.ts";
 import { ShellToolRunner } from "./adapters/shell.ts";
 
-const SESSION_ROOT = join(homedir(), ".cuesheet", "sessions");
+// Overridable so an integration test can drive the real surface against a
+// throwaway root instead of the real one. `rm -rf` on a developer's home is
+// not a thing a test should need, and a test that cleans up after itself by
+// deleting the user's sessions is not a test.
+const SESSION_ROOT =
+  process.env.CUESHEET_SESSIONS ?? join(homedir(), ".cuesheet", "sessions");
 const SKILL_ROOTS = [join(homedir(), ".agents", "skills")];
 
 /**
@@ -320,18 +319,27 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
       // answer. It is a pure function of the state now, so a CLI, a TUI, an
       // API and an agent all get the same answer, and the surface only renders
       // what it is given. See src/affordances.ts.
-      // Read from the log rather than answered in the file. The first version
-      // said `pending: seen(false)`, which is a claim that nothing is in
-      // flight made by a surface that had not looked, and it is the reason the
-      // double "go" was still reachable at runtime after the rule existed.
-      const pendingEffects = unobservedEffects(
-        effectStatuses(durable.read(sessionId)),
+      //
+      // P8: the state is folded here and the affordances read that one fold.
+      // The previous version read the log a second time through
+      // `unobservedEffects`, so the surface and the fold were two readings of
+      // the same events, and "the same events" was true by inspection rather
+      // than by construction.
+      //
+      // `complete` is attested because this file was read from a store that
+      // either has the session or has none: `read` returns the whole file or
+      // an empty array, and there is no partial read. That is an argument, not
+      // a guarantee, so it is written down here where it can be checked.
+      const surfaceState = deriveState(durable.read(sessionId), sessionId, "complete");
+      const stagedState = deriveState(
+        [{ kind: "goal", subject: "", data: { text: goal }, seq: 0, at: 0 }],
+        sessionId,
+        "complete",
       );
       const permits = (a: Affordance) =>
-        deriveAffordances({
-          staged: seen({ text: goal, open: true }),
-          hasSession: durable.list().length > 0,
-          pending: seen(pendingEffects.length > 0),
+        affordancesOf({
+          ...surfaceState,
+          goal: stagedState.goal,
         }).some((x) => x.action === a);
 
       if (permits("APPROVE_GOAL") && decision.kind === "confirm") {

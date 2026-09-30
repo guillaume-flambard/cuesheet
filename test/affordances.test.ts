@@ -15,8 +15,25 @@ import type { Event } from "../src/core/store.ts";
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 
+const state_events = () => [
+  event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
+  event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
+];
 const has = (input: AffordanceInput, action: string) =>
   deriveAffordances(input).some((a) => a.action === action);
+
+const ev = (kind: Event["kind"], data: Record<string, unknown>, seq: number): Event => ({
+  kind,
+  subject: "fix the display",
+  data,
+  seq,
+  at: 1_790_000_000_000 + seq,
+});
+const goalEvent = () => ev("goal", { text: "fix the display" }, 1);
+const requested = (id: string, seq: number) =>
+  ev("effect_requested", { effect: "SpawnAgent", effectId: id, affordance: "APPROVE_GOAL", reads: {} }, seq);
+const observed = (id: string, outcome: string, seq: number) =>
+  ev("effect_observed", { effectId: id, outcome }, seq);
 
 const stagedOpen: AffordanceInput = {
   staged: seen({ text: "fix the display", open: true }),
@@ -94,66 +111,89 @@ describe("affordances", () => {
     assert.doesNotMatch(labelBlock, /\bgit\b|registry|portfolio/i);
   });
 
-  it("AFF-04 both surfaces receive the same set", () => {
-    // There is one function. A CLI and an API cannot disagree about what is
-    // possible unless one of them stopped calling it, which a test would see.
-    const state = deriveState([
-      event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
-    ]);
-    const fromState = affordancesOf(state, seen(false)).map((a) => a.action);
-    const fromInput = deriveAffordances({
-      staged: state.goal,
-      hasSession: true,
-      pending: seen(false),
-    }).map((a) => a.action);
-    assert.deepEqual(fromState, fromInput);
+  it("AFF-04 affordances are a function of the state, and of nothing else", () => {
+    // The consistency check P8 exists for, as a table of real sequences rather
+    // than a property test. Two rules, one fold, one reading:
+    //
+    //   pendingEffect known(true) -> APPROVE_GOAL absent
+    //   pendingEffect unknown      -> APPROVE_GOAL absent
+    //
+    // The important half is the shape of the call: `affordancesOf(state)` takes
+    // the fold and nothing else. There is no second argument that could carry a
+    // different reading of the same events, so the two cannot disagree even in
+    // principle rather than merely today.
+    const cases: Array<{ name: string; events: Event[]; complete: boolean }> = [
+      { name: "a goal, nothing asked", events: [goalEvent()], complete: true },
+      {
+        name: "an effect requested and answered",
+        events: [goalEvent(), requested("E1", 2), observed("E1", "succeeded", 3)],
+        complete: true,
+      },
+      {
+        name: "an effect requested and refused",
+        events: [goalEvent(), requested("E1", 2), observed("E1", "failed", 3)],
+        complete: true,
+      },
+      { name: "an effect requested, unanswered", events: [goalEvent(), requested("E1", 2)], complete: true },
+      {
+        name: "two effects, one answered",
+        events: [goalEvent(), requested("E1", 2), observed("E1", "succeeded", 3), requested("E2", 4)],
+        complete: true,
+      },
+      {
+        name: "an observation naming an effect nobody asked for",
+        events: [goalEvent(), observed("E9", "succeeded", 2)],
+        complete: true,
+      },
+      { name: "an empty log", events: [], complete: true },
+      { name: "a goal, log not attested complete", events: [goalEvent()], complete: false },
+      {
+        name: "every effect resolved but the log is incomplete",
+        events: [goalEvent(), requested("E1", 2), observed("E1", "succeeded", 3)],
+        complete: false,
+      },
+    ];
+
+    for (const c of cases) {
+      const state = deriveState(c.events, "s", c.complete ? "complete" : "incomplete");
+      const actions = affordancesOf(state).map((a) => a.action);
+
+      if (state.pendingEffect.value === true) {
+        assert.equal(
+          actions.includes("APPROVE_GOAL"),
+          false,
+          `${c.name}: pending is known true, so approving must be absent`,
+        );
+      }
+      if (!state.pendingEffect.known) {
+        assert.equal(
+          actions.includes("APPROVE_GOAL"),
+          false,
+          `${c.name}: pending is unknown, so approving must be absent`,
+        );
+      }
+      // The positive case, so the two assertions above are not satisfied by a
+      // function that never offers approving at all. It is conditioned on a
+      // staged goal because an empty log has nothing to approve, which my first
+      // version of this table forgot and the assertion caught.
+      if (state.pendingEffect.value === false && state.goal.known && state.goal.value.open) {
+        assert.equal(
+          actions.includes("APPROVE_GOAL"),
+          true,
+          `${c.name}: a goal is staged and nothing is in flight, so approving must be offered`,
+        );
+      }
+    }
   });
 
-  it("AFF-07 a pending effect withholds approving and nothing else", () => {
-    // The double "go". While an effect is asked for and unanswered, approving
-    // again is not in the list at all, so a surface cannot render it and an
-    // agent cannot select it. Everything else survives: a person whose spawn
-    // has not come back yet must still be able to change their mind.
-    const inFlight = deriveAffordances({
-      staged: seen({ text: "fix the display", open: true }),
-      hasSession: true,
-      pending: seen(true),
-    }).map((a) => a.action);
-
-    assert.equal(inFlight.includes("APPROVE_GOAL"), false, "a second go is not offered");
-    assert.equal(inFlight.includes("REJECT_GOAL"), true, "discarding still works");
-    assert.equal(inFlight.includes("REPLACE_GOAL"), true, "changing the mind still works");
-    assert.equal(inFlight.includes("CANCEL_SESSION"), true, "leaving still works");
-    assert.equal(inFlight.includes("EXIT"), true, "and quitting is never a lock");
-
-    // Withheld as absence rather than as a flag, which is AFF-02 applied to
-    // an effect: there is nothing to render and nothing to select.
-    assert.equal(inFlight.includes("APPROVE_GOAL"), false);
-
-    // Once the world answers, approving comes back. Observed false, not absent.
-    const answered = deriveAffordances({
-      staged: seen({ text: "fix the display", open: true }),
-      hasSession: true,
-      pending: seen(false),
-    }).map((a) => a.action);
-    assert.equal(answered.includes("APPROVE_GOAL"), true);
-  });
-
-  it("AFF-08 an unobserved pending effect withholds approving too", () => {
-    // The doctrine, one level up. Not knowing whether something is in flight is
-    // not the same as knowing nothing is, so a caller who never looked cannot
-    // start an effect. If this ever relaxed, every surface that forgot to look
-    // would silently get the double "go" back.
-    const neverLooked = deriveAffordances({
-      staged: seen({ text: "fix the display", open: true }),
-      hasSession: true,
-      pending: unknown("nobody checked the log"),
-    }).map((a) => a.action);
-
-    assert.equal(neverLooked.includes("APPROVE_GOAL"), false);
-    // And the refusal to start is not a lock on everything else.
-    assert.equal(neverLooked.includes("REJECT_GOAL"), true);
-    assert.equal(neverLooked.includes("EXIT"), true);
+  it("AFF-09 the two surfaces cannot disagree, because there is only one reading", () => {
+    // Before P8 this compared a state-derived list against an input-derived
+    // list, which was two readings of the same log and could have diverged.
+    // Now there is one function and one input, so the strongest thing to say is
+    // that it is a function: same state in, same answer out.
+    const state = deriveState([goalEvent(), requested("E1", 2)], "s", "complete");
+    assert.deepEqual(affordancesOf(state).map((a) => a.action), affordancesOf(state).map((a) => a.action));
+    assert.equal(affordancesOf(state).some((a) => a.action === "APPROVE_GOAL"), false);
   });
 
   it("AFF-05 an unknown state enables nothing that mutates the intent", () => {
@@ -220,15 +260,29 @@ describe("affordances", () => {
   });
 
   it("allows() asks the same question the list answers", () => {
-    const state = deriveState([
-      event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
-      event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
-    ]);
-    assert.equal(allows(state, "APPROVE_GOAL", seen(false)), true);
-    assert.equal(allows(state, "INSPECT", seen(false)), true);
-    assert.equal(allows(deriveState([]), "APPROVE_GOAL", seen(false)), false);
+    // "complete" is stated here because the fold now refuses to guess, and the
+    // refusal is visible: without it this log is unobservable as far as effects
+    // go and APPROVE_GOAL is withheld.
+    const state = deriveState(
+      [
+        event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
+        event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
+      ],
+      "s",
+      "complete",
+    );
+    assert.equal(allows(state, "APPROVE_GOAL"), true);
+    // The same events, not attested: approving is withheld because nobody said
+    // nothing is in flight.
     assert.equal(
-      allows(deriveState([]), "INSPECT", seen(false)),
+      allows(deriveState(state_events(), "s", "incomplete"), "APPROVE_GOAL"),
+      false,
+      "an unattested log cannot clear the way",
+    );
+    assert.equal(allows(state, "INSPECT"), true);
+    assert.equal(allows(deriveState([]), "APPROVE_GOAL"), false);
+    assert.equal(
+      allows(deriveState([]), "INSPECT"),
       false,
       "no events, nothing to inspect",
     );

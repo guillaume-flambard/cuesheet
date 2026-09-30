@@ -35,14 +35,17 @@ export interface AffordanceInput {
   /**
    * Whether an effect was asked for and has not been answered.
    *
+   * Carried in, not derived here, because `affordancesOf` already has the state
+   * that carries it and `deriveAffordances` is the shape that predates it.
+   *
    * Observed rather than boolean, and that is the whole point. A caller that
    * never looked cannot say "nothing is in flight": not knowing is not the same
    * as knowing there is nothing, which is REGISTRY_UNVERIFIED in the execution
    * path and EFF-07 in this one. Only an observed `false` clears the way.
    *
-   * So `pending` is required. An optional one would let every pre-P7 caller
-   * keep compiling and silently mean `false`, and the double approval would
-   * come back without anyone touching the code that allows it.
+   * Required. An optional one would let every pre-P7 caller keep compiling and
+   * silently mean `false`, and the double approval would come back without
+   * anyone touching the code that allows it.
    */
   pending: Observed<boolean>;
 }
@@ -168,26 +171,28 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
  * renders from a fold cannot disagree with itself about whether something is
  * in flight.
  */
-export function affordancesOf(state: SessionState, pending: Observed<boolean>): AvailableAction[] {
-  return deriveAffordances({ staged: state.goal, hasSession: state.events > 0, pending });
+export function affordancesOf(state: SessionState): AvailableAction[] {
+  return deriveAffordances({
+    staged: state.goal,
+    hasSession: state.events > 0,
+    pending: state.pendingEffect,
+  });
 }
 
 /**
  * True when the state permits the action. A surface asks; it does not decide.
  *
- * `pending` is a required parameter, for the same reason
- * `AffordanceInput.pending` is: making it derivable from the fold alone would
- * mean a caller holding a state from an older log gets a confident answer about
- * an effect it never saw. The first version defaulted it to `false`, which is
- * the exact claim EFF-07 forbids, so every call site compiled unchanged and
- * every one of them was asserting that nothing was in flight.
+ * The pending effect comes out of `state`, which is the point of P8: a control
+ * decision reads the fold and nothing else. There is no second reading of the
+ * log to disagree with this one.
+ *
+ * The first version of this function took `pending` as a parameter and
+ * defaulted it to `seen(false)`. That default is the exact claim EFF-07
+ * forbids, so every call site compiled unchanged while asserting that nothing
+ * was in flight.
  */
-export function allows(
-  state: SessionState,
-  action: Affordance,
-  pending: Observed<boolean>,
-): boolean {
-  return affordancesOf(state, pending).some((a) => a.action === action);
+export function allows(state: SessionState, action: Affordance): boolean {
+  return affordancesOf(state).some((a) => a.action === action);
 }
 
 export const AFFORDANCE_LABEL: Record<Affordance, string> = {

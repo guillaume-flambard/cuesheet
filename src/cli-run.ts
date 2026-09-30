@@ -20,7 +20,12 @@ import { OpenRouterAdapter } from "../src/adapters/openrouter.ts";
 import { SessionStore } from "../src/adapters/session-store.ts";
 import { ShellToolRunner } from "../src/adapters/shell.ts";
 
-const SESSION_ROOT = join(homedir(), ".cuesheet", "sessions");
+// Overridable so an integration test can drive the real surface against a
+// throwaway root instead of the real one. `rm -rf` on a developer's home is
+// not a thing a test should need, and a test that cleans up after itself by
+// deleting the user's sessions is not a test.
+const SESSION_ROOT =
+  process.env.CUESHEET_SESSIONS ?? join(homedir(), ".cuesheet", "sessions");
 const SKILL_ROOTS = [join(homedir(), ".agents", "skills")];
 
 function fail(message: string): never {
