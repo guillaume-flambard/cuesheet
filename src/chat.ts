@@ -30,6 +30,7 @@ import { join } from "node:path";
 import { routeIntention } from "./core/intent.ts";
 import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
+import { deriveState, stateReport } from "./state.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
 import {
   resolveCapabilities,
@@ -466,10 +467,18 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           console.log(`no events for ${intent.id}`);
           break;
         }
-        // One log, one projection per reader. The renderer is chosen by
-        // whether this is a terminal, so a pipe gets JSON a script can read
-        // and a person gets a column.
-        console.log(render(events, projectionFor(process.stdout.isTTY ? "interactive" : "machine")));
+        // Three renderings of one log: the state a viewer can read, and the
+        // event stream. The state is a fold, so it observes nothing: it cannot
+        // be the reason a read got slow, and it says `unknown` rather than
+        // looking anything up to fill a column.
+        const state = deriveState(events, intent.id as string);
+        if (process.stdout.isTTY) {
+          console.log(stateReport(state));
+          console.log("");
+        }
+        console.log(
+          render(events, projectionFor(process.stdout.isTTY ? "interactive" : "machine")),
+        );
         break;
       }
       case "resume": {

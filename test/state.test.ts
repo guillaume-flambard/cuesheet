@@ -1,0 +1,204 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { deriveState, seen, stateReport, unknown } from "../src/state.ts";
+import { InteractiveProjection, MachineProjection, render } from "../src/projections.ts";
+import type { Event } from "../src/core/store.ts";
+
+const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
+const sources = ["state.ts", "projections.ts"].map((f) => ({
+  file: f,
+  text: readFileSync(join(SRC, f), "utf8"),
+}));
+
+const event = (over: Partial<Event> = {}): Event => ({
+  seq: 1,
+  at: new Date("2026-09-29T16:08:00").getTime(),
+  kind: "observation",
+  subject: "builder",
+  data: {},
+  ...over,
+});
+
+describe("VIEW the state, and what a view may do to it", () => {
+  it("VIEW-01 rendering performs no observation", () => {
+    // The rule that keeps the banner cheap and the prompt free. A view that
+    // reaches for git, a registry or the filesystem stops being a view and
+    // becomes an observation, and the cost returns on every repaint.
+    const forbidden = [
+      /\bexecFileSync\b/,
+      /\bspawnSync\b/,
+      /\breadFileSync\b/,
+      /\bexistsSync\b/,
+      /\breaddirSync\b/,
+      /snapshotPortfolio/,
+      /\bnew Date\b(?!\s*\()/,
+      /Date\.now\(/,
+      /Math\.random\(/,
+    ];
+    for (const { file, text } of sources) {
+      for (const pattern of forbidden) {
+        assert.doesNotMatch(
+          text,
+          pattern,
+          `${file} observes or invents: ${pattern.source}`,
+        );
+      }
+    }
+  });
+
+  it("VIEW-01b the state module imports nothing that could observe", () => {
+    // Static imports are checked separately from the bodies, because a module
+    // can observe with an import it never calls.
+    const text = readFileSync(join(SRC, "state.ts"), "utf8");
+    for (const match of text.matchAll(/from\s+["']([./][^"']*)["']/g)) {
+      assert.equal(
+        match[1],
+        "./core/store.ts",
+        `state.ts imports ${match[1]}; a view may read the log and nothing else`,
+      );
+    }
+    assert.doesNotMatch(text, /from\s+["']node:/);
+  });
+
+  it("VIEW-02 unknown stays unknown", () => {
+    // A log with no goal yields unknown, not a goal that happens to be empty
+    // and not an invented one. The gap is the information.
+    const state = deriveState([]);
+    assert.equal(state.goal.known, false);
+    // Not `value` at all on the unknown side, so a caller cannot reach through
+    // it and get undefined dressed as a goal.
+    assert.equal("value" in state.goal, false, "an unknown carries no value to read");
+    assert.match((state.goal as { why: string }).why, /no goal/);
+  });
+
+  it("VIEW-03 human and machine views derive from the same state", () => {
+    const state = deriveState([
+      event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
+      event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
+      event({ seq: 3, kind: "evidence", subject: "tests", data: { claim: "portability", source: "PORT-04" } }),
+    ]);
+    // The same fold, so the same numbers, so a disagreement is impossible by
+    // construction rather than by review.
+    assert.equal(state.goal.known && state.goal.value.text, "fix the display");
+    assert.equal(state.running, 1);
+    assert.equal(state.proven.length, 1);
+
+    const interactive = render(state.recent, new InteractiveProjection());
+    const machine = render(state.recent, new MachineProjection())
+      .split("\n")
+      .map((l) => JSON.parse(l) as { seq: number });
+    assert.equal(machine.length, state.recent.length);
+    assert.deepEqual(
+      machine.map((m) => m.seq),
+      state.recent.map((e) => e.seq),
+    );
+    assert.ok(interactive.length > 0);
+  });
+
+  it("VIEW-04 recent events are history, not current state", () => {
+    // An old action is not a running subject. Recency is the view's problem,
+    // and if the fold decided it from the tail, a finished goal would still
+    // look busy for as long as the window held.
+    const state = deriveState([
+      event({ seq: 1, kind: "action", subject: "builder", data: { tool: "edit" } }),
+      event({ seq: 2, kind: "evidence", subject: "builder", data: { status: "passed" } }),
+      event({ seq: 3, kind: "observation", subject: "builder", data: { text: "waiting for review" } }),
+    ]);
+    const builder = state.subjects.find((s) => s.subject === "builder");
+    // The last event that said anything about state was the evidence, on the
+    // same subject, so the subject is done. The trailing observation is
+    // history: it carries text, not a state change, and it does not revive
+    // the subject. This is the property: recency is not state.
+    assert.ok(builder, "the subject is present");
+    assert.equal(builder.state, "done");
+    assert.equal(state.running, 0, "nothing is running once the evidence landed");
+    assert.equal(state.recent.length, 3, "the tail is history and is kept whole");
+    assert.match(
+      state.recent[2]!.data.text as string,
+      /waiting for review/,
+      "history keeps the text that the state chose not to read as a transition",
+    );
+  });
+
+  it("VIEW-04b the fold is pure, so a second call agrees with the first", () => {
+    const events = [
+      event({ seq: 1, kind: "goal", subject: "", data: { text: "x" } }),
+      event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
+    ];
+    const once = deriveState(events);
+    const twice = deriveState(events);
+    assert.deepEqual(
+      JSON.parse(JSON.stringify(once)),
+      JSON.parse(JSON.stringify(twice)),
+      "a projection called twice on one log must agree",
+    );
+  });
+
+  it("VIEW-05 a known value is distinguishable from an absent one", () => {
+    // The type distinction is the whole point, so it is exercised directly
+    // rather than only through a goal that happens to be missing.
+    assert.equal(seen(3).known, true);
+    assert.equal(unknown().known, false);
+    assert.equal(unknown("git failed").known, false);
+    assert.match((unknown("git failed") as { why: string }).why, /git failed/);
+  });
+
+  it("VIEW-06 pipe output carries no presentation-only state", () => {
+    // The machine rendering must not carry a word addressed to a person: no
+    // prompt, no "staged", no encouragement. A script reading it should get
+    // facts and nothing to be confused by.
+    const state = deriveState([
+      event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
+      event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
+    ]);
+    const lines = render(state.recent, new MachineProjection()).split("\n");
+    for (const line of lines) {
+      const parsed = JSON.parse(line) as Record<string, unknown>;
+      for (const key of Object.keys(parsed)) {
+        assert.doesNotMatch(key, /prompt|staged|message|help/i, `presentation key: ${key}`);
+      }
+      assert.doesNotMatch(line, /cuesheet>|go\?/);
+    }
+  });
+
+  it("the human report reads a state and never a source", () => {
+    // The report is where a view is most tempted to fetch a missing fact, so
+    // it gets its own property: everything it prints came from the object it
+    // was handed, and a gap is reported as a gap.
+    const withGoal = stateReport(
+      deriveState([
+        event({ seq: 1, kind: "goal", subject: "", data: { text: "fix the display" } }),
+        event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
+      ]),
+    );
+    assert.match(withGoal, /goal\s+fix the display/);
+    assert.match(withGoal, /builder\s+running/);
+
+    const without = stateReport(deriveState([]));
+    assert.match(without, /goal\s+unknown: no goal/, "an absent goal is stated, not left blank");
+    assert.match(without, /subjects\s+none in this log/);
+    assert.match(
+      without,
+      /proven\s+nothing carries both a claim and its evidence/,
+      "no claims is a fact about the log, not an invitation to look for some",
+    );
+  });
+
+  it("the fold counts only what it saw", () => {
+    // A state with two subjects and one goal must not invent an "idle" entry
+    // for a subject nobody mentioned, nor count an event twice.
+    const state = deriveState([
+      event({ seq: 1, kind: "goal", subject: "", data: { text: "x" } }),
+      event({ seq: 2, kind: "action", subject: "builder", data: { tool: "edit" } }),
+      event({ seq: 3, kind: "action", subject: "builder", data: { tool: "test" } }),
+    ]);
+    assert.equal(state.events, 3);
+    assert.equal(state.subjects.length, 1);
+    assert.equal(state.running, 1, "one subject, counted once");
+  });
+});
