@@ -21,8 +21,23 @@ import { join } from "node:path";
 import type { DurableObject, Frontier } from "../core/memory.ts";
 import { buildFrontier, wakeable } from "../core/memory.ts";
 
-const PROJECTS_ROOT = join(homedir(), "projects");
-const REGISTRY = join(PROJECTS_ROOT, "PROJECTS.md");
+/**
+ * Where the portfolio lives on the machine that is not asking.
+ *
+ * `~/projects` is this machine's layout, and it used to be a module constant,
+ * which meant the adapter could not be pointed at any other layout at all. It
+ * is now a default that every entry point can override, so a second person can
+ * read their own portfolio without editing this file. See test/portability.test.ts.
+ */
+export const DEFAULT_PROJECTS_ROOT = join(homedir(), "projects");
+
+/** The five categories the registry groups projects into. */
+const CATEGORIES = ["products", "tools", "infrastructure", "experiments", "clients"];
+
+export interface FrontierOptions {
+  /** Where the projects tree is. Defaults to `~/projects`. */
+  projectsRoot?: string;
+}
 
 /** What the registry says, which is the declared truth about what exists. */
 export interface RegistryEntry {
@@ -44,12 +59,13 @@ export interface RepoReality {
   hasRemote: boolean;
 }
 
-function parseRegistry(): RegistryEntry[] {
-  if (!existsSync(REGISTRY)) {
+function parseRegistry(projectsRoot: string): RegistryEntry[] {
+  const registry = join(projectsRoot, "PROJECTS.md");
+  if (!existsSync(registry)) {
     return [];
   }
   const out: RegistryEntry[] = [];
-  for (const line of readFileSync(REGISTRY, "utf8").split("\n")) {
+  for (const line of readFileSync(registry, "utf8").split("\n")) {
     if (!line.startsWith("| ")) continue;
     const cells = line
       .split("|")
@@ -70,8 +86,8 @@ function parseRegistry(): RegistryEntry[] {
   return out;
 }
 
-function probe(entry: RegistryEntry): RepoReality {
-  const dir = join(PROJECTS_ROOT, entry.path);
+function probe(entry: RegistryEntry, projectsRoot: string): RepoReality {
+  const dir = join(projectsRoot, entry.path);
   if (!existsSync(join(dir, ".git"))) {
     return {
       entry,
@@ -122,17 +138,18 @@ export interface PortfolioSnapshot {
  * Read the portfolio. Every number here is read from git rather than recalled,
  * which is the only reason the Frontier can be trusted to describe the present.
  */
-export function snapshotPortfolio(): PortfolioSnapshot {
-  const entries = parseRegistry();
+export function snapshotPortfolio(options: FrontierOptions = {}): PortfolioSnapshot {
+  const projectsRoot = options.projectsRoot ?? DEFAULT_PROJECTS_ROOT;
+  const entries = parseRegistry(projectsRoot);
   const projects = entries
     .filter((e) => e.kind === "repo")
-    .map(probe);
+    .map((e) => probe(e, projectsRoot));
 
   const declared = new Set(projects.map((p) => p.entry.path));
 
   const presentButUndeclared: string[] = [];
-  for (const category of ["products", "tools", "infrastructure", "experiments", "clients"]) {
-    const dir = join(PROJECTS_ROOT, category);
+  for (const category of CATEGORIES) {
+    const dir = join(projectsRoot, category);
     if (!existsSync(dir)) continue;
     for (const name of readdirSync(dir)) {
       const rel = `${category}/${name}`;

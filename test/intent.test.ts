@@ -21,6 +21,37 @@ describe("routeIntention", () => {
     assert.equal(routeIntention("aide").kind, "help");
   });
 
+  it("a greeting is a shape, not a list of words", () => {
+    // The list failed on "hey there", the shape failed on "bonjour la", then on
+    // "salut toi", then on "bonjour tout le monde", then on "hey how are you".
+    // Widening a list is the wrong instrument for an open set. These are the
+    // cases that broke each earlier attempt, pinned so a fourth does not start.
+    for (const line of [
+      "hey there", "hi there", "ok go", "ok then", "ok, go", "thanks",
+      "thank you", "bonjour la", "salut toi", "bonjour tout le monde",
+      "hey how are you", "salut comment ça va", "ca va", "ca va ?",
+      "d'accord", "merci beaucoup", "ouais", "yo",
+    ]) {
+      assert.equal(routeIntention(line).kind, "conversational", line);
+    }
+  });
+
+  it("a greeting never swallows a work order, however it opens", () => {
+    // The property the greeting pattern exists to protect. "test" is in the
+    // social set, so "test the parser" must not be read as a greeting, and a
+    // greeting followed by a verb must stay work.
+    for (const line of [
+      "hey fix the failing test",
+      "ok go write the plan",
+      "ca va le fichier est cassé",
+      "test the parser",
+      "runs the suite",
+      "ecris le plan",
+    ]) {
+      assert.equal(routeIntention(line).kind, "goal", line);
+    }
+  });
+
   it("an interrogative about working reaches ownership, not goal", () => {
     // The first question anyone asks when opening the surface, in both
     // languages. It is a question shape, not a noun, so the keyword pattern

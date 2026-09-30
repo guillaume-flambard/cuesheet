@@ -212,7 +212,25 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   console.log("cuesheet chat");
   console.log(`  here      ${cwd}`);
   if (inHome) {
-    console.log("            you are in your home directory: open cuesheet inside a project for scoped work.");
+    // Say what this surface can do from here, not only what it cannot. The
+    // previous line told the person they were in the wrong place and stopped,
+    // which is a complaint dressed as a welcome: the portfolio view answers
+    // from here, and it is the first thing anyone asks.
+    console.log(
+      "            home directory. goals need a project, but the portfolio answers from here.",
+    );
+    try {
+      const { snapshotPortfolio } = await import("./adapters/frontier.ts");
+      const snap = snapshotPortfolio();
+      const hint = snap.free[0];
+      console.log(
+        `            ${snap.free.length} free, ${snap.held.length} held.` +
+          (hint ? ` try: cd ${hint} && cuesheet` : ""),
+      );
+    } catch {
+      // The portfolio is a convenience here, not a prerequisite. A surface
+      // that cannot read it must still start.
+    }
   }
   const listing = liveRegistry();
   console.log(

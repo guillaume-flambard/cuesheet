@@ -59,6 +59,57 @@ const ID = "[A-Za-z0-9._-]+";
 const INTERROGATIVE =
   /(?:\?|sur quoi|quoi (?:faire|travailler|on fait)|que (?:peut-on|puis-je|est-ce qu'on)|what can we|what should we|where can we|which (?:repo|project))/;
 
+/** Words that open a line without asking for anything to be built. */
+const GREETING_WORD =
+  /^(?:hello|hi|hey|yo|hey there|hi there|bonjour|bonsoir|salut|coucou|allo|thanks|thank you|merci|ok|okay|test|plop)\b/;
+
+/**
+ * Lines that are social in their entirety rather than by opening.
+ *
+ * "ca va" and "d'accord" are greetings on their own, not prefixes, so they
+ * cannot be expressed as a head word. They are exact phrases, which is safe
+ * here because a phrase with a fixed shape cannot grow the way a head word
+ * list does: there is only one way to write "ca va".
+ */
+const SOCIAL_PHRASE =
+  /^(?:ça va|ca va|ça va bien|ca va bien|ça va aller|ca va aller|ok d'accord|ok d accord|d'accord|d accord|ouais|yep|yeah)$/;
+
+/**
+ * Anything that reads as a request to make, change, check or run something.
+ *
+ * This is the guard, not the greeting list. Its job is one-directional: if a
+ * line carries one of these, it is work no matter how it opens, which is what
+ * keeps "hey, fix the failing test" out of the greeting path.
+ */
+const WORK_VERB =
+  /\b(?:add|build|change|check|commit|create|debug|delete|deploy|extract|fix|implement|make|move|open|push|refactor|remove|rename|repair|revert|run|ship|test|update|write|écris|corrige|ajoute|crée|supprime|supprim|teste|verifie|vérifie|lance|modifie|refais|refait|nouvelle|nouveau)\b/;
+
+/**
+ * A line is social when it opens as a greeting, carries no question, and
+ * carries no work verb.
+ *
+ * Requiring all three is what makes this safe. The greeting alone is not
+ * enough, because "hey fix the test" opens the same way and is work. The
+ * absence of a verb alone is not enough either, because "what can we work on"
+ * has no verb and is a question. Together they separate the three cases that
+ * a list of exact words could not keep separating.
+ */
+function isSocial(normalised: string): boolean {
+  if (!normalised) {
+    return false;
+  }
+  if (INTERROGATIVE.test(normalised)) {
+    return false;
+  }
+  if (WORK_VERB.test(normalised)) {
+    return false;
+  }
+  if (SOCIAL_PHRASE.test(normalised)) {
+    return true;
+  }
+  return GREETING_WORD.test(normalised);
+}
+
 export function routeIntention(raw: string): Intent {
   const text = raw.trim();
   if (!text) {
@@ -81,14 +132,25 @@ export function routeIntention(raw: string): Intent {
   }
   // Social lines get a social answer, not a work order. "hello ?" once ran a
   // full agent budget trying to respond with tools, which is the most
-  // expensive greeting this project has ever paid for. The set is exact words
-  // with trailing punctuation stripped, so "fix the test" never lands here.
-  const social = lower.replace(/[!?.\s]+$/, "");
-  if (
-    /^(hello|hi|hey|yo|bonjour|salut|coucou|allo|ça va|ca va|merci|merci beaucoup|ok|d'accord|daccord|test|plop)$/.test(
-      social,
-    )
-  ) {
+  // expensive greeting this project has ever paid for.
+  //
+  // Two attempts failed before this one and both are worth not repeating. The
+  // first was a list of exact words, so "hey there", "ok go" and "thanks" fell
+  // through to goal. The second was a shape, a greeting plus up to two address
+  // words, which fixed those and then "bonjour la", then "salut toi", then
+  // "bonjour tout le monde", then "hey how are you". Widening a list is the
+  // wrong instrument for an open set, and I did it twice before noticing.
+  //
+  // The test is therefore not the greeting, it is the absence of work. A line
+  // that opens with a greeting and carries no imperative verb anywhere is
+  // social. "fix the test" has a verb, "hey fix the test" has one, and both
+  // stay goals, which is the property that actually matters: the router must
+  // never hand a work order to the greeting path.
+  const social = lower
+    .replace(/[!?.,;\s]+$/, "")
+    .replace(/[.,;]\s+/g, " ")
+    .trim();
+  if (isSocial(social)) {
     return { kind: "conversational", text: line, forced };
   }
   if (/^(capabilities?|skills?|capacités?)$/.test(lower)) {

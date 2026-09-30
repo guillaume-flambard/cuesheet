@@ -41,6 +41,41 @@ Both halves matter. A primitive with no evidence is speculation. A workaround
 that never gets extracted stays a trap for the next person, including the
 author.
 
+## Portability
+
+Three levels, deliberately not conflated, because claiming the third while
+having the first is how a tool stops working on anyone else's machine:
+
+```text
+PORTABLE    the code does not depend on the machine it was written on
+INSTALLABLE someone can install it without reading the source
+PUBLISHABLE we are ready to promise it works on their machine
+```
+
+This repository claims **PORTABLE**, and the claim is a test, not a promise.
+`test/portability.test.ts` holds twenty cases across five invariants:
+
+- **PORT-01** no path, home directory, working directory, or I/O module
+  appears under `src/core`, and core imports nothing but its own siblings
+- **PORT-02** adapters take their roots from the caller; a `homedir()` default
+  is allowed only when an option can override it
+- **PORT-03** the shim is machine-local and says so; it is asserted rather
+  than tolerated
+- **PORT-04** a disposable layout shaped nothing like `~/Users/memo/projects`
+  is built in a temporary directory and actually read
+- **PORT-05** no dependency is declared at all, and no test depends on this
+  machine's real projects
+
+PORT-04 is the one that matters. It creates a registry, a category tree and a
+git repository under `/tmp/.../srv/people/amina/work/projects`, and reads it
+without editing a line. That is the difference between portable and claimed
+portable.
+
+The install is still machine-local: `bin/cuesheet` points at
+`~/projects/tools/cuesheet`. That is INSTALLABLE-and-not-yet, and the test
+records it instead of hiding it. Making the shim resolve its root from the
+environment, and shipping an installer, is INSTALLABLE, which is not claimed.
+
 ## Layout
 
 ```text
@@ -53,7 +88,7 @@ src/core/memory.ts        durable objects and the conditions that wake them.
 src/adapters/             the only places allowed to do I/O.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     160 tests
+test/                     197 tests
 ```
 
 ## The primitive
