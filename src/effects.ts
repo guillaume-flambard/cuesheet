@@ -320,7 +320,7 @@ export function classifyFailure(cause: unknown): {
   // do not own and cannot read. The boundary is closer to the cause than the
   // exception type is, so it goes first.
   if (cause instanceof FailureWithOrigin) {
-    return { step: cause.step, origin: cause.origin, why: cause.why };
+    return { step: cause.step, origin: cause.origin, why: cause.message };
   }
 
   if (cause instanceof ReferenceError || cause instanceof SyntaxError) {
@@ -352,11 +352,21 @@ export function classifyFailure(cause: unknown): {
 export class FailureWithOrigin extends Error {
   readonly step: FailureStep;
   readonly origin: FailureOrigin;
+  /**
+   * The detail, kept as its own field rather than only as the message.
+   *
+   * `classifyFailure` read `cause.why` when only `cause.message` existed, so an
+   * attributed failure reported `why: undefined` and fell back to the exception
+   * type. The tests passed because they never constructed an instance. `tsc`
+   * found it in one line, which is the argument for having a type check at all.
+   */
+  readonly why: string;
 
   constructor(step: FailureStep, origin: FailureOrigin, why: string) {
     super(why);
     this.name = "FailureWithOrigin";
     this.step = step;
     this.origin = origin;
+    this.why = why;
   }
 }

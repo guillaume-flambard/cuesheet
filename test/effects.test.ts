@@ -291,12 +291,22 @@ describe("a boundary knows better than an exception type", () => {
     // `classifyFailure` checks for an attributed failure FIRST, so the boundary
     // wins over the type. The bare `ReferenceError` below is the control: same
     // exception type, different origin, because the boundary said so.
+    // A real instance, not a structural stand-in. `classifyFailure` reads it
+    // through `instanceof`, and `tsc` caught that the first version of this test
+    // exercised a path no adapter ever takes: the instance path read `cause.why`,
+    // which does not exist on the class, so an attributed failure silently fell
+    // through to the exception-type rules and was blamed on Cuesheet.
     const attributed = new FailureWithOrigin(
       "launch",
       "provider",
       "cannot read property of undefined",
     );
     assert.equal(classifyFailure(attributed).origin, "provider");
+    assert.equal(
+      classifyFailure(attributed).why,
+      "cannot read property of undefined",
+      "and the detail survives, read from the Error's own message",
+    );
 
     const bare = new ReferenceError("cannot read property of undefined");
     assert.equal(classifyFailure(bare).origin, "cuesheet", "the same message, unadorned");
