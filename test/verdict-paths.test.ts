@@ -27,7 +27,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -165,5 +165,59 @@ describe("the two verdict paths are named, and they differ by design", () => {
     });
     assert.equal(missing.verdict, "INCONCLUSIVE", "executed path refuses the same way");
     cleanup();
+  });
+});
+
+describe("a verification number is named by the oracle that produced it", () => {
+  it("no document states a bare FALSE VERIFIED", () => {
+    // Cuesheet has two verdict paths and they can disagree on one artifact, so
+    // a bare "FALSE VERIFIED: 0" is only ever true of a named population. The
+    // number becomes a lie the moment a reader assumes it covers both, and the
+    // reader is the only thing that makes a reliability figure mean anything.
+    //
+    // The rule is checked against the documents rather than trusted to them,
+    // because the first version of the matrix did state it bare and the sentence
+    // read perfectly well.
+    const docs = join(import.meta.dirname, "..", "docs");
+    const offenders: string[] = [];
+    for (const name of readdirSync(docs)) {
+      if (!name.endsWith(".md")) continue;
+      const text = readFileSync(join(docs, name), "utf8");
+      for (const line of text.split("\n")) {
+        if (!/FALSE VERIFIED/i.test(line)) continue;
+        // A line that names its oracle, or that is defining the vocabulary or
+        // explaining the rule, is fine. A line reporting a figure without one is
+        // not. The distinction is a backtick: an inline-code figure is a mention,
+        // a bare one is an assertion.
+        const inCode = line.includes("`");
+        const reports = !inCode && /=\s*[-0-9]|:\s*0\b/.test(line);
+        const namesOracle = /\[(verify|runAgainstArtifact)\]/.test(line);
+        const isVocabulary = /FALSE VERIFIED\s+a VERIFIED/.test(line);
+        if (reports && !namesOracle && !isVocabulary) {
+          offenders.push(`${name}: ${line.trim()}`);
+        }
+      }
+    }
+    assert.deepEqual(
+      offenders,
+      [],
+      `a verification figure without its oracle:\n${offenders.join("\n")}`,
+    );
+  });
+
+  it("the matrix states which path is unmeasured rather than calling it zero", () => {
+    const text = readFileSync(join(import.meta.dirname, "..", "docs", "reliability-matrix.md"), "utf8");
+    // `UNMEASURED`, not `0`. An absent measurement written as zero is the exact
+    // invention this project has spent fifteen milestones removing.
+    assert.match(
+      text,
+      /FALSE_VERIFIED\[verify\]\s*=\s*UNMEASURED/,
+      "the unmeasured path is named as unmeasured",
+    );
+    assert.match(
+      text,
+      /FALSE_VERIFIED\[runAgainstArtifact\]\s*=\s*0/,
+      "and the measured one is named with its figure",
+    );
   });
 });

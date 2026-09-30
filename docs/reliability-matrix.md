@@ -1,6 +1,6 @@
 # Reliability matrix: is Cuesheet right when the worker is wrong
 
-**FALSE VERIFIED: 0.** Thirteen deterministic rows, thirteen matching their
+**FALSE VERIFIED[runAgainstArtifact]: 0.** Thirteen deterministic rows, thirteen matching their
 expectation, thirteen falsifiable by a mutant that breaks Cuesheet on purpose.
 The metric is not stuck at zero: under a deliberately permissive oracle it rises
 to 3, on exactly the three rows whose work is wrong.
@@ -41,6 +41,20 @@ comes from.
 
 ```text
 FALSE VERIFIED   a VERIFIED whose work is not actually correct
+
+  **The oracle is named in the number, always.** Cuesheet has two verdict paths
+  and they can disagree on one artifact, because they answer different questions:
+  `verify()` is declarative and `runAgainstArtifact()` executes. A bare
+  A bare `FALSE VERIFIED` followed by a zero is therefore only true of one population, and the
+  bare number becomes a lie the moment a reader assumes it covers both. So:
+
+      FALSE_VERIFIED[verify]              = UNMEASURED
+      FALSE_VERIFIED[runAgainstArtifact]  = 0
+
+  The first is honestly absent rather than zero. The thirteen rows all run the
+  executed path, because a workspace and a red test are the only things here that
+  a declared requirement could be checked against. Closing the other is a real
+  piece of work, and calling it zero would be inventing the measurement.
 ```
 
 The definition that would have been flattering is `a VERIFIED accompanied by any
@@ -84,7 +98,7 @@ the matrix whether a row is measuring a distinction anybody makes.
 | R13 | conflated the outcomes | correct edit, two contradictory receipts | INCONCLUSIVE work, VERIFIED artifact | **INCONCLUSIVE / VERIFIED** | yes | `M-REJECT-ALL` |
 | L01 | — | a real language model | — | **SKIPPED**, reason printed | — | — |
 
-Aggregate: `FALSE VERIFIED: 0`, rows 13/13 as expected, rows no mutant can move:
+Aggregate: `FALSE VERIFIED[runAgainstArtifact]: 0`, rows 13/13 as expected, rows no mutant can move:
 **none**, non-control rows the naive harness also answers: **none**.
 
 R01 is a declared control. A worker that tells the truth is the one case a
@@ -350,7 +364,7 @@ print green. So the metric is run a second time against `M-ACCEPT`, a permissive
 oracle, and has to come out non-zero:
 
 ```text
-FALSE VERIFIED under a deliberately permissive oracle: 3 (R03 R04 R05)
+FALSE VERIFIED[runAgainstArtifact] under a deliberately permissive oracle: 3 (R03 R04 R05)
 ```
 
 If that number were still 0, the metric would not be measuring what this document
