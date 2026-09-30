@@ -254,26 +254,45 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   /** How many greetings were answered, so a second one gets a different reply. */
   let conversationalCount = 0;
   for await (const line of rl) {
-    // A staged goal waits for an explicit go. This is the confirmation that
-    // was missing when a bare "hello ?" consumed an entire agent budget: the
-    // user sees what would run, where, and decides with one word.
+    // A staged goal waits for an explicit approval. This is the confirmation
+    // that was missing when a bare "hello ?" consumed an entire agent budget:
+    // the user sees what would run, where, and decides with one word.
+    //
+    // The decision is routed rather than matched here, because the router is
+    // the tested place for that knowledge. It used to be a four-word list in
+    // this file, so "ok go", "ok vas-y", "lance" and "fais-le" all discarded
+    // the goal the person was approving, which is worse than not asking.
     if (staged !== null) {
       const goal = staged;
-      const decision = line.trim().toLowerCase();
-      staged = null;
-      if (/^(go|y|yes|oui|run)$/.test(decision)) {
+      const decision = routeIntention(line);
+      // Only an approval or a refusal consumes the staged goal. Anything else
+      // is a new intention, and the goal stays on the table, because
+      // discarding work on a stray keystroke is its own kind of loss.
+      if (decision.kind === "confirm") {
+        staged = null;
         await runGoal(goal, false, durable, cwd);
         if (done) break;
         rl.prompt();
         continue;
       }
-      console.log("staged goal discarded.");
-      if (/^(n|no|non)$/.test(decision)) {
+      if (decision.kind === "cancel") {
+        staged = null;
+        console.log(`discarded: ${goal}`);
         rl.prompt();
         continue;
       }
-      // Anything else is a new intention; it is routed below, and if it is
-      // another goal it restages on its own.
+      if (decision.kind !== "empty" && decision.kind !== "exit") {
+        console.log(`still staged: ${goal}`);
+        console.log("        go to run it, or name a new intention and it stays there.");
+        rl.prompt();
+        continue;
+      }
+      // Leaving is always leaving. A staged goal must not hold the process
+      // open, so exit and an empty line both fall through with the goal
+      // dropped rather than silently carried into a session that is closing.
+      if (decision.kind === "exit") {
+        staged = null;
+      }
     }
 
     const intent = routeIntention(line);
@@ -313,6 +332,56 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           );
         }
         break;
+      case "next": {
+        // The inventory answer was "free to write: 17", which is true and is
+        // not an answer to "on travaille sur quoi". Counts describe the
+        // portfolio; the question asks for a choice. So this names the
+        // projects, says why one is the cheapest, and stages the choice
+        // rather than ending in a number.
+        const { snapshotPortfolio } = await import("./adapters/frontier.ts");
+        const snap = snapshotPortfolio();
+
+        if (snap.held.length > 0) {
+          console.log(`held        ${snap.held.length}`);
+          for (const p of snap.held.slice(0, 5)) {
+            console.log(`  ${p}`);
+          }
+          if (snap.held.length > 5) {
+            console.log(`  ... and ${snap.held.length - 5} more`);
+          }
+          console.log("");
+          console.log("held means someone is in it or left work behind, so it is not a candidate now.");
+          console.log("");
+        }
+
+        if (snap.free.length === 0) {
+          console.log(`nothing free to write: all ${snap.held.length} projects are held.`);
+          console.log("  held is not an error: wait, or use an isolated worktree.");
+          break;
+        }
+
+        console.log(`free to write  ${snap.free.length}`);
+        for (const p of snap.free.slice(0, 8)) {
+          console.log(`  ${p}`);
+        }
+        if (snap.free.length > 8) {
+          console.log(`  ... and ${snap.free.length - 8} more`);
+        }
+        console.log("");
+        if (snap.presentButUndeclared.length > 0) {
+          console.log(
+            `not in the registry: ${snap.presentButUndeclared.join(", ")}`,
+          );
+          console.log("");
+        }
+        // A recommendation, not a menu. The first is offered as the default so
+        // the next word can be "go", which is cheaper than a decision.
+        const first = snap.free[0]!;
+        staged = `open ${first}`;
+        console.log(`next  ${first}`);
+        console.log(`go    to open it, or name another.`);
+        break;
+      }
       case "ownership": {
         const { snapshotPortfolio } = await import("./adapters/frontier.ts");
         const snap = snapshotPortfolio();

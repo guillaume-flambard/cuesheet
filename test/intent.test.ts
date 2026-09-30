@@ -27,13 +27,39 @@ describe("routeIntention", () => {
     // Widening a list is the wrong instrument for an open set. These are the
     // cases that broke each earlier attempt, pinned so a fourth does not start.
     for (const line of [
-      "hey there", "hi there", "ok go", "ok then", "ok, go", "thanks",
-      "thank you", "bonjour la", "salut toi", "bonjour tout le monde",
-      "hey how are you", "salut comment ça va", "ca va", "ca va ?",
-      "d'accord", "merci beaucoup", "ouais", "yo",
+      "hey there", "hi there", "thanks", "thank you", "bonjour la",
+      "salut toi", "bonjour tout le monde", "hey how are you",
+      "salut comment ça va", "ca va", "ca va ?", "d'accord", "ok",
+      "merci beaucoup", "ouais", "yo",
     ]) {
       assert.equal(routeIntention(line).kind, "conversational", line);
     }
+  });
+
+  it("approval is its own intent, and it is decided first", () => {
+    // Every way of saying yes resolves to the same act. This used to be a
+    // four-word list in chat.ts, so "ok go", "ok vas-y", "lance" and "fais-le"
+    // all discarded the goal the person was approving.
+    for (const line of [
+      "go", "ok go", "ok vas-y", "lance", "fais-le", "allez", "vas-y",
+      "lets go", "do it", "c'est parti", "allez-y", "bah vas-y",
+    ]) {
+      assert.equal(routeIntention(line).kind, "confirm", line);
+    }
+  });
+
+  it("refusal is its own intent too", () => {
+    for (const line of ["non", "stop", "arrête", "annule", "laisse tomber", "nope"]) {
+      assert.equal(routeIntention(line).kind, "cancel", line);
+    }
+  });
+
+  it("a greeting word with nothing after it stays a greeting", () => {
+    // "ok" alone is approval only when something is staged. The router does not
+    // know what is staged, so it routes the word by its shape and the surface
+    // decides. This is the decoupling, and it is why "ok" is not "confirm".
+    assert.equal(routeIntention("ok").kind, "conversational");
+    assert.equal(routeIntention("ok vas-y").kind, "confirm");
   });
 
   it("a greeting never swallows a work order, however it opens", () => {
@@ -52,16 +78,29 @@ describe("routeIntention", () => {
     }
   });
 
-  it("an interrogative about working reaches ownership, not goal", () => {
-    // The first question anyone asks when opening the surface, in both
-    // languages. It is a question shape, not a noun, so the keyword pattern
-    // could not reach it.
+  it("asking what to work on is a recommendation, not an inventory", () => {
+    // These used to reach the inventory, which answered "free to write: 17".
+    // A count describes the portfolio; the question asks for a choice. The two
+    // are now different intents, and `projects` still gives the counts.
     for (const line of [
       "on what can we work today ?",
       "sur quoi on peut travailler ?",
       "quoi faire ?",
       "what should we build next",
+      "on bosse sur quoi",
+      "et maintenant ?",
+      "next up",
+      "par quoi commencer",
+      "que faire maintenant",
+      "what can we do",
+      "next",
     ]) {
+      assert.equal(routeIntention(line).kind, "next", line);
+    }
+  });
+
+  it("the inventory is still reachable, and is still not the recommendation", () => {
+    for (const line of ["projects", "held", "qui peut écrire"]) {
       assert.equal(routeIntention(line).kind, "ownership", line);
     }
   });

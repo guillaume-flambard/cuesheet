@@ -23,6 +23,9 @@ export type IntentKind =
   | "exit"
   | "help"
   | "ownership"
+  | "next"
+  | "confirm"
+  | "cancel"
   | "capabilities"
   | "sessions"
   | "inspect"
@@ -40,6 +43,19 @@ export interface Intent {
   /** True when the line began with `!`: the owner explicitly overrode. */
   forced: boolean;
 }
+
+/**
+ * Whether a line is a decision about a staged action rather than new work.
+ *
+ * This is separated from `goal` on purpose. "go", "ok vas-y" and "fais-le"
+ * all mean the same act, and the surface has one staged action waiting. If
+ * they were goals, each one would become a new goal that replaced the previous
+ * one, and the person's approval would turn into a fresh work order.
+ */
+export type Confirmation =
+  | "confirm"
+  | "cancel"
+  | "none";
 
 /** Extracted from a line like `inspect ses_abc`, the session to act on. */
 const ID = "[A-Za-z0-9._-]+";
@@ -73,6 +89,23 @@ const GREETING_WORD =
  */
 const SOCIAL_PHRASE =
   /^(?:ça va|ca va|ça va bien|ca va bien|ça va aller|ca va aller|ok d'accord|ok d accord|d'accord|d accord|ouais|yep|yeah)$/;
+
+/**
+ * Approval of whatever is staged.
+ *
+ * The set is the shape "a greeting, then a verb of assent", not a list of the
+ * ways a person says go, because the list is open and the shape is not. A
+ * leading politeness is tolerated, so "ok go" and "vas-y" land on the same
+ * act, and "go" alone is the shortest case of the same shape.
+ */
+const ASSENT =
+  /^(?:(?:ok|ouais|allez|vas|vaz|yep|yes|yeah|sure|parfait|bon|alors|let's|lets|bah|voilà|voila)\s+)*(?:go|go !|lance|lancer|lancez|fais-le|fais le|fais|faites|execute|execute le|exécute|exécute le|run it|go for it|do it|launch|demarre|démarre|demarrer|démarrer|vas-y|vaz-y|allez-y|allez|c'est parti|c est parti|parce que c'est parti|parce que c est parti|y en a marre)$/;
+
+/**
+ * Refusal of whatever is staged. The same shape as assent, one polarity.
+ */
+const REFUSE =
+  /^(?:non|no|nope|nah|stop|arrête|arrete|arrêter|arreter|laisse|laisse tomber|annule|annuler|Forget it|Forget|laisse tomber ça|laisse tomber ca|pas maintenant|pas maintenant)$/;
 
 /**
  * Anything that reads as a request to make, change, check or run something.
@@ -110,6 +143,17 @@ function isSocial(normalised: string): boolean {
   return GREETING_WORD.test(normalised);
 }
 
+/**
+ * A request for what to work on, which is not a request for what is free.
+ *
+ * "projects" answers with counts: 17 writable, 28 held. "on travaille sur
+ * quoi" is the same person asking a different question, one that wants a
+ * recommendation rather than an inventory. The two were routed to the same
+ * place, and the inventory answered neither.
+ */
+const NEXT =
+  /(?:sur quoi|que (?:faire|faut-il|est prioritaire|est-ce prioritaire)|priorit|quoi (?:faire|ensuite|maintenant)|par quoi commencer|ensuite quoi|et maintenant|maintenant quoi|(?:on|qu'on) (?:peut-?on )?(?:travailler|bosse|fait|continue)|on (?:travaille|travaille-t-on|fait|fait-on|bosse|bosse-t-on|commence|commence-t-on|continue)|what (?:can we|do|should we|next|would we)|where do we|next (?:step|up)?$|next$)/;
+
 export function routeIntention(raw: string): Intent {
   const text = raw.trim();
   if (!text) {
@@ -122,10 +166,29 @@ export function routeIntention(raw: string): Intent {
     return { kind: "empty", text, forced };
   }
 
+  // Approval is decided before the greeting check, because "ok go" and "ok
+  // vas-y" open like a greeting and mean the opposite. The greeting guard runs
+  // on the line with the assent phrase removed, so neither rule can swallow the
+  // other's case.
   const lower = line.toLowerCase();
+  const bare = lower
+    .replace(/[!?.,;\s]+$/, "")
+    .replace(/[.,;]\s+/g, " ")
+    .trim();
 
   if (/^(exit|quit|q|sortie|quitte)$/.test(lower)) {
     return { kind: "exit", text: line, forced };
+  }
+  // Approval and refusal are decided before anything else, because they are
+  // about the act already on the table and must never become new work. A
+  // forced line is excluded: "!" is the owner overriding a refusal, so
+  // "!go" means run the staged goal, not confirm a suggestion.
+  if (!forced && (ASSENT.test(bare) || REFUSE.test(bare))) {
+    return {
+      kind: REFUSE.test(bare) ? "cancel" : "confirm",
+      text: line,
+      forced,
+    };
   }
   if (/^(help|aide|\?)$/.test(lower)) {
     return { kind: "help", text: line, forced };
@@ -146,10 +209,17 @@ export function routeIntention(raw: string): Intent {
   // social. "fix the test" has a verb, "hey fix the test" has one, and both
   // stay goals, which is the property that actually matters: the router must
   // never hand a work order to the greeting path.
-  const social = lower
-    .replace(/[!?.,;\s]+$/, "")
-    .replace(/[.,;]\s+/g, " ")
-    .trim();
+  //
+  // The assent phrase is stripped first. "ok go" and "ok vas-y" open with a
+  // greeting word, and without this they were answered with a greeting, which
+  // is how a person's approval turned into a dead keystroke.
+  // Only a politeness word that has something behind it is stripped. "merci"
+  // and "salut" are greetings in their own right, so stripping them there would
+  // turn a greeting into an empty line.
+  const social = bare.replace(
+    /^(?:(?:ok|ouais|allez|vas|vaz|yep|yes|yeah|sure|parfait|bon|alors|let's|lets|bah|voilà|voila)\s+)(?=\S)/,
+    "",
+  );
   if (isSocial(social)) {
     return { kind: "conversational", text: line, forced };
   }
@@ -159,7 +229,6 @@ export function routeIntention(raw: string): Intent {
   if (/^(sessions?|historique)$/.test(lower)) {
     return { kind: "sessions", text: line, forced };
   }
-
   const inspect = new RegExp(`^(?:inspect|inspecte)\\s+(${ID})$`, "i").exec(lower);
   if (inspect) {
     return { kind: "inspect", text: line, id: inspect[1], forced };
@@ -186,6 +255,22 @@ export function routeIntention(raw: string): Intent {
   // surface, and neither is a noun the pattern above can match. The shape is
   // interrogative, so a work order that merely contains one of these words,
   // "add a projects page", still falls through to goal.
+  //
+  // `next` is checked first because "on travaille sur quoi ?" is both a
+  // question and a request for a recommendation, and the recommendation is the
+  // more useful answer. An inventory would say "17 free" and end there.
+  //
+  // The work-verb guard applies unless the line ends in the marker, because a
+  // line that ends in "next" is a question whatever verb it carries:
+  // "what should we build next" is not an order to build. "on commence le
+  // refactor" has no marker and stays work.
+  const endsWithMarker = /\bnext$/.test(bare);
+  if (
+    NEXT.test(bare) &&
+    (endsWithMarker || !WORK_VERB.test(bare.replace(/^(?:on|qu'on|what|where|which)\s+/, "")))
+  ) {
+    return { kind: "next", text: line, forced };
+  }
   if (INTERROGATIVE.test(lower)) {
     return { kind: "ownership", text: line, forced };
   }

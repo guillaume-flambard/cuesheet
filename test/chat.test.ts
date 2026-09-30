@@ -68,20 +68,40 @@ describe("the chat surface", () => {
     assert.doesNotMatch(out, /cd into a project/);
   });
 
-  it("the first question anyone asks is answered from state", () => {
-    // Opening a work surface and asking what to work on is the entry point,
-    // and it is a question rather than a noun, so the keyword pattern above
-    // could not reach it.
+  it("the first question anyone asks gets a recommendation, not a count", () => {
+    // This used to answer "free to write: 17", which is an inventory and not
+    // an answer. It now names the held ones, names the free ones, and stages a
+    // choice so the next word can be "go".
     const { out } = say(["on what can we work today ?", "exit"], homedir());
-    assert.match(out, /free to write : \d+/);
-    assert.match(out, /held\s+:/);
     assert.doesNotMatch(out, /not a goal/);
+    assert.match(out, /free to write\s+\d+/);
+    assert.match(out, /^next\s+\S/m);
+    assert.match(out, /go\s+to open it/);
   });
 
-  it("the same question in French is answered from state", () => {
+  it("the same question in French gets the same treatment", () => {
     const { out } = say(["sur quoi on peut travailler ?", "exit"], homedir());
-    assert.match(out, /free to write : \d+/);
     assert.doesNotMatch(out, /not a goal/);
+    assert.match(out, /^next\s+\S/m);
+  });
+
+  it("a held project is explained, not just counted", () => {
+    // "held" is a refusal, so the reason for it belongs next to it. A bare
+    // number leaves the reader to guess whether it is a bug or a policy.
+    const { out } = say(["on bosse sur quoi", "exit"], homedir());
+    assert.match(out, /held means someone is in it or left work behind/);
+  });
+
+  it("a stray word does not discard the staged goal", () => {
+    // Discarding work on a keystroke that was neither approval nor refusal is
+    // its own kind of loss, and it is the failure the four-word go list had.
+    const { out } = say(["on bosse sur quoi", "hey there", "exit"], homedir());
+    assert.match(out, /still staged:/);
+  });
+
+  it("the inventory is still one word away", () => {
+    const { out } = say(["projects", "exit"], homedir());
+    assert.match(out, /free to write : \d+/);
   });
 
   it("the same line is still a goal inside a project", () => {
