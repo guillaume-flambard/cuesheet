@@ -28,6 +28,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { routeIntention } from "./core/intent.ts";
+import { bindProject, describeBinding } from "./adapters/project-binding.ts";
 import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
 import { deriveState, seen, stateReport } from "./state.ts";
@@ -699,48 +700,52 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         break;
       }
       case "goal":
-        // The home directory is a warning with teeth. The header says so, and
-        // this is where that promise has to hold: a goal staged in ~ is a goal
-        // an agent will run against the whole home tree, which is the one
-        // checkout in this setup that must never receive an unattended writer.
-        // The refusal is the same shape as the admission one, and `!` is the
-        // owner's explicit override in both cases.
+        // The home directory is a warning with teeth, and this is where that
+        // promise has to hold: a goal staged in ~ is a goal an agent will run
+        // against the whole home tree, which is the one checkout in this setup
+        // that must never receive an unattended writer.
+        //
+        // The previous version refused here, and for a line like "see my
+        // friend's video repo" it refused with "not a goal". That was a lie of
+        // the exact kind this repository exists to prevent. The person stated an
+        // intention; what was missing was the project to run it in. Those are
+        // two facts and the surface merged them into one negation:
+        //
+        //     goal = absent     false, the person stated one
+        //     project = unknown true, and a different fact
+        //
+        // `unknown != absent` already governed pending effects and capture
+        // scope. It had never been applied to the scope of an intention, which
+        // is why the lie survived: a missing project is exactly when a false
+        // absence is cheapest to emit.
+        //
+        // So the home directory is a control plane, not a dead end. The
+        // intention is staged as stated, the project is bound from the registry,
+        // and APPROVE_GOAL stays absent until a single project defends itself
+        // (BIND-04). Safety is now enforced by withholding the affordance rather
+        // than by denying that the person said anything.
         if (inHome && !intent.forced) {
-          // A refusal that reads like a policy error is the wrong answer to a
-          // line that does not look like work at all. Two different problems
-          // were arriving here: "do this task", which needs a project scope,
-          // and "this is broken", which needs the surface itself. Saying
-          // "your line is out of scope" to someone saying "c'est quoi cette
-          // merde" answers neither.
-          const looksLikeWork = /\b(fix|add|write|build|create|make|update|remove|refactor|test|debug|implement|ship|commit)\b/i.test(
-            intent.text,
-          );
-          if (looksLikeWork) {
-            console.log(`refused ${intent.text}`);
+          const binding = bindProject(intent.text, await observePortfolio());
+          for (const line of describeBinding(intent.text, binding)) {
+            console.log(line);
+          }
+          if (binding.kind === "unbound" && binding.candidates.length > 0) {
+            // Nothing is staged, because staging a goal that cannot be approved
+            // would put an intention in the log that the surface can never act
+            // on. It is instead held by the line above, in the person's hands,
+            // until the project is named. BIND-03 in the honest form: durable
+            // means it survives the process, not that it pretends to be
+            // decidable when it is not.
             console.log(
-              "scope   " +
-                cwd +
-                " is your home directory, not a project. scoped work needs a project directory.",
+              "        name a project, or type projects for the portfolio view. nothing is discarded.",
             );
+          }
+          if (binding.kind === "no_match") {
+            console.log(`state   ${listing.capabilities.length} capabilities, ${sessions.length} sessions on disk.`);
             console.log(
-              "        open cuesheet inside one, or prefix the line with ! to run it here anyway.",
+              "        the line is kept as an intention. bind it with a project, or open cuesheet inside one.",
             );
-  } else {
-    console.log(`not a goal: ${intent.text}`);
-    console.log(
-      `scope   ${cwd}, your home directory, so nothing here can run a goal. that is the whole limit.`,
-    );
-    // Answer a complaint about the surface with the surface's own state. The
-    // alternative was "cd into a project", which is true and is not an
-    // answer to "this is ugly and broken".
-    console.log(
-      `state   ${listing.capabilities.length} capabilities, ` +
-        `${listing.unreadable.length} unreadable, ${sessions.length} sessions on disk, ${inHome ? "no project" : "project scope"}.`,
-    );
-    console.log(
-      "        what it can do: help, capabilities, sessions, projects for the portfolio view. goals need a project.",
-    );
-  }
+          }
           break;
         }
         if (intent.forced) {
