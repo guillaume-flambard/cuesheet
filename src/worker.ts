@@ -25,6 +25,7 @@
 import { createHash } from "node:crypto";
 import { closeSync, fsyncSync, openSync, readFileSync, renameSync, writeSync } from "node:fs";
 import { join } from "node:path";
+import { isEntryPoint } from "./is-entry-point.ts";
 
 /**
  * Write a receipt atomically: temporary name, fsync, rename.
@@ -93,8 +94,7 @@ export async function main(): Promise<number> {
 // Only when run directly, so importing this module does not run a worker.
 // `import.meta.url` against `process.argv[1]` is the check: the two are the same
 // file exactly when this file is the entry point.
-const invokedDirectly =
-  process.argv[1] !== undefined && import.meta.url === `file://${process.argv[1]}`;
+const invokedDirectly = isEntryPoint(import.meta.url);
 if (invokedDirectly) {
   process.exit(await main());
 }

@@ -17,6 +17,7 @@ import {
 } from "../src/adapters/frontier.ts";
 import type { DurableObject } from "../src/core/memory.ts";
 import { wakeable } from "../src/core/memory.ts";
+import { isEntryPoint } from "./is-entry-point.ts";
 
 const DEFAULT_OBJECTS =
   join(homedir(), "Vault", "3-Garden", "research", "Future", "programs", "portfolio-objects.yaml");
@@ -130,7 +131,7 @@ export function frontierMarkdown(objectsFile: string): string {
   return renderFrontier(frontier, snapshot, unevaluable, woken);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   const file = process.argv[2] ?? DEFAULT_OBJECTS;
   try {
     process.stdout.write(frontierMarkdown(file));

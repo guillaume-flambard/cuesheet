@@ -45,6 +45,7 @@ import { EventStore, type Event } from "./core/store.ts";
 import { OpenRouterAdapter } from "./adapters/openrouter.ts";
 import { SessionStore } from "./adapters/session-store.ts";
 import { ShellToolRunner } from "./adapters/shell.ts";
+import { isEntryPoint } from "./is-entry-point.ts";
 
 // Overridable so an integration test can drive the real surface against a
 // throwaway root instead of the real one. `rm -rf` on a developer's home is
@@ -63,6 +64,22 @@ const SKILL_ROOTS = [join(homedir(), ".agents", "skills")];
  * against a registry whose own coverage it never asked about, which is the
  * defect this type was introduced to close.
  */
+/**
+ * Event kinds the live column does not show.
+ *
+ * The goal and the admission are already on screen, so repeating them in the
+ * live column is noise. The log still keeps everything: this hides a line from
+ * a view, it does not drop a record.
+ *
+ * At module scope rather than inside `chat()` because `runGoal` reads it while
+ * writing the live projection, and it was declared in the caller. That is the
+ * same defect as the two `registry` references, in the same function, from the
+ * same kind of edit: a name that survived a move in one place and not the
+ * other. `runGoal` therefore crashed on its first event, and the crash was
+ * observed as a failed effect, which is honest about a cause nobody could name.
+ */
+const LIVE_SKIP = new Set(["goal", "capability"]);
+
 function liveRegistry(): SkillListing {
   return new SkillsAdapter({ roots: SKILL_ROOTS }).listCapabilities();
 }
@@ -106,17 +123,33 @@ function printAdmission(
   console.log(`admission: allowed (${requirements.map((r) => r.name).join(", ")})`);
 }
 
+/**
+ * Run one goal.
+ *
+ * `live` is passed in rather than read from a module-level variable because the
+ * projection belongs to the surface and the run is not the surface. It was
+ * declared in `chat()` and read here, which is a scope error that only appears
+ * when a run actually starts, and which the previous three names in this same
+ * function had already demonstrated.
+ */
 async function runGoal(
   goal: string,
   forced: boolean,
   durable: SessionStore,
   cwd: string,
+  live: InteractiveProjection,
 ): Promise<void> {
   const sessionId = newId("run");
   const requirements = extractSkillRequirements(goal).requirements;
 
   let verdict: "allowed" | "would_block" | "unverified" = "allowed";
   let missing: string[] = [];
+
+  // The registry is read here rather than in the caller, because the caller
+  // reads the banner and the run is a different question with a different
+  // moment. Two reads, both owned by a decision that needs them, which is the
+  // rule the cost guard holds.
+  const listing = liveRegistry();
 
   if (requirements.length > 0) {
     const resolution = resolveAgainstLive(requirements);
@@ -128,7 +161,7 @@ async function runGoal(
     missing = resolution.resolution.unresolved.map((u) => u.requirement.name);
   }
 
-  printAdmission(verdict, requirements, missing, registry.length);
+  printAdmission(verdict, requirements, missing, listing.capabilities.length);
 
   if (verdict === "unverified") {
     console.log("not running: absence here is not evidence, and the gate refuses to guess.");
@@ -164,14 +197,14 @@ async function runGoal(
     subject: "builder",
     goal,
     requires: forced ? [] : requirements,
-    registry: forced ? undefined : registry,
+    registry: forced ? undefined : listing,
     maxSteps: 8,
     onEvent: (event) => {
       // The live view is one projection of the log, not a third renderer. The
       // goal and the admission are already on screen, so they are skipped in
       // the live column only; the log itself keeps everything.
       if (!LIVE_SKIP.has(event.kind)) {
-        console.log(liveProjection.line(event));
+        console.log(live.line(event));
       }
       // Persist the moment it happens, so the session outlives the process.
       durable.append(sessionId, event);
@@ -305,7 +338,6 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   // echoing them is the noise the first real user called ugly. The stored log
   // keeps both, which is the difference between a view and a record.
   const liveProjection = new InteractiveProjection();
-  const LIVE_SKIP = new Set(["goal", "capability"]);
   const paintPrompt = () => {
     // A prompt is only a prompt on a terminal. Writing it to a pipe puts the
     // prompt in the transcript, where a script reads it as output and a test
@@ -428,7 +460,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
             paintPrompt();
             continue;
           }
-          await runGoal(goal, false, durable, cwd);
+          await runGoal(goal, false, durable, cwd, liveProjection);
           appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
           clearIt("approved");
         } catch (cause) {
@@ -688,7 +720,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           break;
         }
         if (intent.forced) {
-          await runGoal(intent.text, true, durable, cwd);
+          await runGoal(intent.text, true, durable, cwd, liveProjection);
           break;
         }
         stageIt(intent.text);
@@ -706,7 +738,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   return 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   chat()
     .then((code) => process.exit(code))
     .catch((error: unknown) => {

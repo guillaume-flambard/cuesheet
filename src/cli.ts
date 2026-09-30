@@ -28,6 +28,7 @@ import {
 } from "./core/ownership.ts";
 import { OpenCodeAdapter } from "./adapters/opencode.ts";
 import { SkillsAdapter } from "./adapters/skills.ts";
+import { isEntryPoint } from "./is-entry-point.ts";
 import {
   parseRequirements,
   preflightDelegation,
@@ -310,6 +311,6 @@ function main(): void {
  * without it, importing this module ran the ownership report and exited, which
  * is invisible to every caller because they all spawn it as a process.
  */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   main();
 }

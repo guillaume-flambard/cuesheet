@@ -19,6 +19,7 @@ import { SkillsAdapter, type SkillListing } from "../src/adapters/skills.ts";
 import { OpenRouterAdapter } from "../src/adapters/openrouter.ts";
 import { SessionStore } from "../src/adapters/session-store.ts";
 import { ShellToolRunner } from "../src/adapters/shell.ts";
+import { isEntryPoint } from "./is-entry-point.ts";
 
 // Overridable so an integration test can drive the real surface against a
 // throwaway root instead of the real one. `rm -rf` on a developer's home is
@@ -289,7 +290,7 @@ async function main(): Promise<number> {
  * by test/loadability.test.ts and why nothing noticed: every caller spawns it
  * as a process, so the missing guard was invisible from the outside.
  */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   main()
     .then((code) => process.exit(code))
     .catch((error: unknown) => {
