@@ -30,7 +30,8 @@ import { join } from "node:path";
 import { routeIntention } from "./core/intent.ts";
 import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
-import { deriveState, stateReport } from "./state.ts";
+import { deriveState, seen, stateReport } from "./state.ts";
+import { deriveAffordances, type Affordance } from "./affordances.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
 import {
   resolveCapabilities,
@@ -294,47 +295,42 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
       const goal = staged;
       const decision = routeIntention(line);
 
-      // What a line may do to a staged intention. The list is deliberately
-      // short and it is written out rather than implied by a branch order,
-      // because the default was wrong twice: once every non-approval
-      // discarded the goal, and once every non-approval refused to answer.
+      // What a line may do to a staged intention, asked rather than decided.
       //
-      //   APPROVE        the goal runs and is consumed
-      //   REJECT         the goal is dropped on purpose
-      //   REPLACE_GOAL   a new goal supersedes it
-      //   CANCEL_SESSION leaving takes it, because a staged goal must not
-      //                 hold the process open
-      //
-      // Everything else is non-destructive. A question, a greeting and a
-      // request for capabilities all leave the goal exactly where it was,
-      // because an informative interaction that mutates a pending intention
-      // loses work with no mistake to point at.
-      switch (decision.kind) {
-        case "confirm":
-          staged = null;
-          await runGoal(goal, false, durable, cwd);
-          if (done) break;
-          paintPrompt();
-          continue;
-        case "cancel":
-          staged = null;
-          console.log(`discarded: ${goal}`);
-          paintPrompt();
-          continue;
-        case "exit":
-          staged = null;
-          break;
-        case "goal":
-          // A new intention supersedes the staged one, and the new one is
-          // staged below so the person still gets to see it before it runs.
-          console.log(`replaced: ${goal}`);
-          break;
-        case "empty":
-          break;
-        default:
-          break;
+      // The rule lived in this branch order and got it wrong twice: once every
+      // non-approval discarded the goal, once every non-approval refused to
+      // answer. It is a pure function of the state now, so a CLI, a TUI, an
+      // API and an agent all get the same answer, and the surface only renders
+      // what it is given. See src/affordances.ts.
+      const permits = (a: Affordance) =>
+        deriveAffordances({
+          staged: seen({ text: goal, open: true }),
+          hasSession: durable.list().length > 0,
+        }).some((x) => x.action === a);
+
+      if (permits("APPROVE_GOAL") && decision.kind === "confirm") {
+        staged = null;
+        await runGoal(goal, false, durable, cwd);
+        if (done) break;
+        paintPrompt();
+        continue;
+      }
+      if (permits("REJECT_GOAL") && decision.kind === "cancel") {
+        staged = null;
+        console.log(`discarded: ${goal}`);
+        paintPrompt();
+        continue;
+      }
+      if (permits("CANCEL_SESSION") && decision.kind === "exit") {
+        staged = null;
+      }
+      if (permits("REPLACE_GOAL") && decision.kind === "goal") {
+        // A new intention supersedes the staged one, and the new one is staged
+        // below so the person still gets to see it before it runs.
+        console.log(`replaced: ${goal}`);
       }
     }
+
 
     const intent = routeIntention(line);
 
