@@ -28,11 +28,27 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
-const LOG = join(ROOT, ".typecheck.log");
+
+/**
+ * This guard's OWN type-check log, not the build's.
+ *
+ * The first version read `.typecheck.log`, which `scripts/build.sh` rewrites and
+ * which `test/install.test.ts` also triggers. Two tests sharing one scratch file
+ * on disk are a race, and it fired: the guard read a log that was being
+ * truncated mid-write and reported zero diagnostics, then asserted the compiler
+ * had not run. Agent A found it, reproduced it with its own files removed, and
+ * was right that it was not its fault.
+ *
+ * The fix is ownership rather than locking. A test that measures something owns
+ * the artefact it measures, so this runs the compiler itself into a private path
+ * and never reads a file another test can touch.
+ */
+const LOG = join(mkdtempSync(join(tmpdir(), "cuesheet-typecheck-")), "typecheck.log");
 
 /**
  * The documented diagnostics, as `file:code`.
@@ -65,6 +81,34 @@ src/frontier-cli.ts:TS2538
 
 const documented = new Set(KNOWN.split("\n").map((line) => line.trim()).filter(Boolean));
 
+/**
+ * Run the compiler into this guard's own log.
+ *
+ * `tsc` exits non-zero when there are errors, which is the normal state here, so
+ * a failure is only a failure of the compiler itself.
+ */
+function typecheck(): void {
+  const tsc = join(ROOT, "node_modules", ".bin", "tsc");
+  if (!existsSync(tsc)) {
+    execFileSync("bash", ["scripts/build.sh"], { cwd: ROOT, encoding: "utf8", stdio: "ignore" });
+  }
+  try {
+    execFileSync(tsc, ["-p", "tsconfig.build.json", "--noEmit"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch {
+    // Expected: the repository has known diagnostics, so tsc exits 1. The output
+    // is captured below either way, which is what this guard reads.
+  }
+  execFileSync("bash", ["-c", `node_modules/.bin/tsc -p tsconfig.build.json --noEmit > "${LOG}" 2>&1 || true`], {
+    cwd: ROOT,
+    encoding: "utf8",
+    stdio: "ignore",
+  });
+}
+
 /** Every `file:code` the compiler reported, de-duplicated. */
 function current(): { pairs: Set<string>; count: number } {
   if (!existsSync(LOG)) return { pairs: new Set(), count: 0 };
@@ -80,17 +124,16 @@ function current(): { pairs: Set<string>; count: number } {
 
 describe("the type check is a differential guard, not a checklist", () => {
   it("the compiler has run, so this guard is measuring something", () => {
-    // A guard that reads a missing log and finds nothing would pass on a build
+    // A guard that reads a missing log and finds nothing would pass on a run
     // that never type-checked. That is the canary problem again.
-    if (!existsSync(LOG)) {
-      execFileSync("bash", ["scripts/build.sh"], { cwd: ROOT, encoding: "utf8" });
-    }
-    assert.ok(existsSync(LOG), "no .typecheck.log; run `bash scripts/build.sh` first");
+    typecheck();
+    assert.ok(existsSync(LOG), "the compiler wrote no log at all");
     const { count } = current();
     assert.ok(count > 0, "the log exists and is empty, which means the check did not run");
   });
 
   it("no diagnostic is new", () => {
+    typecheck();
     const { pairs } = current();
     const fresh = [...pairs].filter((p) => !documented.has(p)).sort();
     assert.deepEqual(
@@ -101,6 +144,7 @@ describe("the type check is a differential guard, not a checklist", () => {
   });
 
   it("the documented list is not stale in the direction that hides things", () => {
+    typecheck();
     // A documented pair that no longer occurs is a good thing, and it is a
     // bookkeeping debt rather than a failure: the doc claims a category that has
     // emptied. Left unchecked, the list would drift upward forever, so a new
