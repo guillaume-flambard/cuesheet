@@ -167,6 +167,7 @@ describe("the chat surface", () => {
     // every case. One read is asserted by the counter above; what is asserted
     // here is that the answer keeps its shape and that the session survives
     // being asked twice.
+    //
     const { out } = say(["on bosse sur quoi", "projects", "exit"], homedir());
     assert.match(out, /^next\s+\S/m, "the first question staged a choice");
     assert.match(out, /free to write : \d+/, "the second answered the inventory");

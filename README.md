@@ -86,9 +86,10 @@ src/core/store.ts         EventStore: the append-only log a session is.
 src/core/loop.ts          runAgentLoop(): observe, compile, infer, act, never trust a claim.
 src/core/memory.ts        durable objects and the conditions that wake them.
 src/adapters/             the only places allowed to do I/O.
+src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     212 tests
+test/                     223 tests
 ```
 
 ## The primitive

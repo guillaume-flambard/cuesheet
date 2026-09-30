@@ -29,6 +29,7 @@ import { join } from "node:path";
 
 import { routeIntention } from "./core/intent.ts";
 import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
+import { InteractiveProjection, projectionFor, render } from "./projections.ts";
 import { extractSkillRequirements } from "./core/extract.ts";
 import {
   resolveCapabilities,
@@ -69,29 +70,6 @@ function resolveAgainstLive(requirements: Requirement[]): CapabilityResolution {
 
 function newId(prefix: string): string {
   return prefix + "-" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36);
-}
-
-/** One line of live progress, compact enough to read while it scrolls. */
-function eventLine(
-  event: { seq: number; kind: string; data: Record<string, unknown> },
-  live = false,
-): string {
-  // In live view the goal and the admission are already on screen; echoing
-  // them again was part of the noise the first real user flagged as ugly.
-  if (live && (event.kind === "goal" || event.kind === "capability")) {
-    return "";
-  }
-  const d = event.data as { text?: unknown; tool?: unknown; exit?: unknown };
-  if (event.kind === "observation" && typeof d.text === "string") {
-    return `  ${event.seq}  ${String(d.text).slice(0, 96)}`;
-  }
-  if (event.kind === "action" && typeof d.tool === "string") {
-    return `  ${event.seq}  > ${d.tool}`;
-  }
-  if (event.kind === "observation" && "exit" in d) {
-    return `  ${event.seq}  <= ${d.tool} exit ${String(d.exit)}`;
-  }
-  return `  ${event.seq}  ${event.kind}`;
 }
 
 /**
@@ -181,8 +159,12 @@ async function runGoal(
     registry: forced ? undefined : registry,
     maxSteps: 8,
     onEvent: (event) => {
-      const line = eventLine(event, true);
-      if (line) console.log(line);
+      // The live view is one projection of the log, not a third renderer. The
+      // goal and the admission are already on screen, so they are skipped in
+      // the live column only; the log itself keeps everything.
+      if (!LIVE_SKIP.has(event.kind)) {
+        console.log(liveProjection.line(event));
+      }
       // Persist the moment it happens, so the session outlives the process.
       durable.append(sessionId, event);
     },
@@ -258,6 +240,11 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
    * on every line, so the state is visible at the moment it is relevant rather
    * than printed once and forgotten.
    */
+  // In the live column the goal and the admission are already printed, so
+  // echoing them is the noise the first real user called ugly. The stored log
+  // keeps both, which is the difference between a view and a record.
+  const liveProjection = new InteractiveProjection();
+  const LIVE_SKIP = new Set(["goal", "capability"]);
   const paintPrompt = () => {
     // A prompt is only a prompt on a terminal. Writing it to a pipe puts the
     // prompt in the transcript, where a script reads it as output and a test
@@ -479,9 +466,10 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           console.log(`no events for ${intent.id}`);
           break;
         }
-        for (const event of events) {
-          console.log(eventLine(event));
-        }
+        // One log, one projection per reader. The renderer is chosen by
+        // whether this is a terminal, so a pipe gets JSON a script can read
+        // and a person gets a column.
+        console.log(render(events, projectionFor(process.stdout.isTTY ? "interactive" : "machine")));
         break;
       }
       case "resume": {
