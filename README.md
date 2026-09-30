@@ -97,7 +97,7 @@ src/worker.ts              the first worker: deterministic, and unable to lie.
 src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     340 tests
+test/                     352 tests
 ```
 
 ## The primitive
