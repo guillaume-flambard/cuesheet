@@ -59,7 +59,7 @@ export interface RepoReality {
   hasRemote: boolean;
 }
 
-function parseRegistry(projectsRoot: string): RegistryEntry[] {
+export function parseRegistry(projectsRoot: string): RegistryEntry[] {
   const registry = join(projectsRoot, "PROJECTS.md");
   if (!existsSync(registry)) {
     return [];

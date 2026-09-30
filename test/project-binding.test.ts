@@ -28,29 +28,31 @@ import {
   type Binding,
   type BindingCandidate,
 } from "../src/adapters/project-binding.ts";
-import type { PortfolioSnapshot, RepoReality } from "../src/adapters/frontier.ts";
+import type { ProjectIdentity } from "../src/adapters/project-binding.ts";
 
-/** A project on disk, so `exists` is true and it can be a bound answer. */
-function repo(name: string, path: string, extra: Partial<RepoReality> = {}): RepoReality {
+/**
+ * A project identity, which is all binding is given.
+ *
+ * These tests used to build a git-probed portfolio here, because the binder
+ * demanded one. They no longer do, and the absence of `branch`, `dirty` and
+ * `ahead` from this helper is the point: binding is not allowed to see them.
+ */
+function repo(name: string, path: string, extra: Partial<ProjectIdentity> = {}): ProjectIdentity {
   return {
-    entry: { name, path, kind: "repo", status: "active", nature: "product", stack: "" },
+    name,
+    path,
+    kind: "repo",
+    status: "active",
+    nature: "product",
+    stack: "",
     exists: true,
-    branch: "main",
-    dirty: 0,
-    ahead: 0,
-    hasRemote: true,
     ...extra,
   };
 }
 
-function snap(...projects: RepoReality[]): PortfolioSnapshot {
-  return {
-    projects,
-    declaredButMissing: [],
-    presentButUndeclared: [],
-    free: projects.map((p) => p.entry.path),
-    held: [],
-  };
+/** The binder takes identities now, so a "snapshot" here is just a list. */
+function snap(...projects: ProjectIdentity[]): ProjectIdentity[] {
+  return projects;
 }
 
 const FRIEND_VIDEO = repo("friend-video", "products/friend-video");
@@ -133,7 +135,7 @@ describe("BIND-05 resolution never invents a match when more than one defends it
 
 describe("BIND-04 APPROVE_GOAL is absent until the project is resolved", () => {
   it("approvable only on a bound goal", () => {
-    assert.equal(mayApprove({ kind: "bound", candidate: FRIEND_VIDEO as BindingCandidate }), true);
+    assert.equal(mayApprove({ kind: "bound", candidate: FRIEND_VIDEO }), true);
     assert.equal(mayApprove({ kind: "unbound", candidates: [FRIEND_VIDEO] }), false);
     assert.equal(mayApprove({ kind: "no_match", candidates: [] }), false);
   });

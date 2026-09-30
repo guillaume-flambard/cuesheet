@@ -16,7 +16,6 @@
  */
 
 import { bindProject, type Binding } from "../../../src/adapters/project-binding.ts";
-import { snapshotPortfolio } from "../../../src/adapters/frontier.ts";
 
 // ─── the slice's states ────────────────────────────────────────────────────
 
@@ -34,7 +33,7 @@ export type Slice =
  * `project-binding.ts` and re-deciding them here would create a second opinion.
  */
 export function resolve(said: string): Slice {
-  const binding = bindProject(said, snapshotPortfolio());
+  const binding = bindProject(said);
   if (binding.kind === "bound") {
     return { at: "bound", said, project: binding.candidate.name, path: binding.candidate.path };
   }

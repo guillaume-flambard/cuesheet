@@ -45,7 +45,55 @@
  * Nothing in here writes. Binding produces a proposal, and the caller decides.
  */
 
-import { snapshotPortfolio, type PortfolioSnapshot, type RepoReality } from "./frontier.ts";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { DEFAULT_PROJECTS_ROOT, parseRegistry, type RegistryEntry } from "./frontier.ts";
+
+/**
+ * What is needed to name a project. No git, no branch, no working tree.
+ *
+ * This type is the whole point of the module. Binding asks "which project is
+ * this", and the registry already answers that. Whether the project is clean,
+ * pushed and writable is a different question, asked at the moment a decision
+ * needs it, by a different function, reading the machine freshly.
+ *
+ * The earlier version took a git-probed portfolio, which forced the caller to
+ * read every repository's working state before it could name one. That is why
+ * typing a project name took 1.9 seconds: identity was being purchased with
+ * evidence that identity did not need.
+ */
+export interface ProjectIdentity {
+  readonly name: string;
+  readonly path: string;
+  /** Free text the registry declares about the project. Identity, not state. */
+  readonly kind: string;
+  readonly status: string;
+  readonly nature: string;
+  readonly stack: string;
+  /** Whether the path is on disk. A filesystem read, not a git observation. */
+  readonly exists: boolean;
+}
+
+/**
+ * The identities in the portfolio, read from the registry alone.
+ *
+ * One file, no subprocesses. `exists` is a `stat`, which is why this returns in
+ * single-digit milliseconds on a portfolio of any size.
+ */
+export function projectIdentities(options: { projectsRoot?: string } = {}): ProjectIdentity[] {
+  const root = options.projectsRoot ?? DEFAULT_PROJECTS_ROOT;
+  return parseRegistry(root)
+    .filter((entry: RegistryEntry) => entry.kind === "repo")
+    .map((entry: RegistryEntry) => ({
+      name: entry.name,
+      path: entry.path,
+      kind: entry.kind,
+      status: entry.status,
+      nature: entry.nature,
+      stack: entry.stack,
+      exists: existsSync(join(root, entry.path)),
+    }));
+}
 
 /** How a candidate was found. A matched project is a fact about the machine. */
 export type MatchBasis = "exact-name" | "name-token" | "description-token" | "none";
@@ -99,13 +147,13 @@ export function tokensOf(text: string): string[] {
 }
 
 /** A candidate from the portfolio, carrying its own reasons. */
-function candidateFor(project: RepoReality, tokens: readonly string[]): BindingCandidate {
-  const name = project.entry.name.toLowerCase();
-  const words = `${name} ${project.entry.path.toLowerCase()}`;
+function candidateFor(project: ProjectIdentity, tokens: readonly string[]): BindingCandidate {
+  const name = project.name.toLowerCase();
+  const words = `${name} ${project.path.toLowerCase()} ${project.stack.toLowerCase()} ${project.nature.toLowerCase()}`;
   const tokensOfProject = new Set(name.split(/[^a-z0-9]+/));
 
   if (name === tokens.join("-") || name === tokens.join("")) {
-    return { path: project.entry.path, name: project.entry.name, basis: "exact-name", tokens: [], exists: project.exists };
+    return { path: project.path, name: project.name, basis: "exact-name", tokens: [], exists: project.exists };
   }
 
   const nameHits = tokens.filter((t) => tokensOfProject.has(t));
@@ -127,7 +175,7 @@ function candidateFor(project: RepoReality, tokens: readonly string[]): BindingC
       (t) => t.length >= 4 && !tokensOfProject.has(t) && name.includes(t),
     );
     if (wholeName || coversProject || strong) {
-      return { path: project.entry.path, name: project.entry.name, basis: "name-token", tokens: nameHits, exists: project.exists };
+      return { path: project.path, name: project.name, basis: "name-token", tokens: nameHits, exists: project.exists };
     }
   }
 
@@ -146,10 +194,10 @@ function candidateFor(project: RepoReality, tokens: readonly string[]): BindingC
   const rowWords = new Set(words.split(/[^a-z0-9]+/).filter((w) => w.length >= 5));
   const descHits = tokens.filter((t) => rowWords.has(t));
   if (descHits.length > 0) {
-    return { path: project.entry.path, name: project.entry.name, basis: "description-token", tokens: descHits, exists: project.exists };
+    return { path: project.path, name: project.name, basis: "description-token", tokens: descHits, exists: project.exists };
   }
 
-  return { path: project.entry.path, name: project.entry.name, basis: "none", tokens: [], exists: project.exists };
+  return { path: project.path, name: project.name, basis: "none", tokens: [], exists: project.exists };
 }
 
 /**
@@ -162,10 +210,10 @@ function candidateFor(project: RepoReality, tokens: readonly string[]): BindingC
  */
 export function bindProject(
   text: string,
-  snapshot: PortfolioSnapshot = snapshotPortfolio(),
+  identities: readonly ProjectIdentity[] = projectIdentities(),
 ): Binding {
   const tokens = tokensOf(text);
-  const named = snapshot.projects
+  const named = identities
     .map((p) => candidateFor(p, tokens))
     .filter((c) => c.basis !== "none");
 

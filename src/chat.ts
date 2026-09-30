@@ -28,7 +28,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { routeIntention } from "./core/intent.ts";
-import { bindProject, describeBinding } from "./adapters/project-binding.ts";
+import { bindProject, describeBinding, projectIdentities } from "./adapters/project-binding.ts";
 import { SkillsAdapter, type SkillListing } from "./adapters/skills.ts";
 import { InteractiveProjection, projectionFor, render } from "./projections.ts";
 import { deriveState, seen, stateReport } from "./state.ts";
@@ -725,7 +725,10 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         // (BIND-04). Safety is now enforced by withholding the affordance rather
         // than by denying that the person said anything.
         if (inHome && !intent.forced) {
-          const binding = bindProject(intent.text, await observePortfolio());
+          // Naming a project is not a decision about writing to it, so this
+          // reads the registry and not git. `observePortfolio` stays for the
+          // questions that really are about a writer: what is free, what is held.
+          const binding = bindProject(intent.text, projectIdentities());
           for (const line of describeBinding(intent.text, binding)) {
             console.log(line);
           }

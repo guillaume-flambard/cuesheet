@@ -20,8 +20,15 @@
 import { useEffect, useState } from "react";
 import { Box, Text, useApp } from "ink";
 import { useInput } from "ink";
-import { bindProject, type Binding } from "../../../src/adapters/project-binding.ts";
-import { snapshotPortfolio } from "../../../src/adapters/frontier.ts";
+import { render, resolve, type Slice } from "./render.ts";
+
+/**
+ * Two colours, and no others.
+ *
+ * The accent marks the prompt and the product name, and nothing else. A surface
+ * that colours everything is a surface that has nothing to point at.
+ */
+const ACCENT = "cyan";
 
 // ─── the slice's states ────────────────────────────────────────────────────
 
@@ -38,74 +45,6 @@ type Slice =
  * which one. It delegates, because BIND-01 through BIND-06 already live in
  * `project-binding.ts` and re-deciding them here would create a second opinion.
  */
-function resolve(said: string): Slice {
-  const binding = bindProject(said, snapshotPortfolio());
-  if (binding.kind === "bound") {
-    return { at: "bound", said, project: binding.candidate.name, path: binding.candidate.path };
-  }
-  if (binding.kind === "unbound" && binding.candidates.length > 1) {
-    return { at: "ambiguous", said, binding };
-  }
-  return { at: "unresolved", said };
-}
-
-// ─── the render ────────────────────────────────────────────────────────────
-
-const ACCENT = "cyan";
-const MUTED = "gray";
-
-/**
- * What a person sees. A pure function of the slice, so every line below is
- * assertable without spawning a terminal, which is the property the last
- * version did not have.
- */
-export function render(slice: Slice, typed: string): string[] {
-  switch (slice.at) {
-    case "greeting":
-      return ["", "  cuesheet", "", "  What are we working on?", ""];
-
-    case "resolving":
-      return [`  ${typed}`, "", "  Looking through your projects…", ""];
-
-    case "ambiguous":
-      return [
-        `  ${slice.said}`,
-        "",
-        `  I can see ${count(slice.binding.candidates.length, "project")} that could be it:`,
-        "",
-        ...slice.binding.candidates.map((c) => `    ${c.name}  ${MUTED_MARK}${c.path}`),
-        "",
-        "  Which one?",
-        "",
-      ];
-
-    case "unresolved":
-      return [
-        `  ${slice.said}`,
-        "",
-        "  I can't tell which one you mean.",
-        "  Give me its name, or its folder.",
-        "",
-      ];
-
-    case "bound":
-      return [
-        `  ${slice.said}`,
-        "",
-        `  ${slice.project}  ${MUTED_MARK}${slice.path}`,
-        "",
-        "  What do you want to look at?",
-        "",
-      ];
-
-    case "refused":
-      return [`  ${slice.said}`, "", "  Ask me about a project and we can start there.", ""];
-  }
-}
-
-const MUTED_MARK = "  ";
-const count = (n: number, word: string) => (n === 1 ? `one ${word}` : `${n} ${word}s`);
-
 // ─── the terminal ──────────────────────────────────────────────────────────
 
 export function Slice_() {
@@ -119,9 +58,12 @@ export function Slice_() {
       const said = typed.trim();
       if (!said) return;
       setSlice({ at: "resolving" });
-      // A real resolution reads git, so it is not instantaneous. The pause is
-      // not decoration: it is the honest shape of a question that hits the disk.
-      setTimeout(() => setSlice(resolve(said)), 120);
+      // Naming a project reads the registry and costs about a millisecond, so
+      // this resolves immediately. There used to be a 120ms pause here, added
+      // when resolution probed git for every repository and genuinely took two
+      // seconds. Now that it is instant, the pause would be theatre, and
+      // `Looking through your projects…` appears for one frame.
+      setSlice(resolve(said));
       return;
     }
     if (key.backspace || key.delete) return setTyped((t) => t.slice(0, -1));
