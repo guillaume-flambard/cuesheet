@@ -45,6 +45,16 @@ export interface LaunchOptions {
   input?: string;
   /** Node executable, overridable so a test can pin it. */
   node?: string;
+  /**
+   * Extra environment for the worker, merged over the inherited one.
+   *
+   * Adapters own what the worker must know, which is the identity. Anything
+   * beyond that is configuration the caller decides, and hard-coding it here
+   * would mean a new kind of worker needs a change to the launcher. The first
+   * version of the fixture test failed because the mode could not be passed at
+   * all and every worker ran honest, so the oracle looked like it worked.
+   */
+  env?: Record<string, string>;
 }
 
 export interface LaunchResult {
@@ -84,6 +94,7 @@ export function launch(options: LaunchOptions, root: string): LaunchResult {
   const dir = prepare(options, root);
   const env = {
     ...process.env,
+    ...options.env,
     ...workerEnvironment(options.sessionId, options.identity),
     // The worker's only writable surface. WRK-02: it is handed a directory and
     // an identity, and the session store is not reachable from either.

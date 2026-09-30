@@ -92,11 +92,12 @@ src/effects.ts            an effect asked for, and what came back. Never the sam
 src/reconcile.ts           what happened to an effect nobody watched. Five answers, one null.
 src/spawn.ts               naming an effect before anything about it exists.
 src/work.ts                what the work produced, which is not what the spawn was.
+src/verify.ts              whether the work counts, decided by something other than the producer.
 src/worker.ts              the first worker: deterministic, and unable to lie.
 src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     330 tests
+test/                     340 tests
 ```
 
 ## The primitive

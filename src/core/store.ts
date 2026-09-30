@@ -54,7 +54,14 @@ export type EventKind =
   | // What the world answered about one effect. Carries the id of the request
     // it answers, so a crash between the two leaves an unanswered request
     // rather than a guess.
-    "effect_observed";
+    "effect_observed"
+  | // That a worker asserted it produced something. An assertion, not a
+    // satisfaction: the artifact is named and nobody has checked it yet.
+    "work_produced"
+  | // What an independent check concluded about a named artifact. Its own kind
+    // rather than a field on the production event, so that a rejection is a
+    // second historical fact and the first one survives. VER-04.
+    "work_verified";
 
 /**
  * Every kind, as a value.
@@ -74,6 +81,8 @@ export const EVENT_KINDS_OF_STORE = [
   "note",
   "effect_requested",
   "effect_observed",
+  "work_produced",
+  "work_verified",
 ] as const satisfies readonly EventKind[];
 
 /** A thing being appended, before the store has given it a sequence. */

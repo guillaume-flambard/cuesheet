@@ -144,6 +144,8 @@ describe("projections", () => {
       "note",
       "effect_requested",
       "effect_observed",
+      "work_produced",
+      "work_verified",
     ]);
     assert.equal(EVENT_KINDS.length, new Set(EVENT_KINDS).size, "no duplicate kinds");
   });
