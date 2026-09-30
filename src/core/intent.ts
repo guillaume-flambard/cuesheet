@@ -44,6 +44,21 @@ export interface Intent {
 /** Extracted from a line like `inspect ses_abc`, the session to act on. */
 const ID = "[A-Za-z0-9._-]+";
 
+/**
+ * A question about what is available to work on.
+ *
+ * Matched on question shape plus the topic, never on the topic alone, because
+ * the topic words are the same ones a work order uses. `add a projects page`
+ * is work; `what can we work on` is a question, and the difference is the
+ * interrogative.
+ *
+ * `quoi` alone is not in here. "c'est quoi cette merde" contains it and is not
+ * a question about the portfolio, so a bare topic word only counts inside a
+ * phrase that is itself about working: quoi faire, quoi travailler, sur quoi.
+ */
+const INTERROGATIVE =
+  /(?:\?|sur quoi|quoi (?:faire|travailler|on fait)|que (?:peut-on|puis-je|est-ce qu'on)|what can we|what should we|where can we|which (?:repo|project))/;
+
 export function routeIntention(raw: string): Intent {
   const text = raw.trim();
   if (!text) {
@@ -101,6 +116,15 @@ export function routeIntention(raw: string): Intent {
       lower,
     )
   ) {
+    return { kind: "ownership", text: line, forced };
+  }
+
+  // A question, not a keyword. "on peut travailler sur quoi" and "what can we
+  // work on today" are the first thing anyone asks when they open a work
+  // surface, and neither is a noun the pattern above can match. The shape is
+  // interrogative, so a work order that merely contains one of these words,
+  // "add a projects page", still falls through to goal.
+  if (INTERROGATIVE.test(lower)) {
     return { kind: "ownership", text: line, forced };
   }
 

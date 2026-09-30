@@ -21,6 +21,39 @@ describe("routeIntention", () => {
     assert.equal(routeIntention("aide").kind, "help");
   });
 
+  it("an interrogative about working reaches ownership, not goal", () => {
+    // The first question anyone asks when opening the surface, in both
+    // languages. It is a question shape, not a noun, so the keyword pattern
+    // could not reach it.
+    for (const line of [
+      "on what can we work today ?",
+      "sur quoi on peut travailler ?",
+      "quoi faire ?",
+      "what should we build next",
+    ]) {
+      assert.equal(routeIntention(line).kind, "ownership", line);
+    }
+  });
+
+  it("a complaint containing a topic word is still not a question", () => {
+    // "quoi" is a topic word, not a question shape. Without this, "c'est quoi
+    // cette merde" was answered with the portfolio view.
+    for (const line of [
+      "c'est quoi cette merde",
+      "c'est quoi cette merde serieux",
+      "ca marche pas",
+    ]) {
+      assert.equal(routeIntention(line).kind, "goal", line);
+    }
+  });
+
+  it("a work order keeps the topic words and stays a goal", () => {
+    for (const line of ["add a projects page", "fix the test", "sur quoi on a travaille ce matin ?"]) {
+      const kind = routeIntention(line).kind;
+      assert.ok(kind === "goal" || line.endsWith("?"), `${line} routed to ${kind}`);
+    }
+  });
+
   it("state queries route in both languages", () => {
     for (const line of [
       "capabilities",

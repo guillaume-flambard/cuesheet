@@ -54,9 +54,34 @@ describe("the chat surface", () => {
     // who made a mistake, and answers neither question.
     const { out } = say(["c'est quoi cette merde", "exit"], homedir());
     assert.match(out, /not a goal/);
-    assert.match(out, /needs a project before it will run anything/);
     assert.doesNotMatch(out, /refused/);
     assert.doesNotMatch(out, /prefix the line with/);
+  });
+
+  it("a complaint about the surface gets the surface's own state, not a redirect", () => {
+    // "cd into a project" is true and answers nothing. The chat can report what
+    // it is, so a complaint gets evidence rather than a place to go.
+    const { out } = say(["c'est moche et ca marche pas du tout", "exit"], homedir());
+    assert.match(out, /not a goal/);
+    assert.match(out, /that is the whole limit/);
+    assert.match(out, /state\s+\d+ capabilities, \d+ unreadable/);
+    assert.doesNotMatch(out, /cd into a project/);
+  });
+
+  it("the first question anyone asks is answered from state", () => {
+    // Opening a work surface and asking what to work on is the entry point,
+    // and it is a question rather than a noun, so the keyword pattern above
+    // could not reach it.
+    const { out } = say(["on what can we work today ?", "exit"], homedir());
+    assert.match(out, /free to write : \d+/);
+    assert.match(out, /held\s+:/);
+    assert.doesNotMatch(out, /not a goal/);
+  });
+
+  it("the same question in French is answered from state", () => {
+    const { out } = say(["sur quoi on peut travailler ?", "exit"], homedir());
+    assert.match(out, /free to write : \d+/);
+    assert.doesNotMatch(out, /not a goal/);
   });
 
   it("the same line is still a goal inside a project", () => {

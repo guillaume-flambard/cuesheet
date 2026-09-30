@@ -407,13 +407,22 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
             console.log(
               "        open cuesheet inside one, or prefix the line with ! to run it here anyway.",
             );
-          } else {
-            console.log(`not a goal: ${intent.text}`);
-            console.log(
-              `scope   ${cwd}, your home directory. this surface needs a project before it will run anything.`,
-            );
-            console.log("        cd into a project, or type help for what it can answer from here.");
-          }
+  } else {
+    console.log(`not a goal: ${intent.text}`);
+    console.log(
+      `scope   ${cwd}, your home directory, so nothing here can run a goal. that is the whole limit.`,
+    );
+    // Answer a complaint about the surface with the surface's own state. The
+    // alternative was "cd into a project", which is true and is not an
+    // answer to "this is ugly and broken".
+    console.log(
+      `state   ${listing.capabilities.length} capabilities, ` +
+        `${listing.unreadable.length} unreadable, ${sessions.length} sessions on disk, ${inHome ? "no project" : "project scope"}.`,
+    );
+    console.log(
+      "        what it can do: help, capabilities, sessions, projects for the portfolio view. goals need a project.",
+    );
+  }
           break;
         }
         if (intent.forced) {
