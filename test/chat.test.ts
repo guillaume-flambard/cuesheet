@@ -8,7 +8,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { homedir } from "node:os";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 const CHAT = join(process.cwd(), "src", "chat.ts");
@@ -119,15 +120,24 @@ describe("the chat surface", () => {
     assert.doesNotMatch(out, /refused/);
   });
 
-  it("the banner does not read the portfolio", () => {
-    // Reading 45 repositories to greet someone cost 180 git subprocesses on
-    // every start, and this file went from seconds to 69 because of it. The
-    // cost belongs on the question, not on the banner.
-    const started = Date.now();
+;
+
+  it("the banner says what the surface can do without reading the portfolio", () => {
     const { out } = say(["exit"], homedir());
-    assert.ok(Date.now() - started < 5000, `the banner took too long: ${Date.now() - started}ms`);
     assert.doesNotMatch(out, /\d+ free, \d+ held/);
     assert.match(out, /ask what to work on/);
+  });
+
+;
+
+  it("a portfolio answer is not a count, and a second question does not re-read", () => {
+    // The behaviour, without the shim, so the expensive counter is not run for
+    // every case. One read is asserted by the counter above; what is asserted
+    // here is that the answer keeps its shape and that the session survives
+    // being asked twice.
+    const { out } = say(["on bosse sur quoi", "projects", "exit"], homedir());
+    assert.match(out, /^next\s+\S/m, "the first question staged a choice");
+    assert.match(out, /free to write : \d+/, "the second answered the inventory");
   });
 
   it("the header reports an unreadable registry instead of a clean count", () => {

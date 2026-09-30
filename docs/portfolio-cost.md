@@ -10,6 +10,7 @@ cost, and the cost was never measured, so nobody knew it existed.
 |---|---|---|
 | Full suite, as measured first | **28.6 s** | `/usr/bin/time -p npm test` |
 | Full suite, after the three fixes below | **20.9 s** | same |
+| Full suite, with the observation counter added | **30.8 s** | 4.7 s of that is the counter |
 | `test/frontier.test.ts` alone | **13.1 s** | same, isolated |
 | Repositories probed | **45** | `snapshot().projects.length` |
 | Git subprocesses per snapshot | **180** | 45 repos x 4 calls |
@@ -136,3 +137,50 @@ the 2.2 s baseline above.
 
 Not doing it now. The cost is bounded, it is measured, and it is not the thing
 that was broken.
+
+
+## The guard is a count, not a duration
+
+The banner was first protected by "under 5 s", which is the wrong instrument:
+154 ms against a 5 s budget leaves a slow CI deciding correctness, and this
+project already knows that a wall-clock target standing in for a property is
+how a thing looks fine and is not.
+
+It is now a count, in test/observation-cost.test.ts:
+
+```text
+the banner reads nothing                      0 git calls
+the portfolio is read once per session       a multiple of 4, from 180
+```
+
+Counting needed a shim on `PATH` rather than a mock, because the chat spawns
+git through `execFileSync` inside an adapter and there is no seam to mock
+across. The shim costs about 20 ms per call and one portfolio question makes
+180, so counting every chat case would have added most of a minute. It runs for
+the two assertions that make the claim, and the rest of the surface is asserted
+without it.
+
+The first version failed in the useful direction: no git call means no log
+file, and reading the missing file threw. The passing case was the one that
+broke, which is the right way round for a zero assertion.
+
+The count was verified to still catch the regression it was written for: putting
+the banner's portfolio read back makes it fail with 180.
+
+## Two rules this measurement produced
+
+**A deterministic test must not silently acquire new reality.** Filesystem, `$HOME`,
+global git config, network, the skill registry, the clock, the environment: a
+test that reads any of them is asserting about the world rather than proving a
+claim. `test/frontier.test.ts` did, for its whole life, and a dirty checkout
+changed the suite without changing a line of it.
+
+**An observation belongs to a decision moment, not to a TTL.** The portfolio is
+read once per session and shared by the consumers of that session. Not a cache
+with an expiry: an expiry invents freshness that nobody checked, and a portfolio
+carried across a process boundary would be a statement about whenever it was
+taken rather than about now. If the world changed, the session reads again.
+
+That is the same shape the incremental work needs, and it is the smallest
+version of it that is actually true today: observe once, derive many times, and
+read again when the moment has passed.

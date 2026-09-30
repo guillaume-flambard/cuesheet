@@ -280,9 +280,10 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
     if (staged !== null) {
       const goal = staged;
       const decision = routeIntention(line);
-      // Only an approval or a refusal consumes the staged goal. Anything else
-      // is a new intention, and the goal stays on the table, because
-      // discarding work on a stray keystroke is its own kind of loss.
+      // An approval or a refusal consumes the staged goal. A question does
+      // not: asking "projects" while a goal waits is asking for information,
+      // and answering it while quietly dropping the goal would lose work on an
+      // information request. Such a question is served and the goal stays.
       if (decision.kind === "confirm") {
         staged = null;
         await runGoal(goal, false, durable, cwd);
@@ -296,7 +297,8 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         rl.prompt();
         continue;
       }
-      if (decision.kind !== "empty" && decision.kind !== "exit") {
+      const isQuestion = decision.kind === "ownership" || decision.kind === "next";
+      if (decision.kind !== "empty" && decision.kind !== "exit" && !isQuestion) {
         console.log(`still staged: ${goal}`);
         console.log("        go to run it, or name a new intention and it stays there.");
         rl.prompt();
