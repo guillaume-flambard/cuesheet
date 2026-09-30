@@ -10,11 +10,43 @@ const run = (args: string[]) =>
   spawnSync(process.execPath, [ENTRY, ...args], { encoding: "utf8" });
 
 describe("cuesheet dispatcher", () => {
-  it("no command opens the chat, and a closed stdin leaves it cleanly", () => {
+  it("a bare invocation opens the surface, and prints no diagnostics", () => {
+    // This test used to assert the opposite, and the opposite was the complaint:
+    //
+    // ```text
+    // cuesheet chat
+    //   here      /Users/memo
+    //   registry  248 capabilities, 2 unreadable
+    //   sessions  2158 on disk
+    // say what you want. a goal is staged and runs when you type go.
+    // ```
+    //
+    // Every line was true and none of it was what someone typing `cuesheet`
+    // asked for. So a bare invocation now runs the human surface, and the rule
+    // is checked rather than the old wording: nothing about the machine may
+    // appear on the normal path.
     const r = spawnSync(process.execPath, [ENTRY], { encoding: "utf8", input: "" });
     assert.equal(r.status, 0, "stdin EOF is a clean exit, not a crash");
-    assert.match(r.stdout, /cuesheet chat/);
-    assert.match(r.stdout, /a goal is staged and runs when you type go/);
+
+    for (const leaked of [
+      /cuesheet chat/,
+      /registry\s+\d+ capabilities/,
+      /unreadable/,
+      /sessions\s+\d+ on disk/,
+      /home directory/,
+      /a goal is staged/,
+    ]) {
+      assert.doesNotMatch(r.stdout, leaked, `the diagnostic path printed: ${leaked}`);
+    }
+  });
+
+  it("the old chat is still reachable, because it is evidence", () => {
+    // Sixteen milestones are visible through it. Changing the default is not a
+    // reason to delete the way to look at what was built.
+    const r = spawnSync(process.execPath, [ENTRY, "chat"], { encoding: "utf8", input: "exit\n" });
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /registry\s+\d+ capabilities/, "the chat still reports the machine");
+    assert.match(r.stdout, /here\s+/);
   });
 
   it("an unknown command names it and exits 2", () => {

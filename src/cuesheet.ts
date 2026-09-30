@@ -85,9 +85,15 @@ const COMMANDS: Record<string, CommandSpec> = {
     style: "subcommand",
     usage: "cuesheet frontier [<objects-file>]",
   },
+  surface: {
+    file: "surface-cli.ts",
+    about: "the human surface (this is what plain `cuesheet` does)",
+    style: "subcommand",
+    usage: "cuesheet surface",
+  },
   chat: {
     file: "chat.ts",
-    about: "open the intention chat (this is what plain `cuesheet` does)",
+    about: "the diagnostic chat, with every internal fact printed",
     style: "subcommand",
     usage: "cuesheet chat",
   },
@@ -172,9 +178,17 @@ function dispatch(argv: string[]): number {
     return 0;
   }
 
-  // `cuesheet` alone is the chat, so a bare invocation is not usage. Help is
-  // only usage when it was asked for, or when the first token is a flag.
-  const [command = "chat", ...rest] = argv;
+  // A bare `cuesheet` is the surface, not the old chat.
+  //
+  // The chat printed its own diagnostics on startup: where it was, how many
+  // capabilities were registered, how many sessions were on disk, and a notice
+  // that goals need a project. All of it true, none of it what a person who
+  // typed `cuesheet` asked for. The surface asks one question instead.
+  //
+  // `cuesheet chat` still reaches the old surface, because the sixteen
+  // milestones it implements are still the core's and removing the way to look
+  // at them would be throwing away evidence rather than improving a default.
+  const [command = "surface", ...rest] = argv;
   const named = COMMANDS[command];
   const firstIsFlag = command.startsWith("-");
 
