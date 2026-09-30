@@ -677,6 +677,10 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         const requirements = extractSkillRequirements(intent.text).requirements;
         const resolution = resolveAgainstLive(requirements);
         const missing = resolution.resolution.unresolved.map((u) => u.requirement.name);
+        // Read here for the same reason `runGoal` reads it: the admission line
+        // states how many capabilities were seen, and the resolution does not
+        // carry the count.
+        const listing = liveRegistry();
         printAdmission(
           resolution.registryUnverified
             ? "unverified"
@@ -685,7 +689,12 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
               : "would_block",
           requirements,
           missing,
-          registry.length,
+          // The live registry, read for the line the admission prints. It used
+          // to be `registry.length`, a name that stopped existing when P2
+          // renamed the local to `listing`, and this branch never ran in a test
+          // because `admission` is only reachable from one phrase. The type
+          // check found it in one line; every functional test had missed it.
+          listing.capabilities.length,
         );
         break;
       }

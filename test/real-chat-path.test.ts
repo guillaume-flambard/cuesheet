@@ -128,3 +128,26 @@ describe("the real chat path fails for reasons Cuesheet wrote", () => {
     }
   });
 });
+
+describe("every branch the router can reach is exercised", () => {
+  it("an admission question reaches its branch and answers", () => {
+    // This branch was dead code that looked alive. It referenced `registry`,
+    // which P2 renamed to `listing` and which nothing in the suite could reach,
+    // because `admission` is only produced by one phrasing and no test typed it.
+    //
+    // The type check found it in one line. Four functional tests had run past it
+    // a hundred times, and the runtime would have thrown `registry is not
+    // defined` the first time a person asked the question that reaches it.
+    //
+    // The lesson is not "add more tests". It is that a branch guarded by a
+    // classifier is only covered when the classifier is exercised, and the
+    // classifier lives in a different module from the branch.
+    const r = run(["quelles sont mes competences ?"]);
+    assert.equal(
+      /is not defined|ReferenceError/.test(r.out),
+      false,
+      `the admission branch raised:\n${r.out.slice(0, 500)}`,
+    );
+    assert.match(r.out, /admission|registry|capabilit/i, `and it answered:\n${r.out.slice(0, 500)}`);
+  });
+});

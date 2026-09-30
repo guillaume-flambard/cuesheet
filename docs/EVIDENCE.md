@@ -935,3 +935,45 @@ Required section, and it is the one an audit exists for.
   enforces it. But a caller can still pass `seen(false)` without having looked,
   and `AFF-08` was the label for that and does not exist. The type prevents the
   *default*; it cannot prevent the *lie*.
+
+---
+
+## Which sensor could have seen this
+
+Every result in this file is supported by the sensor that could actually see its
+defect class, and by no other. There is no sensor here that is "the proof", and
+the gaps between them are the interesting part.
+
+| Sensor | What it can see | What it structurally cannot |
+|---|---|---|
+| Functional tests | behaviour, in the scenarios executed | a branch no scenario reaches; a wrong shape in a type it never constructs |
+| `tsc` | consistency of program forms under the type system | anything about timing, ordering or the filesystem |
+| Source guards and signatures | what is structurally impossible | whether the impossible thing is ever attempted |
+| E2E through real binaries | the wiring actually reaches the primitives | anything faster than a process |
+| Crash adversary | behaviour under wrong timing | behaviour under a producer that is semantically unreliable |
+| Hermeticity and canary | what a child is and is not given | a variable reached through a path the test does not read |
+| Manual PTY | interactive behaviour actually observed | anything reproducible |
+
+Three findings in this corpus are the proof that the table is worth keeping,
+because each was invisible to every sensor above its own row:
+
+- **`registry is not defined`.** Invisible to 352 functional tests, because the
+  suite drove pure functions and never ran a goal. Found by reading source.
+  Later extended: a fourth occurrence in the `admission` branch, invisible to
+  every functional test *including the ones added afterwards*, because that
+  branch is only reachable by one phrasing. Found by `tsc`.
+- **`cause.why` on a class that had no such property.** Invisible to seventeen
+  tests, because they built a structural stand-in rather than an instance, so
+  the `instanceof` path an adapter actually takes was never walked. Found by
+  `tsc`.
+- **`EACCES` reported as "the journal moved".** Invisible to tests, because the
+  test provoked it with `EEXIST`. Found by the crash adversary, with a real
+  `SIGKILL` and a read-only directory.
+
+The rule this table encodes, and the only one needed:
+
+> A result is supported only by the sensor that could have seen its class of
+> defect.
+
+The corollary is the one that keeps costing: **a green suite is a statement about
+the scenarios in it**, and the three findings above were each green somewhere.
