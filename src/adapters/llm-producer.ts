@@ -408,16 +408,24 @@ export async function produce(options: ProduceOptions): Promise<ProduceReport> {
   // here would be a resource the model controls. The bound is a turn count, not
   // a token count, because a turn is what this function is actually spending.
   const census = censusOf(response);
-  const answered = await answerReads(options, frameFor(options), response, turn, census);
+  // EXP-08: the `await` has to be inside the try. It was not, and the catch
+  // below it was dead code that read as if it handled a provider failure: a
+  // provider that died while the read verbs were being answered rejected this
+  // function's promise, killed the process, and filed no receipt at all. The
+  // same class of error as the one the dead catch was written for, and the only
+  // reason a live transport found it is that a live transport can die at any
+  // turn, not only the first.
+  let answered: ModelResponse;
+  try {
+    answered = await answerReads(options, frameFor(options), response, turn, census);
+  } catch (cause) {
+    const why = cause instanceof Error ? cause.message : String(cause);
+    writeFailure(options, why);
+    return { kind: "failed", origin: "provider", why };
+  }
   census.turns += 1;
   if (answered !== response) {
-    try {
-      response = answered;
-    } catch (cause) {
-      const why = cause instanceof Error ? cause.message : String(cause);
-      writeFailure(options, why);
-      return { kind: "failed", origin: "provider", why };
-    }
+    response = answered;
   }
 
   for (const call of answered.toolCalls) {
