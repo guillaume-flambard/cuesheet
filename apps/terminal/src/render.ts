@@ -16,6 +16,7 @@
  */
 
 import { bindProject, type Binding } from "../../../src/adapters/project-binding.ts";
+import { snapshotPortfolio } from "../../../src/adapters/frontier.ts";
 import { routeIntention } from "../../../src/core/intent.ts";
 
 // ─── the slice's states ────────────────────────────────────────────────────
@@ -25,10 +26,23 @@ export type Slice =
   | { readonly at: "resolving" }
   | { readonly at: "ambiguous"; readonly said: string; readonly binding: Extract<Binding, { kind: "unbound" }> }
   | { readonly at: "unresolved"; readonly said: string }
-  | { readonly at: "question"; readonly said: string; readonly about: "portfolio" }
+  | { readonly at: "question"; readonly said: string; readonly suggestions: readonly Suggestion[]; readonly held: number }
   | { readonly at: "greeting"; readonly said: string }
   | { readonly at: "bound"; readonly said: string; readonly project: string; readonly path: string }
   | { readonly at: "refused"; readonly said: string };
+
+/**
+ * One project the surface can offer, and why it can.
+ *
+ * A suggestion without a reason is a guess dressed as help, so each one carries
+ * the fact that made it eligible: its tree is clean, its commits are pushed, and
+ * it has a remote. Those are the same three facts the admission check uses, and
+ * a project that fails any of them is not offered at all.
+ */
+export interface Suggestion {
+  readonly name: string;
+  readonly path: string;
+}
 
 /**
  * The one decision this slice makes: is this sentence about a project, and
@@ -48,7 +62,24 @@ export function resolve(said: string): Slice {
   // places, and a second classifier would drift from the first.
   const kind = routeIntention(said).kind;
   if (kind === "next" || kind === "admission") {
-    return { at: "question", said, about: "portfolio" };
+    // OBS-2. This used to answer "Your projects are in ~/projects. Name one",
+    // which hands the question straight back. The person asked what we should
+    // work on, and the honest answer is a proposal with a reason, not a
+    // directory listing.
+    //
+    // This is the one place the surface pays for the expensive observation, and
+    // it is worth it here: "what can we work on" is a question about writing, so
+    // the answer has to come from the repositories' real state rather than from
+    // a registry that has no idea which ones are dirty. Naming a project stays
+    // cheap, because naming needs no evidence beyond the path.
+    const snap = snapshotPortfolio();
+    const suggestions = snap.free.slice(0, 5).map((path) => ({
+      name: path.split("/").pop() ?? path,
+      // A bare name is a real answer and a repeated path is noise, so the path
+      // is only shown when it says something the name does not: the category.
+      path: path.includes("/") ? path : "",
+    }));
+    return { at: "question", said, suggestions, held: snap.held.length };
   }
   if (kind === "conversational") {
     return { at: "greeting", said };
@@ -103,17 +134,35 @@ export function render(slice: Slice, typed: string): string[] {
         "",
       ];
 
-    // OBS-1. This state exists because the surface used to answer "on fait
-    // quoi ?" with "I can't tell which one you mean", which is a false claim
-    // about what the person said. A question is answered as a question.
-    case "question":
+    // OBS-2. The answer to "what are we working on" is a proposal, not a
+    // directory. The first one is offered as the default so the next word can
+    // be its name, which is cheaper than another decision.
+    case "question": {
+      if (slice.suggestions.length === 0) {
+        return [
+          `${slice.said}`,
+          "",
+          `Every project is held: ${slice.held} of them have work in progress.`,
+          "That's not a problem, it just means now isn't the moment.",
+          "",
+        ];
+      }
+      // The held count sits with the count it explains, not spliced into the
+      // middle of the list, which is what an earlier version did and which put
+      // it between two projects.
+      const held = slice.held > 0 ? `  ${slice.held} held, so not listed.` : "";
       return [
         `${slice.said}`,
         "",
-        "Your projects are in ~/projects.",
-        "Name one and we'll work there.",
+        `${slice.suggestions.length} ready to write.`,
+        ...(held ? [held] : []),
+        "",
+        ...slice.suggestions.map((s) => `  ${s.name}  ${MUTED_MARK}${s.path}`),
+        "",
+        `${slice.suggestions[0]!.name}?`,
         "",
       ];
+    }
 
     case "greeting":
       return [`${slice.said}`, "", "Name a project when you're ready.", ""];

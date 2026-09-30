@@ -4,7 +4,9 @@ The next source of information is use. Not a milestone, not a design question.
 
 ```text
 observed:
-  1. "on fait quoi ?" -> "I can't tell which one you mean. Give me its name."
+  1. "on fait quoi ?"     -> "I can't tell which one you mean."   (fixed)
+  2. "on fait quoi ?"     -> "Your projects are in ~/projects."    (fixed)
+  3. "a toi de me dire"   -> "I don't know that one."             (open)
 ```
 
 ### OBS-1, the first one, on the first run
@@ -33,6 +35,65 @@ What made it a real observation rather than a feature request: the surface
 answered a question that was not asked of it, and the way to avoid that is not to
 add a smarter matcher. It is to stop treating every line as the same kind of
 thing.
+
+### OBS-2, the fix answered without lying, and was still wrong
+
+After OBS-1 the surface stopped claiming I had been naming a project. It said:
+
+```text
+> on fait quoi ?
+Your projects are in ~/projects.
+Name one and we'll work there.
+```
+
+Every sentence is true. It is also a redirect, and the person who asked what we
+should work on was handed the question back. "Where are your projects" is not
+what was asked, and answering it is a way of not answering.
+
+The surface can read the portfolio. It has 46 projects on disk, knows which are
+clean and pushed and which have work in progress. Answering a question about
+what to work on with a directory listing is not a limitation, it is declining to
+read what was already there.
+
+```text
+> on fait quoi ?
+5 ready to write.
+  29 held, so not listed.
+
+  agent-reality-bench
+  dsn-ecart
+  factura
+  gtm
+  fortnite-roblox
+
+agent-reality-bench?
+```
+
+This is also the first place the surface pays for the expensive observation, and
+here it is worth it. Naming a project needs no evidence beyond a path, which is
+why binding costs 1 ms. "What can we work on" is a question about writing, so
+the answer has to come from the repositories' real state. Two questions, two
+costs, and the cheap one is not the expensive one.
+
+### OBS-3, still open
+
+```text
+> a toi de me dire
+I don't know that one.
+Name a project, or ask me what we're working on.
+```
+
+A second attempt at the same question, in different words, is not recognised as a
+question. The router has a fixed phrase list, and "c'est toi de me dire" is not
+on it. So the answer to a request for a recommendation is "I don't know that
+one", which is both unhelpful and technically true.
+
+This one is not fixed. A fixed phrase list is the same class of defect as a
+single interpretation of every line, and the fix for that was to ask a router
+that understands more than one form. The question is whether a second round of
+observations is what shows the router is too narrow, or whether this is the
+router being right and the surface needing to understand that a person repeating
+a question is still asking it.
 
 ## What counts as an observation
 

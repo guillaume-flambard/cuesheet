@@ -205,19 +205,42 @@ describe("the visual identity is not negotiable", () => {
  * else.
  */
 describe("OBS-1 a question is answered as a question", () => {
-  it("a question about what to do is not a failed project lookup", () => {
+  it("a question about what to do is answered with a proposal, not a redirect", () => {
     const said = "on fait quoi ?";
     const slice = resolve(said);
     assert.equal(slice.at, "question", "the router recognises it as a question");
     const out = render(slice, "").join("\n");
-    assert.doesNotMatch(
-      out,
-      /can't tell which one you mean/i,
-      "the false claim about what the person said must not come back",
-    );
+
+    // OBS-2, on top of OBS-1. The first fix answered the question without
+    // lying, and it was still wrong: "your projects are in ~/projects, name one"
+    // hands the question straight back to the person who asked it. The surface
+    // can read the portfolio, so it can propose.
+    assert.doesNotMatch(out, /Name one and we'?ll work there/, "no redirect");
+    assert.doesNotMatch(out, /can't tell which one you mean/i, "no false claim either");
+    assert.doesNotMatch(out, /~\/projects/, "and no directory listing in place of an answer");
+
+    // A proposal with a reason. Five eligible projects, and the count of the
+    // ones left out, because 29 held projects is the reason the list is short.
+    assert.match(out, /ready to write/, "it says what it knows");
+    assert.match(out, /held, so not listed/, "and says why the list is short");
+    assert.match(out, /\?$/m, "and offers a default, so the next word can be a name");
+    // It has to NAME something. An answer with a count and a question mark but no
+    // project in it is the redirect again, wearing a different hat.
+    const named = slice.at === "question" ? slice.suggestions.map((s) => s.name) : [];
+    assert.ok(named.length > 0, "at least one project is actually named");
+    for (const name of named) {
+      assert.ok(out.includes(name), `${name} is on screen, not just in the state`);
+    }
     for (const word of INTERNAL) {
       assert.doesNotMatch(out, new RegExp(word, "i"), `"${word}" leaked into an answer to a question`);
     }
+  });
+
+  it("a question with nothing eligible says so instead of listing everything", () => {
+    const empty = { at: "question", said: "on fait quoi ?", suggestions: [], held: 29 } as const;
+    const out = render(empty, "").join("\n");
+    assert.match(out, /held/);
+    assert.doesNotMatch(out, /~\/projects/);
   });
 
   it("a greeting is not a project lookup either", () => {
