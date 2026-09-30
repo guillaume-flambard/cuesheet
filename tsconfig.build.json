@@ -1,0 +1,23 @@
+{
+  "//": "The shipped build only. The test suite runs on Node's own type stripping and deliberately has no tsconfig, so nothing here can change what `npm test` measures. rootDir is the repository root and not `src/` because entry points still import their siblings through `../src/...` (src/cli-run.ts:15-16, src/frontier-cli.ts:17-19), which only resolves if the output keeps the `src/` segment. rewriteRelativeImportExtensions turns the `./x.ts` specifiers into `./x.js` on emit, and erasableSyntaxOnly is what makes the source provably equivalent to what Node's stripper would have produced.",
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "rootDir": ".",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}

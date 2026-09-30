@@ -5,8 +5,23 @@
   "type": "module",
   "description": "Portable primitives extracted from a personal agent control plane, once they have proven themselves in real work.",
   "engines": { "node": ">=22" },
+  "bin": {
+    "cuesheet": "dist/src/cuesheet.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./core/*": { "types": "./dist/src/core/*.d.ts", "default": "./dist/src/core/*.js" },
+    "./core/*.js": { "types": "./dist/src/core/*.d.ts", "default": "./dist/src/core/*.js" },
+    "./adapters/*": { "types": "./dist/src/adapters/*.d.ts", "default": "./dist/src/adapters/*.js" },
+    "./adapters/*.js": { "types": "./dist/src/adapters/*.d.ts", "default": "./dist/src/adapters/*.js" },
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "test": "node --test \"test/**/*.test.ts\"",
-    "ownership": "node src/cli.ts"
+    "ownership": "node src/cli.ts",
+    "build": "bash scripts/build.sh",
+    "prepack": "bash scripts/build.sh"
   }
 }
