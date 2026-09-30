@@ -3,3 +3,4 @@ dist/
 *.log
 .typecheck.log
 .DS_Store
+.npm/
