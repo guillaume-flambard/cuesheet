@@ -1125,10 +1125,14 @@ fixture and the wrong one on a real repository, and the protocol's own
 `read_file` verb already exists for exactly this.
 
 Second and smaller: `OpenRouterAdapter` sends no `max_tokens`, so the provider
-applies its own default of 65536 and a task the model could do in 4K is billed
-against a 65K ceiling. That is an adapter gap rather than a protocol finding, and
-it is not fixed here because the honest next step is a measured budget, not a
-constant picked to make a call succeed.
+applies its own default of 65536. What is established is that the adapter lets
+the provider impose an output ceiling of 65 536 tokens, and that this ceiling
+enters the provider's own admission and credit check, which is what produced the
+402 rather than a prompt the provider would have accepted. Whether that ceiling
+was ever *billed* is a separate claim and is not made here: no invoice was read.
+That is an adapter gap rather than a protocol finding, and it is not fixed in this
+commit because the honest next step is a budget that a run declares and the test
+below can measure, not a constant picked to make a call succeed.
 
 ```text
 DOGFOOD  real repository, real task, real oracle   BLOCKED ON CREDITS

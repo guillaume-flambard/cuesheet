@@ -23,6 +23,26 @@ export interface OpenRouterOptions {
   baseUrl?: string;
   /** The agent identity, which providers use to shape refusals. */
   label?: string;
+  /**
+   * The output ceiling this run declares, in tokens.
+   *
+   * DOGFOOD-01 found that sending no `max_tokens` at all lets the provider apply
+   * its own default, and that ceiling then enters the provider's admission and
+   * credit check. A run the harness believes needs 4K was refused over a 65 536
+   * ceiling the harness never asked for.
+   *
+   * It is declared rather than defaulted to a constant on purpose. A default
+   * here would be the same silent choice one level down, and picking 4096 because
+   * it seems reasonable would trade an arbitrary provider value for an arbitrary
+   * one of ours. What is refused is the undeclared case: if a caller has not said
+   * what the run may cost, the adapter sends nothing and the gap is visible,
+   * rather than the adapter quietly picking a number on the caller's behalf.
+   *
+   * Whether a ceiling is ever *billed* is a separate question that no invoice was
+   * read to answer. What is established is only that the provider's admission
+   * check consults it.
+   */
+  maxTokens?: number;
 }
 
 interface ChatMessage {
@@ -178,7 +198,7 @@ export class OpenRouterAdapter implements ModelAdapter {
 
   async infer(frame: ContextFrame): Promise<ModelResponse> {
     const { messages, tools } = this.render(frame);
-    const body = {
+    const body: Record<string, unknown> = {
       model: frame.model === "unset" ? this.options.model : frame.model,
       messages,
       tools: [
@@ -192,6 +212,12 @@ export class OpenRouterAdapter implements ModelAdapter {
         },
       ],
     };
+    // Only when the run declared one. An absent `maxTokens` sends the key
+    // absent rather than absent-and-zero, because `max_tokens: 0` is a different
+    // request and would be a silent refusal the caller did not ask for.
+    if (this.options.maxTokens !== undefined) {
+      body["max_tokens"] = this.options.maxTokens;
+    }
 
     // Everything inside this boundary belongs to the provider, including the
     // SDK's own programming errors. Wrapping it here is what stops a
