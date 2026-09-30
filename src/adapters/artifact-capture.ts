@@ -206,6 +206,24 @@ export const COVERAGE_LIMITS: readonly string[] = [
   // requirement was the right one to begin with. Nothing below can establish
   // that, so it is a limit and not a bug to be fixed by a cleverer verifier.
   "whether the requirement the oracle checked was the requirement that was meant",
+  // EXP-06, and this one is about the capture rather than the requirement. A
+  // writer outside the system mutated `b.mjs` while the workspace was being
+  // copied. The artifact holds `a@v1` and `b@v2`, a pair that never coexisted on
+  // disk at any instant, and its digest is correct: content addressing proves
+  // the bytes it holds are the bytes it names. It proves nothing about whether
+  // those bytes were ever simultaneously true.
+  //
+  // The verdict was VERIFIED, because the contract only concerned `a.mjs`. That
+  // is the correct verdict and it is also the size of the hole: a capture is not
+  // a snapshot of a moment, it is a set of reads, and a set of reads taken while
+  // the world moves describes a world that may not exist.
+  //
+  // Not fixable by hashing harder. A digest over an unordered file list cannot
+  // tell a real workspace from a chimera, because the chimera is exactly as
+  // self-consistent as the real one. Detecting it needs an observation of the
+  // workspace's coherence over time, which is a different mechanism from
+  // content addressing and is deliberately not invented here.
+  "whether the captured files were ever simultaneously true in the workspace",
 ];
 
 /** Does this capture still describe the bytes on disk? */

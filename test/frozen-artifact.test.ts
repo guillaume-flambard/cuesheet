@@ -397,3 +397,112 @@ describe("EXP-07 a verdict is about the requirement, never about the requirement
     );
   });
 });
+
+/**
+ * EXP-06, the capture-time chimera.
+ *
+ * A writer outside the system mutated `b.mjs` while the workspace was being
+ * copied. The artifact holds `a@v1` and `b@v2`: a pair that never coexisted on
+ * disk at any instant. Its digest is correct, because content addressing proves
+ * the bytes it holds are the bytes it names, and that is all it proves.
+ *
+ * The verdict was VERIFIED, because the contract only concerned `a.mjs`.
+ *
+ * This is not fixed here, and nothing in this file pretends otherwise. A digest
+ * over a file list cannot distinguish a real workspace from a chimera, since the
+ * chimera is exactly as self-consistent as the real one. The tests below do two
+ * things and stop: they make the hole reproducible, and they keep the artifact
+ * honest about having it.
+ */
+describe("EXP-06 a capture is a set of reads, not a snapshot of a moment", () => {
+  /** A capture that races a real external writer, if the race can be won. */
+  async function chimera(): Promise<{ b: Bench; artifact: CapturedArtifact | null; raced: boolean }> {
+    const benchDir = bench();
+    writeFileSync(join(benchDir.workspace, "a.mjs"), "export function a() { return 'a-v1'; }\n", "utf8");
+    writeFileSync(join(benchDir.workspace, "b.mjs"), "export function b() { return 'b-v1'; }\n", "utf8");
+    // Enough bulk between the two files that the copy takes a measurable time,
+    // so a separate process has a window to act inside it.
+    writeFileSync(join(benchDir.workspace, "c.mjs"), "// " + "x".repeat(64 * 1024 * 1024) + "\n", "utf8");
+
+    const staging = join(benchDir.root, SESSION, "artifacts", "E72.pending");
+    const racer = join(benchDir.root, "racer.cjs");
+    writeFileSync(
+      racer,
+      [
+        'const { existsSync, writeFileSync } = require("node:fs");',
+        `const staging = ${JSON.stringify(staging)};`,
+        `const target = ${JSON.stringify(join(benchDir.workspace, "b.mjs"))};`,
+        "const deadline = Date.now() + 15000;",
+        "while (Date.now() < deadline) {",
+        '  if (existsSync(staging + "/a.mjs") && existsSync(staging + "/c.mjs") && !existsSync(staging + "/b.mjs")) {',
+        '    writeFileSync(target, "export function b() { return \'b-v2\'; }\\n");',
+        "    process.exit(0);",
+        "  }",
+        "}",
+        "process.exit(1);",
+      ].join("\n"),
+      "utf8",
+    );
+
+    // The racer is a separate OS process, because `capture` is synchronous and a
+    // timer on this thread would only run after the copy had already finished.
+    const child = (await import("node:child_process")).spawn(process.execPath, [racer], { stdio: "ignore" });
+    let raced = false;
+    child.on("exit", (code) => {
+      raced = code === 0;
+    });
+    let artifact: CapturedArtifact | null = null;
+    try {
+      artifact = capture({ sessionId: SESSION, effectId: "E72", workspace: benchDir.workspace, root: benchDir.root });
+    } finally {
+      child.kill();
+    }
+    return { b: benchDir, artifact, raced };
+  }
+
+  it("the capture limit is stated in the artifact itself", async () => {
+    const b = bench();
+    await runCodeWorker(b, "fix", "E73");
+    const artifact = capture({ sessionId: SESSION, effectId: "E73", workspace: b.workspace, root: b.root });
+    cleanup(b);
+
+    assert.ok(
+      artifact.doesNotCover.some((c) => c.includes("simultaneously true")),
+      "an artifact says its files were not observed to have coexisted",
+    );
+  });
+
+  it("a chimera is possible: bytes that never coexisted, in an artifact of perfect integrity", async (t) => {
+    const { b, artifact, raced } = await chimera();
+    if (!artifact) {
+      cleanup(b);
+      t.skip("the capture produced no artifact to examine");
+      return;
+    }
+    if (!raced) {
+      // The race is timing dependent. What is asserted below holds either way,
+      // so a missed race costs coverage of the chimera and not correctness of
+      // this file. The window is widened on slow machines by the bulk file.
+      t.diagnostic("the external writer did not land inside the copy window this run");
+    }
+
+    const fileA = readFileSync(join(artifact.location, "a.mjs"), "utf8");
+    const fileB = readFileSync(join(artifact.location, "b.mjs"), "utf8");
+    const isChimera = fileA.includes("a-v1") && fileB.includes("b-v2");
+
+    // The integrity claim is the important half. Whatever happened, the artifact
+    // matches its own digest: content addressing is not broken by this, and a
+    // reader must not conclude that a correct digest implies a real snapshot.
+    assert.ok(verifyCapture(artifact), "the artifact still matches its own digest");
+
+    if (isChimera) {
+      // Documented here so the possibility is not folklore. No assertion claims
+      // the chimera is impossible, because it is not.
+      t.diagnostic(
+        "this run produced a chimera: a@v1 with b@v2, a state the workspace never held",
+      );
+    }
+    cleanup(b);
+  });
+});
+
