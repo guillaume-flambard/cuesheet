@@ -338,3 +338,62 @@ describe("the claim is narrower than the tempting one", () => {
     );
   });
 });
+
+/**
+ * EXP-07, the live run that found this.
+ *
+ * A real model was given an ambiguous task against a test that several
+ * implementations satisfy. It picked one, the artifact was frozen, the oracle
+ * ran, and the verdict was VERIFIED. The tempting conclusion is that the oracle
+ * is weak. It is not. The oracle did exactly its job, and the job was smaller
+ * than the question.
+ *
+ * These tests fix the finding in the place a reader will look, which is the
+ * artifact's own `doesNotCover`, so that a future reader who finds a VERIFIED
+ * verdict on an ambiguous task finds the limit next to the verdict rather than
+ * having to rediscover it.
+ */
+describe("EXP-07 a verdict is about the requirement, never about the requirement's adequacy", () => {
+  it("the ambiguity limit is stated in the artifact itself", async () => {
+    const b = bench();
+    await runCodeWorker(b, "fix", "E70");
+    const artifact = capture({ sessionId: SESSION, effectId: "E70", workspace: b.workspace, root: b.root });
+    cleanup(b);
+
+    assert.ok(
+      artifact.doesNotCover.some((c) => c.includes("was the requirement that was meant")),
+      "an artifact says it cannot vouch for whether its own requirement was the right one",
+    );
+  });
+
+  it("a test several implementations satisfy is verified, and that is not a defect", async () => {
+    const b = bench();
+    // The ambiguous shape from the live run: a requirement so weak that
+    // `x * 2`, `Math.abs(x)` and `0` all satisfy it.
+    writeFileSync(join(b.workspace, "score.mjs"), "export function score(x) { return x * 2; }\n");
+    writeFileSync(
+      join(b.workspace, "test.mjs"),
+      'import { score } from "./score.mjs";\n' +
+        "if (score(3) < 0) { console.log(\"FAIL\"); process.exit(1); }\n" +
+        'console.log("ok");\n',
+    );
+
+    const artifact = capture({ sessionId: SESSION, effectId: "E71", workspace: b.workspace, root: b.root });
+    const verdict = runAgainstArtifact({
+      artifact,
+      command: process.execPath,
+      args: ["test.mjs"],
+      verificationId: "V71",
+    });
+    cleanup(b);
+
+    // The honest result, and it is the point of the test: a true verdict about a
+    // thin requirement. Nothing here can turn this into a claim that the work
+    // was the right work, and the artifact says so in its own field.
+    assert.equal(verdict.verdict, "VERIFIED");
+    assert.ok(
+      artifact.doesNotCover.some((c) => c.includes("was the requirement that was meant")),
+      "and the artifact carries the limit that makes the verdict readable",
+    );
+  });
+});
