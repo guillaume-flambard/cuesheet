@@ -91,10 +91,12 @@ src/affordances.ts        what the state permits. Pure; the surface asks and ren
 src/effects.ts            an effect asked for, and what came back. Never the same event.
 src/reconcile.ts           what happened to an effect nobody watched. Five answers, one null.
 src/spawn.ts               naming an effect before anything about it exists.
+src/work.ts                what the work produced, which is not what the spawn was.
+src/worker.ts              the first worker: deterministic, and unable to lie.
 src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     317 tests
+test/                     330 tests
 ```
 
 ## The primitive

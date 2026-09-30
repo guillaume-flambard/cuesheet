@@ -122,6 +122,33 @@ export class SessionStore {
     }
   }
 
+  /**
+   * Append a fact someone observed, whatever the revision is now.
+   *
+   * This is the other half of `appendIfCurrent`, and the distinction falls out
+   * of what the two events mean.
+   *
+   * A decision is a judgement about a state, so it goes stale when the state
+   * moves: "approving was allowed at 41" stops being true at 42, and writing it
+   * anyway would be acting on a state that no longer exists.
+   *
+   * A fact is not a judgement. A worker really did produce a result, and that
+   * happened whether or not somebody else typed something in between. Refusing
+   * to record it because the journal advanced would mean throwing away
+   * evidence of the world on the grounds that we were busy, which is the same
+   * mistake as the optimistic success this repository stopped making three
+   * milestones ago.
+   *
+   * So the condition is asymmetric on purpose, and the only thing a fact shares
+   * with a decision is that it is still sequenced at the current revision. One
+   * log, one sequence, two rules about staleness.
+   */
+  appendFact(sessionId: string, event: Omit<Event, "seq" | "at">): Event {
+    const stamped: Event = { ...event, seq: this.revision(sessionId) + 1, at: Date.now() };
+    this.append(sessionId, stamped);
+    return stamped;
+  }
+
   /** Every event for a session, in append order. A missing file is empty. */
   read(sessionId: string): Event[] {
     const file = this.path(sessionId);
