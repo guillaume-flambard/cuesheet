@@ -90,10 +90,11 @@ src/state.ts              the fold a view renders. Observes nothing, imports not
 src/affordances.ts        what the state permits. Pure; the surface asks and renders.
 src/effects.ts            an effect asked for, and what came back. Never the same event.
 src/reconcile.ts           what happened to an effect nobody watched. Five answers, one null.
+src/spawn.ts               naming an effect before anything about it exists.
 src/projections.ts        one event log, two renderings: interactive, machine.
 src/cuesheet.ts           the installed command's dispatcher.
 bin/cuesheet              the PATH shim, copied to ~/.local/bin.
-test/                     301 tests
+test/                     317 tests
 ```
 
 ## The primitive
