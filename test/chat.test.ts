@@ -119,6 +119,17 @@ describe("the chat surface", () => {
     assert.doesNotMatch(out, /refused/);
   });
 
+  it("the banner does not read the portfolio", () => {
+    // Reading 45 repositories to greet someone cost 180 git subprocesses on
+    // every start, and this file went from seconds to 69 because of it. The
+    // cost belongs on the question, not on the banner.
+    const started = Date.now();
+    const { out } = say(["exit"], homedir());
+    assert.ok(Date.now() - started < 5000, `the banner took too long: ${Date.now() - started}ms`);
+    assert.doesNotMatch(out, /\d+ free, \d+ held/);
+    assert.match(out, /ask what to work on/);
+  });
+
   it("the header reports an unreadable registry instead of a clean count", () => {
     // A registry that could not be fully read is not a registry with N
     // capabilities, and the difference has to be visible before a goal is

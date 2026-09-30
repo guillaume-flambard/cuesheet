@@ -1,5 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   buildSnapshotFrontier,
@@ -20,28 +24,133 @@ const obj = (over: Partial<DurableObject> = {}): DurableObject => ({
   ...over,
 });
 
-describe("snapshotPortfolio", () => {
-  it("reads the real portfolio and separates writable from held", () => {
-    const s = snapshotPortfolio();
-    assert.ok(s.projects.length > 0, "the registry must yield projects");
-    assert.ok(
-      s.free.length + s.held.length === s.projects.length,
-      "every repository is either free or held, never neither",
+/**
+ * A portfolio built in a temporary directory, so the assertions below are a
+ * function of this file rather than of whatever the machine is doing.
+ *
+ * These two tests used to call `snapshotPortfolio()` with no arguments, which
+ * reads the developer's live portfolio. Every claim they made about "free" and
+ * "held" was therefore a claim about the world at that moment: a dirty
+ * checkout produced a different suite than a clean one, and neither outcome
+ * failed. A test that passes by reading a real thing instead of proving a
+ * claim is the shape of the defects in the first five commits.
+ *
+ * Recorded in docs/portfolio-cost.md, where the same measurement found it.
+ */
+function disposablePortfolio(
+  rows: Array<[name: string, rel: string, opts?: { dirty?: boolean; remote?: boolean }]>,
+): { projectsRoot: string; dispose: () => void } {
+  const base = mkdtempSync(join(tmpdir(), "cuesheet-frontier-"));
+  const projectsRoot = join(base, "projects");
+
+  for (const [, rel, opts = {}] of rows) {
+    const dir = join(projectsRoot, rel);
+    mkdirSync(dir, { recursive: true });
+    spawnSync("git", ["-C", dir, "init", "-q"], { encoding: "utf8" });
+    if (opts.remote) {
+      const bare = join(base, `${rel.replace(/\//g, "-")}.bare`);
+      spawnSync("git", ["clone", "-q", "--bare", dir, bare], { encoding: "utf8" });
+      spawnSync("git", ["-C", dir, "remote", "add", "origin", bare], { encoding: "utf8" });
+    }
+    spawnSync(
+      "git",
+      ["-C", dir, "-c", "user.email=t@check", "-c", "user.name=frontier", "commit", "-q", "--allow-empty", "-m", "init"],
+      { encoding: "utf8" },
     );
+    if (opts.remote) {
+      spawnSync("git", ["-C", dir, "push", "-q", "-u", "origin", "HEAD"], { encoding: "utf8" });
+    }
+    if (opts.dirty) {
+      writeFileSync(join(dir, "uncommitted.txt"), "left behind\n");
+    }
+  }
+
+  writeFileSync(
+    join(projectsRoot, "PROJECTS.md"),
+    [
+      "| Name | Path | Kind | Status | Nature | Stack |",
+      "|---|---|---|---|---|---|",
+      ...rows.map(([name, rel]) => `| ${name} | ${rel} | repo | active | tool | ts |`),
+      "",
+    ].join("\n"),
+  );
+
+  return { projectsRoot, dispose: () => rmSync(base, { recursive: true, force: true }) };
+}
+
+describe("snapshotPortfolio", () => {
+  it("holds a dirty repository and frees a clean one, on a portfolio it built", () => {
+    const p = disposablePortfolio([
+      ["clean-repo", "tools/clean-repo", { remote: true }],
+      ["dirty-repo", "tools/dirty-repo", { dirty: true }],
+    ]);
+    try {
+      const s = snapshotPortfolio({ projectsRoot: p.projectsRoot });
+
+      assert.equal(s.projects.length, 2, "the registry must yield both projects");
+      assert.equal(
+        s.free.length + s.held.length,
+        s.projects.length,
+        "every repository is either free or held, never neither",
+      );
+      assert.ok(s.held.includes("dirty-repo"), "a dirty repository is held");
+      assert.ok(!s.free.includes("dirty-repo"));
+      assert.ok(s.free.includes("clean-repo"), "a clean, pushed repository is free");
+    } finally {
+      p.dispose();
+    }
   });
 
-  it("holds a repository with uncommitted work, and says which", () => {
-    const s = snapshotPortfolio();
-    // The state of the world changes; the invariant does not. A repo with
-    // dirty files must never appear in the free list.
-    for (const p of s.projects) {
-      if (p.dirty > 0) {
-        assert.ok(s.held.includes(p.entry.name), `${p.entry.name} has ${p.dirty} dirty files`);
-        assert.ok(!s.free.includes(p.entry.name));
-      }
+  it("holds a repository whose commits were never pushed", () => {
+    const p = disposablePortfolio([["unpushed-repo", "tools/unpushed-repo", { remote: true }]]);
+    try {
+      // Two commits, one pushed: the unpushed one is exactly the case
+      // resolveOwnership holds a checkout for.
+      const dir = join(p.projectsRoot, "tools", "unpushed-repo");
+      spawnSync(
+        "git",
+        ["-C", dir, "-c", "user.email=t@check", "-c", "user.name=frontier", "commit", "-q", "--allow-empty", "-m", "second"],
+        { encoding: "utf8" },
+      );
+      const s = snapshotPortfolio({ projectsRoot: p.projectsRoot });
+      const repo = s.projects.find((r) => r.entry.name === "unpushed-repo");
+      assert.equal(repo?.ahead, 1, "one commit is ahead of the upstream");
+      assert.ok(s.held.includes("unpushed-repo"), "unpushed work holds the repository");
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it("reports a declared repository that is not on disk", () => {
+    const p = disposablePortfolio([["ghost", "tools/ghost"]]);
+    try {
+      const projectsRoot = p.projectsRoot;
+      rmSync(join(projectsRoot, "tools", "ghost"), { recursive: true, force: true });
+      const s = snapshotPortfolio({ projectsRoot });
+      assert.ok(s.declaredButMissing.includes("ghost"), "a declared but absent repository is named");
+    } finally {
+      p.dispose();
     }
   });
 });
+
+
+/**
+ * A snapshot built from nothing, for the tests that only care about rendering.
+ *
+ * `buildSnapshotFrontier` takes an injected snapshot and falls back to reading
+ * the machine's portfolio when none is given. Every rendering test left it out,
+ * so each one spawned 180 git subprocesses against the developer's real
+ * repositories. Passing a fixture is the same injection the adapter was made
+ * injectable for.
+ */
+const OFFLINE_SNAPSHOT = {
+  projects: [],
+  declaredButMissing: [],
+  presentButUndeclared: [],
+  free: [],
+  held: [],
+};
 
 describe("buildSnapshotFrontier", () => {
   it("reports an unevaluable condition instead of quietly not waking it", () => {
@@ -59,6 +168,7 @@ describe("buildSnapshotFrontier", () => {
 
     const { frontier, unevaluable } = buildSnapshotFrontier({
       objects,
+      snapshot: OFFLINE_SNAPSHOT,
       measured: { alignment_failures: 4 },
     });
 
@@ -79,7 +189,7 @@ describe("buildSnapshotFrontier", () => {
         },
       }),
     ];
-    const { frontier } = buildSnapshotFrontier({ objects, measured: { m: 1 } });
+    const { frontier } = buildSnapshotFrontier({ objects, measured: { m: 1 }, snapshot: OFFLINE_SNAPSHOT });
     assert.equal(frontier.woken.length, 1);
   });
 });
@@ -93,6 +203,7 @@ describe("renderFrontier", () => {
     ];
     const { frontier, snapshot, unevaluable } = buildSnapshotFrontier({
       objects,
+      snapshot: OFFLINE_SNAPSHOT,
       measured: {},
     });
     const md = renderFrontier(frontier, snapshot, unevaluable, frontier.woken);
@@ -109,6 +220,7 @@ describe("renderFrontier", () => {
     ];
     const { frontier, snapshot, unevaluable } = buildSnapshotFrontier({
       objects,
+      snapshot: OFFLINE_SNAPSHOT,
       measured: {},
     });
     const md = renderFrontier(frontier, snapshot, unevaluable, frontier.woken);

@@ -219,18 +219,11 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
     console.log(
       "            home directory. goals need a project, but the portfolio answers from here.",
     );
-    try {
-      const { snapshotPortfolio } = await import("./adapters/frontier.ts");
-      const snap = snapshotPortfolio();
-      const hint = snap.free[0];
-      console.log(
-        `            ${snap.free.length} free, ${snap.held.length} held.` +
-          (hint ? ` try: cd ${hint} && cuesheet` : ""),
-      );
-    } catch {
-      // The portfolio is a convenience here, not a prerequisite. A surface
-      // that cannot read it must still start.
-    }
+    console.log("            ask what to work on, or type projects.");
+    // Deliberately no portfolio read here. Reading 45 repositories to greet
+    // someone cost 180 git subprocesses on every start, which is why
+    // test/chat.test.ts went from seconds to 69. The cost belongs on the
+    // question that needs it, not on the banner. See docs/portfolio-cost.md.
   }
   const listing = liveRegistry();
   console.log(
@@ -253,6 +246,28 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   let staged: string | null = null;
   /** How many greetings were answered, so a second one gets a different reply. */
   let conversationalCount = 0;
+  /**
+   * The portfolio, read once per session.
+   *
+   * Two call sites asked for it, and each paid 45 repositories x 4 git calls,
+   * so "on bosse sur quoi" followed by "projects" cost the observation twice
+   * for the same world. That is the repeated-spend shape, and the fix is not a
+   * cache with a TTL, it is one observation shared by the consumers in the
+   * session.
+   *
+   * Scoped to the session on purpose. A portfolio is a statement about now,
+   * and carrying one across a process boundary would make it a statement about
+   * whenever it was taken. See docs/portfolio-cost.md.
+   */
+  let portfolioObservation: Awaited<ReturnType<typeof import("./adapters/frontier.ts").snapshotPortfolio>> | null =
+    null;
+  const observePortfolio = async () => {
+    if (portfolioObservation === null) {
+      const { snapshotPortfolio } = await import("./adapters/frontier.ts");
+      portfolioObservation = snapshotPortfolio();
+    }
+    return portfolioObservation;
+  };
   for await (const line of rl) {
     // A staged goal waits for an explicit approval. This is the confirmation
     // that was missing when a bare "hello ?" consumed an entire agent budget:
@@ -334,12 +349,11 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         break;
       case "next": {
         // The inventory answer was "free to write: 17", which is true and is
-        // not an answer to "on travaille sur quoi". Counts describe the
+        // not an answer to "on travaux sur quoi". Counts describe the
         // portfolio; the question asks for a choice. So this names the
         // projects, says why one is the cheapest, and stages the choice
         // rather than ending in a number.
-        const { snapshotPortfolio } = await import("./adapters/frontier.ts");
-        const snap = snapshotPortfolio();
+        const snap = await observePortfolio();
 
         if (snap.held.length > 0) {
           console.log(`held        ${snap.held.length}`);
@@ -383,8 +397,7 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
         break;
       }
       case "ownership": {
-        const { snapshotPortfolio } = await import("./adapters/frontier.ts");
-        const snap = snapshotPortfolio();
+        const snap = await observePortfolio();
         console.log(`free to write : ${snap.free.length}`);
         console.log(`held          : ${snap.held.length}${snap.held.length > 0 ? ` (${snap.held.slice(0, 6).join(", ")}${snap.held.length > 6 ? ", ..." : ""})` : ""}`);
         if (snap.declaredButMissing.length > 0) {
