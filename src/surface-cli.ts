@@ -2,8 +2,9 @@
  * The human surface, as a command.
  *
  * This is what plain `cuesheet` runs. It exists to be thin: the words a person
- * sees come from `apps/terminal/src/render.ts`, and the only decision this file
- * makes is which terminal renders them.
+ * sees come from `apps/terminal/src/app/`, the work comes from
+ * `apps/terminal/src/producer/`, and the only decision this file makes is which
+ * terminal renders them.
  *
  * The previous default, `cuesheet chat`, printed this on startup:
  *
@@ -74,13 +75,30 @@ export async function surface(): Promise<number> {
       cwd: TERMINAL,
       stdio: "inherit",
       env: {
-        // Named, not inherited wholesale. The slice reads the portfolio, which
-        // is a filesystem read under $HOME, and it needs a TERM to colour. It
-        // needs no credentials, because it starts no model and touches no
-        // network, and saying so here is what keeps that true.
+        // Named, not inherited wholesale, because the surface needs four things
+        // and passing the whole environment would grant it everything.
+        //
+        //   PATH   the tool runner resolves node, git, rg, npm against it
+        //   HOME   the portfolio lives at $HOME/projects
+        //   TERM   colour
+        //   OPENROUTER_API_KEY   the model's provider
+        //
+        // The fourth entry is new and it falsifies a claim this file used to
+        // make. The comment here read "it starts no model and touches no
+        // network", which was true of the V1 surface and stopped being true the
+        // moment the producer started running `src/core/loop.ts`. Naming the
+        // credential is the honest version: the surface does start a model, and
+        // it does reach the network, and a reader of this file can see exactly
+        // what it is given.
+        //
+        // Nothing else crosses. No secret from the parent reaches the child, and
+        // the absence of `OPENROUTER_API_KEY` is handled where it is read
+        // (`apps/terminal/src/producer/runtime.ts`), which reports it in one
+        // sentence rather than starting a run that cannot finish.
         PATH: process.env["PATH"] ?? "",
         HOME: process.env["HOME"] ?? "",
         TERM: process.env["TERM"] ?? "xterm-256color",
+        ...(process.env["OPENROUTER_API_KEY"] ? { OPENROUTER_API_KEY: process.env["OPENROUTER_API_KEY"] } : {}),
       },
     });
     child.on("error", (cause) => {

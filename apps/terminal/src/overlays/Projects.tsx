@@ -5,39 +5,67 @@
  * closes, which is what an overlay is. A panel would sit there afterwards holding
  * space that the conversation needs.
  *
- * The list is the answer to "je sais pas": it makes choosing cheaper rather than
- * asking again with the same expected answer.
+ * ## What changed in V2, and why it matters
+ *
+ * In V1 this component called `snapshotPortfolio()` itself, in a `useMemo`, on
+ * mount. That was a component deciding what the machine could offer, which breaks
+ * the law at `app/state.ts:6` ("No TUI component decides anything") from the
+ * inside, and it meant the answer to an ambiguity could not be tested without
+ * reading the real portfolio off the real disk.
+ *
+ * Now the producer resolves the options and hands them down. The component draws
+ * what it is given and emits a choice, which is all it ever should have done.
+ *
+ * Each option carries its own reason, because a suggestion without a reason is a
+ * guess dressed as help: "its name matched" and "in the registry, not on disk"
+ * are checkable, and the difference between them is the difference between a
+ * working directory and a broken one.
  */
-import React, { useMemo } from "react";
+import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { snapshotPortfolio } from "../../../../src/adapters/frontier.ts";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
+import type { Option } from "../app/state.ts";
 
-export function Projects({ onChoose }: { onChoose(path: string): void }): JSX.Element {
-  // Read once when the overlay opens. The observer may be interrupted, which is
-  // the one thing a project list must not do halfway through being read.
-  const free = useMemo(() => snapshotPortfolio().free.slice(0, 10), []);
-  const [at, setAt] = React.useState(0);
+export function Projects(props: {
+  choices: readonly Option[];
+  onChoose(option: Option): void;
+  onDismiss(): void;
+}): JSX.Element {
+  const [at, setAt] = useState(0);
+  const choices = props.choices;
 
-  useInput((_input, key) => {
-    if (key.downArrow) return setAt((i) => Math.min(i + 1, free.length - 1));
-    if (key.upArrow) return setAt((i) => Math.max(i - 1, 0));
-    if (key.return) return onChoose(free[at]!);
+  useInput((input, key) => {
+    if (key.downArrow || (input === "j" && !key.ctrl)) return setAt((i) => Math.min(i + 1, choices.length - 1));
+    if (key.upArrow || (input === "k" && !key.ctrl)) return setAt((i) => Math.max(i - 1, 0));
+    if (key.escape) return props.onDismiss();
+    if (key.return) {
+      const picked = choices[at];
+      if (picked) props.onChoose(picked);
+    }
   });
+
+  if (choices.length === 0) {
+    return <Text color={inkColor(theme.dim)}>nothing to choose from</Text>;
+  }
 
   return (
     <Box flexDirection="column">
-      <Text color={inkColor(theme.dim)}>libres a l'ecriture</Text>
-      {free.map((p, i) => (
-        <Box key={p}>
-          <Text color={inkColor(i === at ? theme.brand : theme.faint)}>
-            {i === at ? `${glyph.input} ` : "  "}
-          </Text>
-          <Text color={inkColor(i === at ? theme.text : theme.dim)} bold={i === at}>
-            {p.split("/").pop()}
-          </Text>
+      <Text color={inkColor(theme.dim)}>{choices.length} could be it</Text>
+      {choices.map((c, i) => (
+        <Box key={c.path} flexDirection="column">
+          <Box>
+            <Text color={inkColor(i === at ? theme.brand : theme.faint)}>{i === at ? `${glyph.input} ` : "  "}</Text>
+            <Text color={inkColor(i === at ? theme.text : theme.dim)} bold={i === at}>
+              {c.name}
+            </Text>
+            <Text color={inkColor(theme.faint)}>  {c.path}</Text>
+          </Box>
+          <Text color={inkColor(theme.faint)}>      {c.why}</Text>
         </Box>
       ))}
+      <Box marginTop={1}>
+        <Text color={inkColor(theme.faint)}>↑↓ to move · enter to work there · esc to keep working where you are</Text>
+      </Box>
     </Box>
   );
 }
