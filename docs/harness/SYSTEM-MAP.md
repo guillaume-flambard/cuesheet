@@ -70,3 +70,5 @@ le parcours de README et la comparaison H10 sont réalisables. L'audit final che
 encore les exigences absentes du graphe ; il n'est pas exécuté à cette étape.
 
 Exécution : producer → execution-slices.ts → core.runAgentLoop par tranche → contexte journal reconstruit. Notes terminal.execution reflètent les limites et cause de continuation. ResearchTools au runtime reçoit cwd pour documents locaux et route Brave explicite ; SkillTools reçoit racines explicites ou .cuesheet/skills.
+
+execution-state.ts projette terminal.execution v1, validé par TerminalSession avant append/reload et dans le listing des sessions. session-view dérive interrupted seulement au chargement ; shared-context expose les états sous le plafond existant.

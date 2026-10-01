@@ -1,4 +1,6 @@
 /** Bounded continuation of one explicitly started execution, above the core loop. */
+import { appendExecutionNote, projectExecutions } from "./execution-state.ts";
+import { projectObjectives } from "./objectives.ts";
 import { createHash } from "node:crypto";
 import { runAgentLoop, type ModelAdapter, type ToolRunner, type LoopOptions, type LoopOutcome } from "../core/loop.ts";
 import type { EventStore, Event } from "../core/store.ts";
@@ -8,16 +10,20 @@ export async function runExecutionSlices(store:EventStore,model:ModelAdapter,too
   executionId:string;maxSlices:number;signal:AbortSignal;
 }):Promise<LoopOutcome>{
   if(!Number.isSafeInteger(options.maxSlices) || options.maxSlices<1 || options.maxSlices>16)throw new Error("Execution slice budget must be 1-16.");
-  const seen=new Set<string>();let steps=0;const claims:string[]=[];
+  const seen=new Set<string>();let steps=0;let completed=0;let activeSlice=0;const claims:string[]=[];
   const note=(slice:number,state:string)=>{
-    const event=store.append({kind:"note",subject:"terminal.execution",data:{version:1,executionId:options.executionId,slice,state,steps,maxSlices:options.maxSlices,stepsPerSlice:options.maxSteps,cost:null}});
+    const projected=projectObjectives(store.toSession().events).current;
+    const objective=projected?.id.startsWith("legacy-") ? null : projected;
+    const event=appendExecutionNote(store,{version:1,executionId:options.executionId,slice,state,steps,maxSlices:options.maxSlices,stepsPerSlice:options.maxSteps,cost:null,
+      objectiveId:objective?.id ?? null,objectiveRevision:objective?.revision ?? null});
     options.onEvent?.(event);
   };
+  try {
   for(let slice=1;slice<=options.maxSlices;slice++){
-    options.signal.throwIfAborted();note(slice,"running");
+    options.signal.throwIfAborted();activeSlice=slice;note(slice,"running");
     let fresh=false;let action:Event|undefined;
     const outcome=await runAgentLoop(store,{name:model.name,async infer(frame){
-      options.signal.throwIfAborted();return model.infer({...frame,step:frame.step+(slice-1)*options.maxSteps});
+      options.signal.throwIfAborted();const response=await model.infer({...frame,step:frame.step+(slice-1)*options.maxSteps});completed++;return response;
     }},tools,{...options,onEvent(event){
       options.onEvent?.(event);
       if(event.kind==="action" && typeof event.data.tool==="string")action=event;
@@ -38,4 +44,14 @@ export async function runExecutionSlices(store:EventStore,model:ModelAdapter,too
     if(terminal)return {...outcome,session:store.toSession(),claims,stop:outcome.stop.reason==="blocked" ? outcome.stop : {...outcome.stop,steps}};
   }
   throw new Error("Unreachable execution budget.");
+  } catch(cause) {
+    // A failed journal cannot publish a final record. Preserve the original failure.
+    try {
+      const current=projectExecutions(store.toSession().events).find(run=>run.id===options.executionId);
+      if(current && (current.phase==="running" || current.phase==="continuing")){
+        steps=completed;note(activeSlice,options.signal.aborted ? "cancelled" : "failed");
+      }
+    } catch {}
+    throw cause;
+  }
 }

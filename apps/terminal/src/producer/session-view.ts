@@ -1,4 +1,5 @@
 /** Rebuild the presentation journal, keeping it separate from harness evidence. */
+import { projectExecutions } from '../../../../src/adapters/execution-state.ts';
 import { createStore, type Store } from '../app/store.ts';
 import { derive, emptySurface, type Control, type Entry, type SurfaceState } from '../app/state.ts';
 import type { TerminalSession } from '../../../../src/adapters/terminal-session.ts';
@@ -39,6 +40,12 @@ export function restoreView(journal:TerminalSession):SurfaceState {
   const core=journal.core.toSession();
   state={...state,log:core.events.slice(-200).map(event=>`[${event.kind}] ${event.subject} ${JSON.stringify(event.data)}`)};
   if(core.goal && !core.goal.open) state=derive(state,{type:'observed',entries:[{kind:'status',label:'résultat sauvegardé',value:`But vérifié sur la capture enregistrée · ${core.evidence.at(-1)?.backing ?? 'preuve dans le journal'}`,certainty:'confirmed'}]});
+  const execution=projectExecutions(core.events,{replaying:true}).at(-1);
+  if(execution){
+    const reasons:Record<string,string>={interrupted:"Exécution interrompue sans résultat final enregistré",cancelled:"Exécution arrêtée par la personne",failed:"Exécution arrêtée sur une erreur technique",limit:"Limite d’exécution atteinte",stagnation:"Exécution arrêtée sans nouvelle observation",blocked:"Exécution en attente de capacité"};
+    const reason=reasons[execution.phase];
+    if(reason) state=derive(state,{type:'observed',entries:[{kind:'status',label:'exécution sauvegardée',value:`${reason} · ${execution.steps} inférences terminées · tranche ${execution.slice}/${execution.maxSlices}. Le but reste à poursuivre ; aucune action n’a été relancée.`,certainty:'unknown'}]});
+  }
   if(interrupted) state=derive(state,{type:'observed',entries:[{kind:'status',label:'reprise',value:'Le processus précédent s’est arrêté. Les effets en cours restent inconnus ; aucune action n’a été relancée.',certainty:'unknown'}]});
   return state;
 }

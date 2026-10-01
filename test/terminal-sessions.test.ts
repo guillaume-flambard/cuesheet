@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { TerminalSession, listTerminalSessions } from '../src/adapters/terminal-session.ts';
+import { projectExecutions } from '../src/adapters/execution-state.ts';
 import { persistentView } from '../apps/terminal/src/producer/session-view.ts';
 import { createProducer } from '../apps/terminal/src/producer/index.ts';
 import { createCompletionCheck } from '../src/adapters/surface-verification.ts';
@@ -97,6 +98,9 @@ const store=persistentView(session);const producer=createProducer({store,cwd:${J
     const exit=new Promise(r=>child.once('exit',r));child.kill('SIGKILL');await exit;
     reopened=new TerminalSession({root:storage,cwd,id});const view=persistentView(reopened);
     assert.equal(view.get().busy,false);assert.equal(view.get().composer,'crash draft');
+    const run=projectExecutions(reopened.core.toSession().events,{replaying:true}).at(-1)!;
+    assert.equal(run.phase,'interrupted');assert.match(run.id,/^E-/);assert.ok(run.objectiveId);
+    assert.equal(reopened.core.toSession().events.findLast(e=>e.subject==='terminal.execution')?.data.state,'running');
     assert.ok(view.get().entries.some(e=>e.kind==='status' && e.value.includes('aucune action')));
     assert.ok(reopened.core.toSession().events.some(e=>e.subject==='terminal.intent' && e.data.phase==='requested'));
     assert.equal(reopened.core.toSession().events.some(e=>e.kind==='observation' && e.data.tool==='node'),false);

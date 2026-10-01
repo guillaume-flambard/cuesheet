@@ -1,3 +1,4 @@
+import { projectExecutions } from "./execution-state.ts";
 import type { ContextFrame } from "../core/loop.ts";
 import type { Session } from "../core/store.ts";
 import { projectWork } from "../work-state.ts";
@@ -23,6 +24,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
       artifacts: work.artifacts.slice(), claims: work.claims.slice(), evidence: frame.evidence,
       memory: projectMemory(session.events), organization: projectOrganization(session.events),
       objectives: projectObjectives(session.events),
+      executions: projectExecutions(session.events),
       research: session.events.filter(event=>event.kind==="note" && event.subject==="terminal.research")
         .map(event=>({sourceSeq:event.seq,operation:event.data.operation,url:event.data.finalUrl ?? event.data.url,
           path:event.data.path,digest:event.data.digest,fetchedAt:event.data.fetchedAt,query:event.data.query,results:event.data.results})),
@@ -41,7 +43,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
   }).reverse();
   const result: ContextFrame = { ...frame, history: frame.history.slice(), evidence: frame.evidence.slice(), directives: directives.slice() };
   snapshot.constraints = snapshot.constraints.filter(item=>directives.some(directive=>directive.seq===item.at));
-  const histories = [snapshot.claims,snapshot.decisions,snapshot.artifacts,snapshot.tasks,snapshot.openQuestions,snapshot.research,snapshot.installedSkills];
+  const histories = [snapshot.claims,snapshot.decisions,snapshot.artifacts,snapshot.tasks,snapshot.openQuestions,snapshot.research,snapshot.installedSkills,snapshot.executions];
   // Bound candidate sets before serializing. Repeatedly dropping one item from
   // a huge journal would turn compilation into quadratic work.
   for(const items of histories)if(items.length>64){const remove=items.length-64;items.splice(0,remove);snapshot.context.omittedRecords+=remove;}

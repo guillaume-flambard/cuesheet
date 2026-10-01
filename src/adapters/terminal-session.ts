@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import type { ModelPreferences } from './model-preferences.ts';
+import { projectExecutions, EXECUTION_SUBJECT } from './execution-state.ts';
 import { projectObjectives, OBJECTIVE_SUBJECT } from './objectives.ts';
 
 export interface TerminalMetadata {
@@ -58,7 +59,7 @@ export class TerminalSession {
       if (realpathSync(this.metadata.cwd) !== this.metadata.cwd) throw new Error('Le répertoire de la session a changé.');
       this.durable = new SessionStore({root:this.root});
       if (!options.id) { this.durable.create(id,[]); this.durable.create(`${id}.view`,[]); chmodSync(join(this.root,`${id}.jsonl`),0o600); chmodSync(join(this.root,`${id}.view.jsonl`),0o600); }
-      const events = this.durable.read(id); validateEvents(events); projectObjectives(events);
+      const events = this.durable.read(id); validateEvents(events); projectObjectives(events); projectExecutions(events);
       this.viewEvents = this.durable.read(`${id}.view`); validateEvents(this.viewEvents);
       this.core = new WriteThroughStore(this,events,options.now ?? Date.now);
       process.once("exit",this.releaseOnExit);
@@ -74,6 +75,7 @@ export class TerminalSession {
   appendCore(expected: number,event: Omit<Event,'seq'>): Event {
     this.assertWritable();
     if(event.subject===OBJECTIVE_SUBJECT) projectObjectives([...this.core.toSession().events,{...event,seq:expected<0 ? 1 : expected+1}]);
+    if(event.subject===EXECUTION_SUBJECT) projectExecutions([...this.core.toSession().events,{...event,seq:expected<0 ? 1 : expected+1}]);
     try {
       if (this.durable.revision(this.metadata.id) !== expected) throw new Error('Le journal a été modifié par un autre écrivain.');
       const stored=this.durable.append(this.metadata.id,event);
@@ -153,7 +155,7 @@ export function listTerminalSessions(root=terminalSessionRoot()):Array<{id:strin
       const metadata=readMetadata(join(root,file),id);
       const core=durable.attest(id);const view=durable.attest(`${id}.view`);
       let invalid=false;
-      try {validateEvents(core.events);validateEvents(view.events);} catch {invalid=true;}
+      try {validateEvents(core.events);projectObjectives(core.events);projectExecutions(core.events);validateEvents(view.events);} catch {invalid=true;}
       const goal=core.events.filter(e=>e.kind==='goal').at(-1);
       return [{id,cwd:metadata.cwd,goal:typeof goal?.data?.text==='string'?goal.data.text:'Nouvelle conversation',lastAt:Math.max(metadata.createdAt,core.events.at(-1)?.at ?? 0,view.events.at(-1)?.at ?? 0),damaged:invalid || !!core.damage || !!view.damage || !existsSync(join(root,`${id}.jsonl`)) || !existsSync(join(root,`${id}.view.jsonl`))}];
     } catch {return [{id,cwd:'Métadonnées invalides',goal:'Session endommagée',lastAt:0,damaged:true}];}
