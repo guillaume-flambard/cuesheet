@@ -8,7 +8,7 @@
  * announcing that no local runtime existed. One did.
  *
  * The rule, in one sentence: **a run uses the local binary unless a person asks
- * for OpenRouter by name.** Not "unless a key happens to be exported", because
+ * for another provider by name.** Not "unless a key happens to be exported", because
  * an ambient key silently changing which transport a run uses is the kind of
  * decision nobody can reconstruct from a log afterwards. Opt-in is explicit or
  * it is not a default.
@@ -53,6 +53,8 @@ export interface ResolvedModel {
 export interface ResolveOptions {
   /** The resolved project directory, or null for a scratch run with none. */
   readonly project?: string | null;
+  /** Explicit transport for this run, overriding CUESHEET_PROVIDER. */
+  readonly provider?: string;
   /**
    * A model named for this run, e.g. from `--model`.
    *
@@ -96,9 +98,36 @@ export function resolveModel(options: ResolveOptions = {}): ResolvedModel | { mi
   const env = process.env;
   const model = options.model?.trim() || env["CUESHEET_MODEL"]?.trim() || null;
 
+  const provider = options.provider?.trim() || env.CUESHEET_PROVIDER?.trim() || "opencode";
+  if (!["opencode", "openrouter", "openai", "compatible"].includes(provider)) {
+    return { missing: `Unknown provider "${provider}". Choose opencode, openrouter, openai or compatible.` };
+  }
+  const ceiling = env.CUESHEET_MAX_TOKENS;
+  const maxTokens = ceiling === undefined ? undefined : Number(ceiling);
+  if (maxTokens !== undefined && (!Number.isSafeInteger(maxTokens) || maxTokens < 1)) {
+    return { missing: "CUESHEET_MAX_TOKENS must be a positive integer." };
+  }
+  if (provider === "openai" || provider === "compatible") {
+    if (!model) return { missing: `${provider} requires an explicit model (--model or CUESHEET_MODEL).` };
+    const apiKey = provider === "openai" ? env.OPENAI_API_KEY : env.CUESHEET_API_KEY;
+    if (provider === "openai" && !apiKey) return { missing: "OPENAI_API_KEY is not set." };
+    const baseUrl = provider === "openai" ? "https://api.openai.com/v1" : env.CUESHEET_BASE_URL;
+    if (!baseUrl) return { missing: "compatible requires CUESHEET_BASE_URL (including /v1)." };
+    try {
+      const url = new URL(baseUrl);
+      if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error();
+    } catch { return { missing: "CUESHEET_BASE_URL must be an HTTP(S) URL without credentials, query or fragment." }; }
+    return {
+      adapter: new OpenRouterAdapter({ apiKey: apiKey ?? "", model, providerName: provider,
+        baseUrl: baseUrl.replace(/\/$/, ""), maxTokens,
+        tokenParameter: provider === "openai" ? "max_completion_tokens" : "max_tokens" }),
+      name: provider, model, why: `${provider}, explicitly selected, model ${model}`,
+    };
+  }
+
   // Explicit opt-in, and only explicit. A key that happens to be exported is not
   // a request to spend credits on every run in the session.
-  if ((env["CUESHEET_PROVIDER"] ?? "").trim() === OPENROUTER_PROVIDER) {
+  if (provider === OPENROUTER_PROVIDER) {
     const apiKey = env["OPENROUTER_API_KEY"];
     if (!apiKey) {
       return {
@@ -108,7 +137,7 @@ export function resolveModel(options: ResolveOptions = {}): ResolvedModel | { mi
       };
     }
     return {
-      adapter: new OpenRouterAdapter({ apiKey, model: model ?? "anthropic/claude-sonnet-4-6" }),
+      adapter: new OpenRouterAdapter({ apiKey, maxTokens, model: model ?? "anthropic/claude-sonnet-4-6" }),
       name: "openrouter",
       model: model ?? "anthropic/claude-sonnet-4-6",
       why: "CUESHEET_PROVIDER=openrouter, asked for by name",

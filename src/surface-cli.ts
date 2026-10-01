@@ -38,6 +38,27 @@ const TERMINAL = join(REPO, "apps", "terminal");
 const RUNNER = join(TERMINAL, "node_modules", ".bin", "tsx");
 const SLICE = join(TERMINAL, "src", "main.tsx");
 
+/** Only model preferences and the named credentials cross the launcher boundary. */
+export function surfaceEnvironment(args: string[], env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const keys = ["PATH", "HOME", "TERM", "CUESHEET_PROVIDER", "CUESHEET_MODEL", "CUESHEET_MAX_TOKENS",
+    "CUESHEET_BASE_URL", "CUESHEET_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "CUESHEET_OPENCODE_BIN"];
+  const result: Record<string, string> = { TERM: "xterm-256color" };
+  for (const key of keys) if (env[key] !== undefined) result[key] = env[key]!;
+  const flags: Record<string, string> = { "--provider": "CUESHEET_PROVIDER", "--model": "CUESHEET_MODEL",
+    "--max-tokens": "CUESHEET_MAX_TOKENS", "--base-url": "CUESHEET_BASE_URL", "--verify": "CUESHEET_VERIFY_SCRIPT" };
+  const seen = new Set<string>();
+  for (let i = 0; i < args.length; i += 2) {
+    const flag = args[i]!;
+    const value = args[i + 1];
+    if (!flags[flag] || !value?.trim() || value.startsWith("--") || seen.has(flag)) {
+      throw new Error("usage: cuesheet surface [--provider opencode|openrouter|openai|compatible] [--model ID] [--max-tokens N] [--base-url URL] [--verify check.mjs]");
+    }
+    seen.add(flag);
+    result[flags[flag]!] = flag === "--verify" ? resolve(process.cwd(), value) : value.trim();
+  }
+  return result;
+}
+
 /**
  * Run the surface, inheriting the terminal so Ink sees a real TTY.
  *
@@ -48,11 +69,9 @@ const SLICE = join(TERMINAL, "src", "main.tsx");
  */
 export async function surface(argv = process.argv.slice(2)): Promise<number> {
   const args = argv[0] === "surface" ? argv.slice(1) : argv;
-  if (args.length && (args[0] !== "--verify" || args.length !== 2)) {
-    console.error("surface: usage: cuesheet surface [--verify <self-contained Node check.mjs>]");
-    return 2;
-  }
-  const verificationScript = args[1] ? resolve(process.cwd(), args[1]) : undefined;
+  let selected: Record<string, string>;
+  try { selected = surfaceEnvironment(args); }
+  catch (error) { console.error(`surface: ${error instanceof Error ? error.message : String(error)}`); return 2; }
   if (!existsSync(SLICE)) {
     console.error(`surface: the slice is missing at ${SLICE}`);
     return 1;
@@ -81,31 +100,7 @@ export async function surface(argv = process.argv.slice(2)): Promise<number> {
       cwd: process.cwd(),
       stdio: "inherit",
       env: {
-        // Named, not inherited wholesale, because the surface needs four things
-        // and passing the whole environment would grant it everything.
-        //
-        //   PATH   the tool runner resolves node, git, rg, npm against it
-        //   HOME   the portfolio lives at $HOME/projects
-        //   TERM   colour
-        //   OPENROUTER_API_KEY   the model's provider
-        //
-        // The fourth entry is new and it falsifies a claim this file used to
-        // make. The comment here read "it starts no model and touches no
-        // network", which was true of the V1 surface and stopped being true the
-        // moment the producer started running `src/core/loop.ts`. Naming the
-        // credential is the honest version: the surface does start a model, and
-        // it does reach the network, and a reader of this file can see exactly
-        // what it is given.
-        //
-        // Nothing else crosses. No secret from the parent reaches the child, and
-        // the absence of `OPENROUTER_API_KEY` is handled where it is read
-        // (`apps/terminal/src/producer/runtime.ts`), which reports it in one
-        // sentence rather than starting a run that cannot finish.
-        PATH: process.env["PATH"] ?? "",
-        HOME: process.env["HOME"] ?? "",
-        TERM: process.env["TERM"] ?? "xterm-256color",
-        ...(verificationScript ? { CUESHEET_VERIFY_SCRIPT: verificationScript } : {}),
-        ...(process.env["OPENROUTER_API_KEY"] ? { OPENROUTER_API_KEY: process.env["OPENROUTER_API_KEY"] } : {}),
+        ...selected,
       },
     });
     child.on("error", (cause) => {

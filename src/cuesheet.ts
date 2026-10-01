@@ -90,7 +90,7 @@ const COMMANDS: Record<string, CommandSpec> = {
     file: "surface-cli.ts",
     about: "the human surface (this is what plain `cuesheet` does)",
     style: "subcommand",
-    usage: "cuesheet surface [--verify <self-contained Node check.mjs>]",
+    usage: "cuesheet surface [--provider NAME] [--model ID] [--max-tokens N] [--base-url URL] [--verify check.mjs]",
   },
   chat: {
     file: "chat.ts",
@@ -143,9 +143,10 @@ Options:
 Every subcommand takes --help. Commands that print a report also take
 --format json, because a verdict a machine cannot read is not a verdict.
 
-A run needs a model. It uses the local opencode binary when one is installed, at
-no credit cost; set CUESHEET_OPENCODE_BIN if it lives somewhere unusual. For the
-paid provider, set CUESHEET_PROVIDER=openrouter and OPENROUTER_API_KEY.
+A run needs a model. The default uses the local opencode binary. The terminal
+also accepts --provider openrouter|openai|compatible and --model ID. Credentials:
+OPENROUTER_API_KEY, OPENAI_API_KEY, or optional CUESHEET_API_KEY for a compatible
+endpoint selected with --base-url URL. See cuesheet surface --help.
 `);
   process.exit(2);
 }

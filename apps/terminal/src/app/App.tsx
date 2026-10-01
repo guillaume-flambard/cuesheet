@@ -200,7 +200,7 @@ function wire(props: AppProps): {
       modelName: "no model",
     };
   }
-  return { store, producer: live.producer, missing: null, modelName: modelFor(cwd).name };
+  return { store, producer: live.producer, missing: null, modelName: (() => { const selected = modelFor(cwd); return selected.model ? `${selected.name} · ${selected.model}` : selected.name; })() };
 }
 
 /** The one line that replaces the timeline when there is nothing to run with. */

@@ -17,8 +17,8 @@
  * without `OPENROUTER_API_KEY` and say so, which made a live run impossible on a
  * machine with no OpenRouter account. It now resolves a model the same way every
  * other surface does, which on a machine with the local binary installed is that
- * binary, at no credit cost. `OPENROUTER_API_KEY` is still forwarded, and a
- * person who wants OpenRouter asks for it by name with `CUESHEET_PROVIDER`.
+ * binary, using its configured account. `OPENROUTER_API_KEY` is still forwarded, and a
+ * person chooses a transport with `--provider` or `CUESHEET_PROVIDER`.
  *
  * The binary proposes and this surface's own tool runner acts. That is the whole
  * safety argument, and it is measured rather than assumed: see

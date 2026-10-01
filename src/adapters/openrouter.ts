@@ -17,6 +17,9 @@ import { FailureWithOrigin } from "../effects.ts";
 
 export interface OpenRouterOptions {
   apiKey: string;
+  /** Shared Chat Completions transport identity, defaulting to OpenRouter. */
+  providerName?: string;
+  tokenParameter?: "max_tokens" | "max_completion_tokens";
   /** e.g. `anthropic/claude-sonnet-4-6`, `openai/gpt-5.2`. */
   model: string;
   /** Default when a session has no explicit binding for the subject. */
@@ -64,7 +67,7 @@ interface ToolSchema {
 }
 
 export class OpenRouterAdapter implements ModelAdapter {
-  readonly name = "openrouter";
+  get name(): string { return this.options.providerName ?? "openrouter"; }
   private readonly options: OpenRouterOptions;
 
   constructor(options: OpenRouterOptions) {
@@ -216,7 +219,7 @@ export class OpenRouterAdapter implements ModelAdapter {
     // absent rather than absent-and-zero, because `max_tokens: 0` is a different
     // request and would be a silent refusal the caller did not ask for.
     if (this.options.maxTokens !== undefined) {
-      body["max_tokens"] = this.options.maxTokens;
+      body[this.options.tokenParameter ?? "max_tokens"] = this.options.maxTokens;
     }
 
     // Everything inside this boundary belongs to the provider, including the
@@ -229,7 +232,7 @@ export class OpenRouterAdapter implements ModelAdapter {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${this.options.apiKey}`,
+        ...(this.options.apiKey ? { authorization: `Bearer ${this.options.apiKey}` } : {}),
         "x-title": this.options.label ?? "cuesheet",
       },
         body: JSON.stringify(body),
