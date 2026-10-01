@@ -59,7 +59,9 @@ import { createStore, type Store } from "./store.ts";
 import { Models } from "../overlays/Models.tsx";
 import { listModels } from "../../../../src/adapters/model-catalog.ts";
 import type { ModelBinding } from "../../../../src/adapters/model-binding.ts";
-import { createLiveProducer } from "../producer/runtime.ts";
+import { Sessions } from "../overlays/Sessions.tsx";
+import { listTerminalSessions, type TerminalSession } from "../../../../src/adapters/terminal-session.ts";
+import { createLiveProducer, createTerminalRuntime } from "../producer/runtime.ts";
 import type { Producer } from "../producer/index.ts";
 import type { Option } from "./state.ts";
 
@@ -90,7 +92,10 @@ export function App(props: AppProps): JSX.Element {
   // The store and the producer exist once, for the life of the process. They are
   // built outside the render body on purpose: a producer is not a value, and
   // rebuilding one per frame would mint a new session per keystroke.
-  const wired = useMemo(() => wire(props), [props.store, props.producer, props.cwd]);
+  const initial = useMemo(() => wire(props), [props.store, props.producer, props.cwd]);
+  const [replacement,setReplacement]=useState<ReturnType<typeof wire> | null>(null);
+  const wired=replacement ?? initial;
+  useEffect(()=>()=>wired.session?.close(),[wired]);
   const { store, producer, binding } = wired;
   const [, changedModel] = useState(0);
   const missing = binding ? binding.missing : wired.missing;
@@ -104,6 +109,15 @@ export function App(props: AppProps): JSX.Element {
     producer?.say(text);
   }, [producer, missing, store]);
   const catalog = useCallback((choice: Parameters<typeof listModels>[0], signal: AbortSignal) => listModels(choice, { signal }), []);
+
+  const sessionChoices=useCallback(()=>listTerminalSessions(),[]);
+  const loadSession=(id?:string)=>{
+    if(store.get().busy) {store.send({type:"observed",entries:[{kind:"failure",text:"Un travail est en cours. Interromps-le avant de changer de session."}]});store.send({type:"close"});return;}
+    if(id===wired.session?.metadata.id) {store.send({type:"close"});return;}
+    const next=wire({...props,cwd:wired.session?.metadata.cwd ?? props.cwd,store:undefined,producer:undefined},id ?? null);
+    if(next.missing && !next.producer) {store.send({type:"observed",entries:[{kind:"failure",text:next.missing}]});store.send({type:"close"});return;}
+    setReplacement(next);
+  };
 
   // Enter submits the composer as a turn. This is the whole input contract, and
   // it is here rather than in a component so that a component never sees a turn
@@ -135,6 +149,7 @@ export function App(props: AppProps): JSX.Element {
             apply={(choice, save) => {
               const result = binding.select(choice, { save, busy: store.get().busy });
               if ("ok" in result) {
+                try {wired.session?.recordModel(binding.selection);} catch {return {error:"Le choix n’a pas pu être enregistré dans cette session."};}
                 changedModel(value => value + 1);
                 store.send({ type: "observed", entries: [{ kind: "status", label: "modèle", value: `${binding.label}${save ? " · préférence sauvegardée" : " · ce terminal"}`, certainty: "confirmed" }] });
                 store.send({ type: "logged", line: `[model-selected] ${JSON.stringify(binding.selection)} saved=${save}` });
@@ -142,7 +157,10 @@ export function App(props: AppProps): JSX.Element {
               return result;
             }} onClose={() => send({ type: "close" })} />
         ) : state.overlay === "palette" ? (
-          <Palette onOpen={(overlay) => send({ type: "open", overlay })} />
+          <Palette rows={contentRows} onOpen={(overlay) => send({ type: "open", overlay })}
+            onNew={()=>loadSession()} onResume={()=>{send({type:"close"});if(!missing) producer?.resume?.();}} />
+        ) : state.overlay === "sessions" ? (
+          <Sessions rows={contentRows} current={wired.session?.metadata.id} list={sessionChoices} onChoose={loadSession} />
         ) : missing ? (
           <Notice text={missing} />
         ) : state.overlay === "projects" ? (
@@ -193,7 +211,7 @@ export function App(props: AppProps): JSX.Element {
  * runs, still resolves the portfolio, and still explains itself, because a person
  * who typed `cuesheet` did not ask for a stack trace about a missing variable.
  */
-function wire(props: AppProps): {
+function wire(props: AppProps, sessionId?:string | null): {
   store: Store;
   producer: Producer | null;
   missing: string | null;
@@ -207,12 +225,18 @@ function wire(props: AppProps): {
    */
   modelName: string;
   binding?: ModelBinding;
+  session?: TerminalSession;
 } {
   const store = props.store ?? createStore();
   // A test that supplies its own producer is not running a model at all, so it
   // has no model to name. "test" is honest where a provider id would be a guess.
   if (props.producer) return { store, producer: props.producer, missing: null, modelName: "test" };
   const cwd = props.cwd ?? process.cwd();
+  if (!props.store) {
+    const live=createTerminalRuntime(cwd,sessionId === null ? undefined : sessionId ?? process.env.CUESHEET_SESSION);
+    if("missing" in live) return {store,producer:null,missing:live.missing,modelName:"no model"};
+    return {store:live.store,producer:live.producer,binding:live.binding,session:live.session,missing:null,modelName:live.binding.label};
+  }
   const live = createLiveProducer(store, cwd);
   if ("missing" in live) {
     return {

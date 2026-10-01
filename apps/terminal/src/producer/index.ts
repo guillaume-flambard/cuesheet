@@ -77,11 +77,13 @@ import type { Store } from "../app/store.ts";
 /** How long a run may go before the budget is spent. The chat's own number. */
 export const MAX_STEPS = 8;
 
+import type { TerminalSession } from "../../../../src/adapters/terminal-session.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
   /** The store this producer owns. It is the only writer. */
   readonly store: Store;
+  readonly journal?: TerminalSession;
   readonly model: ModelAdapter;
   readonly tools: ToolRunner;
   readonly toolNames?: readonly string[];
@@ -114,6 +116,8 @@ interface Wiring {
 export interface Producer {
   /** Stop the current run; keep the conversation and the goal open. */
   cancel?(): void;
+  /** Explicitly continue the persisted open goal, never auto-run on load. */
+  resume?(): void;
   /** Hand a sentence to the surface. Any sentence. */
   say(text: string): void;
   /** Accept a choice from an offer the producer made. */
@@ -163,7 +167,7 @@ export function createProducer(options: ProducerOptions): Producer {
    * this session appends to the same revisions and a sentence typed during a run
    * has a log it can join. See the header for the measurement that forced it.
    */
-  const shared = new EventStore(mint(), now);
+  const shared = options.journal?.core ?? new EventStore(mint(), now);
 
   /**
    * Whether a run is in flight, which decides what a sentence means.
@@ -251,18 +255,21 @@ export function createProducer(options: ProducerOptions): Producer {
   let activeEffect = "";
   let activeWorkspace = cwd;
   let controller: AbortController | undefined;
+  options.journal?.onFailure(() => controller?.abort(new Error("Session persistence failed")));
   const directiveRevision = (): number => shared.toSession().events
     .filter((event) => event.kind === "directive").at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
       const signal = controller!.signal;
       signal.throwIfAborted();
+      options.journal?.assertWritable();
       if (directiveRevision() !== proposalDirective) {
         return { name: request.name, exit: 126, output: "The instructions changed; this proposal was discarded." };
       }
       if (shared.toSession().goal?.open === false) {
         return { name: request.name, exit: 126, output: "The declared check already settled this run; no further calls were executed." };
       }
+      if (options.journal) shared.append({kind:"action",subject:"terminal.intent",data:{tool:request.name,input:request.input,effectId:activeEffect,phase:"requested"}});
       if (request.name === "finish") {
         if (!options.verification) return { name: "finish", exit: 126, output: "No acceptance check was declared; the goal remains open." };
         const basis = directiveRevision();
@@ -294,6 +301,7 @@ export function createProducer(options: ProducerOptions): Producer {
       async infer(frame) {
         const signal = controller!.signal;
         signal.throwIfAborted();
+        options.journal?.assertWritable();
         // Read before the work exists. Everything after this line is the step.
         const read = shared.revision;
         basis = read;
@@ -383,11 +391,16 @@ export function createProducer(options: ProducerOptions): Producer {
     send({ type: "scoped", project: scope.name, where: scope.path });
     send({ type: "began" });
     inFlight = true;
-    void start(scope, goal);
+    void start(scope, goal).catch(cause => {
+      inFlight=false;
+      send({type:"ended"});
+      observe([{kind:"failure",text:`Le travail n’a pas démarré : ${cause instanceof Error ? cause.message : String(cause)}`}]);
+    });
   };
 
   /** Start the real loop. Everything here is the part V1 could not do. */
   const start = async (scope: { path: string; name: string }, goal: string): Promise<void> => {
+    options.journal?.assertWritable();
     controller = new AbortController();
     const signal = controller.signal;
     const subject = "builder";
@@ -423,6 +436,7 @@ export function createProducer(options: ProducerOptions): Producer {
         effectId: requestId,
         affordance: "APPROVE_GOAL",
         reads: { goal: "known", project: "known" },
+        cwd: scope.path, project: scope.name, goal,
       },
     });
     if (committed === null) {
@@ -500,8 +514,7 @@ export function createProducer(options: ProducerOptions): Producer {
       }
       const why = cause instanceof Error ? cause.message : String(cause);
       observe([{ kind: "failure", text: `the run stopped: ${why}` }]);
-      log(`[effect_observed] ${pendingRequest ?? "E-unknown"} failed ${why}`);
-      pendingRequest = null;
+      recordObserved(`failed: ${why}`);
     } finally {
       inFlight = false;
       send({ type: "ended" });
@@ -512,10 +525,27 @@ export function createProducer(options: ProducerOptions): Producer {
     const id = pendingRequest;
     pendingRequest = null;
     if (!id) return;
+    if (options.journal && !options.journal.failure) shared.append({kind:"effect_observed",subject:id,data:{effectId:id,reason}});
     log(`[effect_observed] ${id} ${reason}`);
   };
 
   return {
+    resume() {
+      if(inFlight || options.journal?.failure) return;
+      const historical=shared.toSession();
+      const pending=historical.events.filter(event=>event.kind==="note" && event.subject==="terminal.user").at(-1);
+      const lastGoal=historical.events.filter(event=>event.kind==="goal").at(-1);
+      if(pending && pending.seq>(lastGoal?.seq ?? -1) && typeof pending.data.text==="string") {
+        runWith(resolveScope(pending.data.text,cwd,ids,bindProject,projectsRoot),pending.data.text);return;
+      }
+      const goal=historical.goal;
+      if(!goal || !goal.open) {observe([{kind:"status",label:"reprise",value:goal ? "Ce but a déjà été vérifié. Aucun travail n’a été relancé." : "Aucun but à reprendre dans cette session.",certainty:"unknown"}]);return;}
+      const request=shared.toSession().events.filter(event=>event.kind==="effect_requested").at(-1);
+      const path=typeof request?.data.cwd==="string" ? request.data.cwd : cwd;
+      if(path!==cwd) {observe([{kind:"failure",text:"Le dernier travail ciblait un autre répertoire. Ouvre une nouvelle session dans ce répertoire."}]);return;}
+      try {shared.append({kind:"directive",subject:"builder",data:{text:"The user explicitly resumed this goal. Inspect the current workspace before repeating effects: any tool without a recorded result may already have run before the previous process stopped."}});} catch {return;}
+      runWith({at:"cwd",path,name:typeof request?.data.project==="string" ? request.data.project : view.get().project ?? "session"},goal.text);
+    },
     cancel() {
       if (!inFlight || controller?.signal.aborted) return;
       log(`[cancel] ${pendingRequest ?? "run"} requested by the user`);
@@ -524,23 +554,16 @@ export function createProducer(options: ProducerOptions): Producer {
     say(text: string) {
       const said = text.trim();
       if (!said) return;
-      // Record first, so the sentence is on screen before any work starts. The
-      // surface never withholds what the person typed.
+      // Persist the user's instruction before showing it. View and harness journals
+      // are separate, so neither a displayed directive nor an admitted tool may
+      // depend on a write that has not happened yet.
+      try {
+        if(inFlight) shared.append({kind:"directive",subject:"builder",data:{text:said,source:"terminal.user"}});
+        else if(options.journal) shared.append({kind:"note",subject:"terminal.user",data:{text:said}});
+      } catch { return; }
       send({ type: "submit", text: said });
-
-      // A sentence typed while a run is in flight is a fact about the work, not
-      // a request for more work. It is appended to the shared log immediately,
-      // before this function returns, and no second run starts.
-      //
-      // It is a `directive` because that is the kind the core's own frame fold
-      // reads (`src/core/loop.ts:128`), so the in-flight loop picks it up at its
-      // next step with no change to the core. A `note` would be filed as an open
-      // question instead and would never reach the run.
-      if (inFlight) {
-        shared.append({ kind: "directive", subject: "builder", data: { text: said } });
-        log(`[directive] builder ${said}`);
-        return;
-      }
+      if(options.journal?.failure) return;
+      if(inFlight) {log(`[directive] builder ${said}`);return;}
 
       const scope = resolveScope(said, cwd, ids, bindProject, projectsRoot);
       runWith(scope, said);
@@ -555,7 +578,7 @@ export function createProducer(options: ProducerOptions): Producer {
       if (goal.length === 0) return;
       send({ type: "began" });
       inFlight = true;
-      void start({ path: option.path, name: option.name }, goal);
+      void start({ path: option.path, name: option.name }, goal).catch(() => {inFlight=false;send({type:"ended"});});
     },
     get state() {
       return view.get();

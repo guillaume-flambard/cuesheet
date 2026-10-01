@@ -167,9 +167,10 @@ describe("PORT-02 adapters take their roots from the caller", () => {
       if (!/export class/.test(text)) {
         continue;
       }
+      // A mandatory root is as injectable as an optional roots list.
       const usesHomedir = /homedir\(\)/.test(text);
       assert.ok(
-        !usesHomedir || /dbPath\?|roots\?/.test(text),
+        !usesHomedir || /dbPath\?|roots\?|root\s*:\s*string/.test(text),
         `${relative(ROOT, file)} uses homedir() with no injectable option`,
       );
     }

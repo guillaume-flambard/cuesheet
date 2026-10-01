@@ -37,12 +37,12 @@ send "\\013"
 seen {Commands}
 waitms 300
 send "\\r"
-seen {nothing has happened yet}
+seen {the log, as appended}
 waitms 300
 send "\\033"
 waitms 500
 send "\\014"
-seen {nothing has happened yet}
+seen {the log, as appended}
 waitms 300
 send "\\033"
 waitms 500
@@ -64,7 +64,7 @@ exit 0
     writeFileSync(join(root, "pty.raw"), run.stdout);
     assert.equal(run.status, 0, `${run.error ?? ""}\n${run.stdout}\n${run.stderr}`);
     assert.match(run.stdout, /Commands/);
-    assert.match(run.stdout, /nothing has happened yet/);
+    assert.match(run.stdout, /\[session\]/, "the durable session exists before work starts");
     assert.match(run.stdout, /visible model answer/);
     assert.match(run.stdout, /the log, as appended/);
     assert.doesNotMatch(run.stdout.split("MARK_SUBMIT")[0]!, /working in/);

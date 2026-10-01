@@ -66,7 +66,7 @@ returned 540 OpenCode IDs in 866 ms and 396 filtered OpenRouter IDs in 409 ms.
 These counts are observations, not a fixed inventory or proof of task quality.
 
 Still pending: direct Anthropic, subscription OAuth, streaming, provider-specific
-inference trials, and durable terminal sessions. Choosing opencode still depends
+inference trials. Durable terminal sessions are described in TERMINAL-SESSIONS.md. Choosing opencode still depends
 on its binary. Choosing an HTTP transport does not launch it.
 
 Protocol references:

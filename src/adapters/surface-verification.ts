@@ -13,6 +13,7 @@ export interface CompletionResult {
   checkDigest: string;
 }
 export interface CompletionCheck {
+  readonly pinned?: { script: string; digest: string };
   verify(workspace: string, effectId: string, signal?: AbortSignal): Promise<CompletionResult>;
 }
 
@@ -25,7 +26,7 @@ export function createCompletionCheck(options: { script: string; root: string; t
   const pinned = join(root, "oracle.mjs");
   writeFileSync(pinned, script, { flag: "wx", mode: 0o400 });
   let attempt = 0;
-  return { async verify(workspace, effectId, signal) {
+  return { pinned: { script: pinned, digest: checkDigest }, async verify(workspace, effectId, signal) {
     signal?.throwIfAborted();
     if (!/^[A-Za-z0-9_-]+$/.test(effectId)) throw new Error("invalid effect identity");
     const sessionId = `surface-${++attempt}`;

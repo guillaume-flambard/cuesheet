@@ -81,7 +81,7 @@ export interface SurfaceState {
   readonly entries: readonly Entry[];
   readonly composer: string;
   /** Which overlay is open, if any. Overlays are a state, not a component. */
-  readonly overlay: "none" | "palette" | "projects" | "inspect" | "help" | "models";
+  readonly overlay: "none" | "palette" | "projects" | "inspect" | "help" | "models" | "sessions";
   /**
    * The choices an ambiguous sentence produced.
    *

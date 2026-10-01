@@ -177,8 +177,8 @@ passes and src/core remains unchanged.
 
 PgUp/PgDown now move through wrapped conversation rows; the viewport measures
 its content with Ink measureElement and retains its position when new work
-arrives. Conversation retention is still the existing 400-entry in-memory
-limit, not durable session recovery. Up/Down recalls submitted messages and
+arrives. At this slice, conversation retention was the existing 400-entry in-memory
+limit. The later durable-session slice below retains the journals across restart. Up/Down recalls submitted messages and
 restores the unsent draft when returning to the newest position. Left/Right
 move the cursor, Ctrl+A/E move to the ends, Ctrl+U clears, and Backspace/Delete
 remove graphemes rather than breaking Unicode emoji or combining characters.
@@ -211,3 +211,24 @@ during a run. No required Stop action is introduced before speaking.
 Final UX validation: 650 tests, 648 pass, zero failures, two skipped using
 the deterministic-suite command above. The differential typecheck guard
 passed, git diff --check passed, and src/core is unchanged.
+
+
+## Durable terminal sessions
+
+The terminal now uses the existing fsync-backed SessionStore through a
+write-through adapter. Its core events, presentation controls and draft survive
+process exit. Ctrl+K offers session loading, a fresh conversation and explicit
+continuation of the open goal. Loading performs no inference or tool effect.
+Pinned owner checks survive restart; the original source may change without
+changing the admitted criterion. Verified captures remain historical proof.
+
+Tool intents are persisted before execution because the loop's own action event
+currently follows the runner result. A process killed during a tool restores
+idle/unknown status and never automatically repeats the call. User directives
+are persisted before their messages are displayed. Disk refusal cancels work,
+withholds undurable messages and prevents the next inference or tool. Single
+live writer claims protect terminal sessions; dead claims are reclaimed by
+process identity. Core remains unchanged.
+
+See TERMINAL-SESSIONS.md for storage, keyboard usage and precise limits, and
+TERMINAL-SESSIONS-SPEC.md / TERMINAL-SESSIONS-TODO.md for acceptance and evidence.

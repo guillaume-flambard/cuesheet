@@ -11,7 +11,7 @@
 
 Follow-up milestones (not implemented in this slice):
 
-- [ ] Persist terminal sessions and resume after process restart.
+- [x] Persist terminal sessions and resume after process restart (see TERMINAL-SESSIONS-TODO.md).
 - [ ] Add direct Anthropic and explicitly configured subscription auth.
 - [ ] Stream model output and expose full tool results.
 - [ ] Benchmark multi-file real-repository tasks against the existing workflow.

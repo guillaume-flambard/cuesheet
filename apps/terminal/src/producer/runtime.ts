@@ -32,6 +32,11 @@
  * its own scope by naming a directory.
  */
 
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { TerminalSession, terminalSessionRoot } from "../../../../src/adapters/terminal-session.ts";
+import { persistentView } from "./session-view.ts";
+import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createCompletionCheck } from "../../../../src/adapters/surface-verification.ts";
@@ -66,8 +71,8 @@ export function modelFor(cwd: string): { name: string; model: string | null; why
  * App gates task submission on binding.missing. A broken owner check still
  * refuses construction, because model selection cannot repair that check.
  */
-export function createLiveProducer(store: Store, cwd: string): { producer: Producer; binding: ModelBinding } | { missing: string } {
-  const binding = createModelBinding({ project: cwd });
+export function createLiveProducer(store: Store, cwd: string, settings: { journal?: TerminalSession; verification?: CompletionCheck; binding?: ModelBinding } = {}): { producer: Producer; binding: ModelBinding } | { missing: string } {
+  const binding = settings.binding ?? createModelBinding({ project: cwd });
   const model: ModelAdapter = binding.adapter;
   const tools: ToolRunner = new ShellToolRunner({
     allow: ALLOWED,
@@ -77,10 +82,33 @@ export function createLiveProducer(store: Store, cwd: string): { producer: Produ
   let verification;
   try {
     const script = process.env.CUESHEET_VERIFY_SCRIPT;
-    verification = script ? createCompletionCheck({ script, root: join(homedir(), ".local", "state", "cuesheet", "verification") }) : undefined;
+    verification = settings.verification ?? (script ? createCompletionCheck({ script, root: join(homedir(), ".local", "state", "cuesheet", "verification") }) : undefined);
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const options: ProducerOptions = { store, model, tools, cwd, toolNames: ALLOWED, verification };
+  const options: ProducerOptions = { store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification };
   return { producer: createProducer(options), binding };
+}
+/** Acquire storage before building any live adapter. Loading never starts work. */
+export function createTerminalRuntime(cwd: string, id?: string): { store: Store; producer: Producer; binding: ModelBinding; session: TerminalSession } | { missing: string } {
+  let session: TerminalSession | undefined;
+  try {
+    const root = terminalSessionRoot();
+    const proofRoot = join(homedir(), ".local", "state", "cuesheet", "verification");
+    const declared = process.env.CUESHEET_VERIFY_SCRIPT;
+    let verification = declared ? createCompletionCheck({script:declared,root:proofRoot}) : undefined;
+    session = new TerminalSession({root,cwd,id,check:verification?.pinned});
+    if (session.metadata.check) {
+      const check = session.metadata.check;
+      if(createHash("sha256").update(readFileSync(check.script)).digest("hex")!==check.digest) throw new Error("Le critère sauvegardé ne correspond plus à son empreinte. Reprise refusée.");
+      verification = createCompletionCheck({script:check.script,root:proofRoot});
+    }
+    const store = persistentView(session);
+    const binding = createModelBinding({project:session.metadata.cwd,preferences:session.lastModel});
+    const live = createLiveProducer(store,session.metadata.cwd,{journal:session,verification,binding});
+    if("missing" in live) throw new Error(live.missing);
+    if(!binding.missing) session.recordModel(binding.selection);
+    store.send({type:"logged",line:`[session] ${session.metadata.id} ${session.metadata.cwd}`});
+    return {store,producer:live.producer,binding,session};
+  } catch(error) {session?.close();return {missing:error instanceof Error ? error.message : String(error)};}
 }

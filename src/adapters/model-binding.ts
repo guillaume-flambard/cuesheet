@@ -11,12 +11,12 @@ export interface ModelBinding {
   select(preferences: ModelPreferences, options: { busy: boolean; save: boolean }): { error: string } | { ok: true };
 }
 
-export function createModelBinding(options: { project: string; env?: NodeJS.ProcessEnv; path?: string }): ModelBinding {
+export function createModelBinding(options: { project: string; env?: NodeJS.ProcessEnv; path?: string; preferences?: ModelPreferences }): ModelBinding {
   const env = options.env ?? process.env;
   const path = options.path ?? preferencesPath(env);
   let preferences: ModelPreferences = {};
   let loadError: string | null = null;
-  try { preferences = readModelPreferences(path); }
+  try { preferences = options.preferences ?? readModelPreferences(path); }
   catch (error) { loadError = error instanceof Error ? error.message : String(error); }
   let resolved: ResolvedModel | { missing: string } = loadError ? { missing: loadError } : resolveModel({ project: options.project, preferences, env });
   const provider = env.CUESHEET_PROVIDER?.trim() || preferences.provider || 'opencode';
