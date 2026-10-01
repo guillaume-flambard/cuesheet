@@ -59,6 +59,25 @@ H01 reste partiel : extraction et contrats éditables complets, renouvellement
 autorisé des critères et sous-objectifs demeurent ouverts. Aucune case H01 n'est
 cochée prématurément. Le lot 0 est achevé et son manifeste reste initial.
 
+## Contexte borné et récupération, 2026-10-01
+
+Référence de départ : `b711f6e`. Détails : CONTEXT-IMPLEMENTATION.md. Frame du
+scénario 10 000 observations : 13 728 octets contre 2 585 326 à la baseline,
+dont 4 162 d'historique et 8 189 de snapshot. Même contenu source conservé dans
+le journal. Aucune inférence ni coût provider mesuré dans cette comparaison.
+
+Les plafonds sont injectables ; le launcher transmet CUESHEET_CONTEXT_CHARS.
+Les observations historiques peuvent être omises, les directives/mémoires humaines
+actives restent prioritaires. La récupération lit pages et fragments sans mutation.
+La compilation réduit les tableaux par blocs pour éviter un coût quadratique.
+
+Validation réelle de cette tranche : 682 tests, 680 passants, 2 ignorés, aucun
+échec (`/tmp/cuesheet-bounded-all.log`) ; garde différentiel sans nouveauté.
+Régressions : contrainte humaine ancienne, frame borné, intégrité des sources,
+recomposition de longs records et refus d'autorité trop volumineuse. H03 reste
+partiel : tokenizers, extraction idempotente complète, contradictions et isolation
+multi-projet restent ouverts. Aucun changement core.
+
 ### Lot / date / commit
 
 - Référence de départ et état Git :

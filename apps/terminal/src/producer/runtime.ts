@@ -72,6 +72,8 @@ export function modelFor(cwd: string): { name: string; model: string | null; why
  * refuses construction, because model selection cannot repair that check.
  */
 export function createLiveProducer(store: Store, cwd: string, settings: { journal?: TerminalSession; verification?: CompletionCheck; binding?: ModelBinding } = {}): { producer: Producer; binding: ModelBinding } | { missing: string } {
+  const contextBudgetChars=process.env.CUESHEET_CONTEXT_CHARS===undefined ? undefined : Number(process.env.CUESHEET_CONTEXT_CHARS);
+  if(contextBudgetChars!==undefined && (!Number.isSafeInteger(contextBudgetChars) || contextBudgetChars<4000))return {missing:"CUESHEET_CONTEXT_CHARS must be an integer of at least 4000."};
   const binding = settings.binding ?? createModelBinding({ project: cwd });
   const model: ModelAdapter = binding.adapter;
   const tools: ToolRunner = new ShellToolRunner({
@@ -86,7 +88,7 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const options: ProducerOptions = { store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification };
+  const options: ProducerOptions = { store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */

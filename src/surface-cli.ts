@@ -40,7 +40,7 @@ const SLICE = join(TERMINAL, "src", "main.tsx");
 
 /** Only model preferences and the named credentials cross the launcher boundary. */
 export function surfaceEnvironment(args: string[], env: NodeJS.ProcessEnv = process.env): Record<string, string> {
-  const keys = ["PATH", "HOME", "TERM", "XDG_CONFIG_HOME", "XDG_STATE_HOME", "CUESHEET_SESSIONS", "CUESHEET_SESSION", "CUESHEET_PROVIDER", "CUESHEET_MODEL", "CUESHEET_MAX_TOKENS",
+  const keys = ["PATH", "HOME", "TERM", "XDG_CONFIG_HOME", "XDG_STATE_HOME", "CUESHEET_SESSIONS", "CUESHEET_SESSION", "CUESHEET_PROVIDER", "CUESHEET_MODEL", "CUESHEET_MAX_TOKENS", "CUESHEET_CONTEXT_CHARS",
     "CUESHEET_BASE_URL", "CUESHEET_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "CUESHEET_OPENCODE_BIN"];
   const result: Record<string, string> = { TERM: "xterm-256color" };
   for (const key of keys) if (env[key] !== undefined) result[key] = env[key]!;

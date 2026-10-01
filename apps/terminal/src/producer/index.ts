@@ -82,9 +82,12 @@ import { withSharedContext } from "../../../../src/adapters/shared-context.ts";
 import { memoryCommand, MEMORY_SUBJECT } from "../../../../src/adapters/work-memory.ts";
 import { organizeWork, AUTONOMOUS_TOOLS, AUTONOMOUS_POLICY, WORK_SUBJECT } from "../../../../src/adapters/work-organizer.ts";
 import { createObjective, correctObjective, projectObjectives, verifyObjective, changeObjectiveStatus, OBJECTIVE_SUBJECT } from "../../../../src/adapters/objectives.ts";
+import { readHistory } from "../../../../src/adapters/history-tool.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
+  /** Enforced serialized-frame ceiling; provider-specific token limits remain separate. */
+  contextBudgetChars?: number;
   /** The store this producer owns. It is the only writer. */
   readonly store: Store;
   readonly journal?: TerminalSession;
@@ -274,6 +277,8 @@ export function createProducer(options: ProducerOptions): Producer {
         return { name: request.name, exit: 126, output: "The declared check already settled this run; no further calls were executed." };
       }
       if (options.journal) shared.append({kind:"action",subject:"terminal.intent",data:{tool:request.name,input:request.input,effectId:activeEffect,phase:"requested"}});
+      const history = readHistory(shared,request);
+      if(history)return history;
       const organized = organizeWork(shared, request);
       if (organized) {
         if (organized.exit === 0) observe([{kind:"status",label:"organisation",value:request.name === "organize_work" ? `${request.input.phase} · ${request.input.rationale}` : `${request.name} · ${request.input.rationale}`,certainty:"unknown"}]);
@@ -321,7 +326,7 @@ export function createProducer(options: ProducerOptions): Producer {
         basis = read;
         proposalDirective = directiveRevision();
         try {
-          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(withSharedContext(frame, shared.toSession()), signal), signal);
+          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(withSharedContext(frame, shared.toSession(),{maxChars:options.contextBudgetChars}), signal), signal);
           // The response was derived from the old frame. Re-recording a step
           // cannot make its proposed actions current: discard them instead.
           return shared.revision === read ? response : { text: "", toolCalls: [] };
@@ -438,9 +443,9 @@ export function createProducer(options: ProducerOptions): Producer {
     // in the boundary above, and two variables differing only by scope in the
     // same module is the kind of thing that is read wrong later.
     if (options.toolNames?.length) {
-      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...AUTONOMOUS_TOOLS, ...(options.verification ? ["finish"] : [])].join(", ")}` } });
+      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...AUTONOMOUS_TOOLS, "read_history", ...(options.verification ? ["finish"] : [])].join(", ")}` } });
       shared.append({ kind: "directive", subject, data: { text:
-        'The shell tools are command tools; organize_work, remember and create_skill use structured input as described separately. For command tools use input.argv with the exact tool name first, for example {"name":"ls","input":{"argv":["ls","-la"]}}. ' +
+        'The shell tools are command tools; organize_work, remember, create_skill, describe_objective and read_history use structured input as described separately. For command tools use input.argv with the exact tool name first, for example {"name":"ls","input":{"argv":["ls","-la"]}}. ' +
         'cat and ls also accept input.path. Paths and commands are relative to the declared working directory. ' +
         'Answer the user from the observed results; your text is displayed but is not verification.'
       } });
