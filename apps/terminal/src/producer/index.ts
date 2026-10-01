@@ -66,6 +66,8 @@
  */
 
 import { type ModelAdapter, type ToolRunner, type LoopOptions } from "../../../../src/core/loop.ts";
+import { ModelSelectionChanged } from "../../../../src/adapters/model-binding.ts";
+import type { ModelPreferences } from "../../../../src/adapters/model-preferences.ts";
 import { projectEffectAttempts, mutationTool, invocationKey, completeAttempt, reconcileEffect } from "../../../../src/adapters/tool-receipts.ts";
 import { runExecutionSlices } from "../../../../src/adapters/execution-slices.ts";
 import { EventStore, type Event } from "../../../../src/core/store.ts";
@@ -128,6 +130,7 @@ interface Wiring {
 }
 
 export interface Producer {
+  modelSelected?(selection:ModelPreferences): void;
   /** Stop the current run; keep the conversation and the goal open. */
   cancel?(): void;
   /** Explicitly continue the persisted open goal, never auto-run on load. */
@@ -271,7 +274,7 @@ export function createProducer(options: ProducerOptions): Producer {
   let controller: AbortController | undefined;
   options.journal?.onFailure(() => controller?.abort(new Error("Session persistence failed")));
   const directiveRevision = (): number => shared.toSession().events
-    .filter((event) => event.kind === "directive" || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
+    .filter((event) => event.kind === "directive" || event.kind === "model" || event.subject === "terminal.model" || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
       const signal=controller!.signal;
@@ -358,6 +361,9 @@ export function createProducer(options: ProducerOptions): Producer {
           // The response was derived from the old frame. Re-recording a step
           // cannot make its proposed actions current: discard them instead.
           return shared.revision === read ? response : { text: "", toolCalls: [] };
+        } catch(cause) {
+          if(cause instanceof ModelSelectionChanged && !signal.aborted)return {text:"",toolCalls:[]};
+          throw cause;
         } finally {
           basis = null;
           if (!signal.aborted) commitStep(read, frame);
@@ -590,6 +596,11 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    modelSelected(selection) {
+      options.journal?.assertWritable();
+      options.journal?.recordModel(selection);
+      shared.append({kind:"model",subject:"builder",data:{model:selection.model ?? "unset",provider:selection.provider}});
+    },
     resume() {
       if(inFlight || options.journal?.failure) return;
       const historical=shared.toSession();

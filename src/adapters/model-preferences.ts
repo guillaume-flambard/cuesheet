@@ -1,5 +1,5 @@
 /** Non-secret user defaults. Credentials belong only to the environment. */
-import { mkdirSync, readFileSync, renameSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, writeFileSync, rmSync, existsSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -59,12 +59,16 @@ export function readModelPreferences(path = preferencesPath()): ModelPreferences
   catch { throw new Error(`Invalid model preferences at ${path}. Open the selector to replace them.`); }
 }
 
+/** Prepare a preference change without altering the current defaults. */
+export function prepareModelPreferences(preferences:ModelPreferences,path=preferencesPath()):{commit():void;discard():void} {
+  const clean=validatePreferences(preferences);
+  mkdirSync(dirname(path),{recursive:true,mode:0o700});
+  if(existsSync(path) && !statSync(path).isFile())throw new Error("Model preferences destination is not a regular file.");
+  const temporary=`${path}.${randomUUID()}.pending`;
+  try {writeFileSync(temporary,`${JSON.stringify(clean,null,2)}\n`,{flag:'wx',mode:0o600});}
+  catch(cause){rmSync(temporary,{force:true});throw cause;}
+  return {commit(){try{renameSync(temporary,path);}finally{rmSync(temporary,{force:true});}},discard(){rmSync(temporary,{force:true});}};
+}
 export function saveModelPreferences(preferences: ModelPreferences, path = preferencesPath()): void {
-  const clean = validatePreferences(preferences);
-  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-  const temporary = `${path}.${randomUUID()}.pending`;
-  try {
-    writeFileSync(temporary, `${JSON.stringify(clean, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
-    renameSync(temporary, path);
-  } finally { rmSync(temporary, { force: true }); }
+  prepareModelPreferences(preferences,path).commit();
 }

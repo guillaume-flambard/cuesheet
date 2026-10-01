@@ -38,7 +38,7 @@ it('preferences persist only validated non-secret fields and explicit selections
   } finally { rmSync(root, {recursive:true,force:true}); }
 });
 
-it('switching while idle retains the producer, directives and previous work; busy/invalid/save failure leaves active model intact', async () => {
+it('switching during inference preserves producer and directives; invalid/save failure leaves active model intact', async () => {
   const root = fixture(); const original = globalThis.fetch;
   try {
     const env = {CUESHEET_PROVIDER:'compatible',CUESHEET_MODEL:'first',CUESHEET_BASE_URL:'http://localhost:9000/v1'};
@@ -56,10 +56,11 @@ it('switching while idle retains the producer, directives and previous work; bus
     producer.say('first goal');
     while (!release) await wait(5);
     producer.say('keep this directive');
-    assert.ok('error' in binding.select({provider:'compatible',model:'second',baseUrl:env.CUESHEET_BASE_URL},{busy:store.get().busy,save:true}));
-    assert.equal(binding.selection.model,'first'); assert.equal(existsSync(path),false);
-    release(Response.json({choices:[{message:{content:'first result'}}]}));
+    assert.deepEqual(binding.select({provider:'compatible',model:'second',baseUrl:env.CUESHEET_BASE_URL},{busy:store.get().busy,save:true,beforeCommit:choice=>producer.modelSelected!(choice)}),{ok:true});
+    assert.equal(binding.selection.model,'second'); assert.equal(existsSync(path),true);
+    release(Response.json({choices:[{message:{content:'obsolete first result',tool_calls:[{function:{name:'tool_call',arguments:JSON.stringify({tool:'node',input:{argv:['node','-e','obsolete effect']}})}}]}}]}));
     while (store.get().busy) await wait(5);
+    assert.equal(store.get().entries.some(e=>e.kind==='cuesheet'&&e.text.includes('obsolete first')),false);
     const before = [...store.get().log];
     assert.deepEqual(binding.select({provider:'compatible',model:'second',baseUrl:env.CUESHEET_BASE_URL,maxTokens:256},{busy:false,save:true}),{ok:true});
     assert.equal(readModelPreferences(path).model,'second');
@@ -70,6 +71,8 @@ it('switching while idle retains the producer, directives and previous work; bus
     assert.ok(second); assert.match(second.messages[0].content, /keep this directive/);
     assert.ok(store.get().entries.some(entry=>entry.kind==='you' && entry.text==='first goal'));
     assert.ok('error' in binding.select({provider:'openai',model:'third'},{busy:false,save:false}));
+    assert.equal(binding.selection.model,'second');
+    assert.ok('error' in binding.select({provider:'compatible',model:'third',baseUrl:env.CUESHEET_BASE_URL},{busy:false,save:false,beforeCommit(){throw new Error('journal refused');}}));
     assert.equal(binding.selection.model,'second');
     const blocked = createModelBinding({project:root,env,path:root});
     assert.ok('error' in blocked.select({provider:'compatible',model:'third',baseUrl:env.CUESHEET_BASE_URL},{busy:false,save:true}));

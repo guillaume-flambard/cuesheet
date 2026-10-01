@@ -116,7 +116,7 @@ export function createTerminalRuntime(cwd: string, id?: string): { store: Store;
     const binding = createModelBinding({project:session.metadata.cwd,preferences:session.lastModel});
     const live = createLiveProducer(store,session.metadata.cwd,{journal:session,verification,binding});
     if("missing" in live) throw new Error(live.missing);
-    if(!binding.missing) session.recordModel(binding.selection);
+    if(!binding.missing) live.producer.modelSelected?.(binding.selection);
     store.send({type:"logged",line:`[session] ${session.metadata.id} ${session.metadata.cwd}`});
     return {store,producer:live.producer,binding,session};
   } catch(error) {session?.close();return {missing:error instanceof Error ? error.message : String(error)};}

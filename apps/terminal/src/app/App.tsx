@@ -147,11 +147,11 @@ export function App(props: AppProps): JSX.Element {
         {state.overlay === "models" && binding ? (
           <Models selection={binding.selection} rows={contentRows} busy={state.busy} list={catalog}
             apply={(choice, save) => {
-              const result = binding.select(choice, { save, busy: store.get().busy });
+              const result = binding.select(choice, { save, busy: store.get().busy, beforeCommit:selection=>producer?.modelSelected?.(selection) });
               if ("ok" in result) {
-                try {wired.session?.recordModel(binding.selection);} catch {return {error:"Le choix n’a pas pu être enregistré dans cette session."};}
                 changedModel(value => value + 1);
-                store.send({ type: "observed", entries: [{ kind: "status", label: "modèle", value: `${binding.label}${save ? " · préférence sauvegardée" : " · ce terminal"}`, certainty: "confirmed" }] });
+                store.send({ type: "observed", entries: [{ kind: "status", label: "modèle", value: `${binding.label}${store.get().busy ? " · sélectionné pour la suite" : ""}${save && !result.warning ? " · préférence sauvegardée" : " · cette session"}`, certainty: "confirmed" }] });
+                if(result.warning)store.send({type:"observed",entries:[{kind:"status",label:"préférence",value:result.warning,certainty:"unknown"}]});
                 store.send({ type: "logged", line: `[model-selected] ${JSON.stringify(binding.selection)} saved=${save}` });
               }
               return result;

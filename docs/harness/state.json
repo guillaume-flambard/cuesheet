@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "b684e64",
+  "referenceCommit": "c0c7fe1",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -1598,7 +1598,7 @@
     {
       "id": "H07.3",
       "priority": "P1",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H07.3"
       ],
@@ -1622,8 +1622,10 @@
         "AC-H07.3"
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
-      "evidence": [],
-      "notes": ""
+      "evidence": [
+        "EV-MODEL-SWITCH"
+      ],
+      "notes": "Boundary and persistence protocol specified in MODEL-SWITCH-IMPLEMENTATION.md before implementation; real provider integration remains required."
     },
     {
       "id": "H07.4",
@@ -3362,6 +3364,18 @@
       "result": "PASS_PARTIAL",
       "method": "unit/storage/real filesystem+process inspection/differential static",
       "details": "21 targeted tests PASS, plus 10 schema/receipt targeted PASS. Real side effect then interruption: mutation denied, cat dispatched once, reconciliation sourced, duplicate denied, pinned check passes. Receipt write failure stops next call and recovered journal remains uncertain; receipt corruption refuses reload. Full suite 708/705/1/2: only launcher whitelist failure from preexisting deletion loaded before restore, now corrected; final full regression required."
+    },
+    {
+      "id": "EV-MODEL-SWITCH",
+      "result": "PASS_PARTIAL",
+      "method": "transport fixtures/real filesystem effects/Ink render/static differential",
+      "details": "24 targeted tests PASS. Switch during ignored abort discards obsolete tools and preserves objective ID/constraints; switch during tool records completed effect once and discards remaining proposal; human stop wins; failed beforeCommit preserves active model and preferences, staged temp removed; failed preference rename after admission reports separate warning. OpenRouter selected route wins over stale frame metadata. /tmp/cuesheet-model-switch-durable.log. No live paid provider test performed."
+    },
+    {
+      "id": "EV-COMBINED-714",
+      "result": "PASS",
+      "method": "full regression and solo diff inspection",
+      "details": "714 tests, 712 pass, 0 fail, 2 skipped; /tmp/cuesheet-hot-switch-confirm.log. Launcher committed whitelist restored; no remaining launcher diff. Model switching transport fixtures, real filesystem effects and differential typing guard pass. Entire H07 and project acceptance remain incomplete."
     }
   ],
   "risks": {
@@ -3373,15 +3387,16 @@
     "status": "PENDING",
     "lastPassedCommit": "2334466",
     "lastFullSuite": {
-      "tests": 698,
-      "passed": 696,
+      "tests": 714,
+      "passed": 712,
       "failed": 0,
       "skipped": 2
     },
     "workingTreeResearch": "Full combined suite PASS (698/696/0/2); Brave real integration, citation/version enforcement and promotion pending.",
     "finalAdversarialAudit": "PENDING",
     "globalTypecheck": "known baseline diagnostics; differential guard passes",
-    "workingTreeContinuity": "Lifecycle and uncertain-effect receipt/gate targeted PASS. Full suite 708 tests, 705 pass, 1 launcher failure, 2 skipped; restored committed launcher; final full suite pending."
+    "workingTreeContinuity": "Lifecycle and uncertain-effect receipt/gate targeted PASS; combined full regression 714/712/0/2 PASS. Earlier launcher deletion restored; cause of recurrence not established.",
+    "workingTreeModels": "24 targeted tests PASS; full combined regression 714/712/0/2 PASS, /tmp/cuesheet-hot-switch-confirm.log. No new differential typing diagnostics; global baseline remains."
   },
   "ready_for_manual_acceptance": false,
   "counts": {

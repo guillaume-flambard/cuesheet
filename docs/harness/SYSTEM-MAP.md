@@ -74,3 +74,5 @@ Exécution : producer → execution-slices.ts → core.runAgentLoop par tranche 
 execution-state.ts projette terminal.execution v1, validé par TerminalSession avant append/reload et dans le listing des sessions. session-view dérive interrupted seulement au chargement ; shared-context expose les états sous le plafond existant.
 
 Tool-receipts.ts (distinct du ReceiptStore historique de spawn) suit terminal.intent → terminal.receipt. Producer bloque mutations/finish sur intention incertaine, admet cat/ls puis reconcile_effect ; shared-context conserve ces incertitudes comme essentiels, view les affiche. TerminalSession valide les payloads/replay/listing. Aucune conclusion de modèle ne devient preuve indépendante.
+
+Modèle : UI Models → ModelBinding.select → prepareModelPreferences + Producer.modelSelected → journal/core modèle → activation binding → abort infer précédente → guard rejette réponse périmée → prochaine inférence avec contexte recompilé. Reçu d’un outil déjà commencé reste enregistré. App montre sélection pour la suite et distingue sauvegarde globale refusée.
