@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "1b2cbbe",
+  "referenceCommit": "524aeed",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -1660,7 +1660,7 @@
     {
       "id": "H07.4",
       "priority": "P1",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H07.4"
       ],
@@ -1684,7 +1684,9 @@
         "AC-H07.4"
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
-      "evidence": [],
+      "evidence": [
+        "EV-MODEL-USAGE"
+      ],
       "notes": ""
     },
     {
@@ -2694,6 +2696,30 @@
         "EV-CHECK-RENEWAL"
       ],
       "notes": "Discovered during check renewal integration: reloaded binding 30 vs expected 14; fixed pending intent selection, verification running."
+    },
+    {
+      "id": "H07.4a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H07.4"
+      ],
+      "dependencies": [],
+      "description": "Durable native Anthropic request/usage receipts independent of proposal revisions, no fabricated zero or price.",
+      "systems": [
+        "src/adapters/anthropic.ts",
+        "src/adapters/model-usage.ts",
+        "src/adapters/model-binding.ts",
+        "apps/terminal/src/producer/runtime.ts"
+      ],
+      "acceptance": [
+        "AC-H07.4"
+      ],
+      "verification": "Transport truncation/abort, exact counters, disk reload/corruption, model selection callback, runtime hook, full regression",
+      "evidence": [
+        "EV-MODEL-USAGE"
+      ],
+      "notes": "Bounded slice specified before code in 07-PROVIDERS.md; parent remains open."
     }
   ],
   "acceptance": [
@@ -3642,6 +3668,12 @@
       "result": "PASS_PARTIAL",
       "method": "actual Ink input against App/producer/journal, three sizes and resize, differential typing, full regression",
       "details": "17 targeted PASS; 740 tests,738 pass,0 fail,2 skipped (/tmp/cuesheet-check-palette-all.log). Escape/no-append, stale approval refused, same-ID fresh confirmation; criteria provenance shown. Durable evaluation/check-palette-evidence.md. Full H08.2/H08.4 remains pending."
+    },
+    {
+      "id": "EV-MODEL-USAGE",
+      "result": "PASS_PARTIAL",
+      "method": "provider response fixtures, actual terminal runtime and filesystem, model-selection and storage faults, differential typing/full regression",
+      "details": "747 tests,745 pass,0 fail,2 skipped; /tmp/cuesheet-model-usage-all.log. 14 targeted and 13 targeted switch/storage PASS. Durable evaluation/model-usage-evidence.md. Native Anthropic counters only; cost unknown, no API live or all-provider guarantee."
     }
   ],
   "risks": {
@@ -3651,10 +3683,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "1b2cbbe",
+    "lastPassedCommit": "524aeed",
     "lastFullSuite": {
-      "tests": 740,
-      "passed": 738,
+      "tests": 747,
+      "passed": 745,
       "failed": 0,
       "skipped": 2
     },
@@ -3669,7 +3701,8 @@
     "workstreamCoverage": "Six workstreams remain active; E01.1/2 verified; E01.3/4 pending. Overall IMPLEMENTING.",
     "workingTreeShared": "PASS E01.1/2; full production code 736/734/0/2; added bound-project integration 9 shared tests PASS. Multi-machine and team workflow delivery remain pending.",
     "workingTreeCheckRenewal": "PASS_PARTIAL: exact human reauthorization of pinned check; 739/737/0/2 full regression. Parent H01.3 remains open.",
-    "workingTreeCheckPalette": "17 targeted PASS; full 740/738/0/2 PASS. Real keyboard, resize three sizes, no-append cancel and stale refusal. H08 parents remain open."
+    "workingTreeCheckPalette": "17 targeted PASS; full 740/738/0/2 PASS. Real keyboard, resize three sizes, no-append cancel and stale refusal. H08 parents remain open.",
+    "workingTreeUsage": "Native Anthropic durable request/usage receipts PASS; 747/745/0/2 full. Parent H07.4 incomplete, other transports/streaming/prices and UI pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {

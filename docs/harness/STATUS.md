@@ -134,3 +134,5 @@ Extension E01 : E01.1 et E01.2 vérifiés par EV-SHARED-SCOPES (evaluation/share
 EV-CHECK-RENEWAL : check épinglé réautorisé explicitement à un ID/révision exact ; ancienne preuve refusée, même goal repris, reload préservé. 739/737/0/2 full PASS. H01.3a DONE ; H01.3 parent toujours IN_PROGRESS.
 
 EV-CHECK-PALETTE : renouvellement explicite depuis la palette, snapshot de contrat refusé si périmé, annulation sans append. Vraies frappes Ink et trois tailles/resize ; 17 ciblés PASS, full 740/738/0/2 PASS. H08.2/H08.4 non clos.
+
+EV-MODEL-USAGE : runtime/binding → Anthropic start/usage sink → journal de consommation dédié sous la claim terminal. Aucun déplacement de révision de proposition, compteur inconnu explicite, aucun prix inventé. 747/745/0/2 full PASS. H07.4a DONE ; H07.4 parent IN_PROGRESS.

@@ -1,5 +1,6 @@
 /** Switch the model at the edge without replacing the harness or its event log. */
 import type { ContextFrame, ModelAdapter } from '../core/loop.ts';
+import type {UsageSink} from "./model-usage.ts";
 import { resolveModel, type ResolvedModel } from './default-model.ts';
 import { preferencesPath, readModelPreferences, prepareModelPreferences, validatePreferences, type ModelPreferences } from './model-preferences.ts';
 
@@ -15,14 +16,14 @@ export interface ModelBinding {
   select(preferences: ModelPreferences, options: { busy: boolean; save: boolean; beforeCommit?: (selection:ModelPreferences)=>void }): { error: string } | { ok: true; warning?:string };
 }
 
-export function createModelBinding(options: { project: string; env?: NodeJS.ProcessEnv; path?: string; preferences?: ModelPreferences }): ModelBinding {
+export function createModelBinding(options: { onUsage?:UsageSink; project: string; env?: NodeJS.ProcessEnv; path?: string; preferences?: ModelPreferences }): ModelBinding {
   const env = options.env ?? process.env;
   const path = options.path ?? preferencesPath(env);
   let preferences: ModelPreferences = {};
   let loadError: string | null = null;
   try { preferences = options.preferences ?? readModelPreferences(path); }
   catch (error) { loadError = error instanceof Error ? error.message : String(error); }
-  let resolved: ResolvedModel | { missing: string } = loadError ? { missing: loadError } : resolveModel({ project: options.project, preferences, env });
+  let resolved: ResolvedModel | { missing: string } = loadError ? { missing: loadError } : resolveModel({ project: options.project, preferences, env, onUsage:options.onUsage });
   const provider = env.CUESHEET_PROVIDER?.trim() || preferences.provider || 'opencode';
   const sameProvider = provider === preferences.provider;
   const model = env.CUESHEET_MODEL?.trim() || (sameProvider ? preferences.model : undefined);
@@ -67,7 +68,7 @@ export function createModelBinding(options: { project: string; env?: NodeJS.Proc
       const credentials = { ...env };
       for (const key of ['CUESHEET_PROVIDER', 'CUESHEET_MODEL', 'CUESHEET_BASE_URL', 'CUESHEET_MAX_TOKENS']) delete credentials[key];
       const next = resolveModel({ project: options.project, preferences: {}, env: credentials,
-        provider: clean.provider, model: clean.model ?? null, baseUrl: clean.baseUrl, maxTokens: clean.maxTokens });
+        provider: clean.provider, model: clean.model ?? null, baseUrl: clean.baseUrl, maxTokens: clean.maxTokens,onUsage:options.onUsage });
       if ('missing' in next) return { error: next.missing };
       clean.model = next.model ?? undefined;
       let prepared:ReturnType<typeof prepareModelPreferences>|undefined;

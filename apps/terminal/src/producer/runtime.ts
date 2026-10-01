@@ -44,6 +44,7 @@ import { createModelBinding, type ModelBinding } from "../../../../src/adapters/
 import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
 import { ResearchTools } from "../../../../src/adapters/research-tools.ts";
+import { SessionUsage } from "../../../../src/adapters/model-usage.ts";
 import { SharedContexts } from "../../../../src/adapters/shared-memory.ts";
 import { SkillTools } from "../../../../src/adapters/skill-tools.ts";
 import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
@@ -79,7 +80,8 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   if(contextBudgetChars!==undefined && (!Number.isSafeInteger(contextBudgetChars) || contextBudgetChars<4000))return {missing:"CUESHEET_CONTEXT_CHARS must be an integer of at least 4000."};
   const maxSlices=process.env.CUESHEET_MAX_SLICES===undefined ? 4 : Number(process.env.CUESHEET_MAX_SLICES);
   if(!Number.isSafeInteger(maxSlices) || maxSlices<1 || maxSlices>16)return {missing:"CUESHEET_MAX_SLICES must be an integer from 1 to 16."};
-  const binding = settings.binding ?? createModelBinding({ project: cwd });
+  const usage=settings.journal ? new SessionUsage({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
+  const binding = settings.binding ?? createModelBinding({ project: cwd,onUsage:usage?.record });
   const model: ModelAdapter = binding.adapter;
   const tools: ToolRunner = new ShellToolRunner({
     allow: ALLOWED,
@@ -115,7 +117,8 @@ export function createTerminalRuntime(cwd: string, id?: string): { store: Store;
       verification = createCompletionCheck({script:check.script,root:proofRoot});
     }
     const store = persistentView(session);
-    const binding = createModelBinding({project:session.metadata.cwd,preferences:session.lastModel});
+    const usage=new SessionUsage({root:session.root,sessionId:session.metadata.id,assertWritable:()=>session!.assertWritable()});
+    const binding = createModelBinding({project:session.metadata.cwd,preferences:session.lastModel,onUsage:usage.record});
     const live = createLiveProducer(store,session.metadata.cwd,{journal:session,verification,binding});
     if("missing" in live) throw new Error(live.missing);
     if(!binding.missing) live.producer.modelSelected?.(binding.selection);

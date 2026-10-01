@@ -25,6 +25,7 @@ import { homedir } from "node:os";
 
 import type { ModelAdapter } from "../core/loop.ts";
 import { BinaryModelAdapter, binaryAvailable } from "./binary-model.ts";
+import type {UsageSink} from "./model-usage.ts";
 import { AnthropicAdapter } from "./anthropic.ts";
 import { OpenRouterAdapter } from "./openrouter.ts";
 import { readModelPreferences, preferencesPath, validBaseUrl, type ModelPreferences } from "./model-preferences.ts";
@@ -53,6 +54,7 @@ export interface ResolvedModel {
 }
 
 export interface ResolveOptions {
+  readonly onUsage?:UsageSink;
   /** The resolved project directory, or null for a scratch run with none. */
   readonly project?: string | null;
   /** Explicit transport for this run, overriding CUESHEET_PROVIDER. */
@@ -124,7 +126,7 @@ export function resolveModel(options: ResolveOptions = {}): ResolvedModel | { mi
     if (!model) return {missing:"anthropic requires an explicit model (--model or CUESHEET_MODEL)."};
     if (!env.ANTHROPIC_API_KEY) return {missing:"ANTHROPIC_API_KEY is not set."};
     if (maxTokens === undefined) return {missing:"anthropic requires an explicit output limit (--max-tokens or CUESHEET_MAX_TOKENS)."};
-    return {adapter:new AnthropicAdapter({apiKey:env.ANTHROPIC_API_KEY,model,maxTokens}),name:"anthropic",model,why:`anthropic, explicitly selected, model ${model}`};
+    return {adapter:new AnthropicAdapter({apiKey:env.ANTHROPIC_API_KEY,model,maxTokens,onUsage:options.onUsage}),name:"anthropic",model,why:`anthropic, explicitly selected, model ${model}`};
   }
   if (provider === "openai" || provider === "compatible") {
     if (!model) return { missing: `${provider} requires an explicit model (--model or CUESHEET_MODEL).` };
