@@ -90,3 +90,11 @@ Renouvellement d’autorité : action terminal utilisateur exacte → receipt co
 EV-MODEL-USAGE : runtime/binding → Anthropic start/usage sink → journal de consommation dédié sous la claim terminal. Aucun déplacement de révision de proposition, compteur inconnu explicite, aucun prix inventé. 747/745/0/2 full PASS. H07.4a DONE ; H07.4 parent IN_PROGRESS.
 
 EV-INSTALLED-TERMINAL : source → tsc CLI + ESM terminal bundle/asset/notices → npm pack → installation isolée → Node/TTY. PTY vrai et garde typing PASS, full 748/746/0/2 PASS. H09.4a DONE ; H09.4 reste IN_PROGRESS. Nouveau défaut de scope H09.3a en cours, avant toute clôture.
+
+## Routes locales ajoutées2026-10-01
+
+Intention → binding projet → VaultRetrieval factory propriétaire local → grants search+read avant IO → VaultStore documents.jsonl append-only → projection textuelle top5/digest → frame borné → inférence → relecture digest/grants avant effet. read_vault_reference valide scope/id/revision/digest et grants encore à lecture. L'index n'existe qu'en mémoire et se reconstruit ; documents ne configurent pas outils/grants. Projet .cuesheet/vault, entreprise vault sous montages contexte explicites. Équipe/personnel/auth réseau/import restent non raccordés.
+
+Effet outil → intent durable contrôleur → admission Shell.prepare → Docker local déclaré/digest image → reçu `<session>.containers.jsonl` sous claim → create/start/wait/logs/delete → cleanup removed ou uncertain. Contrôle masqué, env minimal, réseau absent, ressources bornées. Aucun fallback après erreur. Choix automatique de cette route reste H09.3c ; route shell personnelle existante n'est pas confinée au niveau OS.
+
+Autorités par domaine : objectifs/preuves restent dans leurs journaux contrôlés existants ; mémoire structurée conserve son journal partagé/corrections. Le Vault document actuel ajoute le corpus documentaire versionné, avec références de sources ; il ne duplique pas autorité des goals, critères ou permissions. La façade canonique entreprise unifiée et les liens plan/goal sont encore H01/H02/E01.5b, sans inventer leur livraison.

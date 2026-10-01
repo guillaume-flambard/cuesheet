@@ -26,3 +26,7 @@ Une priorité P0/P1 n'est pas rétrogradée pour accélérer une clôture.
 Tranches découvertes rattachées explicitement aux six chantiers dans state.json : H09.3a→C4, H09.5a→C6, H09.1a→C1, H05.2a→C4 (dépend de H09.3a/H09.1a), E01.4a→C6 (dépend de E01.1/2). DONE de tranche ne satisfait pas l’AC parent complet. C6 IN_PROGRESS pour les parcours réellement implémentés.
 
 E01.4b→C6 dépend de E01.1/2/E01.4a ; preuve EV-SHARED-MEMORY-EDIT. Le parent E01.4 comprend encore ergonomie d’édition/export/workflows d’équipe et n’est pas achevé.
+
+Extension de directive Vault : E01.5a→E01.5b, E01.6a→E01.6→E01.5b→E01.7, rattachés à C3. E01.3 porte toujours auth/sync réseau. H09.3b/c→C4 distinguent backend explicite et choix automatique ; aucune tranche n'est la clôture de R06.
+
+E01.5b1→C3 : tranche automatique locale indépendante, dépend de E01.5a/E01.6a ; parent E01.5b exige encore import/intégration/permissions entreprise réelles. E01.6a ne remplace pas E01.3/E01.6.

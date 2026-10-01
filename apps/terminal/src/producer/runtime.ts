@@ -38,14 +38,18 @@ import { TerminalSession, terminalSessionRoot } from "../../../../src/adapters/t
 import { persistentView } from "./session-view.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { homedir } from "node:os";
-import { join, delimiter } from "node:path";
+import { join, delimiter, resolve } from "node:path";
 import { createCompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { createModelBinding, type ModelBinding } from "../../../../src/adapters/model-binding.ts";
 import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
+import { SessionContainers } from "../../../../src/adapters/container-receipts.ts";
+import { invocationKey } from "../../../../src/adapters/tool-receipts.ts";
+import { ContainerToolRunner } from "../../../../src/adapters/container-tools.ts";
 import { ResearchTools } from "../../../../src/adapters/research-tools.ts";
 import { SessionUsage } from "../../../../src/adapters/model-usage.ts";
-import { SharedContexts } from "../../../../src/adapters/shared-memory.ts";
+import { VaultRetrieval } from "../../../../src/adapters/vault.ts";
+import { SharedContexts,sharedScope } from "../../../../src/adapters/shared-memory.ts";
 import { SkillTools } from "../../../../src/adapters/skill-tools.ts";
 import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
 import { createProducer, type Producer, type ProducerOptions } from "./index.ts";
@@ -83,8 +87,6 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const usage=settings.journal ? new SessionUsage({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
   const binding = settings.binding ?? createModelBinding({ project: cwd,onUsage:usage?.record });
   const model: ModelAdapter = binding.adapter;
-  const toolsForScope=(scope:string):ToolRunner=>new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope});
-  const tools=toolsForScope(cwd);
   let verification;
   try {
     const script = process.env.CUESHEET_VERIFY_SCRIPT;
@@ -92,13 +94,30 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
+  const image=process.env.CUESHEET_TOOL_IMAGE;
+  const containers=settings.journal ? new SessionContainers({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
+  if(image)try{containers?.read();}catch{return {missing:"Container resource journal is damaged; inspect it before starting tools."};}
+  const toolsForScope=(scope:string):ToolRunner=>image ? new ContainerToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope,image,
+    socket:process.env.CUESHEET_TOOL_SOCKET ?? join(homedir(),".docker","run","docker.sock"),
+    onAdmission:(name,request)=>{
+      if(!containers||!settings.journal)throw new Error("Container execution requires a durable terminal session.");
+      const digest=invocationKey(request.name,request.input);
+      const intent=settings.journal.core.toSession().events.filter(e=>e.kind==="action"&&e.subject==="terminal.intent"&&e.data.tool===request.name&&e.data.scopeCwd===scope&&invocationKey(request.name,e.data.input as Record<string,unknown>)===digest).at(-1);
+      if(!intent)throw new Error("Container execution lacks an admitted intent.");
+      containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
+    },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
+    protectedPaths:[...(settings.journal?[settings.journal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]}) : new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope});
+  let tools:ToolRunner;
+  try {tools=toolsForScope(cwd);} catch {return {missing:"Container tool configuration requires a local Unix socket and immutable image digest."};}
   const researchForScope=(scope:string)=>new ResearchTools({root:scope,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
   const research=researchForScope(cwd);
   const configuredSkillRoots=process.env.CUESHEET_SKILL_ROOTS?.split(delimiter).filter(Boolean);
   const skillsForScope=(scope:string)=>new SkillTools({roots:configuredSkillRoots ?? [join(scope,".cuesheet","skills")]});
   const skills=skillsForScope(cwd);
   const sharedContexts=new SharedContexts({cwd,organizations:process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)});
-  const options: ProducerOptions = {toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const organizationRoots=process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)??[];
+  const vaultForScope=(scope:string)=>new VaultRetrieval({principal:"local-owner",scopes:[{kind:"project",id:sharedScope("project",scope).id,root:join(scope,".cuesheet","vault")},...organizationRoots.map(root=>({kind:"enterprise" as const,id:sharedScope("organization",root).id,root:join(resolve(root),"vault")}))],authorize:()=>true});
+  const options: ProducerOptions = {vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */

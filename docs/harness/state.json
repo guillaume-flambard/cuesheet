@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "00e0524",
+  "referenceCommit": "98a0b9f",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -416,6 +416,27 @@
       "description": "Consultation/correction/export des scopes et workflows communs avec parcours clavier.",
       "acceptance": [
         "AC-E01.4"
+      ]
+    },
+    {
+      "id": "REQ-E01.5",
+      "description": "Vault canonique versionné et récupération textuelle automatique sourcée",
+      "acceptance": [
+        "AC-E01.5"
+      ]
+    },
+    {
+      "id": "REQ-E01.6",
+      "description": "Droits entreprise/équipe/projet/personnel contrôlés avant recherche et lecture",
+      "acceptance": [
+        "AC-E01.6"
+      ]
+    },
+    {
+      "id": "REQ-E01.7",
+      "description": "Évaluation retrieval et index reconstructible, vectoriel conditionné aux mesures",
+      "acceptance": [
+        "AC-E01.7"
       ]
     }
   ],
@@ -2897,6 +2918,203 @@
         "EV-SHARED-MEMORY-EDIT"
       ],
       "notes": "24 targeted and764/762/0/2 final full PASS. Human correction history/CAS/no resurrection/protected active frame proven; final source reuse guard includes original expectedItem. Read-only company mounts, parent E01.4/export/team/auth pending."
+    },
+    {
+      "id": "H09.3b",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H09.5"
+      ],
+      "dependencies": [
+        "H09.3a",
+        "H09.5a"
+      ],
+      "description": "Local Linux Docker tool backend with immutable image, shared admission, bounded resources, no inherited credentials/network/host controls, and owned lifecycle/cleanup.",
+      "systems": [
+        "src/adapters/container-tools.ts",
+        "src/adapters/shell.ts",
+        "apps/terminal/src/producer/runtime.ts",
+        "apps/terminal/src/producer/index.ts",
+        "src/surface-cli.ts",
+        "test/container-tools.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H09.5"
+      ],
+      "verification": "Historical node argv outside-root write, fake local Engine protocol failures/cancellation plus actual Docker read/write/control/credentials/no-network/child cleanup; runtime/installation/typing/full suite",
+      "evidence": [
+        "EV-LOCAL-VAULT-CONTAINERS"
+      ],
+      "notes": "Docker Desktop29.8.1 Linux/API1.56 locally started after confirming absent local socket; official Node24-bookworm-slim digest observed cached/up-to-date. No remote server/deployment. No Seatbelt product backend. Tranche locale finie vérifiée ; AC/parents complets non clos."
+    },
+    {
+      "id": "H09.3c",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H09.3"
+      ],
+      "dependencies": [
+        "H09.3b"
+      ],
+      "description": "Automatic safest available tool-route selection and explicit override; enterprise contexts fail closed without admitted isolation, prerequisites/capabilities and platform limits honest.",
+      "systems": [
+        "apps/terminal/src/producer/runtime.ts",
+        "docs/harness/09-RELIABILITY.md"
+      ],
+      "acceptance": [
+        "AC-H09.3"
+      ],
+      "verification": "Auto/owner override/missing or stale local daemon/image policy, enterprise no unsafe fallback, provider authority unchanged; actual terminal scenario",
+      "evidence": [],
+      "notes": "Default choice must be automatic per owner directive; manual image/socket wiring alone does not satisfy this task."
+    },
+    {
+      "id": "E01.5a",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.5"
+      ],
+      "dependencies": [
+        "E01.1"
+      ],
+      "description": "Corpus Vault versionné et recherche textuelle reconstructible",
+      "systems": [
+        "11-SHARED-ORGANIZATION.md",
+        "src/adapters/vault.ts"
+      ],
+      "acceptance": [
+        "AC-E01.5"
+      ],
+      "verification": "Scénarios version/CAS/replay/corruption/permissions/reconstruction puis régression",
+      "evidence": [
+        "EV-LOCAL-VAULT-CONTAINERS"
+      ],
+      "notes": "Directive explicite Vault canonique2026-10-01, auth réseau parent reste ouverte Tranche locale finie vérifiée ; AC/parents complets non clos."
+    },
+    {
+      "id": "E01.5b",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-E01.5"
+      ],
+      "dependencies": [
+        "E01.5a",
+        "E01.6"
+      ],
+      "description": "Retrieval automatique et invalidation au runtime",
+      "systems": [
+        "11-SHARED-ORGANIZATION.md",
+        "src/adapters/vault.ts"
+      ],
+      "acceptance": [
+        "AC-E01.5"
+      ],
+      "verification": "Scénarios version/CAS/replay/corruption/permissions/reconstruction puis régression",
+      "evidence": [],
+      "notes": "Directive explicite Vault canonique2026-10-01, auth réseau parent reste ouverte"
+    },
+    {
+      "id": "E01.6",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-E01.6"
+      ],
+      "dependencies": [
+        "E01.2"
+      ],
+      "description": "Grants séparés et révocation avant recherche/lecture",
+      "systems": [
+        "11-SHARED-ORGANIZATION.md",
+        "src/adapters/vault.ts"
+      ],
+      "acceptance": [
+        "AC-E01.6"
+      ],
+      "verification": "Scénarios version/CAS/replay/corruption/permissions/reconstruction puis régression",
+      "evidence": [],
+      "notes": "Directive explicite Vault canonique2026-10-01, auth réseau parent reste ouverte"
+    },
+    {
+      "id": "E01.7",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-E01.7"
+      ],
+      "dependencies": [
+        "E01.5b"
+      ],
+      "description": "Évaluation retrieval sur corpus et panne index",
+      "systems": [
+        "11-SHARED-ORGANIZATION.md",
+        "src/adapters/vault.ts"
+      ],
+      "acceptance": [
+        "AC-E01.7"
+      ],
+      "verification": "Scénarios version/CAS/replay/corruption/permissions/reconstruction puis régression",
+      "evidence": [],
+      "notes": "Directive explicite Vault canonique2026-10-01, auth réseau parent reste ouverte"
+    },
+    {
+      "id": "E01.6a",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.6"
+      ],
+      "dependencies": [
+        "E01.5a"
+      ],
+      "description": "Admission locale du retrieval via autorité contrôleur indépendante des documents",
+      "systems": [
+        "src/adapters/vault.ts",
+        "test/vault.test.ts"
+      ],
+      "acceptance": [
+        "AC-E01.6"
+      ],
+      "verification": "Refus avant IO, révocation entre recherche et lecture, anciennes références et scopes inconnus",
+      "evidence": [
+        "EV-LOCAL-VAULT-CONTAINERS"
+      ],
+      "notes": "Slice locale ; authentification réseau et distribution des grants restent ouvertes Tranche locale finie vérifiée ; AC/parents complets non clos."
+    },
+    {
+      "id": "E01.5b1",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.5",
+        "REQ-E01.6"
+      ],
+      "dependencies": [
+        "E01.5a",
+        "E01.6a"
+      ],
+      "description": "Retrieval textuel automatique local par goal et invalidation avant effets",
+      "systems": [
+        "src/adapters/vault.ts",
+        "src/adapters/shared-context.ts",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/producer/runtime.ts"
+      ],
+      "acceptance": [
+        "AC-E01.5",
+        "AC-E01.6"
+      ],
+      "verification": "Corpus réel, attente inference, mise à jour/révocation puis refus outil périmé, source/budget/régression",
+      "evidence": [
+        "EV-LOCAL-VAULT-CONTAINERS"
+      ],
+      "notes": "Owner-local mounts only, no network identity or permission claimed Tranche locale finie vérifiée ; AC/parents complets non clos."
     }
   ],
   "acceptance": [
@@ -3729,6 +3947,48 @@
       ],
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-E01.5",
+      "requirement": "REQ-E01.5",
+      "given": "Corpus partagé versionné et identités contrôleur",
+      "when": "Vault canonique versionné et récupération textuelle automatique sourcée",
+      "then": "Scénarios dans11-SHARED-ORGANIZATION.md satisfaits sans fuite ni autorité du document",
+      "verification": [
+        "automated",
+        "runtime",
+        "evaluation"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-E01.6",
+      "requirement": "REQ-E01.6",
+      "given": "Corpus partagé versionné et identités contrôleur",
+      "when": "Droits entreprise/équipe/projet/personnel contrôlés avant recherche et lecture",
+      "then": "Scénarios dans11-SHARED-ORGANIZATION.md satisfaits sans fuite ni autorité du document",
+      "verification": [
+        "automated",
+        "runtime",
+        "evaluation"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-E01.7",
+      "requirement": "REQ-E01.7",
+      "given": "Corpus partagé versionné et identités contrôleur",
+      "when": "Évaluation retrieval et index reconstructible, vectoriel conditionné aux mesures",
+      "then": "Scénarios dans11-SHARED-ORGANIZATION.md satisfaits sans fuite ni autorité du document",
+      "verification": [
+        "automated",
+        "runtime",
+        "evaluation"
+      ],
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -3893,6 +4153,12 @@
       "result": "PASS_PARTIAL",
       "method": "Historical absent API, actual shared journals/two processes, human terminal source and suspended inference, compaction/history, schema/typing/full regression",
       "details": "24 targeted and764/762/0/2 final full PASS; evaluation/shared-memory-edit-evidence.md. Mounted enterprise roots unchanged; parent E01.4 and R06 remain open."
+    },
+    {
+      "id": "EV-LOCAL-VAULT-CONTAINERS",
+      "result": "PASS_PARTIAL",
+      "method": "Real Docker, Unix HTTP fault fixtures, actual runtime/session, Vault two processes/permissions/stale inference, differential typing/build/full suite; solo adversarial review",
+      "details": "780/778/0/2 full PASS;49 targeted PASS; evaluation/local-vault-containers/evidence.md. Parents auth/sync/automatic route/enterprise facade remain open."
     }
   ],
   "risks": {
@@ -3902,10 +4168,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "00e0524",
+    "lastPassedCommit": "98a0b9f",
     "lastFullSuite": {
-      "tests": 764,
-      "passed": 762,
+      "tests": 780,
+      "passed": 778,
       "failed": 0,
       "skipped": 2
     },
@@ -3928,15 +4194,16 @@
     "workingTreeAuthorship": "PASS replay absent author unknown/model preserved/malformed rejected;755/753/0/2 full. R10 remains open.",
     "workingTreeScopedResume": "PASS reopened selected project, original objective identity and sourced admission;757/755/0/2 full. UI context slice in verification.",
     "workingTreeSharedContextUI": "PASS readonly palette, actual keys/pages/sources/resize;760/758/0/2 full. Parent enterprise UI/edit/export pending.",
-    "workingTreeSharedEdits": "PASS human project edit/resolve, CAS and sourced history, exact retries preserve human state, active humans not dropped;764/762/0/2 full. No enterprise auth/OS guarantee."
+    "workingTreeSharedEdits": "PASS human project edit/resolve, CAS and sourced history, exact retries preserve human state, active humans not dropped;764/762/0/2 full. No enterprise auth/OS guarantee.",
+    "workingTreeVaultContainers": "PASS bounded local slices;780/778/0/2 full,49 targeted, build PASS with32 inherited diagnostics. Overall IMPLEMENTING; no global closure."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 59,
+    "requirements": 62,
     "acceptanceVerified": 7,
-    "acceptancePending": 52,
-    "p0_open": 35,
-    "p1_open": 17
+    "acceptancePending": 55,
+    "p0_open": 37,
+    "p1_open": 19
   },
   "workstreams": [
     {
@@ -3989,7 +4256,13 @@
         "E01.1",
         "E01.2",
         "E01.3",
-        "E01.D1"
+        "E01.D1",
+        "E01.5a",
+        "E01.5b",
+        "E01.6",
+        "E01.7",
+        "E01.6a",
+        "E01.5b1"
       ],
       "dependencies": [
         "C1",
@@ -4009,7 +4282,9 @@
         "H09.2",
         "H09.3",
         "H09.3a",
-        "H05.2a"
+        "H05.2a",
+        "H09.3b",
+        "H09.3c"
       ],
       "dependencies": [
         "C1",

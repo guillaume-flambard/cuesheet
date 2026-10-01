@@ -777,3 +777,15 @@ Mise à jour AC-H07.2a : VERIFIED, preuve EV-CAPABILITY (régression échec avan
 
 
 Extension E01 : E01.1 et E01.2 vérifiés par EV-SHARED-SCOPES (evaluation/shared-context-evidence.md). E01.D1 corrigé et régressé. E01.3 et E01.4 restent TODO. Projet IMPLEMENTING ; aucune clôture globale.
+
+## AC-E01.5 (PENDING)
+
+REQ-E01.5 : corpus canonical versionné, CAS, historique humain/modèle et tombstones préservés ; retrieval automatique sourcé au runtime ; index reconstructible sans perte. Vérification stockage/concurrence/runtime/reconstruction.
+
+## AC-E01.6 (PENDING)
+
+REQ-E01.6 : entreprise/équipe/projet/personnel, autorité distincte du document ; contrôle avant recherche puis à lecture, ancienne référence refusée après révocation ; auth réelle reliée à E01.3.
+
+## AC-E01.7 (PENDING)
+
+REQ-E01.7 : corpus pertinent, mesures qualité/latence/coût, tests de reconstruction ; vectorisation seulement si gains démontrés.

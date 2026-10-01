@@ -66,7 +66,8 @@ export class ShellToolRunner {
     };
   }
 
-  async run(request: ToolRequest, signal?: AbortSignal): Promise<ToolResult> {
+  /** Pure admission, shared by local and confined executors. */
+  prepare(request:ToolRequest):ToolResult|{cwd:string;argv:string[]} {
     const { name, input } = request;
 
     if (!this.options.allow.includes(name)) {
@@ -114,6 +115,13 @@ export class ShellToolRunner {
     if (argv[0] !== name) {
       return { name, exit: 126, output: `refusing executable ${argv[0]}: expected ${name}` };
     }
+    return {cwd,argv};
+  }
+
+  async run(request: ToolRequest, signal?: AbortSignal): Promise<ToolResult> {
+    const prepared=this.prepare(request);
+    if(!('argv' in prepared))return prepared;
+    const {cwd,argv}=prepared;const {name}=request;
 
     return new Promise<ToolResult>((resolvePromise) => {
       execFile(
