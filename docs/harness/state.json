@@ -1,0 +1,3375 @@
+{
+  "schemaVersion": 1,
+  "phase": "IMPLEMENTING",
+  "canonicalRoot": "docs/harness",
+  "referenceCommit": "93c1c3b",
+  "protocolAdopted": "2026-10-01 during execution, before further coding",
+  "requirements": [
+    {
+      "id": "REQ-B00.1",
+      "description": "Instructions, contrat produit et specs du premier lot sont lus et leurs contraintes figurent dans la carte du système.",
+      "acceptance": [
+        "AC-B00.1"
+      ]
+    },
+    {
+      "id": "REQ-B00.2",
+      "description": "HEAD, changements préexistants, résultat de suite et diagnostics de départ sont consignés sans réutiliser les chiffres historiques.",
+      "acceptance": [
+        "AC-B00.2"
+      ]
+    },
+    {
+      "id": "REQ-B00.3",
+      "description": "Un manifeste versionné distingue fixtures, processus réels et essais provider, avec parcours fil rouge et oracles explicités.",
+      "acceptance": [
+        "AC-B00.3"
+      ]
+    },
+    {
+      "id": "REQ-B00.4",
+      "description": "La perte de spec et la duplication de contexte sont reproduites avec un résultat mesuré avant correction.",
+      "acceptance": [
+        "AC-B00.4"
+      ]
+    },
+    {
+      "id": "REQ-H01.1",
+      "description": "Deux intentions identiques ont des IDs distincts ; reformulation conserve ID ; cycle et schéma invalide sont refusés sans append.",
+      "acceptance": [
+        "AC-H01.1"
+      ]
+    },
+    {
+      "id": "REQ-H01.2",
+      "description": "Une intention et correction naturelles modifient le contrat et ses travaux sans commande interne ni sélection de mode.",
+      "acceptance": [
+        "AC-H01.2"
+      ]
+    },
+    {
+      "id": "REQ-H01.3",
+      "description": "Un check généré ne devient pas autorité ; une preuve R ne clôt pas R+1 ; un renouvellement explicitement autorisé lie le nouveau critère au nouveau contrat.",
+      "acceptance": [
+        "AC-H01.3"
+      ]
+    },
+    {
+      "id": "REQ-H01.4",
+      "description": "Plans, tâches, mémoire, artefacts et preuves référencent ID/révision ; les références obsolètes sont distinguées des engagements courants.",
+      "acceptance": [
+        "AC-H01.4"
+      ]
+    },
+    {
+      "id": "REQ-H01.5",
+      "description": "Les anciens journaux sont lisibles sans nouvelle provenance inventée ni mutation du fichier initial.",
+      "acceptance": [
+        "AC-H01.5"
+      ]
+    },
+    {
+      "id": "REQ-H09.1",
+      "description": "Payloads versionnés sont validés avant écriture et replay ; migration préserve original, incompatibilités et provenance inconnue.",
+      "acceptance": [
+        "AC-H09.1"
+      ]
+    },
+    {
+      "id": "REQ-H02.1",
+      "description": "Toute décision admise porte objectif, révision, sources, justification et scope ; une proposition obsolète est redérivée avant effet.",
+      "acceptance": [
+        "AC-H02.1"
+      ]
+    },
+    {
+      "id": "REQ-H02.2",
+      "description": "Spec et tâches possèdent identité/version, dépendances et résultat attendu ; l’utilisateur peut les consulter et exporter sans divergence de copies.",
+      "acceptance": [
+        "AC-H02.2"
+      ]
+    },
+    {
+      "id": "REQ-H02.3",
+      "description": "Une tâche triviale évite le cérémonial ; une ambiguïté essentielle suscite une question ciblée pendant que les branches indépendantes avancent.",
+      "acceptance": [
+        "AC-H02.3"
+      ]
+    },
+    {
+      "id": "REQ-H02.4",
+      "description": "Une observation de rejet change réellement la stratégie ou le plan ; la répétition sans progrès est détectée et revue séparément.",
+      "acceptance": [
+        "AC-H02.4"
+      ]
+    },
+    {
+      "id": "REQ-H03.1",
+      "description": "Échanges et observations utiles alimentent automatiquement la mémoire ; double traitement ou crash ne produit pas de doublons.",
+      "acceptance": [
+        "AC-H03.1"
+      ]
+    },
+    {
+      "id": "REQ-H03.2",
+      "description": "Contradiction, réponse et réfutation conservent versions, sources et texte original ; la correction humaine garde autorité.",
+      "acceptance": [
+        "AC-H03.2"
+      ]
+    },
+    {
+      "id": "REQ-H03.3",
+      "description": "Un journal long produit un frame borné compatible avec le budget déclaré ; les contraintes anciennes restent présentes et les sources omises sont récupérables.",
+      "acceptance": [
+        "AC-H03.3"
+      ]
+    },
+    {
+      "id": "REQ-H03.4",
+      "description": "Changement/reprise reconstruit le contexte courant ; données de session/projet/personnelles ne traversent pas implicitement les périmètres.",
+      "acceptance": [
+        "AC-H03.4"
+      ]
+    },
+    {
+      "id": "REQ-H03.5",
+      "description": "Mesures de petite fenêtre et autre modèle démontrent récupération et réussite sur journal long, avec tokens estimés/mesurés distingués.",
+      "acceptance": [
+        "AC-H03.5"
+      ]
+    },
+    {
+      "id": "REQ-H04.1",
+      "description": "Une route explicitement configurée donne des résultats de recherche attribués ; sans route aucune recherche payante ou citation inventée ne survient.",
+      "acceptance": [
+        "AC-H04.1"
+      ]
+    },
+    {
+      "id": "REQ-H04.2",
+      "description": "Une lecture locale/web produit une source durable bornée avec hash et abort ; erreurs/redirect privées/format non supporté restent explicites.",
+      "acceptance": [
+        "AC-H04.2"
+      ]
+    },
+    {
+      "id": "REQ-H04.3",
+      "description": "Les réponses citent les URL effectivement lues et la version utile ; cache périmé et instructions hostiles ne modifient pas le contrat.",
+      "acceptance": [
+        "AC-H04.3"
+      ]
+    },
+    {
+      "id": "REQ-H04.4",
+      "description": "Skills installés sont découverts dans racines configurées avec version ; contenu chargé à la demande ; illisibilité se distingue de l’absence.",
+      "acceptance": [
+        "AC-H04.4"
+      ]
+    },
+    {
+      "id": "REQ-H04.5",
+      "description": "Un skill généré est essayé, révisable, réutilisé par un autre worker, puis promouvable/rollbackable sans augmentation de privilèges.",
+      "acceptance": [
+        "AC-H04.5"
+      ]
+    },
+    {
+      "id": "REQ-H09.2",
+      "description": "Crash entre core/vue/artefacts est reconciliable ; recovery conserve original et rapport ; disque refusé suspend effets mais navigation fonctionne.",
+      "acceptance": [
+        "AC-H09.2"
+      ]
+    },
+    {
+      "id": "REQ-H09.3",
+      "description": "Outils déclarent scope/effets/cancellation/limites ; résultats complets ont références ; arrêt de descendants incertains reste explicite.",
+      "acceptance": [
+        "AC-H09.3"
+      ]
+    },
+    {
+      "id": "REQ-H05.1",
+      "description": "Objectif ouvert survit à fin de run/tranche, quota, outil tué et panne technique, avec cause et prochaine action distinctes.",
+      "acceptance": [
+        "AC-H05.1"
+      ]
+    },
+    {
+      "id": "REQ-H05.2",
+      "description": "Une tâche de plus de huit inférences traverse plusieurs tranches automatiquement sous plafond cumulé et dans la même exécution autorisée.",
+      "acceptance": [
+        "AC-H05.2"
+      ]
+    },
+    {
+      "id": "REQ-H05.3",
+      "description": "Approche de fenêtre renouvelle le contexte ; répétitions sans observations nouvelles déclenchent adaptation ou blocage justifié.",
+      "acceptance": [
+        "AC-H05.3"
+      ]
+    },
+    {
+      "id": "REQ-H05.4",
+      "description": "Un effet sans réponse est inspecté/reconcilié avant retry ; aucun exactly-once universel ou rollback fictif n’est annoncé.",
+      "acceptance": [
+        "AC-H05.4"
+      ]
+    },
+    {
+      "id": "REQ-H05.5",
+      "description": "Stop empêche toute continuation et réponse tardive ; coûts inconnus restent inconnus ; chargement sans opt-in ne redémarre aucun effet.",
+      "acceptance": [
+        "AC-H05.5"
+      ]
+    },
+    {
+      "id": "REQ-H06.1",
+      "description": "Délégation automatique choisit une unité utile avec worker ID, contrat, scope, capacité, budget et résultat attendu.",
+      "acceptance": [
+        "AC-H06.1"
+      ]
+    },
+    {
+      "id": "REQ-H06.2",
+      "description": "Deux processus réels publient des receipts à un état durable commun ; sortie R refusée après changement pertinent R+1.",
+      "acceptance": [
+        "AC-H06.2"
+      ]
+    },
+    {
+      "id": "REQ-H06.3",
+      "description": "Écritures isolées sont intégrées explicitement ; conflit reste visible ; preuve finale couvre le résultat composé.",
+      "acceptance": [
+        "AC-H06.3"
+      ]
+    },
+    {
+      "id": "REQ-H06.4",
+      "description": "Un agent tué est remplacé depuis projection commune ; correction se propage immédiatement et effets incertains sont reconciliés.",
+      "acceptance": [
+        "AC-H06.4"
+      ]
+    },
+    {
+      "id": "REQ-H06.5",
+      "description": "Responsabilités, état utile et consommation cumulée se projettent sans dépendre de messages privés.",
+      "acceptance": [
+        "AC-H06.5"
+      ]
+    },
+    {
+      "id": "REQ-H07.1",
+      "description": "Transport Anthropic authentifié selon docs officielles passe contrats outils/messages/usage/abort et essai réel configuré.",
+      "acceptance": [
+        "AC-H07.1"
+      ]
+    },
+    {
+      "id": "REQ-H07.2",
+      "description": "Capacités supportées/inconnues et fenêtre de contexte sont représentées fidèlement ; modèle à petite fenêtre reçoit un frame compatible.",
+      "acceptance": [
+        "AC-H07.2"
+      ]
+    },
+    {
+      "id": "REQ-H07.3",
+      "description": "Changement en plein travail invalide ancienne inférence, attend/reconcilie l’effet en cours et préserve contrat/mémoire après erreur.",
+      "acceptance": [
+        "AC-H07.3"
+      ]
+    },
+    {
+      "id": "REQ-H07.4",
+      "description": "Streaming partiel ne lance aucun outil incomplet ; texte provisoire, résultat final, usage et abort restent distincts.",
+      "acceptance": [
+        "AC-H07.4"
+      ]
+    },
+    {
+      "id": "REQ-H07.5",
+      "description": "Routing utilise uniquement routes/plafonds autorisés ; auth abonnement non supportée reste indisponible sans extraction de token tiers.",
+      "acceptance": [
+        "AC-H07.5"
+      ]
+    },
+    {
+      "id": "REQ-H08.1",
+      "description": "Écran principal montre intention, objectif, exécution et observation utile avec détails accessibles sans mode obligatoire.",
+      "acceptance": [
+        "AC-H08.1"
+      ]
+    },
+    {
+      "id": "REQ-H08.2",
+      "description": "Les vraies frappes permettent consulter et corriger contrat/spec/mémoire avec historique et même sémantique que la conversation.",
+      "acceptance": [
+        "AC-H08.2"
+      ]
+    },
+    {
+      "id": "REQ-H08.3",
+      "description": "Agents, sources et résultats longs sont inspectables avec références et statut inconnu/produit/vérifié correctement distingués.",
+      "acceptance": [
+        "AC-H08.3"
+      ]
+    },
+    {
+      "id": "REQ-H08.4",
+      "description": "Arrêt, reprise et changement actif sont accessibles et comprennent pending/error/uncertain sans perdre brouillon ni focus.",
+      "acceptance": [
+        "AC-H08.4"
+      ]
+    },
+    {
+      "id": "REQ-H08.5",
+      "description": "Parcours clavier passe en Ink et PTY aux trois tailles, resize, Unicode et sans couleur ; Entrée overlay ne soumet pas le brouillon.",
+      "acceptance": [
+        "AC-H08.5"
+      ]
+    },
+    {
+      "id": "REQ-H09.4",
+      "description": "Installation packagée dans HOME temporaire, export/import et rollback/rétention passent sans chemins personnels implicites.",
+      "acceptance": [
+        "AC-H09.4"
+      ]
+    },
+    {
+      "id": "REQ-H09.5",
+      "description": "Pannes et tentatives hors scope sont testées ; journaux/exports n’exposent pas credentials et ne fabriquent pas de preuves.",
+      "acceptance": [
+        "AC-H09.5"
+      ]
+    },
+    {
+      "id": "REQ-H02.5",
+      "description": "Des modèles réels accomplissent les scénarios de choix de processus avec traces attribuées, et les échecs restent dans le rapport.",
+      "acceptance": [
+        "AC-H02.5"
+      ]
+    },
+    {
+      "id": "REQ-H10.1",
+      "description": "Corpus versionné complet, budgets préfixés et checks hors producteur couvrent cas logiciels, documentaire, correction, crash et skill.",
+      "acceptance": [
+        "AC-H10.1"
+      ]
+    },
+    {
+      "id": "REQ-H10.2",
+      "description": "Chaque promesse rapporte niveau de preuve, commit, scénarios, échecs et omissions avec traces récupérables.",
+      "acceptance": [
+        "AC-H10.2"
+      ]
+    },
+    {
+      "id": "REQ-H10.3",
+      "description": "Runs répétés faible/fort modèle et OpenCode comparable ont mêmes conditions/oracles et toutes les mesures connues/inconnues.",
+      "acceptance": [
+        "AC-H10.3"
+      ]
+    },
+    {
+      "id": "REQ-H10.4",
+      "description": "Feature réelle corrigée puis interrompue reprend plus tard avec autre modèle/agent et valide le contrat courant.",
+      "acceptance": [
+        "AC-H10.4"
+      ]
+    },
+    {
+      "id": "REQ-H10.5",
+      "description": "Rapport de remplacement rattache chaque exigence aux preuves, seuils fixés et écarts ; aucune supériorité non mesurée.",
+      "acceptance": [
+        "AC-H10.5"
+      ]
+    },
+    {
+      "id": "REQ-H07.2a",
+      "description": "Une capacité enregistrée apparaît avec son vrai nom dans le frame ; régression reproduit la lecture actuelle de name absent et vérifie la correction ciblée.",
+      "acceptance": [
+        "AC-H07.2a"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "B00.1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-B00.1"
+      ],
+      "dependencies": [],
+      "description": "Lire HANDOFF, README, règles applicables et specs du premier lot.",
+      "systems": [
+        "README.md"
+      ],
+      "acceptance": [
+        "AC-B00.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-B00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "B00.2",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-B00.2"
+      ],
+      "dependencies": [],
+      "description": "Relever HEAD, état Git, tests et diagnostics initiaux dans STATUS.md.",
+      "systems": [
+        "README.md"
+      ],
+      "acceptance": [
+        "AC-B00.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-B00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "B00.3",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-B00.3"
+      ],
+      "dependencies": [],
+      "description": "Construire le manifeste minimal du corpus H10.1 et un scénario fil rouge.",
+      "systems": [
+        "README.md"
+      ],
+      "acceptance": [
+        "AC-B00.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-B00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "B00.4",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-B00.4"
+      ],
+      "dependencies": [],
+      "description": "Reproduire les défauts d'identité du plan et de contexte non borné avant correction.",
+      "systems": [
+        "README.md"
+      ],
+      "acceptance": [
+        "AC-B00.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-B00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "H01.1",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H01.1"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4"
+      ],
+      "description": "Schémas versionnés, IDs stables, projections et dépendances.",
+      "systems": [
+        "01-OBJECTIVES.md"
+      ],
+      "acceptance": [
+        "AC-H01.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Partially implemented is not DONE."
+    },
+    {
+      "id": "H01.2",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H01.2"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4"
+      ],
+      "description": "Extraction et correction d'objectif en conversation ordinaire.",
+      "systems": [
+        "01-OBJECTIVES.md"
+      ],
+      "acceptance": [
+        "AC-H01.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Partially implemented is not DONE."
+    },
+    {
+      "id": "H01.3",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H01.3"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4"
+      ],
+      "description": "Critères avec provenance, révision et autorité explicites.",
+      "systems": [
+        "01-OBJECTIVES.md"
+      ],
+      "acceptance": [
+        "AC-H01.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Partially implemented is not DONE."
+    },
+    {
+      "id": "H01.4",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H01.4"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4"
+      ],
+      "description": "Raccordement plans/tâches/mémoire/preuves au contrat courant.",
+      "systems": [
+        "01-OBJECTIVES.md"
+      ],
+      "acceptance": [
+        "AC-H01.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Partially implemented is not DONE."
+    },
+    {
+      "id": "H01.5",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H01.5"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4"
+      ],
+      "description": "Compatibilité des goals/plans déjà enregistrés.",
+      "systems": [
+        "01-OBJECTIVES.md"
+      ],
+      "acceptance": [
+        "AC-H01.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Partially implemented is not DONE."
+    },
+    {
+      "id": "H09.1",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H09.1"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4"
+      ],
+      "description": "Validation des payloads, migration et replay des anciennes sessions.",
+      "systems": [
+        "09-RELIABILITY.md"
+      ],
+      "acceptance": [
+        "AC-H09.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Partially implemented is not DONE."
+    },
+    {
+      "id": "H02.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H02.1"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1"
+      ],
+      "description": "Décision structurée avec base de révision et admission runtime.",
+      "systems": [
+        "02-AUTONOMY.md"
+      ],
+      "acceptance": [
+        "AC-H02.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H02.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H02.2"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1"
+      ],
+      "description": "Specs utiles et tâches identifiables, versionnées, consultables/exportables.",
+      "systems": [
+        "02-AUTONOMY.md"
+      ],
+      "acceptance": [
+        "AC-H02.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H02.3",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H02.3"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1"
+      ],
+      "description": "Processus léger et questions seulement quand nécessaires.",
+      "systems": [
+        "02-AUTONOMY.md"
+      ],
+      "acceptance": [
+        "AC-H02.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H02.4",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H02.4"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1"
+      ],
+      "description": "Révision du plan à partir des échecs observés et revue appropriée.",
+      "systems": [
+        "02-AUTONOMY.md"
+      ],
+      "acceptance": [
+        "AC-H02.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H03.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H03.1"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1"
+      ],
+      "description": "Extraction mémoire sourcée/idempotente après échanges et observations.",
+      "systems": [
+        "03-MEMORY-CONTEXT.md"
+      ],
+      "acceptance": [
+        "AC-H03.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H03.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H03.2"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1"
+      ],
+      "description": "Contradictions, réponses et leçons avec historique.",
+      "systems": [
+        "03-MEMORY-CONTEXT.md"
+      ],
+      "acceptance": [
+        "AC-H03.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H03.3",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H03.3"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2"
+      ],
+      "description": "Compilateur borné et lecture ciblée des sources omises.",
+      "systems": [
+        "03-MEMORY-CONTEXT.md"
+      ],
+      "acceptance": [
+        "AC-H03.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Partially implemented is not DONE."
+    },
+    {
+      "id": "H03.4",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H03.4"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2"
+      ],
+      "description": "Reconstructions et isolation session/projet/personnel.",
+      "systems": [
+        "03-MEMORY-CONTEXT.md"
+      ],
+      "acceptance": [
+        "AC-H03.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H03.5",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H03.5"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2"
+      ],
+      "description": "Journal long, petite fenêtre et substitution de modèles mesurés.",
+      "systems": [
+        "03-MEMORY-CONTEXT.md"
+      ],
+      "acceptance": [
+        "AC-H03.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H04.1",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H04.1"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5"
+      ],
+      "description": "Choisir/raccorder le connecteur de recherche et sa configuration explicite.",
+      "systems": [
+        "04-RESEARCH-SKILLS.md"
+      ],
+      "acceptance": [
+        "AC-H04.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-RESEARCH",
+        "EV-RESEARCH-CACHE-LOCAL"
+      ],
+      "notes": "Partial implementation verified; full acceptance and listed cross-lot dependencies remain unresolved. No global DONE claim."
+    },
+    {
+      "id": "H04.2",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H04.2"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5"
+      ],
+      "description": "Lecture locale/web, résultat durable, limites et cancellation.",
+      "systems": [
+        "04-RESEARCH-SKILLS.md"
+      ],
+      "acceptance": [
+        "AC-H04.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-RESEARCH",
+        "EV-RESEARCH-CACHE-LOCAL"
+      ],
+      "notes": "Partial implementation verified; full acceptance and listed cross-lot dependencies remain unresolved. No global DONE claim."
+    },
+    {
+      "id": "H04.3",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H04.3"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5"
+      ],
+      "description": "Attribution, fraîcheur/version et citations effectivement obtenues.",
+      "systems": [
+        "04-RESEARCH-SKILLS.md"
+      ],
+      "acceptance": [
+        "AC-H04.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-RESEARCH",
+        "EV-RESEARCH-CACHE-LOCAL"
+      ],
+      "notes": "Partial implementation verified; full acceptance and listed cross-lot dependencies remain unresolved. No global DONE claim."
+    },
+    {
+      "id": "H04.4",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H04.4"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5"
+      ],
+      "description": "Découverte des skills configurés et chargement à la demande.",
+      "systems": [
+        "04-RESEARCH-SKILLS.md"
+      ],
+      "acceptance": [
+        "AC-H04.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-RESEARCH",
+        "EV-RESEARCH-CACHE-LOCAL"
+      ],
+      "notes": "Partial implementation verified; full acceptance and listed cross-lot dependencies remain unresolved. No global DONE claim."
+    },
+    {
+      "id": "H04.5",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H04.5"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5"
+      ],
+      "description": "Skill local essayé, révisé, réutilisé et promouvable avec preuves.",
+      "systems": [
+        "04-RESEARCH-SKILLS.md"
+      ],
+      "acceptance": [
+        "AC-H04.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H09.2",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H09.2"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5"
+      ],
+      "description": "Recovery explicite et reconciliation core/vue/artefacts.",
+      "systems": [
+        "09-RELIABILITY.md"
+      ],
+      "acceptance": [
+        "AC-H09.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H09.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H09.3"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5"
+      ],
+      "description": "Contrats d'outils et résultats complets référencés.",
+      "systems": [
+        "09-RELIABILITY.md"
+      ],
+      "acceptance": [
+        "AC-H09.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H05.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H05.1"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3"
+      ],
+      "description": "Cycle de vie run/tranche/inférence distinct de l'objectif.",
+      "systems": [
+        "05-CONTINUITY.md"
+      ],
+      "acceptance": [
+        "AC-H05.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H05.2",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H05.2"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3"
+      ],
+      "description": "Continuation bornée entre tranches actives.",
+      "systems": [
+        "05-CONTINUITY.md"
+      ],
+      "acceptance": [
+        "AC-H05.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-CONTINUATION"
+      ],
+      "notes": "Partial implementation verified; full acceptance and listed cross-lot dependencies remain unresolved. No global DONE claim."
+    },
+    {
+      "id": "H05.3",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H05.3"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3"
+      ],
+      "description": "Reconstruction à la limite et détection de stagnation.",
+      "systems": [
+        "05-CONTINUITY.md"
+      ],
+      "acceptance": [
+        "AC-H05.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [
+        "EV-CONTINUATION"
+      ],
+      "notes": "Partial implementation verified; full acceptance and listed cross-lot dependencies remain unresolved. No global DONE claim."
+    },
+    {
+      "id": "H05.4",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H05.4"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3"
+      ],
+      "description": "Inspecter/reconcilier avant de répéter un effet incertain.",
+      "systems": [
+        "05-CONTINUITY.md"
+      ],
+      "acceptance": [
+        "AC-H05.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H05.5",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H05.5"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3"
+      ],
+      "description": "Budgets cumulés, arrêt propagé, reprise au lancement explicitement configurable.",
+      "systems": [
+        "05-CONTINUITY.md"
+      ],
+      "acceptance": [
+        "AC-H05.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H06.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.1"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Contrats de délégation et choix automatique des rôles.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H06.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.2"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Contrôleur et deux workers processus réels avec receipts/revisions.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H06.3",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Workspaces isolés et intégration explicitement vérifiée.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H06.4",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.4"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Correction à R+1, rebase et remplacement après disparition.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H06.5",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.5"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Responsabilités et budgets partagés exposés aux projections.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H07.1",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.1"
+      ],
+      "dependencies": [
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Anthropic direct, contrats et essai d'intégration configuré.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H07.2",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.2"
+      ],
+      "dependencies": [
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Capacités connues/inconnues et taille de contexte par modèle.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H07.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.3"
+      ],
+      "dependencies": [
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Changement actif à une frontière sûre avec état cohérent après échec.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H07.4",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.4"
+      ],
+      "dependencies": [
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Streaming complet, outils validés, usage et abort.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H07.5",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.5"
+      ],
+      "dependencies": [
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5"
+      ],
+      "description": "Routing autorisé et auth supportée ; diagnostic si indisponible.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H08.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H08.1"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5"
+      ],
+      "description": "Vue travail progressive, intention et états lisibles.",
+      "systems": [
+        "08-TERMINAL-UX.md"
+      ],
+      "acceptance": [
+        "AC-H08.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H08.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H08.2"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5"
+      ],
+      "description": "Consultation/correction objectifs, spec et mémoire avec historique.",
+      "systems": [
+        "08-TERMINAL-UX.md"
+      ],
+      "acceptance": [
+        "AC-H08.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H08.3",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H08.3"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5"
+      ],
+      "description": "Vues agents, sources, outils et sorties complètes.",
+      "systems": [
+        "08-TERMINAL-UX.md"
+      ],
+      "acceptance": [
+        "AC-H08.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H08.4",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H08.4"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5"
+      ],
+      "description": "Arrêt/reprise/changement actif compréhensibles au clavier.",
+      "systems": [
+        "08-TERMINAL-UX.md"
+      ],
+      "acceptance": [
+        "AC-H08.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H08.5",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H08.5"
+      ],
+      "dependencies": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5"
+      ],
+      "description": "Tests Ink/PTY, trois tailles, resize, focus, Unicode et sans couleur.",
+      "systems": [
+        "08-TERMINAL-UX.md"
+      ],
+      "acceptance": [
+        "AC-H08.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H09.4",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H09.4"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Installation packagée, export/import, rétention et racines portables.",
+      "systems": [
+        "09-RELIABILITY.md"
+      ],
+      "acceptance": [
+        "AC-H09.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H09.5",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H09.5"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Pannes injectées et traces sans credentials ni preuves inventées.",
+      "systems": [
+        "09-RELIABILITY.md"
+      ],
+      "acceptance": [
+        "AC-H09.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H02.5",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H02.5"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Choix du processus évalués avec des providers réels.",
+      "systems": [
+        "02-AUTONOMY.md"
+      ],
+      "acceptance": [
+        "AC-H02.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H10.1",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H10.1"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Corpus/manifeste complété et oracles gelés hors du producteur.",
+      "systems": [
+        "10-VALIDATION.md"
+      ],
+      "acceptance": [
+        "AC-H10.1"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H10.2",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H10.2"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Rapports distinguant preuves déterministes, intégrations et modèles réels.",
+      "systems": [
+        "10-VALIDATION.md"
+      ],
+      "acceptance": [
+        "AC-H10.2"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H10.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H10.3"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Runs répétés faible/fort modèle et comparaison OpenCode reproductible.",
+      "systems": [
+        "10-VALIDATION.md"
+      ],
+      "acceptance": [
+        "AC-H10.3"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H10.4",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H10.4"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Feature réelle, correction, crash, reprise différée et substitution.",
+      "systems": [
+        "10-VALIDATION.md"
+      ],
+      "acceptance": [
+        "AC-H10.4"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H10.5",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H10.5"
+      ],
+      "dependencies": [
+        "B00.1",
+        "B00.2",
+        "B00.3",
+        "B00.4",
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H09.1",
+        "H02.1",
+        "H02.2",
+        "H02.3",
+        "H02.4",
+        "H03.1",
+        "H03.2",
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5",
+        "H09.2",
+        "H09.3",
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.3",
+        "H07.4",
+        "H07.5",
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5"
+      ],
+      "description": "Rapport de remplacement, seuils préfixés et limites explicites.",
+      "systems": [
+        "10-VALIDATION.md"
+      ],
+      "acceptance": [
+        "AC-H10.5"
+      ],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": ""
+    },
+    {
+      "id": "H07.2a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H07.2a"
+      ],
+      "dependencies": [
+        "B00.2"
+      ],
+      "description": "Reproduce and fix capability-name mismatch in compileFrame",
+      "systems": [
+        "src/core/loop.ts",
+        "test/loop.test.ts"
+      ],
+      "acceptance": [
+        "AC-H07.2a"
+      ],
+      "verification": "Runtime regression + differential static guard",
+      "evidence": [
+        "EV-CAPABILITY"
+      ],
+      "notes": "Discovered required defect, R08; targeted fix only after reproduction."
+    }
+  ],
+  "acceptance": [
+    {
+      "id": "AC-B00.1",
+      "requirement": "REQ-B00.1",
+      "given": "The context and fixtures stated in README.md",
+      "when": "Lire HANDOFF, README, règles applicables et specs du premier lot.",
+      "then": "Instructions, contrat produit et specs du premier lot sont lus et leurs contraintes figurent dans la carte du système.",
+      "verification": [
+        "inspection",
+        "baseline run"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-B00"
+      ]
+    },
+    {
+      "id": "AC-B00.2",
+      "requirement": "REQ-B00.2",
+      "given": "The context and fixtures stated in README.md",
+      "when": "Relever HEAD, état Git, tests et diagnostics initiaux dans STATUS.md.",
+      "then": "HEAD, changements préexistants, résultat de suite et diagnostics de départ sont consignés sans réutiliser les chiffres historiques.",
+      "verification": [
+        "inspection",
+        "baseline run"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-B00"
+      ]
+    },
+    {
+      "id": "AC-B00.3",
+      "requirement": "REQ-B00.3",
+      "given": "The context and fixtures stated in README.md",
+      "when": "Construire le manifeste minimal du corpus H10.1 et un scénario fil rouge.",
+      "then": "Un manifeste versionné distingue fixtures, processus réels et essais provider, avec parcours fil rouge et oracles explicités.",
+      "verification": [
+        "inspection",
+        "baseline run"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-B00"
+      ]
+    },
+    {
+      "id": "AC-B00.4",
+      "requirement": "REQ-B00.4",
+      "given": "The context and fixtures stated in README.md",
+      "when": "Reproduire les défauts d'identité du plan et de contexte non borné avant correction.",
+      "then": "La perte de spec et la duplication de contexte sont reproduites avec un résultat mesuré avant correction.",
+      "verification": [
+        "inspection",
+        "baseline run"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-B00"
+      ]
+    },
+    {
+      "id": "AC-H01.1",
+      "requirement": "REQ-H01.1",
+      "given": "The context and fixtures stated in 01-OBJECTIVES.md",
+      "when": "Schémas versionnés, IDs stables, projections et dépendances.",
+      "then": "Deux intentions identiques ont des IDs distincts ; reformulation conserve ID ; cycle et schéma invalide sont refusés sans append.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H01.2",
+      "requirement": "REQ-H01.2",
+      "given": "The context and fixtures stated in 01-OBJECTIVES.md",
+      "when": "Extraction et correction d'objectif en conversation ordinaire.",
+      "then": "Une intention et correction naturelles modifient le contrat et ses travaux sans commande interne ni sélection de mode.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H01.3",
+      "requirement": "REQ-H01.3",
+      "given": "The context and fixtures stated in 01-OBJECTIVES.md",
+      "when": "Critères avec provenance, révision et autorité explicites.",
+      "then": "Un check généré ne devient pas autorité ; une preuve R ne clôt pas R+1 ; un renouvellement explicitement autorisé lie le nouveau critère au nouveau contrat.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H01.4",
+      "requirement": "REQ-H01.4",
+      "given": "The context and fixtures stated in 01-OBJECTIVES.md",
+      "when": "Raccordement plans/tâches/mémoire/preuves au contrat courant.",
+      "then": "Plans, tâches, mémoire, artefacts et preuves référencent ID/révision ; les références obsolètes sont distinguées des engagements courants.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H01.5",
+      "requirement": "REQ-H01.5",
+      "given": "The context and fixtures stated in 01-OBJECTIVES.md",
+      "when": "Compatibilité des goals/plans déjà enregistrés.",
+      "then": "Les anciens journaux sont lisibles sans nouvelle provenance inventée ni mutation du fichier initial.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H09.1",
+      "requirement": "REQ-H09.1",
+      "given": "The context and fixtures stated in 09-RELIABILITY.md",
+      "when": "Validation des payloads, migration et replay des anciennes sessions.",
+      "then": "Payloads versionnés sont validés avant écriture et replay ; migration préserve original, incompatibilités et provenance inconnue.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H02.1",
+      "requirement": "REQ-H02.1",
+      "given": "The context and fixtures stated in 02-AUTONOMY.md",
+      "when": "Décision structurée avec base de révision et admission runtime.",
+      "then": "Toute décision admise porte objectif, révision, sources, justification et scope ; une proposition obsolète est redérivée avant effet.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H02.2",
+      "requirement": "REQ-H02.2",
+      "given": "The context and fixtures stated in 02-AUTONOMY.md",
+      "when": "Specs utiles et tâches identifiables, versionnées, consultables/exportables.",
+      "then": "Spec et tâches possèdent identité/version, dépendances et résultat attendu ; l’utilisateur peut les consulter et exporter sans divergence de copies.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H02.3",
+      "requirement": "REQ-H02.3",
+      "given": "The context and fixtures stated in 02-AUTONOMY.md",
+      "when": "Processus léger et questions seulement quand nécessaires.",
+      "then": "Une tâche triviale évite le cérémonial ; une ambiguïté essentielle suscite une question ciblée pendant que les branches indépendantes avancent.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H02.4",
+      "requirement": "REQ-H02.4",
+      "given": "The context and fixtures stated in 02-AUTONOMY.md",
+      "when": "Révision du plan à partir des échecs observés et revue appropriée.",
+      "then": "Une observation de rejet change réellement la stratégie ou le plan ; la répétition sans progrès est détectée et revue séparément.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H03.1",
+      "requirement": "REQ-H03.1",
+      "given": "The context and fixtures stated in 03-MEMORY-CONTEXT.md",
+      "when": "Extraction mémoire sourcée/idempotente après échanges et observations.",
+      "then": "Échanges et observations utiles alimentent automatiquement la mémoire ; double traitement ou crash ne produit pas de doublons.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H03.2",
+      "requirement": "REQ-H03.2",
+      "given": "The context and fixtures stated in 03-MEMORY-CONTEXT.md",
+      "when": "Contradictions, réponses et leçons avec historique.",
+      "then": "Contradiction, réponse et réfutation conservent versions, sources et texte original ; la correction humaine garde autorité.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H03.3",
+      "requirement": "REQ-H03.3",
+      "given": "The context and fixtures stated in 03-MEMORY-CONTEXT.md",
+      "when": "Compilateur borné et lecture ciblée des sources omises.",
+      "then": "Un journal long produit un frame borné compatible avec le budget déclaré ; les contraintes anciennes restent présentes et les sources omises sont récupérables.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H03.4",
+      "requirement": "REQ-H03.4",
+      "given": "The context and fixtures stated in 03-MEMORY-CONTEXT.md",
+      "when": "Reconstructions et isolation session/projet/personnel.",
+      "then": "Changement/reprise reconstruit le contexte courant ; données de session/projet/personnelles ne traversent pas implicitement les périmètres.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H03.5",
+      "requirement": "REQ-H03.5",
+      "given": "The context and fixtures stated in 03-MEMORY-CONTEXT.md",
+      "when": "Journal long, petite fenêtre et substitution de modèles mesurés.",
+      "then": "Mesures de petite fenêtre et autre modèle démontrent récupération et réussite sur journal long, avec tokens estimés/mesurés distingués.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H04.1",
+      "requirement": "REQ-H04.1",
+      "given": "The context and fixtures stated in 04-RESEARCH-SKILLS.md",
+      "when": "Choisir/raccorder le connecteur de recherche et sa configuration explicite.",
+      "then": "Une route explicitement configurée donne des résultats de recherche attribués ; sans route aucune recherche payante ou citation inventée ne survient.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H04.2",
+      "requirement": "REQ-H04.2",
+      "given": "The context and fixtures stated in 04-RESEARCH-SKILLS.md",
+      "when": "Lecture locale/web, résultat durable, limites et cancellation.",
+      "then": "Une lecture locale/web produit une source durable bornée avec hash et abort ; erreurs/redirect privées/format non supporté restent explicites.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H04.3",
+      "requirement": "REQ-H04.3",
+      "given": "The context and fixtures stated in 04-RESEARCH-SKILLS.md",
+      "when": "Attribution, fraîcheur/version et citations effectivement obtenues.",
+      "then": "Les réponses citent les URL effectivement lues et la version utile ; cache périmé et instructions hostiles ne modifient pas le contrat.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H04.4",
+      "requirement": "REQ-H04.4",
+      "given": "The context and fixtures stated in 04-RESEARCH-SKILLS.md",
+      "when": "Découverte des skills configurés et chargement à la demande.",
+      "then": "Skills installés sont découverts dans racines configurées avec version ; contenu chargé à la demande ; illisibilité se distingue de l’absence.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H04.5",
+      "requirement": "REQ-H04.5",
+      "given": "The context and fixtures stated in 04-RESEARCH-SKILLS.md",
+      "when": "Skill local essayé, révisé, réutilisé et promouvable avec preuves.",
+      "then": "Un skill généré est essayé, révisable, réutilisé par un autre worker, puis promouvable/rollbackable sans augmentation de privilèges.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H09.2",
+      "requirement": "REQ-H09.2",
+      "given": "The context and fixtures stated in 09-RELIABILITY.md",
+      "when": "Recovery explicite et reconciliation core/vue/artefacts.",
+      "then": "Crash entre core/vue/artefacts est reconciliable ; recovery conserve original et rapport ; disque refusé suspend effets mais navigation fonctionne.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H09.3",
+      "requirement": "REQ-H09.3",
+      "given": "The context and fixtures stated in 09-RELIABILITY.md",
+      "when": "Contrats d'outils et résultats complets référencés.",
+      "then": "Outils déclarent scope/effets/cancellation/limites ; résultats complets ont références ; arrêt de descendants incertains reste explicite.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H05.1",
+      "requirement": "REQ-H05.1",
+      "given": "The context and fixtures stated in 05-CONTINUITY.md",
+      "when": "Cycle de vie run/tranche/inférence distinct de l'objectif.",
+      "then": "Objectif ouvert survit à fin de run/tranche, quota, outil tué et panne technique, avec cause et prochaine action distinctes.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H05.2",
+      "requirement": "REQ-H05.2",
+      "given": "The context and fixtures stated in 05-CONTINUITY.md",
+      "when": "Continuation bornée entre tranches actives.",
+      "then": "Une tâche de plus de huit inférences traverse plusieurs tranches automatiquement sous plafond cumulé et dans la même exécution autorisée.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H05.3",
+      "requirement": "REQ-H05.3",
+      "given": "The context and fixtures stated in 05-CONTINUITY.md",
+      "when": "Reconstruction à la limite et détection de stagnation.",
+      "then": "Approche de fenêtre renouvelle le contexte ; répétitions sans observations nouvelles déclenchent adaptation ou blocage justifié.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H05.4",
+      "requirement": "REQ-H05.4",
+      "given": "The context and fixtures stated in 05-CONTINUITY.md",
+      "when": "Inspecter/reconcilier avant de répéter un effet incertain.",
+      "then": "Un effet sans réponse est inspecté/reconcilié avant retry ; aucun exactly-once universel ou rollback fictif n’est annoncé.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H05.5",
+      "requirement": "REQ-H05.5",
+      "given": "The context and fixtures stated in 05-CONTINUITY.md",
+      "when": "Budgets cumulés, arrêt propagé, reprise au lancement explicitement configurable.",
+      "then": "Stop empêche toute continuation et réponse tardive ; coûts inconnus restent inconnus ; chargement sans opt-in ne redémarre aucun effet.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.1",
+      "requirement": "REQ-H06.1",
+      "given": "The context and fixtures stated in 06-AGENTS.md",
+      "when": "Contrats de délégation et choix automatique des rôles.",
+      "then": "Délégation automatique choisit une unité utile avec worker ID, contrat, scope, capacité, budget et résultat attendu.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.2",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in 06-AGENTS.md",
+      "when": "Contrôleur et deux workers processus réels avec receipts/revisions.",
+      "then": "Deux processus réels publient des receipts à un état durable commun ; sortie R refusée après changement pertinent R+1.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.3",
+      "requirement": "REQ-H06.3",
+      "given": "The context and fixtures stated in 06-AGENTS.md",
+      "when": "Workspaces isolés et intégration explicitement vérifiée.",
+      "then": "Écritures isolées sont intégrées explicitement ; conflit reste visible ; preuve finale couvre le résultat composé.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.4",
+      "requirement": "REQ-H06.4",
+      "given": "The context and fixtures stated in 06-AGENTS.md",
+      "when": "Correction à R+1, rebase et remplacement après disparition.",
+      "then": "Un agent tué est remplacé depuis projection commune ; correction se propage immédiatement et effets incertains sont reconciliés.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.5",
+      "requirement": "REQ-H06.5",
+      "given": "The context and fixtures stated in 06-AGENTS.md",
+      "when": "Responsabilités et budgets partagés exposés aux projections.",
+      "then": "Responsabilités, état utile et consommation cumulée se projettent sans dépendre de messages privés.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.1",
+      "requirement": "REQ-H07.1",
+      "given": "The context and fixtures stated in 07-PROVIDERS.md",
+      "when": "Anthropic direct, contrats et essai d'intégration configuré.",
+      "then": "Transport Anthropic authentifié selon docs officielles passe contrats outils/messages/usage/abort et essai réel configuré.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.2",
+      "requirement": "REQ-H07.2",
+      "given": "The context and fixtures stated in 07-PROVIDERS.md",
+      "when": "Capacités connues/inconnues et taille de contexte par modèle.",
+      "then": "Capacités supportées/inconnues et fenêtre de contexte sont représentées fidèlement ; modèle à petite fenêtre reçoit un frame compatible.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.3",
+      "requirement": "REQ-H07.3",
+      "given": "The context and fixtures stated in 07-PROVIDERS.md",
+      "when": "Changement actif à une frontière sûre avec état cohérent après échec.",
+      "then": "Changement en plein travail invalide ancienne inférence, attend/reconcilie l’effet en cours et préserve contrat/mémoire après erreur.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.4",
+      "requirement": "REQ-H07.4",
+      "given": "The context and fixtures stated in 07-PROVIDERS.md",
+      "when": "Streaming complet, outils validés, usage et abort.",
+      "then": "Streaming partiel ne lance aucun outil incomplet ; texte provisoire, résultat final, usage et abort restent distincts.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.5",
+      "requirement": "REQ-H07.5",
+      "given": "The context and fixtures stated in 07-PROVIDERS.md",
+      "when": "Routing autorisé et auth supportée ; diagnostic si indisponible.",
+      "then": "Routing utilise uniquement routes/plafonds autorisés ; auth abonnement non supportée reste indisponible sans extraction de token tiers.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H08.1",
+      "requirement": "REQ-H08.1",
+      "given": "The context and fixtures stated in 08-TERMINAL-UX.md",
+      "when": "Vue travail progressive, intention et états lisibles.",
+      "then": "Écran principal montre intention, objectif, exécution et observation utile avec détails accessibles sans mode obligatoire.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H08.2",
+      "requirement": "REQ-H08.2",
+      "given": "The context and fixtures stated in 08-TERMINAL-UX.md",
+      "when": "Consultation/correction objectifs, spec et mémoire avec historique.",
+      "then": "Les vraies frappes permettent consulter et corriger contrat/spec/mémoire avec historique et même sémantique que la conversation.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H08.3",
+      "requirement": "REQ-H08.3",
+      "given": "The context and fixtures stated in 08-TERMINAL-UX.md",
+      "when": "Vues agents, sources, outils et sorties complètes.",
+      "then": "Agents, sources et résultats longs sont inspectables avec références et statut inconnu/produit/vérifié correctement distingués.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H08.4",
+      "requirement": "REQ-H08.4",
+      "given": "The context and fixtures stated in 08-TERMINAL-UX.md",
+      "when": "Arrêt/reprise/changement actif compréhensibles au clavier.",
+      "then": "Arrêt, reprise et changement actif sont accessibles et comprennent pending/error/uncertain sans perdre brouillon ni focus.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H08.5",
+      "requirement": "REQ-H08.5",
+      "given": "The context and fixtures stated in 08-TERMINAL-UX.md",
+      "when": "Tests Ink/PTY, trois tailles, resize, focus, Unicode et sans couleur.",
+      "then": "Parcours clavier passe en Ink et PTY aux trois tailles, resize, Unicode et sans couleur ; Entrée overlay ne soumet pas le brouillon.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H09.4",
+      "requirement": "REQ-H09.4",
+      "given": "The context and fixtures stated in 09-RELIABILITY.md",
+      "when": "Installation packagée, export/import, rétention et racines portables.",
+      "then": "Installation packagée dans HOME temporaire, export/import et rollback/rétention passent sans chemins personnels implicites.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H09.5",
+      "requirement": "REQ-H09.5",
+      "given": "The context and fixtures stated in 09-RELIABILITY.md",
+      "when": "Pannes injectées et traces sans credentials ni preuves inventées.",
+      "then": "Pannes et tentatives hors scope sont testées ; journaux/exports n’exposent pas credentials et ne fabriquent pas de preuves.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H02.5",
+      "requirement": "REQ-H02.5",
+      "given": "The context and fixtures stated in 02-AUTONOMY.md",
+      "when": "Choix du processus évalués avec des providers réels.",
+      "then": "Des modèles réels accomplissent les scénarios de choix de processus avec traces attribuées, et les échecs restent dans le rapport.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H10.1",
+      "requirement": "REQ-H10.1",
+      "given": "The context and fixtures stated in 10-VALIDATION.md",
+      "when": "Corpus/manifeste complété et oracles gelés hors du producteur.",
+      "then": "Corpus versionné complet, budgets préfixés et checks hors producteur couvrent cas logiciels, documentaire, correction, crash et skill.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H10.2",
+      "requirement": "REQ-H10.2",
+      "given": "The context and fixtures stated in 10-VALIDATION.md",
+      "when": "Rapports distinguant preuves déterministes, intégrations et modèles réels.",
+      "then": "Chaque promesse rapporte niveau de preuve, commit, scénarios, échecs et omissions avec traces récupérables.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H10.3",
+      "requirement": "REQ-H10.3",
+      "given": "The context and fixtures stated in 10-VALIDATION.md",
+      "when": "Runs répétés faible/fort modèle et comparaison OpenCode reproductible.",
+      "then": "Runs répétés faible/fort modèle et OpenCode comparable ont mêmes conditions/oracles et toutes les mesures connues/inconnues.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H10.4",
+      "requirement": "REQ-H10.4",
+      "given": "The context and fixtures stated in 10-VALIDATION.md",
+      "when": "Feature réelle, correction, crash, reprise différée et substitution.",
+      "then": "Feature réelle corrigée puis interrompue reprend plus tard avec autre modèle/agent et valide le contrat courant.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H10.5",
+      "requirement": "REQ-H10.5",
+      "given": "The context and fixtures stated in 10-VALIDATION.md",
+      "when": "Rapport de remplacement, seuils préfixés et limites explicites.",
+      "then": "Rapport de remplacement rattache chaque exigence aux preuves, seuils fixés et écarts ; aucune supériorité non mesurée.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.2a",
+      "requirement": "REQ-H07.2a",
+      "given": "A named capability has been appended to the canonical store",
+      "when": "compileFrame reconstructs capabilities",
+      "then": "Une capacité enregistrée apparaît avec son vrai nom dans le frame ; régression reproduit la lecture actuelle de name absent et vérifie la correction ciblée.",
+      "verification": [
+        "automated"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CAPABILITY"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-B00",
+      "commit": "b711f6e",
+      "result": "PASS",
+      "method": "baseline run, reproduction and inspection",
+      "details": "STATUS.md: baseline 674/671/1/2; independent manifest; frame bytes measured before compaction"
+    },
+    {
+      "id": "EV-OBJECTIVES",
+      "commit": "b711f6e",
+      "result": "PASS_PARTIAL",
+      "method": "unit/storage/process integrations",
+      "details": "678 tests, 676 pass, 2 skipped; additional corruption regression passes; H01 is incomplete"
+    },
+    {
+      "id": "EV-CONTEXT",
+      "commit": "2334466",
+      "result": "PASS_PARTIAL",
+      "method": "unit/integration and byte measurement",
+      "details": "682 tests, 680 pass, 2 skipped; fixture frame 2585326 -> 13728 UTF-8 bytes; tokenizer negotiation pending"
+    },
+    {
+      "id": "EV-RESEARCH",
+      "result": "PASS_PARTIAL",
+      "method": "unit/integration/runtime",
+      "details": "Research + skills baseline: 690 tests / 688 pass / 2 skipped. Public Node documentation HTTP 200, 27984 chars; digest 3aead6107cf02f9e2fef52440fd0fd94cbee14bb791e13bd97a1ba0c642f3ca9. Producer integration reads skill and source, writes real artifact, closes only with pinned check. Brave live search/cache/citations pending."
+    },
+    {
+      "id": "EV-CAPABILITY",
+      "result": "PASS",
+      "method": "failing regression then targeted correction",
+      "details": "test/loop.test.ts named capabilities: before name undefined (FAIL), after exact name (PASS). 24 targeted tests pass; removed obsolete TS2339 baseline pair."
+    },
+    {
+      "id": "EV-RESEARCH-CACHE-LOCAL",
+      "result": "PASS_PARTIAL",
+      "method": "unit/integration",
+      "details": "693/691/0/2 full regression before local reader; 18 targeted tests after local reader. Cache survives adapter replacement, expires, detects tampered hash, links revisions; local text paths/hash, symlink escape, binary/oversize/credential exclusions and cancellation."
+    },
+    {
+      "id": "EV-CONTINUATION",
+      "result": "PASS_PARTIAL",
+      "method": "unit/process integration/static differential guard",
+      "details": "29 targeted tests pass: monotone steps and finite budget, repetition/claims cut off, cancel at boundary; real Node task verified after 10 inferences under same objective. Full suite pending. Business-progress metrics, run states/reconciliation/provider budget persistence incomplete."
+    },
+    {
+      "id": "EV-COMBINED-698",
+      "result": "PASS",
+      "method": "full regression",
+      "details": "rtk node --test --test-skip-pattern=MB-01 a real run against the installed binary --test-reporter=spec test/**/*.test.ts; 698 tests, 696 pass, 0 fail, 2 skipped; /tmp/cuesheet-execution-final.log. Differential guard passes; global inherited diagnostics remain."
+    }
+  ],
+  "risks": {
+    "register": "RISKS.md",
+    "critical_open": 0,
+    "high_open": 9
+  },
+  "verification": {
+    "status": "PARTIAL_PASS",
+    "lastPassedCommit": "2334466",
+    "lastFullSuite": {
+      "tests": 698,
+      "passed": 696,
+      "failed": 0,
+      "skipped": 2
+    },
+    "workingTreeResearch": "Full combined suite PASS (698/696/0/2); Brave real integration, citation/version enforcement and promotion pending.",
+    "finalAdversarialAudit": "PENDING",
+    "globalTypecheck": "known baseline diagnostics; differential guard passes",
+    "workingTreeContinuity": "Full combined suite PASS (698/696/0/2); required run lifecycle/reconciliation/persistent budgets still incomplete."
+  },
+  "ready_for_manual_acceptance": false,
+  "counts": {
+    "requirements": 55,
+    "acceptanceVerified": 5,
+    "acceptancePending": 50,
+    "p0_open": 35,
+    "p1_open": 15
+  }
+}

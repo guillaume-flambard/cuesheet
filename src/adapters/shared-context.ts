@@ -23,6 +23,11 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
       artifacts: work.artifacts.slice(), claims: work.claims.slice(), evidence: frame.evidence,
       memory: projectMemory(session.events), organization: projectOrganization(session.events),
       objectives: projectObjectives(session.events),
+      research: session.events.filter(event=>event.kind==="note" && event.subject==="terminal.research")
+        .map(event=>({sourceSeq:event.seq,operation:event.data.operation,url:event.data.finalUrl ?? event.data.url,
+          path:event.data.path,digest:event.data.digest,fetchedAt:event.data.fetchedAt,query:event.data.query,results:event.data.results})),
+      installedSkills:session.events.filter(event=>event.kind==="note" && event.subject==="terminal.skill")
+        .map(event=>({sourceSeq:event.seq,name:event.data.name,path:event.data.path,digest:event.data.digest,trust:event.data.trust})),
       context: { budgetChars: options.maxChars ?? 48000, method: "JSON UTF-16 character ceiling, not measured tokens",
         sourceRange: { from: session.events[0]?.seq ?? null, to: last?.seq ?? null },
         totalEvents: session.events.length, omittedHistory: 0, omittedRecords: 0, estimatedTokens: 0 } };
@@ -36,7 +41,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
   }).reverse();
   const result: ContextFrame = { ...frame, history: frame.history.slice(), evidence: frame.evidence.slice(), directives: directives.slice() };
   snapshot.constraints = snapshot.constraints.filter(item=>directives.some(directive=>directive.seq===item.at));
-  const histories = [snapshot.claims,snapshot.decisions,snapshot.artifacts,snapshot.tasks,snapshot.openQuestions];
+  const histories = [snapshot.claims,snapshot.decisions,snapshot.artifacts,snapshot.tasks,snapshot.openQuestions,snapshot.research,snapshot.installedSkills];
   // Bound candidate sets before serializing. Repeatedly dropping one item from
   // a huge journal would turn compilation into quadratic work.
   for(const items of histories)if(items.length>64){const remove=items.length-64;items.splice(0,remove);snapshot.context.omittedRecords+=remove;}

@@ -115,6 +115,7 @@ Le transport Anthropic peut être développé plus tôt après lot 1.
 
 - [ ] H07.1 Anthropic direct, contrats et essai d'intégration configuré.
 - [ ] H07.2 Capacités connues/inconnues et taille de contexte par modèle.
+- [ ] H07.2a Reproduire puis corriger le nom de capacité absent du frame (défaut découvert R08, P1).
 - [ ] H07.3 Changement actif à une frontière sûre avec état cohérent après échec.
 - [ ] H07.4 Streaming complet, outils validés, usage et abort.
 - [ ] H07.5 Routing autorisé et auth supportée ; diagnostic si indisponible.

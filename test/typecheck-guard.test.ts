@@ -72,7 +72,6 @@ src/cli-run.ts:TS2339
 src/cli.ts:TS2459
 src/cli.ts:TS2769
 src/core/intent.ts:TS2322
-src/core/loop.ts:TS2339
 src/core/memory.ts:TS2322
 src/core/store.ts:TS2698
 src/frontier-cli.ts:TS2532

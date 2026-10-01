@@ -7,6 +7,8 @@ import { createCompletionCheck } from "../src/adapters/surface-verification.ts";
 import { createProducer } from "../apps/terminal/src/producer/index.ts";
 import { createStore } from "../apps/terminal/src/app/store.ts";
 import { ShellToolRunner } from "../src/adapters/shell.ts";
+import { ResearchTools } from "../src/adapters/research-tools.ts";
+import { SkillTools } from "../src/adapters/skill-tools.ts";
 import { capture } from "../src/adapters/artifact-capture.ts";
 import type { ModelAdapter } from "../src/core/loop.ts";
 
@@ -117,4 +119,49 @@ it("without a declared check, a finish claim cannot close a goal", async () => {
     producer.say('produce answer.txt containing 42'); await idle(store);
     assert.equal(store.get().log.some(l=>l.startsWith('[evidence]')), false);
   } finally { w.clean(); }
+});
+
+it("research and installed skills reach subsequent inference before real work is independently verified", async () => {
+  const w = world(accepted);
+  try {
+    const skillsRoot=join(w.root,"skills");mkdirSync(skillsRoot);mkdirSync(join(skillsRoot,"answer"));
+    writeFileSync(join(skillsRoot,"answer","SKILL.md"),"---\nname: answer-procedure\n---\nUse the configured acceptance check.");
+    const store=createStore();let reads=0;let sourced=false;
+    const producer=createProducer({store,cwd:w.workspace,projectsRoot:w.root,identities:[],toolNames:["node"],
+      skills:new SkillTools({roots:[skillsRoot]}),
+      research:new ResearchTools({read:async()=>{reads++;return {status:200,contentType:"text/plain",body:"The documented answer is 42."};}}),
+      verification:createCompletionCheck({script:w.oracle,root:w.storage}),
+      tools:new ShellToolRunner({allow:["node"],roots:[w.workspace],defaultCwd:w.workspace}),
+      model:{name:"scripted integration",async infer(frame){
+        if(frame.step===1)return {text:"",toolCalls:[{name:"list_skills",input:{}},{name:"read_skill",input:{name:"answer-procedure"}},{name:"read_document",input:{url:"https://docs.example.com/answer"}}]};
+        if(frame.step===2){
+          const snapshot=frame.directives.at(-1)!.text;
+          assert.match(snapshot,/answer-procedure/);assert.match(snapshot,/docs\.example\.com/);
+          assert.ok(frame.history.some(e=>e.subject==="terminal.research"&&e.data.text==="The documented answer is 42."));
+          assert.ok(frame.history.some(e=>e.subject==="terminal.skill"));sourced=true;
+          return {text:"",toolCalls:[{name:"node",input:{argv:["node","-e","require('fs').writeFileSync('answer.txt','42')"]}}]};
+        }
+        return {text:"",toolCalls:[{name:"finish",input:{}}]};
+      }}
+    });
+    producer.say("Read the documented answer and installed procedure, then produce answer.txt");await idle(store);
+    assert.equal(reads,1);assert.equal(sourced,true);
+    assert.equal(readFileSync(join(w.workspace,"answer.txt"),"utf8"),"42");
+    assert.ok(store.get().log.some(l=>l.startsWith("[evidence]")),"closure requires the independent artifact check");
+  } finally { w.clean(); }
+});
+
+it("a real task requiring more than eight inferences continues within the same objective",async()=>{
+  const w=world(accepted);
+  try{
+    const steps:number[]=[];
+    const {producer,store}=rig(w,{name:"long task",async infer(frame){
+      steps.push(frame.step);
+      return {text:"",toolCalls:frame.step<=9 ? [{name:"node",input:{argv:["node","-e",`require('fs').writeFileSync('answer.txt',${JSON.stringify(frame.step===9 ? "42" : "pending")});console.log(${frame.step})`]}}] : [{name:"finish",input:{}}]};
+    }});
+    producer.say("complete a task with nine necessary steps");await idle(store);
+    assert.deepEqual(steps,[1,2,3,4,5,6,7,8,9,10]);
+    assert.ok(store.get().log.some(l=>l.startsWith("[evidence]")));
+    assert.equal(readFileSync(join(w.workspace,"answer.txt"),"utf8"),"42");
+  }finally{w.clean();}
 });

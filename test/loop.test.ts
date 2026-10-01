@@ -196,6 +196,13 @@ describe("runAgentLoop", () => {
     assert.equal(store.toSession().events.length, 3);
   });
 
+  it("named capabilities survive canonical replay into the inference frame", () => {
+    const store = newStore();
+    store.append({ kind: "capability", subject: "check-output", data: { version: "abc123" } });
+    const frame = compileFrame(store.toSession(), { subject: "builder", goal: "g", maxSteps: 1 }, 1);
+    assert.deepEqual(frame.capabilities, [{ kind: "skill", name: "check-output", version: "abc123", source: "session" }]);
+  });
+
   it("an open directive addressed to the subject reaches its frame", async () => {
     const store = newStore();
     store.append({ kind: "goal", subject: "builder", data: { text: "g" } });

@@ -127,9 +127,9 @@ export function compileFrame(
     history: session.events,
     directives: session.openDirectives.filter((d) => d.target === subject),
     evidence: session.evidence,
-    capabilities: [...session.capabilities.values()].map((c) => ({
+    capabilities: [...session.capabilities.entries()].map(([name, c]) => ({
       kind: "skill",
-      name: c.name,
+      name,
       version: c.version,
       source: "session",
     })),

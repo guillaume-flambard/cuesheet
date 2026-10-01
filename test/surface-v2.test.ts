@@ -353,7 +353,6 @@ describe("the type errors apps/terminal can see, and the ones it cannot", () => 
     // either.
     const expected = [
       "src/adapters/shell.ts(52,5)",
-      "src/core/loop.ts(132,15)",
       "src/core/memory.ts(234,5)",
       "src/core/store.ts(268,22)",
     ];

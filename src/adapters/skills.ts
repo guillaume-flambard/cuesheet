@@ -13,8 +13,8 @@
  */
 
 import { createHash } from "node:crypto";
-import { chmodSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, readFileSync, readdirSync, writeFileSync, realpathSync, statSync } from "node:fs";
+import { join, sep } from "node:path";
 
 import {
   REGISTRY_UNVERIFIED,
@@ -83,7 +83,7 @@ export class SkillsAdapter implements SkillProvider {
 
       for (const folder of folders) {
         const path = join(root, folder);
-        const parsed = this.parseSkill(path, folder);
+        const parsed = this.parseSkill(path, folder, root);
         if ("capability" in parsed) {
           capabilities.push(parsed.capability);
         } else {
@@ -109,9 +109,13 @@ export class SkillsAdapter implements SkillProvider {
   private parseSkill(
     path: string,
     folderName: string,
+    root: string,
   ): { capability: Capability } | { reason: string } {
     let raw: string;
     try {
+      const manifest=realpathSync(join(path,"SKILL.md"));
+      if(!manifest.startsWith(realpathSync(root)+sep))throw new Error("Skill manifest resolves outside its configured root.");
+      if(statSync(manifest).size>262144)throw new Error("Skill manifest exceeds 256 KiB.");
       raw = readFileSync(join(path, "SKILL.md"), "utf8");
     } catch (cause) {
       const detail = cause instanceof Error ? cause.message : String(cause);

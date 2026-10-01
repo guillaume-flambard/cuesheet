@@ -59,6 +59,11 @@ Ce dossier est la roadmap consolidée du travail restant. Les docs existantes
 restent les preuves et descriptions des tranches déjà réalisées. Une évolution
 doit mettre à jour sa spec, sa tâche et son résultat observé ensemble.
 
+Compléments Whole Project Protocol : [SYSTEM-MAP.md](SYSTEM-MAP.md),
+[ACCEPTANCE.md](ACCEPTANCE.md), [WORK-GRAPH.md](WORK-GRAPH.md),
+[RISKS.md](RISKS.md), [VERIFICATION.md](VERIFICATION.md) et [state.json](state.json).
+Le statut courant est IMPLEMENTING, avec des P0/P1 et critères encore ouverts.
+
 ## Parcours qui décide de la réussite
 
 Une feature arrive sans mode ni commande spéciale. Cuesheet inspecte le contexte,

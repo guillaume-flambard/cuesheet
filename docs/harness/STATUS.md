@@ -101,3 +101,13 @@ Checklist du lot :
 - [ ] Revue.
 - [ ] Specs, TODO et preuves actualisées.
 - [ ] Commit ciblé.
+
+## Recherche et skills — exécution en cours
+
+Lecture publique Node réelle : HTTP 200, 27 984 caractères capturés et empreinte durable. Suite initiale : 690 tests, 688 réussis, zéro échec, deux ignorés. Intégration producer : skill installé + document lu atteignent la prochaine inférence, écriture réelle, clôture par check indépendant. Correction H07.2a reproduite avant changement : nom de capacité undefined ; test exact passe après correction. 24 tests ciblés passent. H04 reste incomplet : cache, versions/citations, recherche Brave réelle et promotion restent à vérifier/implémenter.
+
+Cache H04.3 : fenêtre explicite (fresh par défaut), date/hash vérifiés, aucune nouvelle preuve sur hit, révision liée et échec de refresh sans contenu présenté comme actuel. Lecture locale H04.2 : racine projet, realpath, texte UTF-8 régulier borné, exclusions usuelles, capture attribuée. 18 tests ciblés passent. Dernière suite avant lecteur local : 693 tests / 691 pass / 0 fail / 2 skipped.
+
+Continuité H05.2/H05.3 partielle : quatre tranches maximum par défaut, steps modèle monotones, notes datées dans le journal avec executionId, coût inconnu, limite et stagnation distinctes. 29 tests ciblés passent, dont tâche réelle en dix inférences + check indépendant, annulation frontière, répétition et assertions humaines en cours. Configuration CUESHEET_MAX_SLICES (1–16). Dernière suite complète intermédiaire a deux échecs corrigés (assertion structurelle ancienne et launcher). Nouvelle suite complète en cours ; aucun statut READY revendiqué.
+
+Preuve finale de tranche EV-COMBINED-698 : 698 tests, 696 réussis, aucun échec, deux ignorés (dont MB-01 live installé explicitement exclu). /tmp/cuesheet-execution-final.log. Guard typage différentiel vert ; build global conserve diagnostics hérités. Projet IMPLEMENTING, 35 P0/15 P1 encore ouverts, 50 AC pending.

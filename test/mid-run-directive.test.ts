@@ -600,7 +600,7 @@ describe("the safe boundary was read off the loop, not invented for this slice",
     const producer = readFileSync(join(SURFACE, "producer", "index.ts"), "utf8");
     assert.ok(producer.includes("guarded"), "the producer gives the loop a wrapped adapter");
     assert.ok(
-      /runAgentLoop\(shared, guarded, currentTools/.test(producer),
+      /runExecutionSlices\(shared, guarded, currentTools/.test(producer),
       "and it is the adapter the loop is actually run with, not the injected one",
     );
   });

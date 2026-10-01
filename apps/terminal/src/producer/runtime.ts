@@ -38,11 +38,13 @@ import { TerminalSession, terminalSessionRoot } from "../../../../src/adapters/t
 import { persistentView } from "./session-view.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, delimiter } from "node:path";
 import { createCompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { createModelBinding, type ModelBinding } from "../../../../src/adapters/model-binding.ts";
 import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
+import { ResearchTools } from "../../../../src/adapters/research-tools.ts";
+import { SkillTools } from "../../../../src/adapters/skill-tools.ts";
 import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
 import { createProducer, type Producer, type ProducerOptions } from "./index.ts";
 import type { Store } from "../app/store.ts";
@@ -74,6 +76,8 @@ export function modelFor(cwd: string): { name: string; model: string | null; why
 export function createLiveProducer(store: Store, cwd: string, settings: { journal?: TerminalSession; verification?: CompletionCheck; binding?: ModelBinding } = {}): { producer: Producer; binding: ModelBinding } | { missing: string } {
   const contextBudgetChars=process.env.CUESHEET_CONTEXT_CHARS===undefined ? undefined : Number(process.env.CUESHEET_CONTEXT_CHARS);
   if(contextBudgetChars!==undefined && (!Number.isSafeInteger(contextBudgetChars) || contextBudgetChars<4000))return {missing:"CUESHEET_CONTEXT_CHARS must be an integer of at least 4000."};
+  const maxSlices=process.env.CUESHEET_MAX_SLICES===undefined ? 4 : Number(process.env.CUESHEET_MAX_SLICES);
+  if(!Number.isSafeInteger(maxSlices) || maxSlices<1 || maxSlices>16)return {missing:"CUESHEET_MAX_SLICES must be an integer from 1 to 16."};
   const binding = settings.binding ?? createModelBinding({ project: cwd });
   const model: ModelAdapter = binding.adapter;
   const tools: ToolRunner = new ShellToolRunner({
@@ -88,7 +92,10 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const options: ProducerOptions = { store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars };
+  const research=new ResearchTools({root:cwd,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
+  const roots=process.env.CUESHEET_SKILL_ROOTS?.split(delimiter).filter(Boolean) ?? [join(cwd,".cuesheet","skills")];
+  const skills=new SkillTools({roots});
+  const options: ProducerOptions = { store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */
