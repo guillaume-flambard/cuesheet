@@ -56,7 +56,10 @@ import { Inspect } from "../overlays/Inspect.tsx";
 import { Palette } from "../overlays/Palette.tsx";
 import { Help } from "../overlays/Help.tsx";
 import { createStore, type Store } from "./store.ts";
-import { createLiveProducer, modelFor } from "../producer/runtime.ts";
+import { Models } from "../overlays/Models.tsx";
+import { listModels } from "../../../../src/adapters/model-catalog.ts";
+import type { ModelBinding } from "../../../../src/adapters/model-binding.ts";
+import { createLiveProducer } from "../producer/runtime.ts";
 import type { Producer } from "../producer/index.ts";
 import type { Option } from "./state.ts";
 
@@ -88,19 +91,26 @@ export function App(props: AppProps): JSX.Element {
   // built outside the render body on purpose: a producer is not a value, and
   // rebuilding one per frame would mint a new session per keystroke.
   const wired = useMemo(() => wire(props), [props.store, props.producer, props.cwd]);
-  const { store, producer, missing, modelName } = wired;
+  const { store, producer, binding } = wired;
+  const [, changedModel] = useState(0);
+  const missing = binding ? binding.missing : wired.missing;
+  const modelName = binding ? binding.label : wired.modelName;
   const state = useSurface(store);
 
   /** The only path from a component to a decision. */
   const send = useCallback((control: Control) => store.send(control), [store]);
-  const submit = useCallback((text: string) => producer?.say(text), [producer]);
+  const submit = useCallback((text: string) => {
+    if (missing) { store.send({ type: "submit", text }); return; }
+    producer?.say(text);
+  }, [producer, missing, store]);
+  const catalog = useCallback((choice: Parameters<typeof listModels>[0], signal: AbortSignal) => listModels(choice, { signal }), []);
 
   // Enter submits the composer as a turn. This is the whole input contract, and
   // it is here rather than in a component so that a component never sees a turn
   // at all.
   useInput((input, key) => {
     if (key.escape) return send({ type: "close" });
-    if (input === "?" && state.composer === "") return send({ type: "open", overlay: "help" });
+    if (input === "?" && state.composer === "" && state.overlay === "none") return send({ type: "open", overlay: "help" });
   });
 
   // One width, computed once and passed down. Three components each deciding
@@ -120,7 +130,20 @@ export function App(props: AppProps): JSX.Element {
       />
 
       <Box flexDirection="column" flexGrow={1} flexShrink={0} height={contentRows + 2} overflow="hidden" paddingTop={1} paddingBottom={1}>
-        {missing ? (
+        {state.overlay === "models" && binding ? (
+          <Models selection={binding.selection} rows={contentRows} busy={state.busy} list={catalog}
+            apply={(choice, save) => {
+              const result = binding.select(choice, { save, busy: store.get().busy });
+              if ("ok" in result) {
+                changedModel(value => value + 1);
+                store.send({ type: "observed", entries: [{ kind: "status", label: "modèle", value: `${binding.label}${save ? " · préférence sauvegardée" : " · ce terminal"}`, certainty: "confirmed" }] });
+                store.send({ type: "logged", line: `[model-selected] ${JSON.stringify(binding.selection)} saved=${save}` });
+              }
+              return result;
+            }} onClose={() => send({ type: "close" })} />
+        ) : state.overlay === "palette" ? (
+          <Palette onOpen={(overlay) => send({ type: "open", overlay })} />
+        ) : missing ? (
           <Notice text={missing} />
         ) : state.overlay === "projects" ? (
           <Projects
@@ -128,8 +151,6 @@ export function App(props: AppProps): JSX.Element {
             onChoose={(option) => producer?.choose(option)}
             onDismiss={() => send({ type: "close" })}
           />
-        ) : state.overlay === "palette" ? (
-          <Palette onOpen={(overlay) => send({ type: "open", overlay })} />
         ) : state.overlay === "inspect" ? (
           <Inspect lines={state.log} width={column} maxLines={Math.max(1, contentRows - 2)} />
         ) : state.overlay === "help" ? (
@@ -150,7 +171,7 @@ export function App(props: AppProps): JSX.Element {
         onHelp={() => send({ type: "open", overlay: "help" })}
         onInspect={() => send({ type: "open", overlay: "inspect" })}
         active={state.overlay === "none"}
-        disabled={!producer}
+        disabled={!producer || !!missing}
         history={state.entries.flatMap((entry) => entry.kind === "you" ? [entry.text] : [])}
       />
 
@@ -185,6 +206,7 @@ function wire(props: AppProps): {
    * from the screen, and this surface is the one place that claim is made.
    */
   modelName: string;
+  binding?: ModelBinding;
 } {
   const store = props.store ?? createStore();
   // A test that supplies its own producer is not running a model at all, so it
@@ -200,7 +222,7 @@ function wire(props: AppProps): {
       modelName: "no model",
     };
   }
-  return { store, producer: live.producer, missing: null, modelName: (() => { const selected = modelFor(cwd); return selected.model ? `${selected.name} · ${selected.model}` : selected.name; })() };
+  return { store, producer: live.producer, binding: live.binding, missing: null, modelName: live.binding.label };
 }
 
 /** The one line that replaces the timeline when there is nothing to run with. */

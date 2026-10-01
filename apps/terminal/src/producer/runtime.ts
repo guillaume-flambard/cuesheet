@@ -35,6 +35,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createCompletionCheck } from "../../../../src/adapters/surface-verification.ts";
+import { createModelBinding, type ModelBinding } from "../../../../src/adapters/model-binding.ts";
 import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
 import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
@@ -59,22 +60,15 @@ export function modelFor(cwd: string): { name: string; model: string | null; why
 }
 
 /**
- * Build the real producer, or say why it cannot be built.
+ * Build one producer with a switchable model binding.
  *
- * The check is up front and it returns a reason rather than a half-built
- * producer, because a surface that starts a run it cannot finish is the exact lie
- * this rewrite exists to remove.
+ * A missing model remains selectable in the UI without replacing this producer.
+ * App gates task submission on binding.missing. A broken owner check still
+ * refuses construction, because model selection cannot repair that check.
  */
-export function createLiveProducer(store: Store, cwd: string): { producer: Producer } | { missing: string } {
-  const resolved = resolveModel({ project: cwd });
-  if ("missing" in resolved) {
-    return {
-      missing:
-        `${resolved.missing} Everything else works: the surface runs, the portfolio resolves, ` +
-        "nothing can be attempted.",
-    };
-  }
-  const model: ModelAdapter = resolved.adapter;
+export function createLiveProducer(store: Store, cwd: string): { producer: Producer; binding: ModelBinding } | { missing: string } {
+  const binding = createModelBinding({ project: cwd });
+  const model: ModelAdapter = binding.adapter;
   const tools: ToolRunner = new ShellToolRunner({
     allow: ALLOWED,
     roots: [cwd],
@@ -88,5 +82,5 @@ export function createLiveProducer(store: Store, cwd: string): { producer: Produ
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
   const options: ProducerOptions = { store, model, tools, cwd, toolNames: ALLOWED, verification };
-  return { producer: createProducer(options) };
+  return { producer: createProducer(options), binding };
 }

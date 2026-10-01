@@ -5,9 +5,10 @@ import { theme, inkColor } from "../theme/tokens.ts";
 const commands = [
   { label: "View the log", overlay: "inspect" },
   { label: "Help", overlay: "help" },
+  { label: "Provider et modèle", overlay: "models" },
 ] as const;
 
-export function Palette(props: { onOpen(overlay: "inspect" | "help"): void }): JSX.Element {
+export function Palette(props: { onOpen(overlay: "inspect" | "help" | "models"): void }): JSX.Element {
   const [at, setAt] = useState(0);
   useInput((_input, key) => {
     if (key.downArrow) setAt((i) => Math.min(i + 1, commands.length - 1));

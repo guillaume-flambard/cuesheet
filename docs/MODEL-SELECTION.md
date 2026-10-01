@@ -38,13 +38,40 @@ includes reasoning tokens where the provider counts them. No provider call was
 made in the automated validation: request routing, auth, limit, tool decoding
 and cancellation were verified with a deterministic fake HTTP response.
 
-Still pending: an interactive selector, live model catalog, persistent user
-preferences, direct Anthropic transport, subscription OAuth, streaming, and
-provider-specific integration trials. Choosing opencode still depends on its
-binary. Choosing an HTTP transport does not launch it.
+In the terminal, Ctrl+K → Provider et modèle opens the selector. Choose a
+provider with arrows/Enter, search its live catalog, or press Tab for a manual
+model ID. Compatible servers prompt for the endpoint. HTTP transports prompt
+for an optional output limit. OpenCode uses its own configured limit and
+refuses an explicit Cuesheet output ceiling. The final screen offers Apply and save by default;
+up/down switches to Apply for this terminal only. Escape returns to the conversation.
+OpenCode can retain its configured model instead of choosing a catalog entry.
+
+Selection is refused while a task is running. Applying while idle changes the
+adapter without replacing the producer, its event store, directives or evidence.
+The header and journal identify the applied selection. Missing credentials do not
+block opening the selector. A failed change keeps the previous adapter.
+
+Saved non-secret defaults live in $XDG_CONFIG_HOME/cuesheet/models.json, or
+~/.config/cuesheet/models.json. Writes are atomic and mode 0600. Startup flags and
+environment preferences override these defaults. Saved model, endpoint and output
+limit belong to their provider and are not inherited by a different provider.
+Malformed configuration is reported without echoing its contents and can be
+replaced through the selector. Credentials are never saved.
+
+Catalog requests are cancelled on close, timed out after 10 seconds and never
+replace a newer result. OpenRouter excludes models explicitly lacking tool support.
+OpenAI and compatible catalogs do not establish coding/tool capability. Manual
+entry remains available on catalog errors. Actual metadata trials on 2026-10-01
+returned 540 OpenCode IDs in 866 ms and 396 filtered OpenRouter IDs in 409 ms.
+These counts are observations, not a fixed inventory or proof of task quality.
+
+Still pending: direct Anthropic, subscription OAuth, streaming, provider-specific
+inference trials, and durable terminal sessions. Choosing opencode still depends
+on its binary. Choosing an HTTP transport does not launch it.
 
 Protocol references:
 [OpenRouter quickstart](https://openrouter.ai/docs/quickstart) and
 [OpenAI Chat Completions](https://platform.openai.com/docs/api-reference/chat).
 
-Validation: 653 tests, 651 passed, 2 skipped; no new type diagnostics.
+Validation: provider routing, persistence, continuity, cancellation and actual
+keyboard/rendering regressions; full suite recorded in PROVIDER-UX-TODO.md.
