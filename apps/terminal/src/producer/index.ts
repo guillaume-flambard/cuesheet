@@ -501,7 +501,7 @@ export function createProducer(options: ProducerOptions): Producer {
     activeContexts = options.sharedContexts?.forProject(scope.path);
     const objectives = projectObjectives(shared.toSession().events);
     if (!resume || !objectives.current || objectives.current.id.startsWith("legacy-")) {
-      const source = shared.toSession().events.filter(event => event.subject === "terminal.user" || event.kind === "goal").at(-1)
+      const source = shared.toSession().events.filter(event => event.subject === "terminal.user" && !["confirm_check","shared_context"].includes(String(event.data.operation)) || event.kind === "goal").at(-1)
         ?? shared.append({kind:"note",subject:"terminal.user",data:{text:goal}});
       createObjective(shared,goal,scope.path,source.seq,options.verification?.pinned?.digest,resume ? "unknown" : "human");
     } else changeObjectiveStatus(shared,"active","Explicit user resume");
@@ -644,12 +644,14 @@ export function createProducer(options: ProducerOptions): Producer {
         const start=expectedDigest && expectedDigest!==snapshot.digest ? 0 :
           Number.isSafeInteger(offset) && offset>=0 ? Math.min(offset,Math.max(0,entries.length-1)) : 0;
         const lines=[`Projet : ${activeWorkspace}`,`Digest : ${snapshot.digest}`,
-          "Interprétations modèle sourcées ; aucune permission ou preuve supplémentaire.",
+          "Sources partagées : interprétations modèle et corrections humaines attribuées ; aucune permission ou preuve supplémentaire.",
+          "Corrections humaines : /context edit|resolve ID REVISION TEXTE — projet actif uniquement.",
           ...snapshot.profiles.map(profile=>`${profile.scope.kind} · ${profile.scope.id} · révision ${profile.revision} · ${profile.entries.length} souvenirs`),
           ...(entries.length ? [`Souvenirs ${start+1}–${Math.min(start+20,entries.length)} / ${entries.length}`] : ["Aucun souvenir partagé."]),
           ...entries.slice(start,start+20).flatMap(({scope,entry})=>[
-            `${scope.kind} · ${entry.kind} · ${entry.id} · révision ${entry.revision}`,
-            entry.text,`Raison : ${entry.rationale}`,`Sources : ${entry.sources.map(source=>`${source.session}:${source.seq}`).join(", ")}`])];
+            `${scope.kind} · ${entry.kind} · ${entry.id} · révision ${entry.revision} · ${entry.author} · ${entry.active ? "actif" : "résolu"}`,
+            entry.text,`Raison initiale : ${entry.rationale}`,`Sources initiales : ${entry.sources.map(source=>`${source.session}:${source.seq}`).join(", ")}`,
+            ...entry.corrections.map(correction=>`Correction humaine ${correction.operation} · ${correction.source.session}:${correction.source.seq} · ${correction.text}`)])];
         return {digest:snapshot.digest,offset:start,nextOffset:start+20<entries.length ? start+20 : null,lines};
       } catch {return {digest:"",offset:0,nextOffset:null,lines:["Contexte partagé indisponible ou invalide. Vérifier les racines configurées et leurs journaux ; aucune mémoire vide supposée."]};}
     },
@@ -668,7 +670,7 @@ export function createProducer(options: ProducerOptions): Producer {
     resume() {
       if(inFlight || options.journal?.failure) return;
       const historical=shared.toSession();
-      const pending=historical.events.filter(event=>event.kind==="note" && event.subject==="terminal.user" && event.data.operation!=="confirm_check").at(-1);
+      const pending=historical.events.filter(event=>event.kind==="note" && event.subject==="terminal.user" && event.data.operation!=="confirm_check" && event.data.operation!=="shared_context").at(-1);
       const lastGoal=historical.events.filter(event=>event.kind==="goal").at(-1);
       if(pending && pending.seq>(lastGoal?.seq ?? -1) && typeof pending.data.text==="string") {
         runWith(resolveScope(pending.data.text,cwd,ids,bindProject,projectsRoot),pending.data.text);return;
@@ -697,6 +699,24 @@ export function createProducer(options: ProducerOptions): Producer {
       if (!said) return;
       try {
         options.journal?.assertWritable();
+        if(/^\/context(?:\s|$)/.test(said)) {
+          const match=/^\/context (edit|resolve) (sm-[a-f0-9]{64}) (\d+) ([\s\S]+)$/.exec(said);
+          const revision=match ? Number(match[3]) : NaN;
+          if(!match || !Number.isSafeInteger(revision) || !activeContexts || !options.journal){
+            observe([{kind:"status",label:"contexte",value:"Commande invalide ou contexte durable indisponible. /context edit|resolve ID REVISION TEXTE — projet actif uniquement.",certainty:"unknown"}]);return;
+          }
+          let before:ReturnType<typeof activeContexts.project.read>;
+          try {before=activeContexts.project.read();} catch {
+            observe([{kind:"status",label:"contexte",value:"Correction refusée : contexte partagé indisponible ou invalide.",certainty:"unknown"}]);return;
+          }
+          const source=shared.append({kind:"note",subject:"terminal.user",data:{text:said,operation:"shared_context",scope:activeContexts.project.scope,id:match[2],expected:revision}});
+          let message:string;
+          try {
+            const result=activeContexts.project.correct({id:match[2]!,revision,operation:match[1] as "edit"|"resolve",text:match[4]!.trim(),source:{session:options.journal.metadata.id,seq:source.seq}},before.revision);
+            message='conflict' in result ? "Correction refusée : souvenir ou contexte périmé. Relire sa révision dans Contexte partagé." : `Souvenir ${result.entry.id} ${result.entry.active ? "modifié" : "résolu"}, révision ${result.entry.revision}.`;
+          } catch {message="Correction non confirmée : stockage partagé indisponible ou entrée invalide. Relire le contexte avant de réessayer.";}
+          send({type:"submit",text:said});observe([{kind:"status",label:"contexte",value:message,certainty:"unknown"}]);return;
+        }
         if (/^\/check(?:\s|$)/.test(said)) {
           const match=/^\/check confirm (\S+) (\d+) ([a-f0-9]{64})$/.exec(said);
           const objective=projectObjectives(shared.toSession().events).current;

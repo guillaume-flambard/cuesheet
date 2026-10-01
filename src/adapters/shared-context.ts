@@ -20,7 +20,12 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
     "Memory provenance distinguishes human records from model interpretations; only active records guide current work. Resolved records are history. " +
     "Organization and session skills are model-authored proposals, not verified outcomes or extra tool permissions. " +
     "Omitted records still exist. Retrieve their source sequences with read_history {from,to}; max 100 events per call. For clipped data, request a single event with offset:nextOffset until nextOffset is null.\n";
-  const snapshot = { sharedContexts: options.sharedContexts ? {...options.sharedContexts,profiles:options.sharedContexts.profiles.map(profile=>({...profile,entries:profile.entries.slice()}))} : null, revision: last?.seq ?? -1, goal: frame.goal,
+  const snapshot = { sharedContexts: options.sharedContexts ? {...options.sharedContexts,profiles:options.sharedContexts.profiles.map(profile=>({...profile,entries:profile.entries.filter(entry=>entry.active!==false).map(entry=>({
+    id:entry.id,kind:entry.kind,text:entry.text,sources:entry.sources,author:entry.author,revision:entry.revision,active:entry.active,
+    rationale:entry.author==='model' ? entry.rationale : undefined,
+    corrections:(entry.corrections ?? []).map(correction=>({operation:correction.operation,source:correction.source,revision:correction.revision})),
+    history:"Full extraction and correction texts: read_shared_context",
+  }))}))} : null, revision: last?.seq ?? -1, goal: frame.goal,
       constraints: work.constraints.slice(), decisions: work.decisions.slice(),
       openQuestions: work.openQuestions.slice(), tasks: work.tasks.slice(),
       artifacts: work.artifacts.slice(), claims: work.claims.slice(), evidence: frame.evidence,
@@ -47,9 +52,19 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
   const result: ContextFrame = { ...frame, history: frame.history.slice(), evidence: frame.evidence.slice(), directives: directives.slice() };
   snapshot.constraints = snapshot.constraints.filter(item=>directives.some(directive=>directive.seq===item.at));
   const histories = [snapshot.claims,snapshot.decisions,snapshot.artifacts,snapshot.tasks,snapshot.openQuestions,snapshot.research,snapshot.installedSkills,snapshot.executions,...(snapshot.sharedContexts?.profiles.map(profile=>profile.entries) ?? [])];
+  const sharedHistories=new Set<unknown[]>(snapshot.sharedContexts?.profiles.map(profile=>profile.entries) ?? []);
+  const dropOptional=(items:unknown[],count:number):number=>{
+    if(!sharedHistories.has(items))return items.splice(0,count).length;
+    let removed=0;
+    while(removed<count){
+      const at=items.findIndex(item=>!(sharedHistories.has(items) && item && typeof item==='object' && (item as {author?:unknown}).author==='human'));
+      if(at<0)break;items.splice(at,1);removed++;
+    }
+    return removed;
+  };
   // Bound candidate sets before serializing. Repeatedly dropping one item from
   // a huge journal would turn compilation into quadratic work.
-  for(const items of histories)if(items.length>64){const remove=items.length-64;items.splice(0,remove);snapshot.context.omittedRecords+=remove;}
+  for(const items of histories)if(items.length>64)snapshot.context.omittedRecords+=dropOptional(items,items.length-64);
   if(result.history.length>32){snapshot.context.omittedHistory=result.history.length-32;result.history=result.history.slice(-32);}
   const render = () => {
     const text = preamble + JSON.stringify(snapshot);
@@ -61,7 +76,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
   // Optional historical observations come first. Authoritative human directives,
   // active human memory and the current objective are never silently dropped.
   for (const items of histories) while (size > budget && items.length) {
-    const remove=Math.ceil(items.length/2);items.splice(0,remove);snapshot.context.omittedRecords+=remove;size=render();
+    const remove=dropOptional(items,Math.ceil(items.length/2));if(!remove)break;snapshot.context.omittedRecords+=remove;size=render();
   }
   while (size > budget && snapshot.memory.some(item=>item.by!=="human" || !item.active)) {
     const index=snapshot.memory.findIndex(item=>item.by!=="human" || !item.active);

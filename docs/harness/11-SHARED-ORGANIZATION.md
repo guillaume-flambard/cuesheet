@@ -37,3 +37,17 @@ Avant code : palette Contexte partagé, lecture pure du projet d’exécution et
 Vérification : stores réels projet/organisation, autre projet exclu, pagination complète et source présente, lecture à vide sans mkdir, snapshot changé et corruption ; App Ink réel clavier Escape/next/resize40×14,80×24,120×36 sans débordement. Parent E01.4 reste ouvert.
 
 Affichage : retirer les caractères de contrôle des sources avant rendu terminal ; après resize conserver un offset visible. La provenance et le contenu stockés restent intacts.
+
+## Tranche E01.4b : correction humaine du projet partagé
+
+Avant code : commandes humaines /context edit|resolve ID REVISION TEXTE depuis le terminal, seulement scope projet actif du contrôleur. Record terminal.user explicite précède tout append partagé ; source {session,seq}. Pas de nouvelle demande/objectif ni outil modèle donnant accès à la correction. Montages entreprise restent en lecture. ID initial et sources d’extraction conservés ; historique append-only de corrections avec texte, opération et source humaine.
+
+Journal partagé v1 crée les records existants ; ajout edit/resolve strictement validé (auteur human, scope identique, cible existante, expectedItem=révision exacte, expectedScope=révision précédente du journal, texte/source valides). Sources initiales ne deviennent pas humaines : current author distingue la correction, historique conserve son attribution. Révision périmée et CAS concurrent refusent sans append partagé. Répétition exacte d’une source/commande réutilise sa correction ; même source utilisée autrement refuse. Retry de l’ancienne extraction retrouve la même ID actuelle, sans annuler une correction ou réactiver un résolu. Journal borné/parsing strict et original préservé sur corruption.
+
+Les résolus restent consultables mais n’orientent pas la prochaine inférence. Les entrées actives corrigées par humain ne sont pas silencieusement supprimées par compaction : erreur de budget si le contexte autoritatif ne tient pas. Elles ne donnent pas de permissions ou de preuve de validation. Digest change à chaque correction/résolution, même effet déjà lancé peut finir, nouvelle proposition périmée refusée. Consultation présente auteur courant/statut et sources/historique.
+
+Acceptation : éditeur/résolution absents reproduits sur00e0524 ; vrai journal/reload, ancien retry sans résurrection, conflit CAS/révision/refus de source dupliquée/corruption sans rewrite ; commande humaine en inférence suspendue écarte la proposition ancienne et garde le même objectif. Aucun write entreprise. Frame conserve humain actif même sous pression puis refuse budget impossible. Les commandes échouées restent des intentions humaines, jamais des succès inventés. Export/workflows/réseau restent ouverts.
+
+Projection d’inférence : conserver le texte courant, type, auteur, statut, révision, sources initiales et références de corrections. Les anciens textes/corrections et la rationale modèle d’un souvenir humain restent récupérables par read_shared_context ; ils ne sont pas dupliqués dans la portion humaine protégée du frame. Cette projection ne modifie jamais la source canonique.
+
+Identité d’une correction réessayée : source/id/opération/texte et révision de cible originale doivent correspondre. Réutiliser la source avec une autre révision est contradictoire et refuse ; la base globale peut être périmée pour retrouver un résultat existant.

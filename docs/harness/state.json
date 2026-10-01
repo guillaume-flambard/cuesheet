@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "82988c4",
+  "referenceCommit": "00e0524",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -2867,6 +2867,36 @@
         "EV-SHARED-CONTEXT-UI"
       ],
       "notes": "25 targeted and760/758/0/2 full PASS. Real App Ink pages/sources/resize/Escape without mutations. Parent E01.4 pending correction/export/team workflows."
+    },
+    {
+      "id": "E01.4b",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.4",
+        "REQ-E01.2"
+      ],
+      "dependencies": [
+        "E01.1",
+        "E01.2",
+        "E01.4a"
+      ],
+      "description": "Human project shared-memory edit/resolve with CAS, sourced history and retries that never undo human correction; keep active human shared context during compaction.",
+      "systems": [
+        "src/adapters/shared-memory.ts",
+        "src/adapters/shared-context.ts",
+        "apps/terminal/src/producer/index.ts",
+        "test/shared-memory-edit.test.ts"
+      ],
+      "acceptance": [
+        "AC-E01.4",
+        "AC-E01.2"
+      ],
+      "verification": "Historical missing capability reproduction; CAS/stale/retry/history/corruption, terminal human command/source and stale inference, compaction preserves active human context, scope isolation, typing and full regression",
+      "evidence": [
+        "EV-SHARED-MEMORY-EDIT"
+      ],
+      "notes": "24 targeted and764/762/0/2 final full PASS. Human correction history/CAS/no resurrection/protected active frame proven; final source reuse guard includes original expectedItem. Read-only company mounts, parent E01.4/export/team/auth pending."
     }
   ],
   "acceptance": [
@@ -3857,6 +3887,12 @@
       "result": "PASS_PARTIAL",
       "method": "Actual shared stores, real Ink App keyboard/pagination/resize3 dimensions/no writes, typing/full regression",
       "details": "25 targeted;760 tests758 pass0 fail2 skipped. evaluation/shared-context-ui-evidence.md. E01.4 parent remains open."
+    },
+    {
+      "id": "EV-SHARED-MEMORY-EDIT",
+      "result": "PASS_PARTIAL",
+      "method": "Historical absent API, actual shared journals/two processes, human terminal source and suspended inference, compaction/history, schema/typing/full regression",
+      "details": "24 targeted and764/762/0/2 final full PASS; evaluation/shared-memory-edit-evidence.md. Mounted enterprise roots unchanged; parent E01.4 and R06 remain open."
     }
   ],
   "risks": {
@@ -3866,10 +3902,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "82988c4",
+    "lastPassedCommit": "00e0524",
     "lastFullSuite": {
-      "tests": 760,
-      "passed": 758,
+      "tests": 764,
+      "passed": 762,
       "failed": 0,
       "skipped": 2
     },
@@ -3891,7 +3927,8 @@
     "workingTreeEnvironment": "PASS native harness credentials excluded from actual shell children;755/753/0/2 full. R06/R09 remain open.",
     "workingTreeAuthorship": "PASS replay absent author unknown/model preserved/malformed rejected;755/753/0/2 full. R10 remains open.",
     "workingTreeScopedResume": "PASS reopened selected project, original objective identity and sourced admission;757/755/0/2 full. UI context slice in verification.",
-    "workingTreeSharedContextUI": "PASS readonly palette, actual keys/pages/sources/resize;760/758/0/2 full. Parent enterprise UI/edit/export pending."
+    "workingTreeSharedContextUI": "PASS readonly palette, actual keys/pages/sources/resize;760/758/0/2 full. Parent enterprise UI/edit/export pending.",
+    "workingTreeSharedEdits": "PASS human project edit/resolve, CAS and sourced history, exact retries preserve human state, active humans not dropped;764/762/0/2 full. No enterprise auth/OS guarantee."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4023,7 +4060,8 @@
         "E01.4",
         "H09.4a",
         "H09.5a",
-        "E01.4a"
+        "E01.4a",
+        "E01.4b"
       ],
       "dependencies": [
         "C1",

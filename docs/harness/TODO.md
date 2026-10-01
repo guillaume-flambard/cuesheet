@@ -177,3 +177,5 @@ Extension E01 : E01.1 et E01.2 vérifiés par EV-SHARED-SCOPES (evaluation/share
 - [x] E01.4a consultation projet/entreprise au clavier, provenance/pagination — EV-SHARED-CONTEXT-UI.
 
 Parents H05/H09/E01.4 restent ouverts ; édition/export/workflows d’équipe, transport/auth multi-machine et preuves de remplacement restent nécessaires.
+
+- [x] E01.4b correction/résolution humaine de mémoire projet partagée, historique/CAS et compaction — EV-SHARED-MEMORY-EDIT. Export/formulaire/workflows et auth restent parent E01.4/E01.3.
