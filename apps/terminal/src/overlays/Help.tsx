@@ -25,6 +25,7 @@ export function Help(props: { onClose(): void }): JSX.Element {
       <Text wrap="truncate-end">Ctrl+U : effacer · Esc : retour</Text>
       <Text wrap="truncate-end">Ctrl+C : arrêter ; au repos, quitter</Text>
       <Text wrap="truncate-end">Ctrl+K : commandes · Ctrl+L : journal</Text>
+      <Text wrap="truncate-end">/memory : mémoire · /memory decision TEXTE</Text>
     </Box>
   );
 }

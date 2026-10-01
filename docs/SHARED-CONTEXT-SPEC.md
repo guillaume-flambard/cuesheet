@@ -24,7 +24,8 @@ snapshot as another fact, and never infer completion from model prose.
 ## Following slices
 
 - [ ] Edit intention, objectives and acceptance criteria through a simple interface.
-- [ ] Record explicit decisions and answer questions without deleting their history.
+- [x] Record explicit decisions and answer questions without deleting their history via `/memory` (see WORK-MEMORY.md).
+- [ ] Provide a visual editor for these records.
 - [ ] Give multiple workers the same durable state with revision-checked commits.
 - [ ] Rebuild bounded context while retaining access to omitted evidence and sources.
 - [ ] Exercise a weak and a strong model against the same independent acceptance check.

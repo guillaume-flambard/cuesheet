@@ -79,6 +79,7 @@ export const MAX_STEPS = 8;
 
 import type { TerminalSession } from "../../../../src/adapters/terminal-session.ts";
 import { withSharedContext } from "../../../../src/adapters/shared-context.ts";
+import { memoryCommand, MEMORY_SUBJECT } from "../../../../src/adapters/work-memory.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
@@ -258,7 +259,7 @@ export function createProducer(options: ProducerOptions): Producer {
   let controller: AbortController | undefined;
   options.journal?.onFailure(() => controller?.abort(new Error("Session persistence failed")));
   const directiveRevision = (): number => shared.toSession().events
-    .filter((event) => event.kind === "directive").at(-1)?.seq ?? 0;
+    .filter((event) => event.kind === "directive" || event.subject === MEMORY_SUBJECT).at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
       const signal = controller!.signal;
@@ -555,6 +556,15 @@ export function createProducer(options: ProducerOptions): Producer {
     say(text: string) {
       const said = text.trim();
       if (!said) return;
+      try {
+        options.journal?.assertWritable();
+        const memory = memoryCommand(shared, said);
+        if (memory !== null) {
+          send({ type: "submit", text: said });
+          observe([{ kind: "status", label: "mémoire", value: memory, certainty: "unknown" }]);
+          return;
+        }
+      } catch { return; }
       // Persist the user's instruction before showing it. View and harness journals
       // are separate, so neither a displayed directive nor an admitted tool may
       // depend on a write that has not happened yet.
