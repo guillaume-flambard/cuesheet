@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import type { ModelPreferences } from './model-preferences.ts';
+import { projectObjectives, OBJECTIVE_SUBJECT } from './objectives.ts';
 
 export interface TerminalMetadata {
   version: 1;
@@ -57,7 +58,7 @@ export class TerminalSession {
       if (realpathSync(this.metadata.cwd) !== this.metadata.cwd) throw new Error('Le répertoire de la session a changé.');
       this.durable = new SessionStore({root:this.root});
       if (!options.id) { this.durable.create(id,[]); this.durable.create(`${id}.view`,[]); chmodSync(join(this.root,`${id}.jsonl`),0o600); chmodSync(join(this.root,`${id}.view.jsonl`),0o600); }
-      const events = this.durable.read(id); validateEvents(events);
+      const events = this.durable.read(id); validateEvents(events); projectObjectives(events);
       this.viewEvents = this.durable.read(`${id}.view`); validateEvents(this.viewEvents);
       this.core = new WriteThroughStore(this,events,options.now ?? Date.now);
       process.once("exit",this.releaseOnExit);
@@ -72,6 +73,7 @@ export class TerminalSession {
   }
   appendCore(expected: number,event: Omit<Event,'seq'>): Event {
     this.assertWritable();
+    if(event.subject===OBJECTIVE_SUBJECT) projectObjectives([...this.core.toSession().events,{...event,seq:expected<0 ? 1 : expected+1}]);
     try {
       if (this.durable.revision(this.metadata.id) !== expected) throw new Error('Le journal a été modifié par un autre écrivain.');
       const stored=this.durable.append(this.metadata.id,event);

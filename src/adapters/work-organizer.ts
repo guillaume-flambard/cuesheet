@@ -1,9 +1,10 @@
 import type { Event, EventStore } from "../core/store.ts";
 import type { ToolRequest, ToolResult } from "../core/loop.ts";
 import { MEMORY_SUBJECT, projectMemory } from "./work-memory.ts";
+import { projectObjectives } from "./objectives.ts";
 
 export const WORK_SUBJECT = "terminal.work";
-export const AUTONOMOUS_TOOLS = ["organize_work", "remember", "create_skill"];
+export const AUTONOMOUS_TOOLS = ["organize_work", "remember", "create_skill", "describe_objective"];
 export const AUTONOMOUS_POLICY =
   "You manage the work process automatically. The user supplies intent and corrections, not modes or bookkeeping commands. " +
   "Choose the lightest useful next step from assessment, research, specification, build and review. " +
@@ -11,6 +12,7 @@ export const AUTONOMOUS_POLICY =
   "Revisit plans after observations or corrections. Do not create ceremony for a trivial task. " +
   "Maintain useful decisions, constraints and open questions from ordinary exchanges using remember: input {operation:'create'|'edit'|'resolve',kind?:'decision'|'constraint'|'question',id?,text,rationale,sources:[event sequence numbers]}. " +
   "Your memory is an interpretation, never a human instruction or verified evidence. Human memory cannot be overwritten by you. " +
+  "Use describe_objective when the objective needs clarification: {text,rationale,exclusions:[],dependencies:[],constraints:[],criteria:[]}. Criteria you generate are hypotheses, not owner-approved checks. Human corrections remain authoritative. " +
   "Use existing capabilities and inspect relevant material first. For an observed reusable need, create_skill with {name,instructions,rationale,sources:[event sequence numbers]}; it creates session-local instructions, not privileges. " +
   "After changing work state, derive your next action from a fresh inference. These tools cannot certify completion. " +
   "Use only available tools. Do not claim web research, documentation reads or tests without observed results. Ask only for genuinely missing information or actions outside the entrusted scope.";
@@ -21,8 +23,10 @@ function text(value: unknown, limit = 20000): value is string {
 
 export function projectOrganization(events: readonly Event[]) {
   const records = events.filter(event => event.kind === "note" && event.subject === WORK_SUBJECT);
+  const objective = projectObjectives(events).current;
   const goal = events.filter(event => event.kind === "goal").at(-1)?.data.text ?? null;
-  const plan = records.filter(event => event.data.operation === "plan" && event.data.goal === goal).at(-1);
+  const plan = records.filter(event => event.data.operation === "plan" &&
+    (objective && !objective.id.startsWith("legacy-") ? event.data.objectiveId === objective.id && event.data.objectiveRevision === objective.revision : event.data.goal === goal)).at(-1);
   const skills = new Map<string, { revision: number; by: string; name: unknown; instructions: unknown; rationale: unknown; sources: unknown }>();
   for (const event of records) if (event.data.operation === "skill" && typeof event.data.name === "string") {
     skills.set(event.data.name, { revision: event.seq, by: "model", name: event.data.name, instructions: event.data.instructions, rationale: event.data.rationale, sources: event.data.sources });
@@ -45,14 +49,26 @@ export function organizeWork(store: EventStore, request: ToolRequest): ToolResul
     if (input.tasks !== undefined && (!Array.isArray(input.tasks) || input.tasks.length > 40 || !input.tasks.every(task => text(task, 2000)))) return refuse("Tasks must be a bounded array of text.");
     const events = store.toSession().events;
     const prior = projectOrganization(events).plan;
+    const objective = projectObjectives(events).current;
     data = { operation: "plan", phase: input.phase, rationale: input.rationale,
       spec: input.spec ?? prior?.spec ?? null, tasks: input.tasks ?? prior?.tasks ?? [],
-      goal: store.toSession().goal?.text ?? null, against: basis };
+      goal: store.toSession().goal?.text ?? null, objectiveId: objective?.id ?? null,
+      objectiveRevision: objective?.revision ?? null, against: basis };
   } else if (request.name === "create_skill") {
     if (typeof input.name !== "string" || !/^[a-z][a-z0-9-]{0,63}$/.test(input.name) || !text(input.instructions)) return refuse("Invalid skill name or instructions.");
     const events = store.toSession().events;
     if (!Array.isArray(input.sources) || input.sources.length === 0 || input.sources.length > 20 || !input.sources.every(seq => typeof seq === "number" && events.some(event => event.seq === seq))) return refuse("A reusable skill must name existing source event sequences.");
     data = { operation: "skill", name: input.name, instructions: input.instructions, rationale: input.rationale, sources: input.sources, against: basis };
+  } else if (request.name === "describe_objective") {
+    const events = store.toSession().events;
+    const current = projectObjectives(events).current;
+    if (!current || current.id.startsWith("legacy-")) return refuse("No managed objective is active.");
+    subject = "terminal.objective";
+    data = { version: 1, operation: "describe", id: current.id, expected: current.revision,
+      text: input.text, exclusions: input.exclusions, dependencies: input.dependencies,
+      constraints: input.constraints, criteria: input.criteria, rationale: input.rationale };
+    try { projectObjectives([...events, { kind: "note", subject, data, seq: store.revision + 1, at: 0 }]); }
+    catch { return refuse("Invalid objective description or dependency cycle."); }
   } else {
     subject = MEMORY_SUBJECT;
     if (!["create", "edit", "resolve"].includes(String(input.operation)) || !text(input.text, 4000)) return refuse("Invalid memory operation or text.");

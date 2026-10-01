@@ -3,6 +3,7 @@ import type { Session } from "../core/store.ts";
 import { projectWork } from "../work-state.ts";
 import { projectMemory } from "./work-memory.ts";
 import { projectOrganization } from "./work-organizer.ts";
+import { projectObjectives } from "./objectives.ts";
 
 /** Derived on every inference, never written back as a fact or verdict. */
 export function withSharedContext(frame: ContextFrame, session: Session): ContextFrame {
@@ -19,7 +20,8 @@ export function withSharedContext(frame: ContextFrame, session: Session): Contex
       constraints: work.constraints, decisions: work.decisions,
       openQuestions: work.openQuestions, tasks: work.tasks,
       artifacts: work.artifacts, claims: work.claims, evidence: frame.evidence,
-      memory: projectMemory(session.events), organization: projectOrganization(session.events) });
+      memory: projectMemory(session.events), organization: projectOrganization(session.events),
+      objectives: projectObjectives(session.events) });
   return { ...frame, directives: [...frame.directives, {
     seq: last?.seq ?? 0, at: last?.at ?? 0, target: "builder", text, applied: false,
   }] };

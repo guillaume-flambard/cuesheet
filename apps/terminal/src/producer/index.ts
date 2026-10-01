@@ -81,6 +81,7 @@ import type { TerminalSession } from "../../../../src/adapters/terminal-session.
 import { withSharedContext } from "../../../../src/adapters/shared-context.ts";
 import { memoryCommand, MEMORY_SUBJECT } from "../../../../src/adapters/work-memory.ts";
 import { organizeWork, AUTONOMOUS_TOOLS, AUTONOMOUS_POLICY, WORK_SUBJECT } from "../../../../src/adapters/work-organizer.ts";
+import { createObjective, correctObjective, projectObjectives, verifyObjective, changeObjectiveStatus, OBJECTIVE_SUBJECT } from "../../../../src/adapters/objectives.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
@@ -260,7 +261,7 @@ export function createProducer(options: ProducerOptions): Producer {
   let controller: AbortController | undefined;
   options.journal?.onFailure(() => controller?.abort(new Error("Session persistence failed")));
   const directiveRevision = (): number => shared.toSession().events
-    .filter((event) => event.kind === "directive" || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT).at(-1)?.seq ?? 0;
+    .filter((event) => event.kind === "directive" || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
       const signal = controller!.signal;
@@ -281,18 +282,23 @@ export function createProducer(options: ProducerOptions): Producer {
       if (request.name === "finish") {
         if (!options.verification) return { name: "finish", exit: 126, output: "No acceptance check was declared; the goal remains open." };
         const basis = directiveRevision();
+        const objectiveAtCheck = projectObjectives(shared.toSession().events).current;
+        const contract = {objectiveId:objectiveAtCheck?.id ?? null,objectiveRevision:objectiveAtCheck?.revision ?? null};
         observe([{ kind: "status", label: "check", value: "checking the captured result", certainty: "active" }]);
         const result = await interruptible(options.verification.verify(activeWorkspace, activeEffect, signal), signal);
         signal.throwIfAborted();
         const verdict = result.verification.verdict;
-        const produced = shared.append({ kind: "work_produced", subject: activeEffect, data: { artifactId: result.artifact.artifactId, artifactDigest: result.artifact.digest, record: result.record, scope: result.artifact.scope } });
+        const produced = shared.append({ kind: "work_produced", subject: activeEffect, data: { artifactId: result.artifact.artifactId, artifactDigest: result.artifact.digest, record: result.record, scope: result.artifact.scope, ...contract } });
         log(`[work_produced] ${produced.subject} ${JSON.stringify(produced.data)}`);
-        const event = shared.append({ kind: "work_verified", subject: activeEffect, data: { ...result.verification, record: result.record, checkDigest: result.checkDigest } });
+        const event = shared.append({ kind: "work_verified", subject: activeEffect, data: { ...result.verification, record: result.record, checkDigest: result.checkDigest, ...contract } });
         log(`[work_verified] ${event.subject} ${JSON.stringify(event.data)}`);
-        const stillCurrent = directiveRevision() === basis;
+        const objective = projectObjectives(shared.toSession().events).current;
+        const contractCurrent = !objective?.check || objective.check.boundRevision === objective.revision;
+        const stillCurrent = directiveRevision() === basis && contractCurrent;
         observe([{ kind: "status", label: "check", value: stillCurrent ? `${verdict.toLowerCase()} by the declared check` : "checked an earlier request; your latest message keeps this run open", certainty: !stillCurrent || verdict === "INCONCLUSIVE" ? "unknown" : verdict === "VERIFIED" ? "confirmed" : "failed" }]);
         if (verdict === "VERIFIED" && stillCurrent) {
-          const evidence = shared.append({ kind: "evidence", subject: "builder", data: { claim: "The captured result satisfies the declared check", backing: result.record, artifactDigest: result.artifact.digest, effectId: activeEffect, checkDigest: result.checkDigest } });
+          verifyObjective(shared, event, result.checkDigest, result.record);
+          const evidence = shared.append({ kind: "evidence", subject: "builder", data: { claim: "The captured result satisfies the declared check", backing: result.record, artifactDigest: result.artifact.digest, effectId: activeEffect, checkDigest: result.checkDigest, ...contract } });
           log(`[evidence] ${evidence.subject} ${JSON.stringify(evidence.data)}`);
           const translated = translateEvent(evidence);
           if (translated) observe([translated.entry]);
@@ -380,7 +386,7 @@ export function createProducer(options: ProducerOptions): Producer {
   }
 
   /** Ask the binder, then run or offer. This is the automatic context step. */
-  const runWith = (scope: Scope, goal: string): void => {
+  const runWith = (scope: Scope, goal: string, resume = false): void => {
     if (scope.at === "choice") {
       // More than one project defends itself. BIND-05 forbids a silent pick, so
       // this is a question to a person, and the composer stays live underneath.
@@ -399,7 +405,7 @@ export function createProducer(options: ProducerOptions): Producer {
     send({ type: "scoped", project: scope.name, where: scope.path });
     send({ type: "began" });
     inFlight = true;
-    void start(scope, goal).catch(cause => {
+    void start(scope, goal, resume).catch(cause => {
       inFlight=false;
       send({type:"ended"});
       observe([{kind:"failure",text:`Le travail n’a pas démarré : ${cause instanceof Error ? cause.message : String(cause)}`}]);
@@ -407,7 +413,7 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   /** Start the real loop. Everything here is the part V1 could not do. */
-  const start = async (scope: { path: string; name: string }, goal: string): Promise<void> => {
+  const start = async (scope: { path: string; name: string }, goal: string, resume = false): Promise<void> => {
     options.journal?.assertWritable();
     controller = new AbortController();
     const signal = controller.signal;
@@ -415,6 +421,12 @@ export function createProducer(options: ProducerOptions): Producer {
     const requestId = `E-${mint()}`;
     activeEffect = requestId;
     activeWorkspace = scope.path;
+    const objectives = projectObjectives(shared.toSession().events);
+    if (!resume || !objectives.current || objectives.current.id.startsWith("legacy-")) {
+      const source = shared.toSession().events.filter(event => event.subject === "terminal.user" || event.kind === "goal").at(-1)
+        ?? shared.append({kind:"note",subject:"terminal.user",data:{text:goal}});
+      createObjective(shared,goal,scope.path,source.seq,options.verification?.pinned?.digest,resume ? "unknown" : "human");
+    } else changeObjectiveStatus(shared,"active","Explicit user resume");
     shared.append({kind:"directive",subject,data:{text:AUTONOMOUS_POLICY}});
 
     // The request is committed conditionally before the world is asked, so two
@@ -553,12 +565,13 @@ export function createProducer(options: ProducerOptions): Producer {
       const path=typeof request?.data.cwd==="string" ? request.data.cwd : cwd;
       if(path!==cwd) {observe([{kind:"failure",text:"Le dernier travail ciblait un autre répertoire. Ouvre une nouvelle session dans ce répertoire."}]);return;}
       try {shared.append({kind:"directive",subject:"builder",data:{text:"The user explicitly resumed this goal. Inspect the current workspace before repeating effects: any tool without a recorded result may already have run before the previous process stopped."}});} catch {return;}
-      runWith({at:"cwd",path,name:typeof request?.data.project==="string" ? request.data.project : view.get().project ?? "session"},goal.text);
+      runWith({at:"cwd",path,name:typeof request?.data.project==="string" ? request.data.project : view.get().project ?? "session"},goal.text,true);
     },
     cancel() {
       if (!inFlight || controller?.signal.aborted) return;
       log(`[cancel] ${pendingRequest ?? "run"} requested by the user`);
       controller?.abort(new Error("Run interrupted by the user"));
+      try {changeObjectiveStatus(shared,"paused","Explicit user interruption");} catch {return;}
     },
     say(text: string) {
       const said = text.trim();
@@ -576,8 +589,10 @@ export function createProducer(options: ProducerOptions): Producer {
       // are separate, so neither a displayed directive nor an admitted tool may
       // depend on a write that has not happened yet.
       try {
-        if(inFlight) shared.append({kind:"directive",subject:"builder",data:{text:said,source:"terminal.user"}});
-        else if(options.journal) shared.append({kind:"note",subject:"terminal.user",data:{text:said}});
+        if(inFlight) {
+          const correction = shared.append({kind:"directive",subject:"builder",data:{text:said,source:"terminal.user"}});
+          correctObjective(shared,said,correction.seq);
+        } else shared.append({kind:"note",subject:"terminal.user",data:{text:said}});
       } catch { return; }
       send({ type: "submit", text: said });
       if(options.journal?.failure) return;

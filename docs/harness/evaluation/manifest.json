@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "status": "initial-fixtures-not-confirmatory-benchmark",
+  "authority": "Checks are kept outside producer workspaces; generated criteria are hypotheses.",
+  "cases": [
+    {"id": "exact-output", "intent": "Create answer.txt containing exactly 42", "oracle": "test/work-organizer.test.ts", "level": "scripted provider, real shell and pinned capture check", "required": ["automatic spec", "sourced memory", "session skill", "independent verification", "reload"]},
+    {"id": "objective-correction", "intent": "Repair the feature, then preserve schema", "oracle": "test/objectives.test.ts", "level": "deterministic contract", "required": ["stable ID", "new contract revision", "old plan invalidation", "stale proof refusal"]},
+    {"id": "differed-resume", "intent": "Resume a feature after interruption with another provider", "oracle": "test/terminal-sessions.test.ts", "level": "scripted provider and real process/storage", "required": ["durable correction", "no automatic effect retry", "replacement provider"]}
+  ],
+  "pending": ["multi-file feature", "real documentation search", "real weak and strong model repeated runs", "real multi-worker replacement", "non-code validation", "OpenCode comparison"],
+  "budgets": {"fixtureSteps": 8, "liveRunBudget": "must be fixed before live runs"},
+  "qualityThresholds": "must be fixed after pilot and before confirmatory runs"
+}

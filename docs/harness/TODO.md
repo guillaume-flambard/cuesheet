@@ -19,10 +19,10 @@ plus complets portant sur les mêmes concepts ci-dessous.
 
 ## Lot 0 : établir le chantier
 
-- [ ] B00.1 Lire HANDOFF, README, règles applicables et specs du premier lot.
-- [ ] B00.2 Relever HEAD, état Git, tests et diagnostics initiaux dans STATUS.md.
-- [ ] B00.3 Construire le manifeste minimal du corpus H10.1 et un scénario fil rouge.
-- [ ] B00.4 Reproduire les défauts d'identité du plan et de contexte non borné avant correction.
+- [x] B00.1 Lire HANDOFF, README, règles applicables et specs du premier lot.
+- [x] B00.2 Relever HEAD, état Git, tests et diagnostics initiaux dans STATUS.md.
+- [x] B00.3 Construire le manifeste minimal du corpus H10.1 et un scénario fil rouge.
+- [x] B00.4 Reproduire les défauts d'identité du plan et de contexte non borné avant correction.
 
 Terminé quand la baseline et les reproductions sont enregistrées, avec distinction
 tests réels/scriptés, sans modifier le document utilisateur non suivi.
