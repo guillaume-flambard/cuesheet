@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "3736223",
+  "referenceCommit": "88ae665",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -730,7 +730,7 @@
     {
       "id": "H03.1",
       "priority": "P0",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H03.1"
       ],
@@ -751,7 +751,7 @@
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [],
-      "notes": ""
+      "notes": "C2.a exact-source extraction idempotence and versioned validation implemented; exhaustive extraction scheduling and crash checkpointing remain pending."
     },
     {
       "id": "H03.2",
@@ -3382,6 +3382,12 @@
       "result": "PASS_PARTIAL",
       "method": "pure projection, actual disk reload/corruption, producer integration, differential typing, full regression",
       "details": "11 targeted PASS; 719 full tests, 717 pass, 0 fail, 2 skipped; /tmp/cuesheet-chantiers-c1-final.log. Task IDs/revisions, dependency cycles/refusals, stale objective plan and explicit readmission, legacy no-write projection. H02.2 remains open: export/human editing not delivered."
+    },
+    {
+      "id": "EV-MEMORY-IDEMPOTENCE",
+      "result": "PASS_PARTIAL",
+      "method": "isolated historical reproduction, exact-source unit tests, actual durable restart/corruption, differential typing and full regression",
+      "details": "Historical 88ae665 isolated snapshot: repeat extraction incorrectly increments revision 2 -> 3, assertion FAIL (/tmp/cuesheet-c2-before.log). New targeted 12 PASS; combined 722 tests, 720 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c2-all.log). Source-order/dedup retry returns initial ID after human correction/resolution; source/key/version validation, model ownership, reload and damaged listing. Semantic extraction scheduling and contradictions remain open."
     }
   ],
   "risks": {
@@ -3393,8 +3399,8 @@
     "status": "PENDING",
     "lastPassedCommit": "2334466",
     "lastFullSuite": {
-      "tests": 719,
-      "passed": 717,
+      "tests": 722,
+      "passed": 720,
       "failed": 0,
       "skipped": 2
     },
@@ -3403,7 +3409,8 @@
     "globalTypecheck": "known baseline diagnostics; differential guard passes",
     "workingTreeContinuity": "Lifecycle and uncertain-effect receipt/gate targeted PASS; combined full regression 714/712/0/2 PASS. Earlier launcher deletion restored; cause of recurrence not established.",
     "workingTreeModels": "24 targeted tests PASS; full combined regression 714/712/0/2 PASS, /tmp/cuesheet-hot-switch-confirm.log. No new differential typing diagnostics; global baseline remains.",
-    "workingTreePlans": "PASS 719/717/0/2 full regression; no new differential type diagnostics. Launcher whitelist restored inline; origin of previous deletion unknown."
+    "workingTreePlans": "PASS 719/717/0/2 full regression; no new differential type diagnostics. Launcher whitelist restored inline; origin of previous deletion unknown.",
+    "workingTreeMemory": "12 targeted PASS; 722/720/0/2 full PASS. Isolated historical source reproduced duplicate extraction; new idempotent path does not append or resurrect human-modified memory. H03.1/H03.2 still incomplete."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -3445,7 +3452,7 @@
       "dependencies": [
         "C1"
       ],
-      "status": "TODO"
+      "status": "IN_PROGRESS"
     },
     {
       "id": "C3",

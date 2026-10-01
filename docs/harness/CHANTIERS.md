@@ -31,7 +31,7 @@ C1.a ne livre pas encore export/vues terminal dédiées, édition humaine des t�
 
 Les réglages déjà autorisés de recherche/skills/budget disparaissent régulièrement de la working tree ; leur retrait casse test/skill-tools.test.ts. Cause inconnue, aucune attribution à un autre écrivain ou aux tests. Réintégrer la whitelist explicite dans la déclaration existante des variables transmises, vérifier que les variables non nommées restent exclues. Cette correction ne prétend pas résoudre la cause des modifications concurrentes. AC local : transmission des quatre variables nommées et aucune transmission wildcard ; tests launcher et suite complète.
 
-## C2.a Mémoire extraite idempotente (PLANNED)
+## C2.a Mémoire extraite idempotente (tranche vérifiée, chantier parent IN_PROGRESS)
 
 Liens : REQ-H03.1, REQ-H03.2, REQ-H01.4, REQ-H09.1. Friction observée dans remember : une seconde extraction des mêmes événements recrée une mémoire et peut ressusciter une interprétation déjà corrigée par l’humain.
 
@@ -40,3 +40,5 @@ Spec : les nouveaux remember create portent une version et une clé déterminist
 Vérification : même extraction dans un ordre de sources différent, reprise réelle, correction/résolution humaine puis retry sans resurrection, sources différentes, version corrompue, refus sans append et suite complète. L’extraction sémantique reste choisie par le modèle via remember ; aucune prétention à l’extraction automatique exhaustive de tous les faits.
 
 Preuves C1.a/C0.a : EV-WORK-PLANS, 11 tests ciblés et suite 719/717/0/2. Les critères parents restent ouverts ; aucun chantier global clos.
+
+Preuves C2.a : EV-MEMORY-IDEMPOTENCE ; historique isolé FAIL, 12 ciblés PASS et suite 722/720/0/2 PASS. Les six chantiers restent en cours ou ouverts.

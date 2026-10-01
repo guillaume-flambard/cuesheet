@@ -1,6 +1,6 @@
 import type { Event, EventStore } from "../core/store.ts";
 import type { ToolRequest, ToolResult } from "../core/loop.ts";
-import { MEMORY_SUBJECT, projectMemory } from "./work-memory.ts";
+import { MEMORY_SUBJECT, projectMemory, memoryExtractionKey, findMemoryExtraction } from "./work-memory.ts";
 import { projectObjectives } from "./objectives.ts";
 import { projectWorkPlans, prepareWorkTasks } from "./work-plans.ts";
 
@@ -84,11 +84,24 @@ export function organizeWork(store: EventStore, request: ToolRequest): ToolResul
     if (!Array.isArray(input.sources) || input.sources.length === 0 || input.sources.length > 20 || !input.sources.every(seq => typeof seq === "number" && events.some(event => event.seq === seq))) return refuse("Memory must name existing source event sequences.");
     if (input.operation === "create") {
       if (!["decision", "constraint", "question"].includes(String(input.kind))) return refuse("Invalid memory kind.");
+      const extracted = findMemoryExtraction(events,input.kind,input.text,input.sources as number[]);
+      if (extracted) {
+        const current = projectMemory(events).find(item => item.id === `m-${extracted.seq}`)!;
+        return {name:request.name,exit:0,output:JSON.stringify({id:current.id,revision:current.revision,recorded:false,reused:true,verified:false})};
+      }
     } else {
       const prior = projectMemory(events).find(item => item.id === input.id);
       if (!prior || prior.by !== "model") return refuse("Unknown memory or human-owned record; preserve it and record your interpretation separately.");
     }
-    data = { operation: input.operation, kind: input.kind, id: input.id, text: input.text, rationale: input.rationale, sources: input.sources, author: "model", against: basis };
+    const projected = projectObjectives(events).current;
+    const objective = projected?.id.startsWith("legacy-") ? null : projected;
+    const prior = projectMemory(events).find(item => item.id === input.id);
+    data = {version:1, operation: input.operation, kind: input.kind, id: input.id, text: input.text,
+      rationale: input.rationale, sources: [...new Set(input.sources as number[])].sort((a,b)=>a-b), author: "model", against: basis,
+      objectiveId: objective?.id ?? null, objectiveRevision: objective?.revision ?? null,
+      ...(input.operation === "create" ? {extractionKey:memoryExtractionKey(input.kind,input.text,input.sources as number[])} : {expected:prior?.revision})};
+    try {projectMemory([...events,{kind:"note",subject,data,seq:basis<0 ? 1 : basis+1,at:0}]);}
+    catch {return refuse("Invalid memory schema or stale memory revision.");}
   }
   if (request.name === "organize_work") {
     try { projectWorkPlans([...store.toSession().events, {kind: "note", subject, data, seq: basis < 0 ? 1 : basis + 1, at: 0}]); }
