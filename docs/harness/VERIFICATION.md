@@ -55,3 +55,5 @@ reprendre avec autre modèle et vérifier le résultat courant. L'objectif du te
 humain est l'adéquation de l'expérience, pas la découverte de bugs connus.
 Le statut final agent sera READY_FOR_MANUAL_ACCEPTANCE, puis DONE uniquement après
 l'acceptation humaine requise. État actuel : IMPLEMENTING, aucune clôture annoncée.
+
+Extension E01 : test/shared-memory.test.ts couvre vrai conflit entre deux processus, isolation de projets, montage entreprise explicite, source corrompue préservée, update externe pendant infer, publication par producer et récupération paginée. 20 tests ciblés avec typing/receipts/slices passent ; suite finale 736/734/0/2 PASS, puis neuf tests partagés PASS dont sélection de projet. Preuve durable : evaluation/shared-context-evidence.md. Réseau multi-machine, permissions équipe et parcours clavier scopes restent PENDING.

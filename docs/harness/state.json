@@ -389,6 +389,34 @@
       "acceptance": [
         "AC-H07.2a"
       ]
+    },
+    {
+      "id": "REQ-E01.1",
+      "description": "Journal partagé versionné, écritures conditionnelles et deux processus sans écrasement.",
+      "acceptance": [
+        "AC-E01.1"
+      ]
+    },
+    {
+      "id": "REQ-E01.2",
+      "description": "Montage explicite entreprise, isolation projet et invalidation des propositions périmées.",
+      "acceptance": [
+        "AC-E01.2"
+      ]
+    },
+    {
+      "id": "REQ-E01.3",
+      "description": "Synchronisation réseau multi-machine, auth/permissions et conflits hors ligne.",
+      "acceptance": [
+        "AC-E01.3"
+      ]
+    },
+    {
+      "id": "REQ-E01.4",
+      "description": "Consultation/correction/export des scopes et workflows communs avec parcours clavier.",
+      "acceptance": [
+        "AC-E01.4"
+      ]
     }
   ],
   "tasks": [
@@ -2523,6 +2551,121 @@
         "EV-CAPABILITY"
       ],
       "notes": "Discovered required defect, R08; targeted fix only after reproduction."
+    },
+    {
+      "id": "E01.1",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.1"
+      ],
+      "dependencies": [],
+      "description": "Journal partagé versionné, écritures conditionnelles et deux processus sans écrasement.",
+      "systems": [
+        "src/adapters/shared-memory.ts",
+        "apps/terminal/src/producer",
+        "11-SHARED-ORGANIZATION.md"
+      ],
+      "acceptance": [
+        "AC-E01.1"
+      ],
+      "verification": "Schema, conditional writes, actual independent processes, frame/proposal guard, full regression; network or Ink as applicable",
+      "evidence": [
+        "EV-SHARED-SCOPES"
+      ],
+      "notes": "Extension explicitement demandée par le propriétaire, 2026-10-01."
+    },
+    {
+      "id": "E01.2",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.2"
+      ],
+      "dependencies": [
+        "E01.1"
+      ],
+      "description": "Montage explicite entreprise, isolation projet et invalidation des propositions périmées.",
+      "systems": [
+        "src/adapters/shared-memory.ts",
+        "apps/terminal/src/producer",
+        "11-SHARED-ORGANIZATION.md"
+      ],
+      "acceptance": [
+        "AC-E01.2"
+      ],
+      "verification": "Schema, conditional writes, actual independent processes, frame/proposal guard, full regression; network or Ink as applicable",
+      "evidence": [
+        "EV-SHARED-SCOPES"
+      ],
+      "notes": "Extension explicitement demandée par le propriétaire, 2026-10-01."
+    },
+    {
+      "id": "E01.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-E01.3"
+      ],
+      "dependencies": [
+        "E01.1"
+      ],
+      "description": "Synchronisation réseau multi-machine, auth/permissions et conflits hors ligne.",
+      "systems": [
+        "src/adapters/shared-memory.ts",
+        "apps/terminal/src/producer",
+        "11-SHARED-ORGANIZATION.md"
+      ],
+      "acceptance": [
+        "AC-E01.3"
+      ],
+      "verification": "Schema, conditional writes, actual independent processes, frame/proposal guard, full regression; network or Ink as applicable",
+      "evidence": [],
+      "notes": "Extension explicitement demandée par le propriétaire, 2026-10-01."
+    },
+    {
+      "id": "E01.4",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-E01.4"
+      ],
+      "dependencies": [
+        "E01.1"
+      ],
+      "description": "Consultation/correction/export des scopes et workflows communs avec parcours clavier.",
+      "systems": [
+        "src/adapters/shared-memory.ts",
+        "apps/terminal/src/producer",
+        "11-SHARED-ORGANIZATION.md"
+      ],
+      "acceptance": [
+        "AC-E01.4"
+      ],
+      "verification": "Schema, conditional writes, actual independent processes, frame/proposal guard, full regression; network or Ink as applicable",
+      "evidence": [],
+      "notes": "Extension explicitement demandée par le propriétaire, 2026-10-01."
+    },
+    {
+      "id": "E01.D1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.1"
+      ],
+      "dependencies": [],
+      "description": "First conditional SessionStore append uses sequence one for empty base -1.",
+      "systems": [
+        "src/adapters/session-store.ts"
+      ],
+      "acceptance": [
+        "AC-E01.1"
+      ],
+      "verification": "Empty conditional append and read regression; full suite",
+      "evidence": [
+        "EV-SHARED-SCOPES"
+      ],
+      "notes": "Linked discovered defect documented before correction in 11-SHARED-ORGANIZATION.md."
     }
   ],
   "acceptance": [
@@ -3299,6 +3442,62 @@
       "evidence": [
         "EV-CAPABILITY"
       ]
+    },
+    {
+      "id": "AC-E01.1",
+      "requirement": "REQ-E01.1",
+      "given": "Contextes explicitement raccordés et scopes déclarés",
+      "when": "Journal partagé versionné, écritures conditionnelles et deux processus sans écrasement.",
+      "then": "Critère détaillé dans 11-SHARED-ORGANIZATION.md",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-SHARED-SCOPES"
+      ]
+    },
+    {
+      "id": "AC-E01.2",
+      "requirement": "REQ-E01.2",
+      "given": "Contextes explicitement raccordés et scopes déclarés",
+      "when": "Montage explicite entreprise, isolation projet et invalidation des propositions périmées.",
+      "then": "Critère détaillé dans 11-SHARED-ORGANIZATION.md",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-SHARED-SCOPES"
+      ]
+    },
+    {
+      "id": "AC-E01.3",
+      "requirement": "REQ-E01.3",
+      "given": "Contextes explicitement raccordés et scopes déclarés",
+      "when": "Synchronisation réseau multi-machine, auth/permissions et conflits hors ligne.",
+      "then": "Critère détaillé dans 11-SHARED-ORGANIZATION.md",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-E01.4",
+      "requirement": "REQ-E01.4",
+      "given": "Contextes explicitement raccordés et scopes déclarés",
+      "when": "Consultation/correction/export des scopes et workflows communs avec parcours clavier.",
+      "then": "Critère détaillé dans 11-SHARED-ORGANIZATION.md",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -3397,19 +3596,25 @@
       "method": "official API contract inspection, deterministic native transport, paginated catalog, actual Ink keys, differential typing and full regression",
       "details": "Official Messages/Models docs linked in CHANTIERS.md. 19 targeted PASS; extra Anthropic required-ceiling Ink case PASS with 3 UI tests. Full production-code regression 727 tests, 725 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c5-all.log); additional Ink case added after full worker loaded, independently verified (/tmp/cuesheet-anthropic-ui.log). No live Anthropic inference or cumulative usage accounting; H07.1 remains open.",
       "commit": "1e5b28a"
+    },
+    {
+      "id": "EV-SHARED-SCOPES",
+      "result": "PASS",
+      "method": "independent Node processes, durable journals, actual producer and acceptance subprocess, differential typing, full regression and separate diff review",
+      "details": "Full final production code: 736 tests, 734 pass, 0 fail, 2 skipped (/tmp/cuesheet-enterprise-shared-final.log). Additional binder integration added after suite workers loaded: 9 shared-memory tests PASS (/tmp/cuesheet-shared-extra.log). 12 targeted shared/typeguard PASS. Durable summary: evaluation/shared-context-evidence.md. Two-process CAS, no-read creation, exact retry, corrupt journal preserved, explicit mounts, stale inference/batch/check guards, active project binding. No network or live-model claim."
     }
   ],
   "risks": {
     "register": "RISKS.md",
     "critical_open": 0,
-    "high_open": 9
+    "high_open": 10
   },
   "verification": {
     "status": "PENDING",
     "lastPassedCommit": "1e5b28a",
     "lastFullSuite": {
-      "tests": 727,
-      "passed": 725,
+      "tests": 736,
+      "passed": 734,
       "failed": 0,
       "skipped": 2
     },
@@ -3421,15 +3626,16 @@
     "workingTreePlans": "PASS 719/717/0/2 full regression; no new differential type diagnostics. Launcher whitelist restored inline; origin of previous deletion unknown.",
     "workingTreeMemory": "12 targeted PASS; 722/720/0/2 full PASS. Isolated historical source reproduced duplicate extraction; new idempotent path does not append or resurrect human-modified memory. H03.1/H03.2 still incomplete.",
     "workingTreeAnthropic": "19 targeted PASS; full regression 727/725/0/2 PASS; additional Anthropic Ink ceiling test PASS. No new differential type diagnostics; no live Anthropic inference; H07.1/H07.4 remain pending.",
-    "workstreamCoverage": "PASS: all 51 post-baseline task IDs occur in six workstreams; only four completed B00 tasks excluded. Priority/acceptance counts checked against actual records. No parent acceptance newly closed by partial slices."
+    "workstreamCoverage": "Six workstreams remain active; E01.1/2 verified; E01.3/4 pending. Overall IMPLEMENTING.",
+    "workingTreeShared": "PASS E01.1/2; full production code 736/734/0/2; added bound-project integration 9 shared tests PASS. Multi-machine and team workflow delivery remain pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 55,
-    "acceptanceVerified": 5,
-    "acceptancePending": 50,
+    "requirements": 59,
+    "acceptanceVerified": 7,
+    "acceptancePending": 52,
     "p0_open": 35,
-    "p1_open": 15
+    "p1_open": 17
   },
   "workstreams": [
     {
@@ -3476,7 +3682,10 @@
         "H04.2",
         "H04.3",
         "H04.4",
-        "H04.5"
+        "H04.5",
+        "E01.1",
+        "E01.2",
+        "E01.3"
       ],
       "dependencies": [
         "C1",
@@ -3540,7 +3749,8 @@
         "H10.2",
         "H10.3",
         "H10.4",
-        "H10.5"
+        "H10.5",
+        "E01.4"
       ],
       "dependencies": [
         "C1",

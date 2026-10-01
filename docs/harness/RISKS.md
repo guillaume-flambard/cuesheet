@@ -18,3 +18,5 @@ déjà isolé. Chaque résolution doit référencer AC et preuve dans state.json
 Ces risques ne sont pas déclarés résolus par le seul passage de la suite existante.
 
 R08 : défaut de nom de capacité corrigé avec régression ; risque ciblé résolu par EV-CAPABILITY. Les autres diagnostics hérités restent ouverts.
+
+R11 | Partage d’entreprise entre machines : permissions/auth/offline non livrés | élevée / HIGH | seuls filesystem local et montages explicites vérifiés par EV-SHARED-SCOPES | E01.3/4 : transport choisi, autorisations et scénario équipe | OPEN.

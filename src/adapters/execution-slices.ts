@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { runAgentLoop, type ModelAdapter, type ToolRunner, type LoopOptions, type LoopOutcome } from "../core/loop.ts";
 import type { EventStore, Event } from "../core/store.ts";
 
-const bookkeeping=new Set(["organize_work","remember","create_skill","describe_objective","read_history","list_skills"]);
+const bookkeeping=new Set(["organize_work","remember","create_skill","describe_objective","read_history","read_shared_context","list_skills"]);
 export async function runExecutionSlices(store:EventStore,model:ModelAdapter,tools:ToolRunner,options:LoopOptions & {
   executionId:string;maxSlices:number;signal:AbortSignal;
 }):Promise<LoopOutcome>{

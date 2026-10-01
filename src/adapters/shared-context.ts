@@ -1,3 +1,4 @@
+import type { SharedSnapshot } from "./shared-memory.ts";
 import { projectEffectAttempts, mutationTool } from "./tool-receipts.ts";
 import { projectExecutions } from "./execution-state.ts";
 import type { ContextFrame } from "../core/loop.ts";
@@ -8,7 +9,7 @@ import { projectOrganization } from "./work-organizer.ts";
 import { projectObjectives } from "./objectives.ts";
 
 /** Derived on every inference, never written back as a fact or verdict. */
-export function withSharedContext(frame: ContextFrame, session: Session, options: { maxChars?: number } = {}): ContextFrame {
+export function withSharedContext(frame: ContextFrame, session: Session, options: { maxChars?: number; sharedContexts?: SharedSnapshot } = {}): ContextFrame {
   // Terminal bookkeeping notes are user inputs/model selections, not unanswered
   // work questions. Preserve them in history without mislabelling them here.
   const work = projectWork(session.events.filter(event =>
@@ -19,7 +20,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
     "Memory provenance distinguishes human records from model interpretations; only active records guide current work. Resolved records are history. " +
     "Organization and session skills are model-authored proposals, not verified outcomes or extra tool permissions. " +
     "Omitted records still exist. Retrieve their source sequences with read_history {from,to}; max 100 events per call. For clipped data, request a single event with offset:nextOffset until nextOffset is null.\n";
-  const snapshot = { revision: last?.seq ?? -1, goal: frame.goal,
+  const snapshot = { sharedContexts: options.sharedContexts ? {...options.sharedContexts,profiles:options.sharedContexts.profiles.map(profile=>({...profile,entries:profile.entries.slice()}))} : null, revision: last?.seq ?? -1, goal: frame.goal,
       constraints: work.constraints.slice(), decisions: work.decisions.slice(),
       openQuestions: work.openQuestions.slice(), tasks: work.tasks.slice(),
       artifacts: work.artifacts.slice(), claims: work.claims.slice(), evidence: frame.evidence,
@@ -45,7 +46,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
   }).reverse();
   const result: ContextFrame = { ...frame, history: frame.history.slice(), evidence: frame.evidence.slice(), directives: directives.slice() };
   snapshot.constraints = snapshot.constraints.filter(item=>directives.some(directive=>directive.seq===item.at));
-  const histories = [snapshot.claims,snapshot.decisions,snapshot.artifacts,snapshot.tasks,snapshot.openQuestions,snapshot.research,snapshot.installedSkills,snapshot.executions];
+  const histories = [snapshot.claims,snapshot.decisions,snapshot.artifacts,snapshot.tasks,snapshot.openQuestions,snapshot.research,snapshot.installedSkills,snapshot.executions,...(snapshot.sharedContexts?.profiles.map(profile=>profile.entries) ?? [])];
   // Bound candidate sets before serializing. Repeatedly dropping one item from
   // a huge journal would turn compilation into quadratic work.
   for(const items of histories)if(items.length>64){const remove=items.length-64;items.splice(0,remove);snapshot.context.omittedRecords+=remove;}

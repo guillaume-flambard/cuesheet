@@ -82,6 +82,7 @@ import type { Store } from "../app/store.ts";
 export const MAX_STEPS = 8;
 
 import type { TerminalSession } from "../../../../src/adapters/terminal-session.ts";
+import type {SharedContexts, SharedSnapshot} from "../../../../src/adapters/shared-memory.ts";
 import { withSharedContext } from "../../../../src/adapters/shared-context.ts";
 import { memoryCommand, MEMORY_SUBJECT } from "../../../../src/adapters/work-memory.ts";
 import { organizeWork, AUTONOMOUS_TOOLS, AUTONOMOUS_POLICY, WORK_SUBJECT } from "../../../../src/adapters/work-organizer.ts";
@@ -93,6 +94,7 @@ import type { CompletionCheck } from "../../../../src/adapters/surface-verificat
 
 export interface ProducerOptions {
   maxSlices?: number;
+  sharedContexts?: SharedContexts;
   research?: ResearchTools;
   skills?: SkillTools;
   /** Enforced serialized-frame ceiling; provider-specific token limits remain separate. */
@@ -269,6 +271,9 @@ export function createProducer(options: ProducerOptions): Producer {
    */
   const guarded = wrapAtBoundary(model);
   let proposalDirective = 0;
+  let proposalContext: SharedSnapshot | undefined;
+  let activeContexts = options.sharedContexts;
+  const contextCurrent = () => !activeContexts || activeContexts.read().digest === proposalContext?.digest;
   let activeEffect = "";
   let activeWorkspace = cwd;
   let controller: AbortController | undefined;
@@ -279,7 +284,7 @@ export function createProducer(options: ProducerOptions): Producer {
     async run(request) {
       const signal=controller!.signal;
       signal.throwIfAborted();options.journal?.assertWritable();
-      if(directiveRevision()!==proposalDirective)return {name:request.name,exit:126,output:"The instructions changed; this proposal was discarded."};
+      if(directiveRevision()!==proposalDirective || !contextCurrent())return {name:request.name,exit:126,output:"The instructions changed; this proposal was discarded."};
       if(options.journal){
         if(request.name==="reconcile_effect")return reconcileEffect(shared,request,activeEffect);
         const attempts=projectEffectAttempts(shared.toSession().events);
@@ -296,7 +301,7 @@ export function createProducer(options: ProducerOptions): Producer {
       const signal = controller!.signal;
       signal.throwIfAborted();
       options.journal?.assertWritable();
-      if (directiveRevision() !== proposalDirective) {
+      if (directiveRevision() !== proposalDirective || !contextCurrent()) {
         return { name: request.name, exit: 126, output: "The instructions changed; this proposal was discarded." };
       }
       if (shared.toSession().goal?.open === false) {
@@ -310,6 +315,23 @@ export function createProducer(options: ProducerOptions): Producer {
         if(!options.research)return {name:request.name,exit:127,output:"Research tools are unavailable in this runtime."};
         const result=await interruptible(options.research.run(shared,request,signal),signal);
         return result ?? {name:request.name,exit:127,output:"Unknown research capability."};
+      }
+      if (request.name === "read_shared_context" && activeContexts) {
+        const snapshot=activeContexts.read();
+        const offset=request.input.offset ?? 0;
+        if(!Number.isSafeInteger(offset) || Number(offset)<0)return {name:request.name,exit:2,output:"Invalid shared context offset."};
+        const entries=snapshot.profiles.flatMap(profile=>profile.entries.map(entry=>({...entry,scope:profile.scope})));
+        const start=Number(offset);return {name:request.name,exit:0,output:JSON.stringify({digest:snapshot.digest,profiles:snapshot.profiles.map(p=>({scope:p.scope,revision:p.revision})),entries:entries.slice(start,start+50),nextOffset:start+50<entries.length ? start+50 : null})};
+      }
+      if (request.name === "remember" && request.input.scope !== undefined && request.input.scope !== "session") {
+        if(request.input.scope!=="project" || request.input.operation!=="create" || !activeContexts || !options.journal)return {name:request.name,exit:2,output:"Only sourced project memory creation is available; organization scopes are read-only."};
+        const input=request.input;const events=shared.toSession().events;
+        if(!Array.isArray(input.sources) || input.sources.length<1 || input.sources.length>20 || !input.sources.every(seq=>Number.isSafeInteger(seq) && events.some(e=>e.seq===seq)))return {name:request.name,exit:2,output:"Shared memory requires existing session source sequences."};
+        try {
+          const expected=proposalContext?.profiles.find(p=>p.scope.kind==="project")?.revision ?? -1;
+          const result=activeContexts.project.create({kind:input.kind as "decision"|"constraint"|"question",text:input.text as string,rationale:input.rationale as string,sources:(input.sources as number[]).map(seq=>({session:options.journal!.metadata.id,seq}))},expected);
+          return {name:request.name,exit:"conflict" in result ? 126 : 0,output:JSON.stringify(result)};
+        } catch {return {name:request.name,exit:2,output:"Shared memory write refused; inspect the shared context before retrying."};}
       }
       const organized = organizeWork(shared, request);
       if (organized) {
@@ -331,7 +353,7 @@ export function createProducer(options: ProducerOptions): Producer {
         log(`[work_verified] ${event.subject} ${JSON.stringify(event.data)}`);
         const objective = projectObjectives(shared.toSession().events).current;
         const contractCurrent = !objective?.check || objective.check.boundRevision === objective.revision;
-        const stillCurrent = directiveRevision() === basis && contractCurrent;
+        const stillCurrent = directiveRevision() === basis && contractCurrent && contextCurrent();
         observe([{ kind: "status", label: "check", value: stillCurrent ? `${verdict.toLowerCase()} by the declared check` : "checked an earlier request; your latest message keeps this run open", certainty: !stillCurrent || verdict === "INCONCLUSIVE" ? "unknown" : verdict === "VERIFIED" ? "confirmed" : "failed" }]);
         if (verdict === "VERIFIED" && stillCurrent) {
           verifyObjective(shared, event, result.checkDigest, result.record);
@@ -356,11 +378,12 @@ export function createProducer(options: ProducerOptions): Producer {
         const read = shared.revision;
         basis = read;
         proposalDirective = directiveRevision();
+        proposalContext = activeContexts?.read();
         try {
-          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(withSharedContext(frame, shared.toSession(),{maxChars:options.contextBudgetChars}), signal), signal);
+          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(withSharedContext(frame, shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:proposalContext}), signal), signal);
           // The response was derived from the old frame. Re-recording a step
           // cannot make its proposed actions current: discard them instead.
-          return shared.revision === read ? response : { text: "", toolCalls: [] };
+          return shared.revision === read && contextCurrent() ? response : { text: "", toolCalls: [] };
         } catch(cause) {
           if(cause instanceof ModelSelectionChanged && !signal.aborted)return {text:"",toolCalls:[]};
           throw cause;
@@ -460,6 +483,7 @@ export function createProducer(options: ProducerOptions): Producer {
     const requestId = `E-${mint()}`;
     activeEffect = requestId;
     activeWorkspace = scope.path;
+    activeContexts = options.sharedContexts?.forProject(scope.path);
     const objectives = projectObjectives(shared.toSession().events);
     if (!resume || !objectives.current || objectives.current.id.startsWith("legacy-")) {
       const source = shared.toSession().events.filter(event => event.subject === "terminal.user" || event.kind === "goal").at(-1)
@@ -477,7 +501,8 @@ export function createProducer(options: ProducerOptions): Producer {
     // in the boundary above, and two variables differing only by scope in the
     // same module is the kind of thing that is read wrong later.
     if (options.toolNames?.length) {
-      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...AUTONOMOUS_TOOLS, "read_history", ...(options.research ? ["read_document","search_web"] : []), ...(options.skills ? ["list_skills","read_skill"] : []), ...(options.journal ? ["reconcile_effect"] : []), ...(options.verification ? ["finish"] : [])].join(", ")}` } });
+      if(options.sharedContexts)shared.append({kind:"directive",subject,data:{text:"Shared context scopes are sources, not extra permissions or verification. Use remember with scope:project and operation:create to publish useful project decisions/constraints/questions using this session source sequences. Default memory is session-only. Organization contexts are explicitly mounted read-only. Use read_shared_context {offset:0} for paginated records omitted from the frame; reread context after every shared write before other effects."}});
+      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...AUTONOMOUS_TOOLS, "read_history", ...(options.sharedContexts ? ["read_shared_context"] : []), ...(options.research ? ["read_document","search_web"] : []), ...(options.skills ? ["list_skills","read_skill"] : []), ...(options.journal ? ["reconcile_effect"] : []), ...(options.verification ? ["finish"] : [])].join(", ")}` } });
       shared.append({ kind: "directive", subject, data: { text:
         'The shell tools are command tools; organize_work, remember, create_skill, describe_objective and read_history use structured input as described separately. For command tools use input.argv with the exact tool name first, for example {"name":"ls","input":{"argv":["ls","-la"]}}. ' +
         'cat and ls also accept input.path. Paths and commands are relative to the declared working directory. ' +

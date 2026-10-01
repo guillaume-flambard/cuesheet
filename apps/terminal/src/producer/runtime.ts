@@ -44,6 +44,7 @@ import { createModelBinding, type ModelBinding } from "../../../../src/adapters/
 import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
 import { ResearchTools } from "../../../../src/adapters/research-tools.ts";
+import { SharedContexts } from "../../../../src/adapters/shared-memory.ts";
 import { SkillTools } from "../../../../src/adapters/skill-tools.ts";
 import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
 import { createProducer, type Producer, type ProducerOptions } from "./index.ts";
@@ -95,7 +96,8 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const research=new ResearchTools({root:cwd,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
   const roots=process.env.CUESHEET_SKILL_ROOTS?.split(delimiter).filter(Boolean) ?? [join(cwd,".cuesheet","skills")];
   const skills=new SkillTools({roots});
-  const options: ProducerOptions = { store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const sharedContexts=new SharedContexts({cwd,organizations:process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)});
+  const options: ProducerOptions = {sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */

@@ -52,3 +52,5 @@ Spec avant code : provider anthropic explicite, ANTHROPIC_API_KEY hors préfére
 Vérification : résolution explicite/refus clé-modèle-plafond manquants, headers/body, tools complets/malformés/troncature, erreurs sans secrets, abort tardif, catalogue paginé et cycle, sélection persistée sans clé, tests UI existants, compilation différentielle, régression complète. Essai payant uniquement sous opt-in explicite : absence d’essai live laisse H07.1 ouvert. Streaming et comptabilité cumulative restent H07.4, non livrés par cette tranche.
 
 Preuves C5.a : EV-ANTHROPIC-TRANSPORT, 19 ciblés PASS, cas Ink plafond obligatoire PASS, full 727/725/0/2 PASS. H07.1 ne peut être clos sans essai live configuré.
+
+Extension entreprise : E01.1–4 (spec 11-SHARED-ORGANIZATION.md), rattachement C3/C5/C6. Première tranche E01.1–2 IN_PROGRESS : journal projet commun et profils entreprise explicitement montés ; synchronisation réseau et vues/édition restent ouverts.

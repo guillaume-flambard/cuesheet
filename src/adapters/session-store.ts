@@ -408,7 +408,7 @@ export class SessionStore {
     if (fd === null) return null;
     try {
       if (this.revision(sessionId) !== expectedRevision) return null;
-      const stamped: Event = { ...event, seq: expectedRevision + 1 };
+      const stamped: Event = { ...event, seq: expectedRevision < 0 ? 1 : expectedRevision + 1 };
       this.appendStamped(sessionId, stamped);
       return stamped;
     } finally {

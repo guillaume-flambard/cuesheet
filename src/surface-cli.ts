@@ -42,7 +42,7 @@ const SLICE = join(TERMINAL, "src", "main.tsx");
 export function surfaceEnvironment(args: string[], env: NodeJS.ProcessEnv = process.env): Record<string, string> {
   const keys = ["PATH", "HOME", "TERM", "XDG_CONFIG_HOME", "XDG_STATE_HOME", "CUESHEET_SESSIONS", "CUESHEET_SESSION", "CUESHEET_PROVIDER", "CUESHEET_MODEL", "CUESHEET_MAX_TOKENS", "CUESHEET_CONTEXT_CHARS",
     "CUESHEET_BASE_URL", "CUESHEET_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "CUESHEET_OPENCODE_BIN",
-    "CUESHEET_SEARCH_PROVIDER", "BRAVE_SEARCH_API_KEY", "CUESHEET_SKILL_ROOTS", "CUESHEET_MAX_SLICES"];
+    "CUESHEET_SEARCH_PROVIDER", "BRAVE_SEARCH_API_KEY", "CUESHEET_SKILL_ROOTS", "CUESHEET_MAX_SLICES", "CUESHEET_CONTEXT_ROOTS"];
   const result: Record<string, string> = { TERM: "xterm-256color" };
   for (const key of keys) if (env[key] !== undefined) result[key] = env[key]!;
   const flags: Record<string, string> = { "--provider": "CUESHEET_PROVIDER", "--model": "CUESHEET_MODEL",

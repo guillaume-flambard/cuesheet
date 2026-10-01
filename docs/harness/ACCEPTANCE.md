@@ -774,3 +774,6 @@ Verification : automated
 
 
 Mise à jour AC-H07.2a : VERIFIED, preuve EV-CAPABILITY (régression échec avant / réussite après ; test/loop.test.ts). État machine canonique dans state.json.
+
+
+Extension E01 : E01.1 et E01.2 vérifiés par EV-SHARED-SCOPES (evaluation/shared-context-evidence.md). E01.D1 corrigé et régressé. E01.3 et E01.4 restent TODO. Projet IMPLEMENTING ; aucune clôture globale.
