@@ -101,6 +101,56 @@ Unnumbered in the same file:
 
 ---
 
+## SW — the shared work state, and the rebase it must prove
+
+Files: `test/work-state.test.ts`, `src/work-state.ts`, `src/work-context.ts`,
+`src/work-worker.ts`. Spec: [SW-01-shared-work-state.md](SW-01-shared-work-state.md).
+
+| Id | Test name | Status | What it asserts |
+|---|---|---|---|
+| SW-01 | `the same events project the same state, twice` | PROVED | `projectWork` is a pure fold; two reads of one log `deepEqual`. The empty log is revision -1 and agrees with the store's own answer, CON-06 |
+| SW-01 | `it reads the six event kinds the core session fold deliberately ignores` | PROVED | `effect_requested`/`effect_observed`/`work_produced`/`work_verified`/`action`/`note` all reach the state. If it only read what `toSession` reads, it would be a second reading of the same thing |
+| SW-01 | `a claim is not the evidence for it` | PROVED | a model's own `observation` becomes a `Claim` and closes no goal |
+| SW-01 | `a task that was never answered is asked, never failed` | PROVED | a request with no observation is `asked`. There is no `failed` in `TaskState`, so an unobserved world cannot be reported as a refusing one |
+| SW-01 | `an artifact nobody checked is not checked, and not a failure` | PROVED | `work_produced` alone gives `verdict: null`, never a rejection |
+| SW-01 | `a decision whose basis was not recorded says so` | PROVED | an `action` with no `against` reads back as `null`, not 0 |
+| SW-02 | `a worker commits at the revision it read` | PROVED | the commit carries `against: basis` and the store's revision advanced by exactly the one event |
+| SW-03 | `THE CRUX: the human bumps the revision, the commit is refused, the worker rebases and continues` | PROVED | full sequence: read at 1, a human directive lands at 2, `appendIfCurrent(1)` returns `null` and the revision stays 2, the worker re-reads, re-derives `focus Spotlight instead` from the directive it just read, and that is the only decision in the log. `"keep going on the parser"` appears nowhere |
+| SW-03 | `a worker that reads a stale basis and commits is refused, and step() rebases for it` | PROVED | the same window from inside one step: `outcome.kind === "rebased"`, `from: 1`, `to: 3`, the committed decision records `against: 2`, and no event carries `against: 1` |
+| SW-03 | `a log that never stops moving exhausts the budget rather than spinning` | PROVED | a producer that appends on every attempt returns `exhausted` at 3 attempts |
+| SW-03 | `a producer that declines records nothing, and that is not a failure` | PROVED | `declined` is its own outcome and the revision does not move. `committed` and `exhausted` are not merged into it |
+| SW-04 | `each sees the other's output through the state, and neither is given the other` | PROVED | two workers over one log; B reads A's decision from the projection, and both expose exactly `subject`, `read`, `step` |
+| SW-04 | `a new worker picks up where a dead one left off, without the transcript` | PROVED | goal, decision, artifact and open question all readable from 4 events by a worker with no reference to the first |
+| SW-05 | `a worker's step ends at the boundary, and what it already appended stays` | PROVED | after a `stop` directive the worker takes no further step, the only new event is the directive, and the earlier decision is intact rather than rolled back |
+| SW-06 | `WORK-04 no worker-to-worker channel exists anywhere in the work layer` | PROVED | a channel vocabulary scan over the three modules with comments stripped, plus `TemporaryWorker`'s member list read off the interface. Verified to fail when a `readonly inbox: string[]` is added |
+| SW-06 | `WORK-05 the work layer imports nothing that could observe` | PROVED | no `node:` import, no `homedir`/`cwd`/`env`, no `/Users/`, no `Date.now`/`Math.random` in any of the three |
+| SW-06 | `WORK-07 the state carries no field that is always empty` | PROVED | `SharedWorkState` has no `contextSources` member and its key set is exactly the nine the fold produces |
+| SW-06 | `WORK-06 nothing under src/core was touched by this slice` | PROVED | `work-state.ts` imports exactly one specifier, `./core/store.ts`, and constructs no store |
+
+### What SW does not prove
+
+Recorded rather than left to be discovered, because `docs/EVIDENCE.md:1054-1058`
+lists "multi-agent runtime semantics" under NOT YET NEEDED and this slice does
+not overturn that: it adds no scheduler, no coordinator and no runtime
+supervision.
+
+- **No real concurrency was observed.** The two workers are interleaved by hand
+  in one process, deterministically. Cross-process contention on one file is
+  covered by `test/control-revision.test.ts:154-268` and
+  `test/store-adversary.test.ts`; SW adds nothing to those.
+- **`SessionStore.appendIfCurrent`'s thrown refusals are unhandled.** A held lock
+  and a damaged journal throw rather than return `null`
+  ([store-adversary.md](store-adversary.md):437-441), and `step()` does not catch
+  them. No observed failure yet says what a worker should do about a damaged
+  journal, so no recovery policy was invented.
+- **The rebase loop is bounded by attempts, not convergence.** Three is a budget
+  a test can reach, not a proof that three suffices.
+- **`SharedWorkState` carries no context sources**, because the frozen core has no
+  event kind that could carry one. `WORK-07` asserts the absence so it is a
+  recorded decision rather than an oversight.
+
+---
+
 ## CON — the decision/revision boundary
 
 Files: `test/control-revision.test.ts`, `test/affordances.test.ts`

@@ -110,6 +110,64 @@ is the semantics, and here is what a stale commit does inside them".
 12. Every type added is produced or consumed by a worker in this slice. Any that
     is not is deleted, and the deletion is reported.
 
+## THE CUT, recorded after the fact
+
+Two things the sections above promised were removed once the code was written,
+because they turned out to be speculation. Both removals are recorded here
+rather than quietly made.
+
+- **`SharedWorkState.contextSources` is gone.** The AFTER section listed context
+  sources among the fields the state carries. It cannot: the core has no event
+  kind that carries one, and adding one would mean modifying `src/core/**`. A
+  field that is structurally always empty is worse than a missing one, because a
+  reader cannot tell "no source was resolved" from "this projection does not know
+  about sources". So context sources are supplied by whoever resolved the scope
+  (`src/work-context.ts`) and are not folded from the log. `WORK-07` asserts the
+  absence, so it cannot be reintroduced by an edit that looks like a completion.
+- **`ContextSourceRef` is gone** for the same reason: it existed only to type the
+  removed field.
+
+Kept, and why each survived the "no speculative types" rule: every one of `Goal`,
+`OpenQuestion`, `Claim`, `Decision`, `Constraint`, `Task` and `Artifact` is
+produced by `projectWork` from a real event kind and read by a worker in this
+slice's tests. `TaskState` earns its third state because a test asserts a task is
+`asked` and never `failed`. `ContextSource` and its six kinds are produced and
+consumed by `contextSourceFromBinding`, `scratchSource` and
+`previousSessionSource`, exercised in four tests.
+
+One more cut, in the implementation rather than the vocabulary: `StepOutcome`
+began with three states (`committed`, `rebased`, `declined`) and a `rebased`
+variant that only fired when the re-derived commit was itself refused. That
+silently reported a successful rebase as a plain `committed`, which would have
+hidden the very refusal the owner asked to see. `rebased` is now the outcome for
+any commit that took more than one attempt, and a test asserts a decision
+committed at a different revision than the one first attempted.
+
+## WHAT THIS DOES NOT PROVE
+
+Stated plainly, because an unproven claim read as a proven one is the failure
+this repository exists to prevent.
+
+- **No real concurrency was observed.** The workers in these tests are
+  interleaved by hand inside one process, in one deterministic order. Two OS
+  processes contending on one file is already covered by
+  `test/control-revision.test.ts:154-268` and `test/store-adversary.test.ts`; this
+  slice added nothing there and did not re-run them as new evidence.
+- **The refusals `SessionStore.appendIfCurrent` throws are not handled here.** A
+  held lock and a damaged journal are exceptions, not `null`
+  (`docs/store-adversary.md:437-441`), and `step()` does not catch them, so a
+  worker over a durable store surfaces those to its caller. Unhandled by design:
+  no observed failure has yet shown what a worker should *do* about a damaged
+  journal, and guessing would produce a recovery policy with no counterexample
+  behind it.
+- **The rebase loop is bounded by attempts, not by convergence.** Three is a
+  budget a test can reach, not a proof that three is enough. A producer that keeps
+  re-deriving against a moving log returns `exhausted`, which is honest but is not
+  a diagnosis of why it kept moving.
+- **`projectWork` reads the twelve existing kinds and invents no thirteenth.** A
+  work event that cannot be expressed as one of the twelve is not yet
+  expressible, and adding one requires the core to change.
+
 ## NON-GOALS
 
 - The human-facing interruption UX. A later slice renders SW-01. Nothing here
