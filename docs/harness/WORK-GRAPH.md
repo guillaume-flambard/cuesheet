@@ -34,3 +34,6 @@ E01.5b1→C3 : tranche automatique locale indépendante, dépend de E01.5a/E01.6
 E01.5c→C3 (publication automatique) et H09.3c→C4 (route automatique) vérifiés en tranches. H07.2b→C5 dépend de H09.3c ; anciennes déclarations restent dans frame et doivent cesser d’étendre schémas provider.
 
 H09.3d→C4 dépend de H09.3c/H07.2b ; configuration owner stable, disponibilité réobservée aux starts, pas mutation de runner actif.
+
+
+H09.3d/e : refresh de route au start/reprise et protection des contrôleurs sous alias vérifiés, EV-ROUTE-ALIAS (evaluation/route-alias/evidence.md).50 ciblés PASS;796 tests/794 pass/0 fail/2 skipped;build PASS32 diagnostics hérités, garde différentielle PASS. H09.3b rétabli après correction du contre-exemple. Parents/R06 ouverts;global IMPLEMENTING.

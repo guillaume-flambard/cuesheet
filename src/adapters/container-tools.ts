@@ -3,7 +3,7 @@ import {request as httpRequest} from "node:http";
 import {randomUUID} from "node:crypto";
 import {existsSync,mkdtempSync,mkdirSync,realpathSync,rmSync,statSync,writeFileSync,lstatSync,readdirSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {isAbsolute,join,resolve} from "node:path";
+import {isAbsolute,join,resolve,dirname,basename} from "node:path";
 import type {ToolRequest,ToolResult} from "../core/loop.ts";
 import {ShellToolRunner} from "./shell.ts";
 
@@ -99,7 +99,13 @@ export class ContainerToolRunner {
       const masks=new Map<string,boolean>();
       for(const root of roots){const control=join(root,".cuesheet");if(!existsSync(control))mkdirSync(control,{mode:0o700});if(!lstatSync(control).isDirectory())throw new Error("Control mount must be a directory, never a symlink.");masks.set(control,true);}
       for(const protectedPath of this.options.protectedPaths??[]){
-        const path=resolve(protectedPath);if(roots.some(root=>under(path,root))&&existsSync(path)){if(lstatSync(path).isSymbolicLink())throw new Error("Protected mount cannot be a symlink.");masks.set(path,statSync(path).isDirectory());}
+        const lexical=resolve(protectedPath);if(!existsSync(lexical))continue;
+        const target=join(realpathSync(dirname(lexical)),basename(lexical));
+        if(roots.some(root=>under(target,root))){
+          if(lstatSync(lexical).isSymbolicLink())throw new Error("Protected mount cannot be a symlink.");
+          const path=realpathSync(lexical);if(!roots.some(root=>under(path,root)))throw new Error("Protected mount changed its scope.");
+          masks.set(path,statSync(path).isDirectory());
+        }
       }
       // Parent masks already hide their descendants; avoid mounting host data.
       for(const [path,directory] of masks)if(![...masks.keys()].some(parent=>parent!==path&&under(path,parent)))mounts.push(mount(directory?empty:blank,path,true));

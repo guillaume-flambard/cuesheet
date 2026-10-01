@@ -45,7 +45,7 @@ import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
 import { SessionContainers } from "../../../../src/adapters/container-receipts.ts";
 import { invocationKey } from "../../../../src/adapters/tool-receipts.ts";
-import { chooseToolRoute,DEFAULT_CONTAINER_TOOLS } from "../../../../src/adapters/tool-route.ts";
+import { createToolRouteSelector,DEFAULT_CONTAINER_TOOLS } from "../../../../src/adapters/tool-route.ts";
 import { ContainerToolRunner } from "../../../../src/adapters/container-tools.ts";
 import { ResearchTools } from "../../../../src/adapters/research-tools.ts";
 import { SessionUsage } from "../../../../src/adapters/model-usage.ts";
@@ -96,23 +96,26 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  let route;
-  try{route=chooseToolRoute({home:homedir(),enterprise:!!process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean).length,mode:process.env.CUESHEET_TOOL_MODE,image:process.env.CUESHEET_TOOL_IMAGE,socket:process.env.CUESHEET_TOOL_SOCKET});}catch{return {missing:"Tool route requires auto/container/local mode and a local Unix socket."};}
-  const image=route.kind==="container" ? route.image : undefined;
+  const selectRoute=createToolRouteSelector({home:homedir(),enterprise:!!process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean).length,mode:process.env.CUESHEET_TOOL_MODE,image:process.env.CUESHEET_TOOL_IMAGE,socket:process.env.CUESHEET_TOOL_SOCKET});
   const containers=settings.journal ? new SessionContainers({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
-  if(image)try{containers?.read();}catch{return {missing:"Container resource journal is damaged; inspect it before starting tools."};}
-  const toolsForScope=(scope:string):ToolRunner=>route.kind==="unavailable" ? {names:[],policy:route.reason,async run(request){return {name:request.name,exit:126,output:route.reason};}} as ToolRunner : image ? new ContainerToolRunner({allow:route.kind==="container"&&route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : ALLOWED,roots:[scope],defaultCwd:scope,image,
-    socket:route.kind==="container" ? route.socket : "",
-    onAdmission:(name,request)=>{
-      if(!containers||!settings.journal)throw new Error("Container execution requires a durable terminal session.");
-      const digest=invocationKey(request.name,request.input);
-      const intent=settings.journal.core.toSession().events.filter(e=>e.kind==="action"&&e.subject==="terminal.intent"&&e.data.tool===request.name&&e.data.scopeCwd===scope&&invocationKey(request.name,e.data.input as Record<string,unknown>)===digest).at(-1);
-      if(!intent)throw new Error("Container execution lacks an admitted intent.");
-      containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
-    },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
-    protectedPaths:[...(settings.journal?[settings.journal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]}) : Object.assign(new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope}),{policy:route.reason,names:Object.freeze(ALLOWED.slice())});
+  const toolsForScope=(scope:string):ToolRunner=>{
+    const route=selectRoute();
+    if(route.kind==="unavailable")return {names:[],policy:route.reason,async run(request){return {name:request.name,exit:126,output:route.reason};}} as ToolRunner;
+    if(route.kind==="local")return Object.assign(new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope}),{policy:route.reason,names:Object.freeze(ALLOWED.slice())});
+    try{containers?.read();}catch{throw new Error("Container resource journal is damaged; inspect it before starting tools.");}
+    const image=route.image;
+    return new ContainerToolRunner({allow:route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : ALLOWED,roots:[scope],defaultCwd:scope,image,socket:route.socket,
+      onAdmission:(name,request)=>{
+        if(!containers||!settings.journal)throw new Error("Container execution requires a durable terminal session.");
+        const digest=invocationKey(request.name,request.input);
+        const intent=settings.journal.core.toSession().events.filter(e=>e.kind==="action"&&e.subject==="terminal.intent"&&e.data.tool===request.name&&e.data.scopeCwd===scope&&invocationKey(request.name,e.data.input as Record<string,unknown>)===digest).at(-1);
+        if(!intent)throw new Error("Container execution lacks an admitted intent.");
+        containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
+      },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
+      protectedPaths:[...(settings.journal?[settings.journal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]});
+  };
   let tools:ToolRunner;
-  try {tools=toolsForScope(cwd);} catch {return {missing:"Container tool configuration requires a local Unix socket and immutable image digest."};}
+  try {tools=toolsForScope(cwd);} catch {return {missing:"Tool route is invalid or its resource journal is damaged; verify mode, local Unix socket, immutable image and session resources."};}
   const researchForScope=(scope:string)=>new ResearchTools({root:scope,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
   const research=researchForScope(cwd);
   const configuredSkillRoots=process.env.CUESHEET_SKILL_ROOTS?.split(delimiter).filter(Boolean);

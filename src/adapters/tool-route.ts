@@ -14,3 +14,7 @@ export function chooseToolRoute(options:{home:string;enterprise:boolean;mode?:st
  if(socket||options.image||options.socket||mode==='container')return {kind:'container',socket:socket??candidates[0]!,image:options.image??DEFAULT_TOOL_IMAGE,defaultImage:!options.image||options.image===DEFAULT_TOOL_IMAGE,reason:socket?'Route conteneur choisie automatiquement depuis un socket local ; daemon/image vérifiés à chaque appel.':'Route conteneur déclarée ; socket/daemon/image encore à vérifier, aucun fallback local.'};
  return options.enterprise?{kind:'unavailable',reason:'Contexte entreprise : aucun socket Docker local disponible ; outils externes refusés.'}:{kind:'local',reason:'Aucun socket Docker local disponible ; route personnelle cwd/argv contrôlée, sans confinement OS.'};
 }
+/** Owner choices stay fixed; socket availability is reobserved at each start. */
+export function createToolRouteSelector(options:Parameters<typeof chooseToolRoute>[0]):()=>ToolRoute{
+ const configured=Object.freeze({...options});return ()=>chooseToolRoute(configured);
+}

@@ -196,3 +196,6 @@ Preuve EV-LOCAL-VAULT-CONTAINERS : H09.3b/E01.5a/E01.6a/E01.5b1 DONE pour les tr
 E01.5c/H09.3c DONE pour tranches locales, EV-AUTOMATIC-VAULT-TOOLS ; H07.2b P1 IN_PROGRESS vocabulaire provider ancien, rattaché C5, dépend de H09.3c.
 
 H07.2b DONE EV-CURRENT-TOOLS ; H09.3d P1 IN_PROGRESS : refresh de disponibilité de route à reprise/new goal.
+
+
+H09.3d/e : refresh de route au start/reprise et protection des contrôleurs sous alias vérifiés, EV-ROUTE-ALIAS (evaluation/route-alias/evidence.md).50 ciblés PASS;796 tests/794 pass/0 fail/2 skipped;build PASS32 diagnostics hérités, garde différentielle PASS. H09.3b rétabli après correction du contre-exemple. Parents/R06 ouverts;global IMPLEMENTING.

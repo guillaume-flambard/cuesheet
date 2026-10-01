@@ -142,3 +142,9 @@ Vérification : matrice auto/override, absent/stale/invalid local socket, entrep
 ### Défaut découvert H09.3d : route figée au lancement
 
 Avant code : runtime capture chooseToolRoute une fois. Si Docker devient disponible entre deux goals/reprises, ancienne route persiste. Factory doit relire uniquement disponibilité des sockets à chaque start/reprise choisi, avec configuration owner IMAGE/SOCKET/MODE et périmètre entreprise capturés au lancement ; pas d'env modèle mutable, pas de changement d'un effet déjà actif. Générer noms/policy du nouveau runner, préserver reçu sous claim et refus sur journal resource endommagé. Perte de daemon pendant appel ne provoque toujours aucun fallback. Tester matrice absence/apparition/disparition et ancien frame remplacé avec H07.2b ; aucune auto-installation.
+
+### Défaut potentiel H09.3e : alias des chemins contrôleur
+
+Discovery avant patch : roots/cwd sont realpath, protectedPaths utilisent resolve lexical pour under(). macOS /var→/private/var, ou root symlink propriétaire, peut ainsi sortir le chemin protégé du test d'appartenance sans le sortir du vrai montage. Reproduire via fichier contrôleur propre temporaire et vrai Docker, jamais un journal utilisateur.
+
+Correction prévue si reproduction : vérifier/refuser symlink final du chemin protégé existant, puis canonicaliser par realpath avant appartenance/mask ; parent alias contrôlé converge vers le même root réel. Aucun montage de données host pour le masque. Garder les refus hardlink/special/controlsymlink et bornes. Vérifier fichier protégé vide readonly, host intact et contenu original non lu, journal placé dans root alias masqué ; source/types/full. Parent R06 reste ouvert.

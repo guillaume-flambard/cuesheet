@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "b473cdb",
+  "referenceCommit": "8adcb0e",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -2946,9 +2946,10 @@
       ],
       "verification": "Historical node argv outside-root write, fake local Engine protocol failures/cancellation plus actual Docker read/write/control/credentials/no-network/child cleanup; runtime/installation/typing/full suite",
       "evidence": [
-        "EV-LOCAL-VAULT-CONTAINERS"
+        "EV-LOCAL-VAULT-CONTAINERS",
+        "EV-ROUTE-ALIAS"
       ],
-      "notes": "Docker Desktop29.8.1 Linux/API1.56 locally started after confirming absent local socket; official Node24-bookworm-slim digest observed cached/up-to-date. No remote server/deployment. No Seatbelt product backend. Tranche locale finie vérifiée ; AC/parents complets non clos."
+      "notes": "Docker Desktop29.8.1 Linux/API1.56 locally started after confirming absent local socket; official Node24-bookworm-slim digest observed cached/up-to-date. No remote server/deployment. No Seatbelt product backend. Tranche locale finie vérifiée ; AC/parents complets non clos. Reopened: real alias-root protected-file counterexample H09.3e; previous proof did not cover this case. Bounded slice verified after alias correction:50 targeted PASS;796/794/0/2 full. Parents and R06 remain open."
     },
     {
       "id": "H09.3c",
@@ -3176,7 +3177,7 @@
     {
       "id": "H09.3d",
       "priority": "P1",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "requirements": [
         "REQ-H09.3"
       ],
@@ -3194,8 +3195,36 @@
         "AC-H09.3"
       ],
       "verification": "Sock absent→présent entre factory calls, présente→absente entreprise, configuration owner figée, namespaces courants, no fallback actif, réel runtime/types/régression",
-      "evidence": [],
-      "notes": "Découvert : factory actuelle capture décision au lancement ; Docker apparu après garde ancien runner jusqu’à nouveau runtime"
+      "evidence": [
+        "EV-ROUTE-ALIAS"
+      ],
+      "notes": "Découvert : factory actuelle capture décision au lancement ; Docker apparu après garde ancien runner jusqu’à nouveau runtime Bounded slice verified after alias correction:50 targeted PASS;796/794/0/2 full. Parents and R06 remain open."
+    },
+    {
+      "id": "H09.3e",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H09.5"
+      ],
+      "dependencies": [
+        "H09.3b"
+      ],
+      "description": "Canonicaliser les chemins protégés contre les alias de racine et empêcher exposition des contrôleurs dans le mount",
+      "systems": [
+        "src/adapters/container-tools.ts",
+        "test/container-tools.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H09.5"
+      ],
+      "verification": "Avant/après vrai Docker fichier contrôleur propre sous alias, symlink final refusé, host intact, typing/full",
+      "evidence": [
+        "EV-ROUTE-ALIAS"
+      ],
+      "notes": "Discovery raw resolve vs realpath ; vérifier sans aucun fichier utilisateur Bounded slice verified after alias correction:50 targeted PASS;796/794/0/2 full. Parents and R06 remain open."
     }
   ],
   "acceptance": [
@@ -4252,6 +4281,12 @@
       "result": "PASS_PARTIAL",
       "method": "Captured native/compatible requests before and after, real binary subprocess, sequence/embedded-data/duplicate refusals, typing/build/full; solo review",
       "details": "42 targeted PASS;793/791/0/2 full PASS. evaluation/current-tools/evidence.md. No full capability matrix or live benchmark claimed."
+    },
+    {
+      "id": "EV-ROUTE-ALIAS",
+      "result": "PASS_PARTIAL",
+      "method": "Before/after actual Docker/runtime, snapshots, differential typing/build/full; solo review",
+      "details": "50 targeted PASS;796/794/0/2 full PASS. evaluation/route-alias/evidence.md. Parents and R06 remain open."
     }
   ],
   "risks": {
@@ -4261,10 +4296,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "b473cdb",
+    "lastPassedCommit": "8adcb0e",
     "lastFullSuite": {
-      "tests": 793,
-      "passed": 791,
+      "tests": 796,
+      "passed": 794,
       "failed": 0,
       "skipped": 2
     },
@@ -4290,7 +4325,8 @@
     "workingTreeSharedEdits": "PASS human project edit/resolve, CAS and sourced history, exact retries preserve human state, active humans not dropped;764/762/0/2 full. No enterprise auth/OS guarantee.",
     "workingTreeVaultContainers": "PASS bounded local slices;780/778/0/2 full,49 targeted, build PASS with32 inherited diagnostics. Overall IMPLEMENTING; no global closure.",
     "workingTreeAutomaticVaultTools": "PASS finite local publication/auto route;788/786/0/2 full,50 targeted +37 enterprise additional. Tool vocabulary H07.2b pending, global IMPLEMENTING.",
-    "workingTreeCurrentTools": "PASS H07.2b finite current namespace in schemas/prompts;793/791/0/2 full,42 targeted, build PASS32 baseline diagnostics."
+    "workingTreeCurrentTools": "PASS H07.2b finite current namespace in schemas/prompts;793/791/0/2 full,42 targeted, build PASS32 baseline diagnostics.",
+    "workingTreeRouteAlias": "PASS bounded refresh/alias masking;50 targeted,796/794/0/2 full; build PASS32 inherited diagnostics. Overall IMPLEMENTING."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4298,7 +4334,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 19
+    "p1_open": 18
   },
   "workstreams": [
     {
@@ -4381,7 +4417,8 @@
         "H05.2a",
         "H09.3b",
         "H09.3c",
-        "H09.3d"
+        "H09.3d",
+        "H09.3e"
       ],
       "dependencies": [
         "C1",

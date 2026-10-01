@@ -105,3 +105,11 @@ test('absent cleanup after unconfirmed creation is not proof against a late daem
  const server=createServer((req,res)=>{if(req.url==='/version')res.end(JSON.stringify({Os:'linux',ApiVersion:'1.51',MinAPIVersion:'1.40'}));else if(req.method==='DELETE'){res.statusCode=404;res.end('{}');}else if(req.url!.includes('/create?')){res.statusCode=201;res.end('{"Id":"unconfirmed"}');}else res.end('{}');});await new Promise<void>(r=>server.listen(socket,r));
  try{const runner=new ContainerToolRunner({allow:['node'],roots:[work],defaultCwd:work,socket,image,onCleanup:(_,value)=>{removed=value;}});const result=await runner.run({name:'node',input:{argv:['node','-e','0']}});assert.equal(result.exit,null);assert.equal(removed,false);assert.match(result.output,/Cleanup not confirmed/);}finally{await new Promise<void>(r=>server.close(()=>r()));rmSync(root,{recursive:true,force:true});}
 });
+test('protected host controls remain masked when their parent root is an alias',{skip:!process.env.CUESHEET_TEST_TOOL_SOCKET||!process.env.CUESHEET_TEST_TOOL_IMAGE},async()=>{
+ const {symlinkSync}=await import('node:fs');const root=mkdtempSync(join(tmpdir(),'cs-protected-alias-')),work=join(root,'work'),alias=join(root,'alias');mkdirSync(work);symlinkSync(work,alias,'dir');const protectedFile=join(alias,'owner-check');writeFileSync(protectedFile,'controller-secret-fixture');
+ try{
+  const runner=new ContainerToolRunner({allow:['node'],roots:[alias],defaultCwd:alias,socket:process.env.CUESHEET_TEST_TOOL_SOCKET!,image:process.env.CUESHEET_TEST_TOOL_IMAGE!,protectedPaths:[protectedFile],timeoutMs:5000});
+  const result=await runner.run({name:'node',input:{argv:['node','-e',"const fs=require('fs');console.log(fs.readFileSync('owner-check','utf8'));try{fs.writeFileSync('owner-check','corrupted-fixture');console.log('write succeeded')}catch{console.log('write refused')}" ]}});
+  assert.equal(result.exit,0,result.output);assert.doesNotMatch(result.output,/controller-secret-fixture|write succeeded/);assert.match(result.output,/write refused/);assert.equal(readFileSync(protectedFile,'utf8'),'controller-secret-fixture');
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
