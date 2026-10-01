@@ -148,3 +148,5 @@ EV-SHARED-MEMORY-EDIT :24 ciblés et764/762/0/2 final full PASS. E01.4b DONE : c
 2026-10-01 — backend Docker explicite et Vault local versionné/retrieval automatique livrés en tranches, preuves evaluation/local-vault-containers.780/778/0/2 full,49 ciblés, build PASS (32 types hérités), review solo a corrigé faux DELETE404/create non confirmé. Projet toujours IMPLEMENTING : auth/sync/Vault façade entreprise/import/UX/évaluations et route automatique outils restent ouverts.
 
 2026-10-01 — publication automatique de specs + route outils automatique vérifiées :788/786/0/2 full,50 ciblés,37 contrôle entreprise ajouté, build PASS. H07.2b nouveau défaut borné providertools inscrit, parents enterprise/multi-agent/benchmark toujours ouverts.
+
+2026-10-01 — vocabulaire provider actuel vérifié793/791/0/2 full et42 ciblés ; source/prompt corrigés, parent matrix pending. Route choisie à reprise H09.3d suivante.

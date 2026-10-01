@@ -194,3 +194,5 @@ Statut exact et preuves : state.json ; pas de parent terminé par inférence.
 Preuve EV-LOCAL-VAULT-CONTAINERS : H09.3b/E01.5a/E01.6a/E01.5b1 DONE pour les tranches locales finies ; aucune AC parent globale passée. E01.3/4/5b/6/7 et H09.3c restent ouverts. state.json est le statut courant.
 
 E01.5c/H09.3c DONE pour tranches locales, EV-AUTOMATIC-VAULT-TOOLS ; H07.2b P1 IN_PROGRESS vocabulaire provider ancien, rattaché C5, dépend de H09.3c.
+
+H07.2b DONE EV-CURRENT-TOOLS ; H09.3d P1 IN_PROGRESS : refresh de disponibilité de route à reprise/new goal.

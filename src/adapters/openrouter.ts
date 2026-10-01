@@ -1,3 +1,4 @@
+import {declaredTools} from "./tool-vocabulary.ts";
 /**
  * Adapter: OpenRouter as a model provider.
  *
@@ -97,11 +98,7 @@ export class OpenRouterAdapter implements ModelAdapter {
    * yields no enum, which is the older behaviour and is not worse.
    */
   private vocabularyOf(frame: ContextFrame): string[] | null {
-    for (const d of frame.directives) {
-      const m = /^tools:\s*([a-z_, ]+)$/m.exec(d.text);
-      if (m) return m[1]!.split(",").map((s) => s.trim()).filter(Boolean);
-    }
-    return null;
+    return declaredTools(frame);
   }
 
   private render(frame: ContextFrame): { messages: ChatMessage[]; tools: ToolSchema[] } {
@@ -149,8 +146,8 @@ export class OpenRouterAdapter implements ModelAdapter {
             "",
             "TOOL CONTRACT. One tool, named tool_call, arguments:",
             '  {"tool": "<name>", "input": {...}}',
-            "Tools: node, git, rg, ls, cat, npm, npx, cargo.",
-            "Two accepted input shapes, nothing else:",
+            `Tools: ${(this.vocabularyOf(frame) ?? ["node", "git", "rg", "ls", "cat", "npm", "npx", "cargo"]).join(", ")}.`,
+            "Current tool availability is the most recent tools declaration; older lists are historical. Command tools use argv/path as below; internal tools use structured inputs from the current directives:",
             '  {"tool": "cat", "input": {"argv": ["cat", "data.json"]}}   run exactly this command',
             '  {"tool": "cat", "input": {"path": "data.json"}}            read that file (cat, ls, node)',
             "If a call returns exit 2 with 'no argv supplied', your input shape was wrong: reread the two accepted shapes above instead of retrying the same one.",

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "2622d39",
+  "referenceCommit": "b473cdb",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3150,7 +3150,7 @@
     {
       "id": "H07.2b",
       "priority": "P1",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "requirements": [
         "REQ-H07.2"
       ],
@@ -3168,8 +3168,34 @@
         "AC-H07.2"
       ],
       "verification": "Régression prépatch requêtes API capturées/transport binaire, liste courante restreinte, noms/dédoublonnage et types/full",
+      "evidence": [
+        "EV-CURRENT-TOOLS"
+      ],
+      "notes": "Découvert pendant route automatique ; runner continue à refuser les commandes non admises Régression en échec avant/réussite après ; parent reste ouvert."
+    },
+    {
+      "id": "H09.3d",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H09.3"
+      ],
+      "dependencies": [
+        "H09.3c",
+        "H07.2b"
+      ],
+      "description": "Recalculer la disponibilité locale de route outils à chaque nouvelle exécution/reprise, sans changer un effet actif",
+      "systems": [
+        "apps/terminal/src/producer/runtime.ts",
+        "src/adapters/tool-route.ts",
+        "test/tool-route.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3"
+      ],
+      "verification": "Sock absent→présent entre factory calls, présente→absente entreprise, configuration owner figée, namespaces courants, no fallback actif, réel runtime/types/régression",
       "evidence": [],
-      "notes": "Découvert pendant route automatique ; runner continue à refuser les commandes non admises"
+      "notes": "Découvert : factory actuelle capture décision au lancement ; Docker apparu après garde ancien runner jusqu’à nouveau runtime"
     }
   ],
   "acceptance": [
@@ -4220,6 +4246,12 @@
       "result": "PASS_PARTIAL",
       "method": "Real automatic Docker runtime and refused enterprise local override, actual SIGKILL/publication recovery, current model docs/protection, typing/build/full; solo review",
       "details": "788/786/0/2 full PASS;50 targeted and37 enterprise/static PASS. evaluation/automatic-vault-tools/evidence.md. H07.2b discovered and pending."
+    },
+    {
+      "id": "EV-CURRENT-TOOLS",
+      "result": "PASS_PARTIAL",
+      "method": "Captured native/compatible requests before and after, real binary subprocess, sequence/embedded-data/duplicate refusals, typing/build/full; solo review",
+      "details": "42 targeted PASS;793/791/0/2 full PASS. evaluation/current-tools/evidence.md. No full capability matrix or live benchmark claimed."
     }
   ],
   "risks": {
@@ -4229,10 +4261,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "2622d39",
+    "lastPassedCommit": "b473cdb",
     "lastFullSuite": {
-      "tests": 788,
-      "passed": 786,
+      "tests": 793,
+      "passed": 791,
       "failed": 0,
       "skipped": 2
     },
@@ -4257,7 +4289,8 @@
     "workingTreeSharedContextUI": "PASS readonly palette, actual keys/pages/sources/resize;760/758/0/2 full. Parent enterprise UI/edit/export pending.",
     "workingTreeSharedEdits": "PASS human project edit/resolve, CAS and sourced history, exact retries preserve human state, active humans not dropped;764/762/0/2 full. No enterprise auth/OS guarantee.",
     "workingTreeVaultContainers": "PASS bounded local slices;780/778/0/2 full,49 targeted, build PASS with32 inherited diagnostics. Overall IMPLEMENTING; no global closure.",
-    "workingTreeAutomaticVaultTools": "PASS finite local publication/auto route;788/786/0/2 full,50 targeted +37 enterprise additional. Tool vocabulary H07.2b pending, global IMPLEMENTING."
+    "workingTreeAutomaticVaultTools": "PASS finite local publication/auto route;788/786/0/2 full,50 targeted +37 enterprise additional. Tool vocabulary H07.2b pending, global IMPLEMENTING.",
+    "workingTreeCurrentTools": "PASS H07.2b finite current namespace in schemas/prompts;793/791/0/2 full,42 targeted, build PASS32 baseline diagnostics."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4347,7 +4380,8 @@
         "H09.3a",
         "H05.2a",
         "H09.3b",
-        "H09.3c"
+        "H09.3c",
+        "H09.3d"
       ],
       "dependencies": [
         "C1",

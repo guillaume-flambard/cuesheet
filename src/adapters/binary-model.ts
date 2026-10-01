@@ -1,3 +1,4 @@
+import {declaredTools} from "./tool-vocabulary.ts";
 /**
  * Adapter: the local OpenCode binary as a model provider.
  *
@@ -428,6 +429,7 @@ export function renderProposalPrompt(frame: ContextFrame, vocabulary: readonly s
     'Shape: {"text": string, "toolCalls": [{"name": string, "input": object}]}',
     "",
     `The tool calls you may propose, and the only ones that will ever run, are: ${verbs}.`,
+    "Older tools declarations in historical facts do not extend this current list.",
     'A call is {"name": "<one of those>", "input": {...}}.',
     'For example: {"name": "read_file", "input": {"path": "src/index.ts"}}',
     "",
@@ -445,16 +447,12 @@ export function renderProposalPrompt(frame: ContextFrame, vocabulary: readonly s
  *
  * The same `tools: a, b, c` convention `openrouter.ts` reads, kept in the same
  * place, because a producer that wants a closed schema writes it and anything
- * else yields no enum. Duplicated rather than exported: the OpenRouter adapter's
- * copy is private, and reaching across adapters for one line of parsing would
- * couple two providers that are otherwise independent.
+ * else yields no enum. The controller declaration is selected by sequence
+ * through the shared adapter helper;
+ * historical availability never expands the current provider schema.
  */
 function vocabularyOf(frame: ContextFrame): string[] {
-  for (const d of frame.directives) {
-    const m = /^tools:\s*([a-z_, ]+)$/m.exec(d.text);
-    if (m) return m[1]!.split(",").map((s) => s.trim()).filter(Boolean);
-  }
-  return [];
+  return declaredTools(frame)??[];
 }
 
 export class BinaryModelAdapter implements ModelAdapter {

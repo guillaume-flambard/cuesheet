@@ -32,3 +32,5 @@ Extension de directive Vault : E01.5a→E01.5b, E01.6a→E01.6→E01.5b→E01.7,
 E01.5b1→C3 : tranche automatique locale indépendante, dépend de E01.5a/E01.6a ; parent E01.5b exige encore import/intégration/permissions entreprise réelles. E01.6a ne remplace pas E01.3/E01.6.
 
 E01.5c→C3 (publication automatique) et H09.3c→C4 (route automatique) vérifiés en tranches. H07.2b→C5 dépend de H09.3c ; anciennes déclarations restent dans frame et doivent cesser d’étendre schémas provider.
+
+H09.3d→C4 dépend de H09.3c/H07.2b ; configuration owner stable, disponibilité réobservée aux starts, pas mutation de runner actif.
