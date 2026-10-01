@@ -166,3 +166,34 @@ app.unmount();console.log(JSON.stringify({newest,oldest,live,recalled,draft,edit
     assert.equal(result.recalled, "beta"); assert.equal(result.draft, "draft"); assert.equal(result.edited, "drafXt");
   } finally { rmSync(root,{recursive:true,force:true}); }
 });
+
+
+it("rendered palette renews only the exact reviewed check and Escape writes nothing",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-check-palette-'));
+ try{
+  const terminal=resolve('apps/terminal');const repo=resolve('.');const script=join(root,'check-palette.tsx');writeFileSync(join(root,'package.json'),'{"type":"module"}');
+  writeFileSync(script,`import React from ${JSON.stringify(join(terminal,'node_modules/react/index.js'))};
+import {render} from ${JSON.stringify(join(terminal,'node_modules/ink/build/index.js'))};
+import {App} from ${JSON.stringify(join(terminal,'src/app/App.tsx'))};
+import {createStore} from ${JSON.stringify(join(terminal,'src/app/store.ts'))};
+import {createProducer} from ${JSON.stringify(join(terminal,'src/producer/index.ts'))};
+import {TerminalSession} from ${JSON.stringify(join(repo,'src/adapters/terminal-session.ts'))};
+import {projectObjectives,correctObjective} from ${JSON.stringify(join(repo,'src/adapters/objectives.ts'))};
+import {createCompletionCheck} from ${JSON.stringify(join(repo,'src/adapters/surface-verification.ts'))};
+import {PassThrough} from 'node:stream';import {mkdirSync,writeFileSync} from 'node:fs';import {join} from 'node:path';
+const root=${JSON.stringify(root)};const cwd=join(root,'work');mkdirSync(cwd);const oracle=join(cwd,'accept.mjs');writeFileSync(oracle,'process.exit(0)');
+const journal=new TerminalSession({root:join(root,'sessions'),cwd});const store=createStore();let release;let calls=0;
+const producer=createProducer({store,journal,cwd,projectsRoot:root,identities:[],maxSlices:1,verification:createCompletionCheck({script:oracle,root:join(root,'proof')}),tools:{async run(){throw new Error('no effects');}},model:{name:'palette-test',async infer(){calls++;if(calls===1)await new Promise(r=>release=r);return {text:'',toolCalls:[]};}}});
+const out=new PassThrough();Object.assign(out,{columns:65,rows:22,isTTY:false});let last='';out.on('data',b=>last=b.toString());
+const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});
+const app=render(<App store={store} producer={producer}/>,{stdout:out,stderr:out,stdin:input,debug:true,exitOnCtrlC:false});
+const tick=()=>new Promise(r=>setTimeout(r,45));const open=async()=>{input.write('\\x0b');await tick();for(let i=0;i<6;i++){input.write('\\x1b[B');await tick();}input.write('\\r');await tick();};
+producer.say('original requirement');await tick();producer.say('first correction');await tick();const id=projectObjectives(journal.core.toSession().events).current.id;
+await open();const reviewed=last;const sizes=[];for(const [columns,rows] of [[40,14],[80,24],[120,36]]){out.columns=columns;out.rows=rows;out.emit('resize');await tick();sizes.push({rows,frame:last});}const before=journal.core.revision;input.write('\\x1b');await tick();const cancelled=journal.core.revision===before;
+await open();const correction=journal.core.append({kind:'directive',subject:'builder',data:{text:'second correction',source:'terminal.user'}});correctObjective(journal.core,'second correction',correction.seq);await tick();const corrected=journal.core.revision;input.write('c');await tick();const refused=journal.core.revision===corrected;const refusal=last;
+await open();const finalBefore=journal.core.revision;input.write('c');await tick();const now=projectObjectives(journal.core.toSession().events).current;const confirmed=now.check.boundRevision===now.revision&&now.id===id&&journal.core.revision>finalBefore;
+release();const end=Date.now()+5000;while(store.get().busy&&Date.now()<end)await tick();app.unmount();journal.close();console.log(JSON.stringify({reviewed,cancelled,refused,refusal,confirmed,sizes}));`);
+  const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:20000});assert.equal(run.status,0,run.stderr);const result=JSON.parse(run.stdout.trim());
+  assert.match(result.reviewed,/Confirmer le critère épinglé/);assert.match(result.reviewed,/first correction/);assert.match(result.reviewed,/C confirmer/);assert.equal(result.cancelled,true);assert.equal(result.refused,true);assert.match(result.refusal,/Confirmation refusée/);assert.equal(result.confirmed,true);for(const size of result.sizes){assert.match(size.frame,/C confirmer/);assert.ok(size.frame.split('\n').length<=size.rows,size.frame);}
+ }finally{rmSync(root,{recursive:true,force:true});}
+});

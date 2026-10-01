@@ -131,7 +131,10 @@ interface Wiring {
   readonly goal: string;
 }
 
+export interface CheckConfirmation {id:string;revision:number;digest:string;text:string;scope:string;corrections:string[];criteria:string[];}
+
 export interface Producer {
+  checkConfirmation?():CheckConfirmation|null;
   modelSelected?(selection:ModelPreferences): void;
   /** Stop the current run; keep the conversation and the goal open. */
   cancel?(): void;
@@ -622,6 +625,13 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    checkConfirmation() {
+      const current=projectObjectives(shared.toSession().events).current;
+      const pinned=options.verification?.pinned;
+      if(!current || current.id.startsWith("legacy-") || !pinned || current.check?.boundRevision===current.revision)return null;
+      return {id:current.id,revision:current.revision,digest:pinned.digest,text:current.originalText,scope:current.scope,
+        corrections:current.corrections.map(c=>c.text),criteria:current.criteria.slice()};
+    },
     modelSelected(selection) {
       options.journal?.assertWritable();
       options.journal?.recordModel(selection);

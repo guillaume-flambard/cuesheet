@@ -65,3 +65,9 @@ Conserver les tests de focus, draft et overlay existants.
 Dépendances : les projections H01 à H07 au fil de leur disponibilité. Les vues peuvent
 être construites par tranches ; elles ne doivent pas faire leurs propres observations
 ni lancer une inférence au simple affichage.
+
+## Tranche critères épinglés, H08.2/H08.4
+
+Palette clavier → « Critère de validation » → snapshot propriétaire du contrat courant (texte original, corrections, critères modèle explicitement interprétés, ID/révision/digest du check épinglé). Aucun renouvellement en ouvrant la vue. La personne presse C pour confirmer après lecture ; Escape ferme sans écriture. Le producteur reçoit le snapshot exact capturé à l’ouverture et refuse si la révision a changé pendant la lecture. Aucun choix de fichier/exécution/auto-reprise derrière l’acceptation. Pas de saisie manuelle des IDs nécessaire ; /check reste un override avancé.
+
+Texte long consultable via flèches avec viewport borné à la taille terminal, footer de confirmation visible. Refus de contexte périmé retourne à la conversation avec une explication ; prochain contrôle repart d’un snapshot frais. Composer désactivé tant que la palette reste ouverte. Vérification Ink par vraies frappes : ouvrir n’écrit rien, Escape annule, C confirme exact snapshot ; correction après ouverture refuse la vieille approbation ; sortie/documentation distinguée des critères propriétaire. Parent H08 reste ouvert.

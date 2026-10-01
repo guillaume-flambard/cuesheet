@@ -132,3 +132,5 @@ Commits de la reprise par chantiers : C1.a/C0.a `88ae665`, C2.a `ad65c49`, C5.a 
 Extension E01 : E01.1 et E01.2 vérifiés par EV-SHARED-SCOPES (evaluation/shared-context-evidence.md). E01.D1 corrigé et régressé. E01.3 et E01.4 restent TODO. Projet IMPLEMENTING ; aucune clôture globale.
 
 EV-CHECK-RENEWAL : check épinglé réautorisé explicitement à un ID/révision exact ; ancienne preuve refusée, même goal repris, reload préservé. 739/737/0/2 full PASS. H01.3a DONE ; H01.3 parent toujours IN_PROGRESS.
+
+EV-CHECK-PALETTE : renouvellement explicite depuis la palette, snapshot de contrat refusé si périmé, annulation sans append. Vraies frappes Ink et trois tailles/resize ; 17 ciblés PASS, full 740/738/0/2 PASS. H08.2/H08.4 non clos.

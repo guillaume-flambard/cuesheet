@@ -157,7 +157,8 @@ export function App(props: AppProps): JSX.Element {
               return result;
             }} onClose={() => send({ type: "close" })} />
         ) : state.overlay === "palette" ? (
-          <Palette rows={contentRows} onOpen={(overlay) => send({ type: "open", overlay })}
+          <Palette width={column} rows={contentRows} onOpen={(overlay) => send({ type: "open", overlay })}
+            onCheck={()=>producer?.checkConfirmation?.() ?? null} onConfirmCheck={approval=>{send({type:"close"});producer?.say(`/check confirm ${approval.id} ${approval.revision} ${approval.digest}`);}}
             onNew={()=>loadSession()} onResume={()=>{send({type:"close"});if(!missing) producer?.resume?.();}} />
         ) : state.overlay === "sessions" ? (
           <Sessions rows={contentRows} current={wired.session?.metadata.id} list={sessionChoices} onChoose={loadSession} />
