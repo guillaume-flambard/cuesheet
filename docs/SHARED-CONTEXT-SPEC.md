@@ -1,5 +1,8 @@
 # Shared context in the terminal
 
+Full product specs and remaining execution order: [harness/README.md](harness/README.md)
+and [harness/TODO.md](harness/TODO.md). This document records the initial slice.
+
 The product direction stays the same: intentions become maintainable objectives,
 with durable memory and agents reading a common state. Model changes must preserve
 the state and the acceptance standard. They cannot guarantee equal model ability.

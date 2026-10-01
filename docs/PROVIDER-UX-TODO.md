@@ -1,5 +1,8 @@
 # Provider UX todo
 
+The consolidated remaining product backlog is [harness/TODO.md](harness/TODO.md).
+This file records the completed provider slice and its historical validation.
+
 - [x] Write scope and acceptance criteria in PROVIDER-UX-SPEC.md.
 - [x] Load and atomically save non-secret provider preferences.
 - [x] Define precedence and prevent model leakage across providers.

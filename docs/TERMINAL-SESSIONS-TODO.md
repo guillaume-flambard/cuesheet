@@ -1,5 +1,8 @@
 # Durable sessions todo
 
+The consolidated remaining product backlog is [harness/TODO.md](harness/TODO.md).
+This file records the completed session slice and its historical validation.
+
 - [x] Define scope and acceptance in TERMINAL-SESSIONS-SPEC.md.
 - [x] Add write-through core and view persistence using SessionStore.
 - [x] Enforce single live writer and recover dead process claims.

@@ -1,5 +1,8 @@
 # Autonomous work control
 
+Full product specs and remaining execution order: [harness/README.md](harness/README.md)
+and [harness/TODO.md](harness/TODO.md). This document records the initial slice.
+
 The default interaction is an intention and ordinary corrections. The model-backed
 harness chooses the next useful step instead of asking the person to select a mode.
 It can inspect, research, specify, build and review as needed. A spec or checklist

@@ -1,0 +1,165 @@
+# Backlog exécutable
+
+Chaque ID renvoie à sa spec H01 à H10. Une case se coche après implémentation,
+régressions, revue, résultat consigné et commit local. Les IDs sont stables ;
+ajouter des sous-tâches si nécessaire, sans effacer les travaux non terminés.
+Les dix specs sont intégralement dans le périmètre. Les commandes manuelles ne
+constituent pas l'accomplissement d'un comportement censé être automatique.
+
+## Fondations déjà livrées
+
+- [x] Sessions persistantes et reprise explicite : `d5f1062`.
+- [x] Choix providers/modèles et préférences : `76ea095`, `d51a989`.
+- [x] Contexte partagé livré au modèle : `5177958`.
+- [x] Mémoire éditable avec historique : `53844cd`.
+- [x] Outils internes d'organisation et mémoire automatique : `f4f05bf`.
+
+Ces cases décrivent ces tranches seulement. Elles ne valident pas les objectifs
+plus complets portant sur les mêmes concepts ci-dessous.
+
+## Lot 0 : établir le chantier
+
+- [ ] B00.1 Lire HANDOFF, README, règles applicables et specs du premier lot.
+- [ ] B00.2 Relever HEAD, état Git, tests et diagnostics initiaux dans STATUS.md.
+- [ ] B00.3 Construire le manifeste minimal du corpus H10.1 et un scénario fil rouge.
+- [ ] B00.4 Reproduire les défauts d'identité du plan et de contexte non borné avant correction.
+
+Terminé quand la baseline et les reproductions sont enregistrées, avec distinction
+tests réels/scriptés, sans modifier le document utilisateur non suivi.
+
+## Lot 1 : contrat de travail stable
+
+Dépendance : lot 0. Spec : H01, début H09.
+
+- [ ] H01.1 Schémas versionnés, IDs stables, projections et dépendances.
+- [ ] H01.2 Extraction et correction d'objectif en conversation ordinaire.
+- [ ] H01.3 Critères avec provenance, révision et autorité explicites.
+- [ ] H01.4 Raccordement plans/tâches/mémoire/preuves au contrat courant.
+- [ ] H01.5 Compatibilité des goals/plans déjà enregistrés.
+- [ ] H09.1 Validation des payloads, migration et replay des anciennes sessions.
+
+Terminé quand un objectif peut être reformulé et son critère modifié sans perdre
+son ID, ni réutiliser une preuve obsolète. Deux objectifs identiques restent séparés.
+
+## Lot 2 : décider et entretenir automatiquement
+
+Dépendance : lot 1. Specs : H02 et H03.
+
+- [ ] H02.1 Décision structurée avec base de révision et admission runtime.
+- [ ] H02.2 Specs utiles et tâches identifiables, versionnées, consultables/exportables.
+- [ ] H02.3 Processus léger et questions seulement quand nécessaires.
+- [ ] H02.4 Révision du plan à partir des échecs observés et revue appropriée.
+- [ ] H03.1 Extraction mémoire sourcée/idempotente après échanges et observations.
+- [ ] H03.2 Contradictions, réponses et leçons avec historique.
+
+Terminé quand les fixtures normales créent/entretiennent leurs records sans `/memory`
+ou sélection de mode, tout en conservant l'autorité des corrections humaines.
+
+## Lot 3 : reprendre avec un contexte utile
+
+Dépendance : lots 1 à 2. Spec : H03.
+
+- [ ] H03.3 Compilateur borné et lecture ciblée des sources omises.
+- [ ] H03.4 Reconstructions et isolation session/projet/personnel.
+- [ ] H03.5 Journal long, petite fenêtre et substitution de modèles mesurés.
+
+Terminé quand le scénario 10 000 événements conserve la contrainte déterminante,
+reste dans le budget du modèle et peut récupérer les preuves condensées.
+
+## Lot 4 : recherche et capacités apprenantes
+
+Dépendance : lots 1 à 3. Spec : H04.
+
+- [ ] H04.1 Choisir/raccorder le connecteur de recherche et sa configuration explicite.
+- [ ] H04.2 Lecture locale/web, résultat durable, limites et cancellation.
+- [ ] H04.3 Attribution, fraîcheur/version et citations effectivement obtenues.
+- [ ] H04.4 Découverte des skills configurés et chargement à la demande.
+- [ ] H04.5 Skill local essayé, révisé, réutilisé et promouvable avec preuves.
+
+Terminé quand une incertitude technique déclenche une recherche attribuée, et
+qu'un skill créé pour un besoin réel est utilisé par une autre exécution.
+Une route réseau indisponible est signalée, pas remplacée par une source inventée.
+
+## Lot 5 : continuité et effets incertains
+
+Dépendance : lots 1 à 3 ; H09.2/H09.3. Specs : H05, H09.
+
+- [ ] H09.2 Recovery explicite et reconciliation core/vue/artefacts.
+- [ ] H09.3 Contrats d'outils et résultats complets référencés.
+- [ ] H05.1 Cycle de vie run/tranche/inférence distinct de l'objectif.
+- [ ] H05.2 Continuation bornée entre tranches actives.
+- [ ] H05.3 Reconstruction à la limite et détection de stagnation.
+- [ ] H05.4 Inspecter/reconcilier avant de répéter un effet incertain.
+- [ ] H05.5 Budgets cumulés, arrêt propagé, reprise au lancement explicitement configurable.
+
+Terminé quand une tâche de plus de huit inférences se poursuit automatiquement,
+Ctrl+C l'arrête durablement et un reload ne répète pas un effet incertain.
+
+## Lot 6 : plusieurs agents, un travail commun
+
+Dépendance : lots 1 à 3 et 5. Spec : H06.
+
+- [ ] H06.1 Contrats de délégation et choix automatique des rôles.
+- [ ] H06.2 Contrôleur et deux workers processus réels avec receipts/revisions.
+- [ ] H06.3 Workspaces isolés et intégration explicitement vérifiée.
+- [ ] H06.4 Correction à R+1, rebase et remplacement après disparition.
+- [ ] H06.5 Responsabilités et budgets partagés exposés aux projections.
+
+Terminé quand un worker disparaît et son remplaçant reprend sans transcript privé,
+et que la preuve finale concerne le résultat intégré après la dernière correction.
+
+## Lot 7 : modèles et flux
+
+Dépendance : lots 3 et 5 pour changement actif. Spec : H07.
+Le transport Anthropic peut être développé plus tôt après lot 1.
+
+- [ ] H07.1 Anthropic direct, contrats et essai d'intégration configuré.
+- [ ] H07.2 Capacités connues/inconnues et taille de contexte par modèle.
+- [ ] H07.3 Changement actif à une frontière sûre avec état cohérent après échec.
+- [ ] H07.4 Streaming complet, outils validés, usage et abort.
+- [ ] H07.5 Routing autorisé et auth supportée ; diagnostic si indisponible.
+
+Terminé quand une sélection pendant un flux ne publie pas la réponse obsolète,
+ne déclenche pas d'outil partiel et préserve contrat et mémoire.
+
+## Lot 8 : terminal de travail
+
+Dépendance : projections des lots 1 à 7, au fil de leur disponibilité. Spec : H08.
+
+- [ ] H08.1 Vue travail progressive, intention et états lisibles.
+- [ ] H08.2 Consultation/correction objectifs, spec et mémoire avec historique.
+- [ ] H08.3 Vues agents, sources, outils et sorties complètes.
+- [ ] H08.4 Arrêt/reprise/changement actif compréhensibles au clavier.
+- [ ] H08.5 Tests Ink/PTY, trois tailles, resize, focus, Unicode et sans couleur.
+
+Terminé quand le parcours complet est faisable avec les vraies frappes sans passer
+par un mode manuel ni une commande interne obligatoire.
+
+## Lot 9 : installation et qualité démontrée
+
+Dépendance : fonctions concernées terminées. Specs : H09 et H10.
+
+- [ ] H09.4 Installation packagée, export/import, rétention et racines portables.
+- [ ] H09.5 Pannes injectées et traces sans credentials ni preuves inventées.
+- [ ] H02.5 Choix du processus évalués avec des providers réels.
+- [ ] H10.1 Corpus/manifeste complété et oracles gelés hors du producteur.
+- [ ] H10.2 Rapports distinguant preuves déterministes, intégrations et modèles réels.
+- [ ] H10.3 Runs répétés faible/fort modèle et comparaison OpenCode reproductible.
+- [ ] H10.4 Feature réelle, correction, crash, reprise différée et substitution.
+- [ ] H10.5 Rapport de remplacement, seuils préfixés et limites explicites.
+
+Terminé quand le rapport rattache chaque promesse à ses runs, versions, commits
+et preuves, avec les écarts qui restent. Une incapacité du modèle est un résultat
+à consigner et à traiter, pas une raison de relâcher le critère.
+
+## À chaque lot
+
+- [ ] Ajouter une régression liée au comportement qui échoue avant la correction.
+- [ ] Vérifier les diagnostics sans masquer les nouveautés dans la baseline.
+- [ ] Exécuter les tests appropriés puis la suite d'intégration complète.
+- [ ] Faire une revue des mutations, de la provenance, des effets et des races.
+- [ ] Mettre à jour spec, cases réellement achevées, STATUS et preuves du lot.
+- [ ] Commit local ciblé ; préserver les changements étrangers au lot.
+
+Ces six cases sont un gabarit à recopier dans STATUS pour chaque lot, pas un
+lot unique à cocher après la première tranche.
