@@ -35,6 +35,11 @@ it('write-through events, view and directive continuation survive closing and re
     assert.equal(frames.length,0,'loading does not infer');
     resumed.resume!();await settled(replay);
     assert.equal(frames[0].goal,'repair the fixture');assert.ok(frames[0].directives.some((d:any)=>d.text==='preserve this directive'));
+    const sharedContext=frames[0].directives.find((d:any)=>d.text.startsWith('Shared work snapshot.'));
+    assert.ok(sharedContext,'a replacement provider receives the derived shared state');
+    const snapshot=JSON.parse(sharedContext.text.split('\n').slice(1).join('\n'));
+    assert.ok(snapshot.constraints.some((c:any)=>c.text==='preserve this directive'));
+    assert.equal(snapshot.goal,'repair the fixture');
     assert.deepEqual(restored.core.toSession().events.slice(0,before.length),before);
   }finally{first?.close();restored?.close();rmSync(root,{recursive:true,force:true});}
 });
@@ -82,8 +87,13 @@ import {writeFileSync} from 'node:fs';
 const session=new TerminalSession({root:${JSON.stringify(storage)},cwd:${JSON.stringify(cwd)}});
 const store=persistentView(session);const producer=createProducer({store,cwd:${JSON.stringify(cwd)},projectsRoot:${JSON.stringify(root)},identities:[],journal:session,model:{name:'tool',async infer(){return {text:'',toolCalls:[{name:'node',input:{argv:['node','-e','effect']}}]};}},tools:{async run(){writeFileSync(${JSON.stringify(started)},session.metadata.id);await new Promise(()=>{});return {name:'node',exit:0,output:''};}}});producer.say('one effect');store.send({type:'compose',text:'crash draft'});setInterval(()=>{},1000);`);
     const child=spawn(process.execPath,[script],{stdio:'ignore'});worker=child;const end=Date.now()+5000;
-    while(!existsSync(started) && Date.now()<end)await delay(10);
-    assert.ok(existsSync(started));const id=readFileSync(started,'utf8');
+    let id='';
+    while(Date.now()<end){
+      if(existsSync(started))id=readFileSync(started,'utf8');
+      if(/^t-[A-Za-z0-9_-]+$/.test(id))break;
+      await delay(10);
+    }
+    assert.match(id,/^t-[A-Za-z0-9_-]+$/);
     const exit=new Promise(r=>child.once('exit',r));child.kill('SIGKILL');await exit;
     reopened=new TerminalSession({root:storage,cwd,id});const view=persistentView(reopened);
     assert.equal(view.get().busy,false);assert.equal(view.get().composer,'crash draft');

@@ -1,0 +1,30 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { EventStore } from "../src/core/store.ts";
+import { withSharedContext } from "../src/adapters/shared-context.ts";
+import type { ContextFrame } from "../src/core/loop.ts";
+
+test("replacement models receive sourced work, refreshed corrections and no invented verification", () => {
+  const store = new EventStore("shared", () => 12);
+  store.append({ kind: "goal", subject: "builder", data: { text: "repair" } });
+  const decision = store.append({ kind: "action", subject: "worker-a", data: { text: "keep API", against: 1 } });
+  store.append({ kind: "note", subject: "human", data: { text: "which migration?", goal: "builder" } });
+  store.append({ kind: "note", subject: "terminal.user", data: { text: "repair" } });
+  store.append({ kind: "observation", subject: "worker-a", data: { text: "done" } });
+  const frame: ContextFrame = { goal: "repair", history: [], directives: [], evidence: [], capabilities: [], model: "replacement", step: 0 };
+  const before = JSON.stringify(store.toSession().events);
+  const restored = withSharedContext(frame, store.toSession());
+  const snapshot = JSON.parse(restored.directives.at(-1)!.text.split("\n").slice(1).join("\n"));
+  assert.equal(snapshot.decisions[0].at, decision.seq);
+  assert.equal(snapshot.decisions[0].by, "worker-a");
+  assert.equal(snapshot.openQuestions.length, 1);
+  assert.equal(snapshot.claims[0].fromTool, false);
+  assert.deepEqual(snapshot.evidence, []);
+  assert.equal(frame.directives.length, 0);
+  assert.equal(JSON.stringify(store.toSession().events), before);
+  assert.deepEqual(withSharedContext(frame, store.toSession()), restored);
+  store.append({ kind: "directive", subject: "builder", data: { text: "preserve schema" } });
+  const next = withSharedContext(frame, store.toSession());
+  assert.match(next.directives.at(-1)!.text, /preserve schema/);
+  assert.notEqual(next.directives.at(-1)!.text, restored.directives.at(-1)!.text);
+});

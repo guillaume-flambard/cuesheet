@@ -78,6 +78,7 @@ import type { Store } from "../app/store.ts";
 export const MAX_STEPS = 8;
 
 import type { TerminalSession } from "../../../../src/adapters/terminal-session.ts";
+import { withSharedContext } from "../../../../src/adapters/shared-context.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
@@ -307,7 +308,7 @@ export function createProducer(options: ProducerOptions): Producer {
         basis = read;
         proposalDirective = directiveRevision();
         try {
-          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(frame, signal), signal);
+          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(withSharedContext(frame, shared.toSession()), signal), signal);
           // The response was derived from the old frame. Re-recording a step
           // cannot make its proposed actions current: discard them instead.
           return shared.revision === read ? response : { text: "", toolCalls: [] };
