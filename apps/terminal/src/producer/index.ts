@@ -22,6 +22,39 @@
  *    chat are here for the same reason: the emission is not the outcome, and a
  *    run that never starts must not be recorded as one that did.
  *
+ * ## One store, and what a mid-run sentence does to it
+ *
+ * The `EventStore` is built once per producer, not once per run. That was the
+ * defect SW-02 fixed and it is worth stating why it was ever wrong: a store
+ * built inside `start()` gives every run a private log, so a sentence typed
+ * during a run has no log it could join, and the only thing left to do with it
+ * is start another run. Measured, before the fix: two runs, two logs, two
+ * `effect_requested`, `frame.directives` empty on all sixteen inferences of
+ * both, and the first run's request orphaned.
+ *
+ * So `say()` while a run is in flight appends a `directive` to that one log and
+ * starts nothing. The loop recompiles its frame from the log at the top of every
+ * step (`src/core/loop.ts:184-185`), so the directive reaches the next inference
+ * with no change to the core. There is no queue and no pending-message field
+ * anywhere in this app, and the test says so structurally rather than in a
+ * comment.
+ *
+ * ## The safe boundary is `infer`, and it is the loop's own
+ *
+ * `model.infer(frame)` is called at `src/core/loop.ts:187`, after the frame has
+ * been recompiled from the log and before any of the step's work exists. That is
+ * the boundary, and it was read off the loop rather than invented for this
+ * slice: it is the last point at which the loop is committed to acting on a
+ * frame it has already read.
+ *
+ * The producer wraps the injected adapter, reads the revision on the way in, and
+ * commits the step's record on the way out through `appendIfCurrent`. A sentence
+ * typed during the inference moved the log, so the commit is refused, the worker
+ * re-reads and re-derives, and the outcome is reported as `rebased` with the
+ * revision it left and the revision it landed on. Nothing is killed mid-write:
+ * the loop finishes its current step, because that step's appends are already
+ * durable and the log is append-only (`src/core/store.ts:159-163`).
+ *
  * ## Why the loop's own stop reason decides what the surface says
  *
  * `runAgentLoop` returns `goal-closed`, `budget-exhausted` or `blocked`, and it
@@ -34,6 +67,7 @@
 
 import { runAgentLoop, type ModelAdapter, type ToolRunner, type LoopOptions } from "../../../../src/core/loop.ts";
 import { EventStore, type Event } from "../../../../src/core/store.ts";
+import { temporaryWorker, type StepOutcome, type WorkLog } from "../../../../src/work-worker.ts";
 import { DEFAULT_PROJECTS_ROOT } from "../../../../src/adapters/frontier.ts";
 import { bindProject, identities, resolveScope, type ProjectIdentity, type Scope } from "./context.ts";
 import { entryForStop, pendingFor, translateEvent, type Pending } from "./translate.ts";
@@ -118,6 +152,33 @@ export function createProducer(options: ProducerOptions): Producer {
   // every sentence pay for a launch's worth of work.
   const ids = options.identities ?? identities(projectsRoot);
 
+  /**
+   * The one log. Built here rather than inside `start`, so that every run in
+   * this session appends to the same revisions and a sentence typed during a run
+   * has a log it can join. See the header for the measurement that forced it.
+   */
+  const shared = new EventStore(mint(), now);
+
+  /**
+   * Whether a run is in flight, which decides what a sentence means.
+   *
+   * A sentence typed while idle starts a run. A sentence typed while a run is in
+   * flight is a `directive` on the shared log and starts nothing. That is the
+   * whole of "nothing queues": there is one flag, it holds no text, and the
+   * sentence itself is appended immediately rather than held anywhere.
+   */
+  let inFlight = false;
+
+  /**
+   * The revision a step's work was derived against.
+   *
+   * Read on the way into `infer`, before the step's work exists, and committed
+   * on the way out. A sentence typed during the inference moves the log in
+   * between, which is what makes the commit refusable rather than assumed safe.
+   * `null` means no step is open, which is the state outside a run.
+   */
+  let basis: number | null = null;
+
   // The effect request, kept so the outcome can be recorded against it. EFF-01:
   // the emission is not the outcome. A request the world never answered is a
   // request, and the surface must be able to say so.
@@ -146,6 +207,108 @@ export function createProducer(options: ProducerOptions): Producer {
     if (entries.length > 0) send({ type: "observed", entries });
   };
 
+  /**
+   * The worker's view of the shared log, by interface.
+   *
+   * Taken as an interface rather than the store, which is the house pattern
+   * (`src/work-worker.ts:170-168`): the same worker runs over this and over a
+   * durable `SessionStore`, and the guard it commits through is the store's own
+   * `appendIfCurrent` rather than a second one written here.
+   */
+  const workLog: WorkLog = {
+    read: () => shared.toSession().events,
+    revision: () => shared.revision,
+    appendIfCurrent: (expected, event) => shared.appendIfCurrent(expected, event),
+  };
+  const worker = temporaryWorker(workLog, "builder");
+
+  /**
+   * One step of the loop, guarded, at the boundary the loop already exposes.
+   *
+   * `infer` is called after the frame is recompiled and before the step's work
+   * exists (`src/core/loop.ts:187`), so it is the last point at which the loop is
+   * committed to what it has read. The wrapper reads the revision on the way in
+   * and commits on the way out; a sentence typed while the model was thinking
+   * has moved the log, so the commit is refused and reported as a rebase rather
+   * than written over the newer state.
+   *
+   * What it commits is the step's own record, not a copy of the model's answer:
+   * an `action` naming what was attempted, which is the one kind
+   * `projectWork` folds into a `Decision` carrying the revision it was taken
+   * against (`src/work-state.ts:311-322`). Nothing is undone when a step is
+   * refused, because a refusal wrote nothing at all (CON-03).
+   */
+  const guarded = wrapAtBoundary(model);
+
+  function wrapAtBoundary(inner: ModelAdapter): ModelAdapter {
+    return {
+      name: inner.name,
+      async infer(frame) {
+        // Read before the work exists. Everything after this line is the step.
+        basis = shared.revision;
+        try {
+          return await inner.infer(frame);
+        } finally {
+          const read = basis;
+          basis = null;
+          if (read !== null) commitStep(read, frame);
+        }
+      },
+    };
+  }
+
+  /**
+   * Commit the step's record at the revision it was derived against, and say in
+   * surface words what happened.
+   *
+   * The outcome is reported as it is, never collapsed: `committed` when nothing
+   * moved, `rebased` when a sentence landed mid-step. Only the first is allowed
+   * to read as ordinary progress, because a rebase means the run acted on a
+   * frame older than the log, and a surface that said nothing would be hiding
+   * the exact thing the person needs to see.
+   */
+  function commitStep(read: number, frame: Parameters<ModelAdapter["infer"]>[0]): void {
+    const report = worker.step(
+      (state) => ({
+        kind: "action",
+        subject: worker.subject,
+        data: { text: `step ${frame.step} on ${state.goals[state.goals.length - 1]?.text ?? "the open goal"}`, tool: "step", step: frame.step },
+      }),
+      3,
+      read,
+    );
+
+    const outcome: StepOutcome = report.outcome;
+    // The committed record goes to the log whatever the outcome, because it was
+    // appended through the store rather than through the loop's `append`, so
+    // `onEvent` never saw it. Without this the step would be in the log and
+    // invisible, which is worse than not having written it.
+    if (outcome.kind === "committed" || outcome.kind === "rebased") {
+      log(`[action] ${worker.subject} ${safeData(outcome.event)}`);
+    }
+
+    if (outcome.kind === "committed") return;
+
+    // The mechanism words live here and nowhere else: `/inspect` is the only
+    // reader of the raw log, and the timeline gets a sentence a person can read.
+    // `from` is the revision the refused attempt was made against and `to` is
+    // where the re-derived record landed, so a reader can see how far the world
+    // moved while the step was running.
+    const left = outcome.kind === "rebased" ? outcome.from : read;
+    const landed = outcome.kind === "rebased" ? outcome.to : report.state.revision;
+    log(`[work] ${outcome.kind} ${worker.subject} from ${left} to ${landed} after ${report.attempts} attempt${report.attempts === 1 ? "" : "s"}`);
+    if (outcome.kind !== "rebased") return;
+
+    observe([
+      {
+        kind: "status",
+        label: "direction",
+        value: `changed while working; the run picked it up at step ${frame.step}`,
+        certainty: "active",
+      },
+    ]);
+  }
+
   /** Ask the binder, then run or offer. This is the automatic context step. */
   const runWith = (scope: Scope, goal: string): void => {
     if (scope.at === "choice") {
@@ -165,22 +328,25 @@ export function createProducer(options: ProducerOptions): Producer {
     // the cheapest verification there is.
     send({ type: "scoped", project: scope.name, where: scope.path });
     send({ type: "began" });
+    inFlight = true;
     void start(scope, goal);
   };
 
   /** Start the real loop. Everything here is the part V1 could not do. */
   const start = async (scope: { path: string; name: string }, goal: string): Promise<void> => {
     const subject = "builder";
-    const sessionId = mint();
-    const store = new EventStore(sessionId, now);
-    const requestId = `E-${sessionId}`;
+    const requestId = `E-${mint()}`;
 
     // The request is committed conditionally before the world is asked, so two
     // surfaces that both find a run allowed cannot both be right by the time it
     // lands. `null` means the journal moved, which is a refusal rather than an
     // error: nothing was written, and the person is told.
-    const basis = store.revision;
-    const committed = store.appendIfCurrent(basis, {
+    //
+    // Named `admitted` rather than `basis` because `basis` is the step's basis
+    // in the boundary above, and two variables differing only by scope in the
+    // same module is the kind of thing that is read wrong later.
+    const admitted = shared.revision;
+    const committed = shared.appendIfCurrent(admitted, {
       kind: "effect_requested",
       subject: requestId,
       data: {
@@ -192,6 +358,8 @@ export function createProducer(options: ProducerOptions): Producer {
     });
     if (committed === null) {
       observe([{ kind: "failure", text: "another surface started first; nothing was run here." }]);
+      log(`[effect_requested] ${requestId} refused; the log moved before it landed`);
+      inFlight = false;
       send({ type: "ended" });
       return;
     }
@@ -246,7 +414,9 @@ export function createProducer(options: ProducerOptions): Producer {
     };
 
     try {
-      const outcome = await runAgentLoop(store, model, tools, loopOptions);
+      // `guarded`, not `model`: the loop is given the boundary-wrapped adapter so
+      // that every step commits at the revision it read. See the header.
+      const outcome = await runAgentLoop(shared, guarded, tools, loopOptions);
       observe(entryForStop(outcome.stop));
       // The run returned. That is a fact about the process, not a success, so
       // the outcome records what the loop actually stopped on rather than
@@ -258,6 +428,7 @@ export function createProducer(options: ProducerOptions): Producer {
       log(`[effect_observed] ${pendingRequest ?? "E-unknown"} failed ${why}`);
       pendingRequest = null;
     } finally {
+      inFlight = false;
       send({ type: "ended" });
     }
   };
@@ -276,6 +447,21 @@ export function createProducer(options: ProducerOptions): Producer {
       // Record first, so the sentence is on screen before any work starts. The
       // surface never withholds what the person typed.
       send({ type: "submit", text: said });
+
+      // A sentence typed while a run is in flight is a fact about the work, not
+      // a request for more work. It is appended to the shared log immediately,
+      // before this function returns, and no second run starts.
+      //
+      // It is a `directive` because that is the kind the core's own frame fold
+      // reads (`src/core/loop.ts:128`), so the in-flight loop picks it up at its
+      // next step with no change to the core. A `note` would be filed as an open
+      // question instead and would never reach the run.
+      if (inFlight) {
+        shared.append({ kind: "directive", subject: "builder", data: { text: said } });
+        log(`[directive] builder ${said}`);
+        return;
+      }
+
       const scope = resolveScope(said, cwd, ids, bindProject, projectsRoot);
       runWith(scope, said);
     },
@@ -288,6 +474,7 @@ export function createProducer(options: ProducerOptions): Producer {
       // done and the choice only answered where.
       if (goal.length === 0) return;
       send({ type: "began" });
+      inFlight = true;
       void start({ path: option.path, name: option.name }, goal);
     },
     get state() {

@@ -154,8 +154,19 @@ export interface TemporaryWorker {
    * a caller-supplied producer, and a producer that keeps returning an event
    * against a moving log would otherwise spin forever. The bound is on attempts
    * rather than on a timer because a test must be able to reach it.
+   *
+   * `readAt` is the revision the caller's work was actually derived against, when
+   * that is older than the log's current revision. It exists because a step is
+   * not always instantaneous: a caller whose work is an `await` read the state
+   * before it and commits after it, and the log may have moved in between. That
+   * window is the whole of TOCTOU (P10), and without this parameter `step()` would
+   * re-read the revision at entry, so a commit made across an await could never
+   * be refused and a rebase could never be reported.
+   *
+   * Omitted, it is the current revision, which is the synchronous case this
+   * module was written for and the one every caller before it used.
    */
-  step(producer: WorkProducer, attempts?: number): StepReport;
+  step(producer: WorkProducer, attempts?: number, readAt?: number): StepReport;
 }
 
 /**
@@ -174,11 +185,14 @@ export function temporaryWorker(log: WorkLog, subject: string): TemporaryWorker 
     subject,
     read,
 
-    step(producer, attempts = 3): StepReport {
+    step(producer, attempts = 3, readAt?): StepReport {
       // The revision this step's work is derived from. Read once, outside the
       // loop, so that every attempt after the first is a genuine re-read rather
       // than a re-use of the number that just got refused.
-      let basis = log.revision();
+      //
+      // A caller that read before an `await` passes that older revision instead,
+      // which is the only way a commit made across the await can be refused.
+      let basis = readAt ?? log.revision();
       // The basis the *first* attempt was made against, kept so a rebase can
       // report the distance it travelled. Without it a rebase and a first-try
       // commit are indistinguishable in the report, which is the one thing this
