@@ -20,3 +20,5 @@ Ces risques ne sont pas déclarés résolus par le seul passage de la suite exis
 R08 : défaut de nom de capacité corrigé avec régression ; risque ciblé résolu par EV-CAPABILITY. Les autres diagnostics hérités restent ouverts.
 
 R11 | Partage d’entreprise entre machines : permissions/auth/offline non livrés | élevée / HIGH | seuls filesystem local et montages explicites vérifiés par EV-SHARED-SCOPES | E01.3/4 : transport choisi, autorisations et scénario équipe | OPEN.
+
+R12 : runner/recherche/skills peuvent conserver le cwd initial après binding d’un autre projet ; élevée/HIGH, OPEN. Inspection de runtime/index/context ; reproduction requise puis H09.3a. Le sandbox OS R06 reste un risque distinct.

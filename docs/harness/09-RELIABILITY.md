@@ -66,3 +66,25 @@ dans HOME temporaire. Documenter les garanties démontrées et celles hors scope
 Réutiliser `session-store.ts`, `terminal-session.ts`, `effect-receipts.ts`,
 `artifact-capture.ts`, `shell.ts`, tests de store/portabilité. Une modification core
 exige le contre-exemple reproductible et le respect de CONTRIBUTING.md.
+
+## Défaut H09.4a : terminal absent du paquet
+
+Reproduction à 98a5027 : `rtk node dist/src/cuesheet.js surface` échoue avec « the slice is missing at .../dist/apps/terminal/src/main.tsx » (/tmp/cuesheet-package-terminal-before.log). Les tests d’installation existants prouvent --version/sessions/exports mais pas le terminal interactif.
+
+Correction prévue avant code : build-terminal bundle ESM Node (outil esbuild déjà déclaré par apps/terminal, pas dépendance runtime du paquet), artefacts JS/assets/licences sous dist/apps/terminal. Launcher choisit le bundle quand livré, exécuté par le Node courant ; développement garde le runner TSX. Pas de runner, TypeScript, node_modules externe ou chemin du checkout requis pour le paquet installé. Préserver le whitelist d’environnement, les arguments provider/check/session, cwd et TTY. Le build échoue si le terminal/asset requis n’est pas généré. Source primaire bundling/platform : https://esbuild.github.io/api/#bundle .
+
+Un bundle ESM doit gérer les require des dépendances CommonJS via un require Node, et les assets Yoga import.meta.url. Ne pas laisser des imports de packages externes dans le résultat. Vérifier entrées auto-exécutables/import.meta et chemins relatifs sur le bundle réel.
+
+Acceptation de tranche : build puis npm pack/installation dans une racine temporaire indépendante ; aucune TS exécutable ou node_modules du checkout requise ; lancement du vrai terminal en PTY, saisie de demande, réponse fixture de transport local reçue, Ctrl+C et restauration propre ; non-TTY donne diagnostic terminal et non fichier manquant ; metadata/session écrites seulement dans les racines temporaires. Les modèles live et la supériorité ne sont pas prouvés par ce scénario. Export/import/rétention de H09.4 restent ouverts.
+
+Bundle de livraison : React en production ; le devtools optionnel Ink (DEV=true) est désactivé. DEV ne traverse déjà pas le whitelist launcher. Ne pas laisser un package devtools absent comme import runtime caché.
+
+## Défaut découvert H09.3a : scope des outils après sélection de projet
+
+Inspection pendant la preuve packagée : producer activeWorkspace et mémoire changent avec scope.path, mais le ShellToolRunner du runtime conserve roots/defaultCwd du lancement. Un argv relatif demandé pour un projet lié peut donc exécuter dans le répertoire initial. ResearchTools et skills projet gardent aussi le cwd initial. Reproduction réelle à établir avant correction ; aucune affirmation de succès depuis la seule inspection.
+
+Tranche finie prévue : factories contrôleur pour tools/research/skills par scope choisi, activées au début de l’exécution ; mémoire et frame suivent le même scope. Racines de skills explicitement configurées restent explicites, racine projet par défaut suit le projet. Le modèle ne choisit pas la factory ou les roots. Le journal d’intent doit porter le cwd effectivement admis pour l’audit/reconciliation des effets. Ne pas enregistrer une scope modèle mensongère puis exécuter ailleurs.
+
+La branche de choix ambigu de resolveScope expose actuellement les paths de registre relatifs à projectsRoot, alors que start les consomme comme paths d’exécution. Normaliser les options offertes en chemins de projet absolus ; garder même règle de confiance du registre, sans modifier core ni élargir arbitrairement les roots modèle.
+
+Acceptation de tranche : vrai fichier écrit seulement au projet explicitement lié, cat relatif retrouve le contenu de ce projet, input.cwd hors scope est refusé par runner ; défauts source reproduits avant patch ; skills/recherche locale lisent le projet lié ; choix ambigu donne deux chemins absolus puis exécute seulement le projet choisi ; correction/reprise/receipts historiques restent cohérents. Garde typing, PTY/install régression et suite requises. Cette tranche ne crée pas un sandbox OS pour node/git/npm ; R06 reste ouvert.

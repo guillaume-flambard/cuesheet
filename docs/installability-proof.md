@@ -79,3 +79,10 @@ settled one.
 | Executable `.ts` in the installed package | 0 |
 | Modules imported from `dist/` | 9/9 |
 | Type errors in the build's check | 33 |
+
+
+## Terminal interactif packagé (2026-10-01)
+
+Le test initial ne lançait que --version, sessions et les exports. H09.4a reproduit son angle mort : dist/apps/terminal manquait. scripts/build-terminal.mjs livre désormais un bundle ESM Node, Yoga WASM et les notices de 37 dépendances ; aucun import package externe restant dans le metafile. Le launcher installé utilise le Node courant ; le checkout garde TSX. Les devtools optionnels Ink sont exclus du bundle de livraison par une adaptation contrôlée de leurs gardes.
+
+L’oracle d’installation contrôle les assets et le diagnostic non-TTY, puis un test PTY démarre le paquet dans une racine/home indépendants, entre une demande, reçoit la fixture locale et quitte proprement. Aucune TS exécutable, runner de checkout, clé réelle ou modèle live ne participe à ce scénario. Runtime testé : Node 24 sur macOS ; target de bundle Node 22, pas un essai de toutes les versions/OS. La branche PTY est explicitement ignorée si expect est absent. PUBLISHABLE reste non revendiqué et H09.4 export/import/rétention reste incomplet.

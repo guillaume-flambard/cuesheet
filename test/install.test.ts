@@ -38,8 +38,8 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -65,9 +65,10 @@ function exec(cwd: string, cmd: string, args: string[]): string {
  * cycle where the cache's initializer called a helper that read the cache, which
  * is `Cannot access 'run' before initialization`.
  */
-let cached: { ok: boolean; why: string } | null = null;
+type InstallResult={ok:boolean;why:string;terminal?:{installed:string;project:string;home:string;stage:string}};
+let cached: InstallResult | null = null;
 
-function oracle(): { ok: boolean; why: string } {
+function oracle(): InstallResult {
   if (cached) return cached;
 
   // Build first, into dist/. `prepack` would do it too, but doing it here means
@@ -160,6 +161,11 @@ function oracle(): { ok: boolean; why: string } {
 
     run(["--version"]);
     run(["sessions", "list"]);
+    for(const asset of ["main.mjs","yoga.wasm","THIRD-PARTY-NOTICES.txt"]){
+      if(!existsSync(join(installed,"dist","apps","terminal",asset)))throw new Error(`installed terminal asset missing: ${asset}`);
+    }
+    const nonTTY=spawnSync(NODE,[join(installed,"dist","src","cuesheet.js"),"surface"],{cwd:project,encoding:"utf8",env:{PATH:`${NODE_DIR}:/usr/bin:/bin`,HOME:home}});
+    assert.equal(nonTTY.status,1);assert.match(nonTTY.stderr,/needs a terminal/);assert.doesNotMatch(nonTTY.stderr,/slice is missing|not installed/);
 
     // The libraries too, because a package whose CLI works and whose exports do
     // not is installable in a very narrow sense.
@@ -179,7 +185,7 @@ function oracle(): { ok: boolean; why: string } {
       return cached;
     }
 
-    cached = { ok: true, why: loaded };
+    cached = { ok: true, why: loaded, terminal:{installed,project,home,stage} };
     return cached;
   } catch (cause) {
     cached = { ok: false, why: String(cause).slice(0, 300) };
@@ -223,4 +229,30 @@ describe("INSTALLABLE, measured rather than asserted", () => {
     const proof = readFileSync(join(ROOT, "docs", "installability-proof.md"), "utf8");
     assert.match(proof, /PUBLISHABLE/i, "the proof names PUBLISHABLE and says it is not reached");
   });
+});
+
+it("installed terminal runs in a real PTY outside the checkout without TSX",{skip:!existsSync('/usr/bin/expect')},()=>{
+ const result=oracle();assert.equal(result.ok,true,result.why);assert.ok(result.terminal);const {installed,project,home,stage}=result.terminal!;
+ const bin=join(project,'fixture-bin');mkdirSync(bin,{recursive:true});const binary=join(bin,'opencode');
+ writeFileSync(binary,`#!${NODE}\nconsole.log(JSON.stringify({type:'text',part:{type:'text',text:JSON.stringify({text:'INSTALLED_TERMINAL_OK',toolCalls:[]})}}));`,{mode:0o755});
+ const driver=join(project,'installed.exp');writeFileSync(driver,`set stty_init {rows 30 columns 100}
+match_max -d 100000
+proc seen {pattern} {expect -timeout 10 -re $pattern {} timeout {catch {close};exit 8} eof {exit 9}}
+proc waitms {ms} {set end [expr {[clock milliseconds]+$ms}];while {[clock milliseconds]<$end} {expect -timeout 1 -re {(?s).+} {} timeout {} eof {return}}}
+spawn {${NODE}} {${join(installed,'dist','src','cuesheet.js')}} surface
+seen {Ctrl\\+K}
+waitms 500
+send "installed goal"
+waitms 500
+send "\\r"
+seen {INSTALLED_TERMINAL_OK}
+seen {still open after 8 steps}
+waitms 500
+send "\\003"
+expect -timeout 5 eof {} timeout {catch {close};exit 10}
+set result [wait]
+exit [lindex $result 3]
+`);
+ const run=spawnSync('/usr/bin/expect',[driver],{cwd:project,encoding:'utf8',timeout:25000,env:{PATH:`${bin}:${NODE_DIR}:/usr/bin:/bin`,HOME:home,TERM:'xterm-256color',CUESHEET_SESSIONS:join(stage,'terminal-sessions'),CUESHEET_OPENCODE_BIN:binary,CUESHEET_MAX_SLICES:'1'}});
+ assert.equal(run.status,0,`${run.error??''}\n${run.stdout}\n${run.stderr}`);assert.match(run.stdout,/INSTALLED_TERMINAL_OK/);assert.match(run.stdout.slice(-1000),/\x1b\[\?25h/,'the cursor is restored before exiting');assert.doesNotMatch(run.stdout,/ERR_MODULE_NOT_FOUND|Dynamic require.*not supported/);assert.ok(existsSync(join(stage,'terminal-sessions')));
 });

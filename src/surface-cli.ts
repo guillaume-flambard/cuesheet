@@ -21,8 +21,8 @@
  * who typed `cuesheet` asked for. The surface asks one question instead, and
  * keeps the machinery behind `/inspect` where it belongs.
  *
- * The slice is a separate package with its own dependencies, so this dispatcher
- * runs it through the workspace's own runner rather than importing it directly.
+ * The installed terminal runs its self-contained Node bundle. In a source
+ * checkout, the separate terminal package runs through its own TSX runner.
  * If the runner is missing, the failure says which package is absent instead of
  * printing a module-not-found for a file that exists.
  */
@@ -37,6 +37,7 @@ const REPO = join(HERE, "..");
 const TERMINAL = join(REPO, "apps", "terminal");
 const RUNNER = join(TERMINAL, "node_modules", ".bin", "tsx");
 const SLICE = join(TERMINAL, "src", "main.tsx");
+const BUNDLE = join(TERMINAL, "main.mjs");
 
 /** Only model preferences and the named credentials cross the launcher boundary. */
 export function surfaceEnvironment(args: string[], env: NodeJS.ProcessEnv = process.env): Record<string, string> {
@@ -73,11 +74,12 @@ export async function surface(argv = process.argv.slice(2)): Promise<number> {
   let selected: Record<string, string>;
   try { selected = surfaceEnvironment(args); }
   catch (error) { console.error(`surface: ${error instanceof Error ? error.message : String(error)}`); return 2; }
-  if (!existsSync(SLICE)) {
+  const packaged=existsSync(BUNDLE);
+  if (!packaged && !existsSync(SLICE)) {
     console.error(`surface: the slice is missing at ${SLICE}`);
     return 1;
   }
-  if (!existsSync(RUNNER)) {
+  if (!packaged && !existsSync(RUNNER)) {
     console.error(`surface: ${RUNNER} is not installed.`);
     console.error("        run `pnpm install` in apps/terminal, then try again.");
     return 1;
@@ -97,7 +99,7 @@ export async function surface(argv = process.argv.slice(2)): Promise<number> {
   }
 
   return await new Promise<number>((settle) => {
-    const child = spawn(RUNNER, [SLICE], {
+    const child = spawn(packaged ? process.execPath : RUNNER, [packaged ? BUNDLE : SLICE], {
       cwd: process.cwd(),
       stdio: "inherit",
       env: {

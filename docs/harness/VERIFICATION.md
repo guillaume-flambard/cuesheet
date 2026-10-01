@@ -63,3 +63,5 @@ EV-CHECK-RENEWAL : check épinglé réautorisé explicitement à un ID/révision
 EV-CHECK-PALETTE : renouvellement explicite depuis la palette, snapshot de contrat refusé si périmé, annulation sans append. Vraies frappes Ink et trois tailles/resize ; 17 ciblés PASS, full 740/738/0/2 PASS. H08.2/H08.4 non clos.
 
 EV-MODEL-USAGE : runtime/binding → Anthropic start/usage sink → journal de consommation dédié sous la claim terminal. Aucun déplacement de révision de proposition, compteur inconnu explicite, aucun prix inventé. 747/745/0/2 full PASS. H07.4a DONE ; H07.4 parent IN_PROGRESS.
+
+EV-INSTALLED-TERMINAL : source → tsc CLI + ESM terminal bundle/asset/notices → npm pack → installation isolée → Node/TTY. PTY vrai et garde typing PASS, full 748/746/0/2 PASS. H09.4a DONE ; H09.4 reste IN_PROGRESS. Nouveau défaut de scope H09.3a en cours, avant toute clôture.

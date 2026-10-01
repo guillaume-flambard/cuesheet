@@ -88,3 +88,5 @@ Contexte partagé : runtime raccorde .cuesheet/shared (projet courant) et CUESHE
 Renouvellement d’autorité : action terminal utilisateur exacte → receipt confirm_check → bind_check de l’objectif → nouvelle révision → prochaine inférence/plan puis capture/check courant. Les receipts de contrôle sont exclus de la recherche d’intention à reprendre. Vérification capture ID/révision avant le sous-processus et refuse clôture si le contrat courant diffère après son retour. Aucun outil modèle bind_check.
 
 EV-MODEL-USAGE : runtime/binding → Anthropic start/usage sink → journal de consommation dédié sous la claim terminal. Aucun déplacement de révision de proposition, compteur inconnu explicite, aucun prix inventé. 747/745/0/2 full PASS. H07.4a DONE ; H07.4 parent IN_PROGRESS.
+
+EV-INSTALLED-TERMINAL : source → tsc CLI + ESM terminal bundle/asset/notices → npm pack → installation isolée → Node/TTY. PTY vrai et garde typing PASS, full 748/746/0/2 PASS. H09.4a DONE ; H09.4 reste IN_PROGRESS. Nouveau défaut de scope H09.3a en cours, avant toute clôture.

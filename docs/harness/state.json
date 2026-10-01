@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "524aeed",
+  "referenceCommit": "98a5027",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -2011,7 +2011,7 @@
     {
       "id": "H09.4",
       "priority": "P1",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H09.4"
       ],
@@ -2071,7 +2071,9 @@
         "AC-H09.4"
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
-      "evidence": [],
+      "evidence": [
+        "EV-INSTALLED-TERMINAL"
+      ],
       "notes": ""
     },
     {
@@ -2720,6 +2722,52 @@
         "EV-MODEL-USAGE"
       ],
       "notes": "Bounded slice specified before code in 07-PROVIDERS.md; parent remains open."
+    },
+    {
+      "id": "H09.4a",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.4"
+      ],
+      "dependencies": [],
+      "description": "Ship the interactive terminal in the installed package without checkout/TSX/runtime package dependency.",
+      "systems": [
+        "scripts/build.sh",
+        "scripts/build-terminal.mjs",
+        "src/surface-cli.ts",
+        "test/install.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.4"
+      ],
+      "verification": "Reproduced missing built terminal; real isolated npm pack/install, PTY input/local provider fixture, non-TTY diagnostic, full regression/typeguard",
+      "evidence": [
+        "EV-INSTALLED-TERMINAL"
+      ],
+      "notes": "Discovered defect documented and planned before implementation, in 09-RELIABILITY.md. Existing install oracle never launches interactive UI."
+    },
+    {
+      "id": "H09.3a",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H09.3"
+      ],
+      "dependencies": [],
+      "description": "Selected project must drive tools/research/default skills cwd and offered choice paths, with sourced scope in effect intents.",
+      "systems": [
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/producer/runtime.ts",
+        "apps/terminal/src/producer/context.ts",
+        "src/adapters/tool-receipts.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3"
+      ],
+      "verification": "Reproduce actual relative tool in wrong launch cwd before patch, scoped effects/reads/skills, absolute choice paths, receipts/recovery, full regression",
+      "evidence": [],
+      "notes": "Static trace discovered while packaging; specified before code in 09-RELIABILITY.md. Reproduction and verification pending."
     }
   ],
   "acceptance": [
@@ -3674,19 +3722,25 @@
       "result": "PASS_PARTIAL",
       "method": "provider response fixtures, actual terminal runtime and filesystem, model-selection and storage faults, differential typing/full regression",
       "details": "747 tests,745 pass,0 fail,2 skipped; /tmp/cuesheet-model-usage-all.log. 14 targeted and 13 targeted switch/storage PASS. Durable evaluation/model-usage-evidence.md. Native Anthropic counters only; cost unknown, no API live or all-provider guarantee."
+    },
+    {
+      "id": "EV-INSTALLED-TERMINAL",
+      "result": "PASS_PARTIAL",
+      "method": "historical reproduction, actual build/npm pack/temp install/PTY, non-TTY, typing/portability and full regression",
+      "details": "748 tests,746 pass,0 fail,2 skipped; /tmp/cuesheet-installed-terminal-all.log. 28 targeted PASS, no new typing diagnostics. Installed terminal self-contained with Yoga and notices, actual keys/local fixture and cursor restored. Durable evaluation/installed-terminal-evidence.md. H09.4 export/import/retention pending."
     }
   ],
   "risks": {
     "register": "RISKS.md",
     "critical_open": 0,
-    "high_open": 10
+    "high_open": 11
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "524aeed",
+    "lastPassedCommit": "98a5027",
     "lastFullSuite": {
-      "tests": 747,
-      "passed": 745,
+      "tests": 748,
+      "passed": 746,
       "failed": 0,
       "skipped": 2
     },
@@ -3702,14 +3756,15 @@
     "workingTreeShared": "PASS E01.1/2; full production code 736/734/0/2; added bound-project integration 9 shared tests PASS. Multi-machine and team workflow delivery remain pending.",
     "workingTreeCheckRenewal": "PASS_PARTIAL: exact human reauthorization of pinned check; 739/737/0/2 full regression. Parent H01.3 remains open.",
     "workingTreeCheckPalette": "17 targeted PASS; full 740/738/0/2 PASS. Real keyboard, resize three sizes, no-append cancel and stale refusal. H08 parents remain open.",
-    "workingTreeUsage": "Native Anthropic durable request/usage receipts PASS; 747/745/0/2 full. Parent H07.4 incomplete, other transports/streaming/prices and UI pending."
+    "workingTreeUsage": "Native Anthropic durable request/usage receipts PASS; 747/745/0/2 full. Parent H07.4 incomplete, other transports/streaming/prices and UI pending.",
+    "workingTreeInstalledTerminal": "PASS shipped bundle, real temp installation/PTY, 748/746/0/2 full. H09.3a scoped runtime defect discovered and pending; overall IMPLEMENTING."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 59,
     "acceptanceVerified": 7,
     "acceptancePending": 52,
-    "p0_open": 35,
+    "p0_open": 36,
     "p1_open": 17
   },
   "workstreams": [

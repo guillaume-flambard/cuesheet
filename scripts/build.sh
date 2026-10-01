@@ -100,4 +100,6 @@ if (ts.length) throw new Error("dist still carries executable TypeScript: " + ts
 console.error(`build: dispatcher names ${named.length} files, all present; dist carries no executable .ts`);
 '
 
+node scripts/build-terminal.mjs
+
 echo "build: ok" >&2
