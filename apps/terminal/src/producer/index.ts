@@ -80,6 +80,7 @@ export const MAX_STEPS = 8;
 import type { TerminalSession } from "../../../../src/adapters/terminal-session.ts";
 import { withSharedContext } from "../../../../src/adapters/shared-context.ts";
 import { memoryCommand, MEMORY_SUBJECT } from "../../../../src/adapters/work-memory.ts";
+import { organizeWork, AUTONOMOUS_TOOLS, AUTONOMOUS_POLICY, WORK_SUBJECT } from "../../../../src/adapters/work-organizer.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
@@ -259,7 +260,7 @@ export function createProducer(options: ProducerOptions): Producer {
   let controller: AbortController | undefined;
   options.journal?.onFailure(() => controller?.abort(new Error("Session persistence failed")));
   const directiveRevision = (): number => shared.toSession().events
-    .filter((event) => event.kind === "directive" || event.subject === MEMORY_SUBJECT).at(-1)?.seq ?? 0;
+    .filter((event) => event.kind === "directive" || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT).at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
       const signal = controller!.signal;
@@ -272,6 +273,11 @@ export function createProducer(options: ProducerOptions): Producer {
         return { name: request.name, exit: 126, output: "The declared check already settled this run; no further calls were executed." };
       }
       if (options.journal) shared.append({kind:"action",subject:"terminal.intent",data:{tool:request.name,input:request.input,effectId:activeEffect,phase:"requested"}});
+      const organized = organizeWork(shared, request);
+      if (organized) {
+        if (organized.exit === 0) observe([{kind:"status",label:"organisation",value:request.name === "organize_work" ? `${request.input.phase} · ${request.input.rationale}` : `${request.name} · ${request.input.rationale}`,certainty:"unknown"}]);
+        return organized;
+      }
       if (request.name === "finish") {
         if (!options.verification) return { name: "finish", exit: 126, output: "No acceptance check was declared; the goal remains open." };
         const basis = directiveRevision();
@@ -409,6 +415,7 @@ export function createProducer(options: ProducerOptions): Producer {
     const requestId = `E-${mint()}`;
     activeEffect = requestId;
     activeWorkspace = scope.path;
+    shared.append({kind:"directive",subject,data:{text:AUTONOMOUS_POLICY}});
 
     // The request is committed conditionally before the world is asked, so two
     // surfaces that both find a run allowed cannot both be right by the time it
@@ -419,9 +426,9 @@ export function createProducer(options: ProducerOptions): Producer {
     // in the boundary above, and two variables differing only by scope in the
     // same module is the kind of thing that is read wrong later.
     if (options.toolNames?.length) {
-      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...(options.verification ? ["finish"] : [])].join(", ")}` } });
+      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...AUTONOMOUS_TOOLS, ...(options.verification ? ["finish"] : [])].join(", ")}` } });
       shared.append({ kind: "directive", subject, data: { text:
-        'These are command tools. Use input.argv with the exact tool name first, for example {"name":"ls","input":{"argv":["ls","-la"]}}. ' +
+        'The shell tools are command tools; organize_work, remember and create_skill use structured input as described separately. For command tools use input.argv with the exact tool name first, for example {"name":"ls","input":{"argv":["ls","-la"]}}. ' +
         'cat and ls also accept input.path. Paths and commands are relative to the declared working directory. ' +
         'Answer the user from the observed results; your text is displayed but is not verification.'
       } });

@@ -1,7 +1,11 @@
 # Explicit terminal memory
 
-This slice records human decisions, constraints and questions in the existing
-session journal. It uses note events with a typed adapter payload, not new core
+Manual overrides record human decisions, constraints and questions in the existing
+session journal. Automatic maintenance is described in AUTONOMOUS-WORK.md and
+records model interpretations with source sequences and a rationale. The context
+and `/memory` listing distinguish model authorship from human authorship. A human
+edit takes ownership of a model record; subsequent model edits of it are refused.
+Both use note events with a typed adapter payload, not new core
 events. Human records are context, never evidence that a goal is complete.
 
 Commands in the composer:

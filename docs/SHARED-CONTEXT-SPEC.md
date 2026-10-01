@@ -25,6 +25,7 @@ snapshot as another fact, and never infer completion from model prose.
 
 - [ ] Edit intention, objectives and acceptance criteria through a simple interface.
 - [x] Record explicit decisions and answer questions without deleting their history via `/memory` (see WORK-MEMORY.md).
+- [x] Offer automatic organization, specs, checklists, sourced memory and session skills to the model (see AUTONOMOUS-WORK.md).
 - [ ] Provide a visual editor for these records.
 - [ ] Give multiple workers the same durable state with revision-checked commits.
 - [ ] Rebuild bounded context while retaining access to omitted evidence and sources.
