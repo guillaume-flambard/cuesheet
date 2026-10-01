@@ -5,7 +5,7 @@ export const RECEIPT_SUBJECT="terminal.receipt";
 const internal=new Set(["read_history","read_shared_context","read_document","search_web","list_skills","read_skill","organize_work","remember","create_skill","describe_objective","reconcile_effect"]);
 export function inspectionTool(name:string):boolean{return name==="cat" || name==="ls";}
 export function mutationTool(name:string):boolean{return !internal.has(name) && !inspectionTool(name);}
-export interface EffectAttempt {intentSeq:number;tool:string;input:Record<string,unknown>;phase:"uncertain"|"completed"|"performed"|"not-performed";executionId:string|null;sourceSeq:number|null;}
+export interface EffectAttempt {intentSeq:number;tool:string;input:Record<string,unknown>;phase:"uncertain"|"completed"|"performed"|"not-performed";executionId:string|null;sourceSeq:number|null;scopeCwd:string|null;}
 export function invocationKey(tool:string,input:Record<string,unknown>):string {
   const canonical=(value:unknown):unknown=>Array.isArray(value) ? value.map(canonical) : value && typeof value==="object" ? Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,canonical(v)])) : value;
   return createHash("sha256").update(JSON.stringify([tool,canonical(input)])).digest("hex");
@@ -18,10 +18,10 @@ export function projectEffectAttempts(events:readonly Event[]):EffectAttempt[]{
   for(let index=0;index<events.length;index++){
     const event=events[index]!;
     if(event.kind==="action" && event.subject==="terminal.intent"){
-      if((event.data.version!==undefined && event.data.version!==1) || event.data.phase!=="requested" || typeof event.data.tool!=="string" || !event.data.tool || event.data.tool.length>200 || !event.data.input || typeof event.data.input!=="object" || Array.isArray(event.data.input) || (event.data.version===1 && (typeof event.data.effectId!=="string" || !event.data.effectId)))throw new Error(`Invalid tool intent at sequence ${event.seq}.`);
+      if((event.data.scopeCwd!==undefined && (typeof event.data.scopeCwd!=="string" || !event.data.scopeCwd.trim() || event.data.scopeCwd.length>4096)) || (event.data.version!==undefined && event.data.version!==1) || event.data.phase!=="requested" || typeof event.data.tool!=="string" || !event.data.tool || event.data.tool.length>200 || !event.data.input || typeof event.data.input!=="object" || Array.isArray(event.data.input) || (event.data.version===1 && (typeof event.data.effectId!=="string" || !event.data.effectId)))throw new Error(`Invalid tool intent at sequence ${event.seq}.`);
       // Old calls had no linked receipt. Accept only the serial core result
       // before another invocation/execution boundary; never consume a future run.
-      attempts.set(event.seq,{intentSeq:event.seq,tool:event.data.tool,input:event.data.input as Record<string,unknown>,phase:"uncertain",executionId:typeof event.data.effectId==="string" ? event.data.effectId : null,sourceSeq:null});
+      attempts.set(event.seq,{intentSeq:event.seq,tool:event.data.tool,input:event.data.input as Record<string,unknown>,phase:"uncertain",executionId:typeof event.data.effectId==="string" ? event.data.effectId : null,sourceSeq:null,scopeCwd:typeof event.data.scopeCwd==="string" ? event.data.scopeCwd : null});
       legacyPending=event.data.version===undefined ? event.seq : null;
     }
     if(event.kind==="effect_requested" || event.kind==="effect_observed")legacyPending=null;

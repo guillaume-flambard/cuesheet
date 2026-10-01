@@ -83,11 +83,8 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const usage=settings.journal ? new SessionUsage({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
   const binding = settings.binding ?? createModelBinding({ project: cwd,onUsage:usage?.record });
   const model: ModelAdapter = binding.adapter;
-  const tools: ToolRunner = new ShellToolRunner({
-    allow: ALLOWED,
-    roots: [cwd],
-    defaultCwd: cwd,
-  });
+  const toolsForScope=(scope:string):ToolRunner=>new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope});
+  const tools=toolsForScope(cwd);
   let verification;
   try {
     const script = process.env.CUESHEET_VERIFY_SCRIPT;
@@ -95,11 +92,13 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const research=new ResearchTools({root:cwd,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
-  const roots=process.env.CUESHEET_SKILL_ROOTS?.split(delimiter).filter(Boolean) ?? [join(cwd,".cuesheet","skills")];
-  const skills=new SkillTools({roots});
+  const researchForScope=(scope:string)=>new ResearchTools({root:scope,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
+  const research=researchForScope(cwd);
+  const configuredSkillRoots=process.env.CUESHEET_SKILL_ROOTS?.split(delimiter).filter(Boolean);
+  const skillsForScope=(scope:string)=>new SkillTools({roots:configuredSkillRoots ?? [join(scope,".cuesheet","skills")]});
+  const skills=skillsForScope(cwd);
   const sharedContexts=new SharedContexts({cwd,organizations:process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)});
-  const options: ProducerOptions = {sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const options: ProducerOptions = {toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */

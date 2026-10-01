@@ -120,7 +120,7 @@ export function resolveScope(
     };
   }
   if (binding.kind === "unbound" && binding.candidates.length > 1) {
-    return { at: "choice", options: binding.candidates.map(toOption) };
+    return { at: "choice", options: binding.candidates.map(candidate=>toOption({...candidate,path:`${projectsRoot}/${candidate.path}`.replace(/\/+/g,"/")})) };
   }
   if (binding.kind === "unbound" && binding.candidates.length === 1) {
     // One candidate that is not on disk. Naming it is how the person learns it

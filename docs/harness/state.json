@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "98a5027",
+  "referenceCommit": "7af4fc9",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -2750,7 +2750,7 @@
     {
       "id": "H09.3a",
       "priority": "P0",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "requirements": [
         "REQ-H09.3"
       ],
@@ -2766,8 +2766,30 @@
         "AC-H09.3"
       ],
       "verification": "Reproduce actual relative tool in wrong launch cwd before patch, scoped effects/reads/skills, absolute choice paths, receipts/recovery, full regression",
+      "evidence": [
+        "EV-SCOPED-RUNTIME"
+      ],
+      "notes": "Historical wrong-root effects and relative choices reproduced; actual scoped files/research/skills and refusal/selection verified. Parent H09.3 remains open."
+    },
+    {
+      "id": "H09.5a",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H09.5"
+      ],
+      "dependencies": [],
+      "description": "Exclude harness provider/research credentials from shell child environment without removing ordinary development configuration.",
+      "systems": [
+        "src/adapters/shell.ts",
+        "test/shell-environment.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.5"
+      ],
+      "verification": "Synthetic credentials and actual Node child process, normal env compatibility, refusal/abort regression, typing guard and full suite",
       "evidence": [],
-      "notes": "Static trace discovered while packaging; specified before code in 09-RELIABILITY.md. Reproduction and verification pending."
+      "notes": "Discovered inherited process.env exposes harness credentials to allowed tools; reproduce with synthetic values only before patch. Filesystem/argv secrets and retention remain separate open risks."
     }
   ],
   "acceptance": [
@@ -3728,19 +3750,25 @@
       "result": "PASS_PARTIAL",
       "method": "historical reproduction, actual build/npm pack/temp install/PTY, non-TTY, typing/portability and full regression",
       "details": "748 tests,746 pass,0 fail,2 skipped; /tmp/cuesheet-installed-terminal-all.log. 28 targeted PASS, no new typing diagnostics. Installed terminal self-contained with Yoga and notices, actual keys/local fixture and cursor restored. Durable evaluation/installed-terminal-evidence.md. H09.4 export/import/retention pending."
+    },
+    {
+      "id": "EV-SCOPED-RUNTIME",
+      "result": "PASS_PARTIAL",
+      "method": "Historical reproduction, actual Node/files/local documents/skills, choice/refusal, typing/full regression",
+      "details": "751/749/0/2 full PASS; 22 targeted and43 system PASS. evaluation/scoped-runtime-evidence.md. No OS sandbox or multi-scope recovery claim."
     }
   ],
   "risks": {
     "register": "RISKS.md",
     "critical_open": 0,
-    "high_open": 11
+    "high_open": 10
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "98a5027",
+    "lastPassedCommit": "7af4fc9",
     "lastFullSuite": {
-      "tests": 748,
-      "passed": 746,
+      "tests": 751,
+      "passed": 749,
       "failed": 0,
       "skipped": 2
     },
@@ -3757,15 +3785,16 @@
     "workingTreeCheckRenewal": "PASS_PARTIAL: exact human reauthorization of pinned check; 739/737/0/2 full regression. Parent H01.3 remains open.",
     "workingTreeCheckPalette": "17 targeted PASS; full 740/738/0/2 PASS. Real keyboard, resize three sizes, no-append cancel and stale refusal. H08 parents remain open.",
     "workingTreeUsage": "Native Anthropic durable request/usage receipts PASS; 747/745/0/2 full. Parent H07.4 incomplete, other transports/streaming/prices and UI pending.",
-    "workingTreeInstalledTerminal": "PASS shipped bundle, real temp installation/PTY, 748/746/0/2 full. H09.3a scoped runtime defect discovered and pending; overall IMPLEMENTING."
+    "workingTreeInstalledTerminal": "PASS shipped bundle, real temp installation/PTY, 748/746/0/2 full. H09.3a scoped runtime defect discovered and pending; overall IMPLEMENTING.",
+    "workingTreeScopes": "PASS H09.3a; actual effects scoped to chosen project;751/749/0/2 full. OS sandbox/recovery and parent H09.3 pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 59,
     "acceptanceVerified": 7,
     "acceptancePending": 52,
-    "p0_open": 36,
-    "p1_open": 17
+    "p0_open": 35,
+    "p1_open": 18
   },
   "workstreams": [
     {
