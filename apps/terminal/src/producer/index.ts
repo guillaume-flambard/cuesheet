@@ -77,11 +77,15 @@ import type { Store } from "../app/store.ts";
 /** How long a run may go before the budget is spent. The chat's own number. */
 export const MAX_STEPS = 8;
 
+import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
+
 export interface ProducerOptions {
   /** The store this producer owns. It is the only writer. */
   readonly store: Store;
   readonly model: ModelAdapter;
   readonly tools: ToolRunner;
+  readonly toolNames?: readonly string[];
+  readonly verification?: CompletionCheck;
   /** The directory the person launched from. Resolved against the registry. */
   readonly cwd: string;
   /** The projects root. Defaults to the machine's, overridable for a test. */
@@ -239,19 +243,59 @@ export function createProducer(options: ProducerOptions): Producer {
    * refused, because a refusal wrote nothing at all (CON-03).
    */
   const guarded = wrapAtBoundary(model);
+  let proposalDirective = 0;
+  let activeEffect = "";
+  let activeWorkspace = cwd;
+  const directiveRevision = (): number => shared.toSession().events
+    .filter((event) => event.kind === "directive").at(-1)?.seq ?? 0;
+  const currentTools: ToolRunner = {
+    async run(request) {
+      if (directiveRevision() !== proposalDirective) {
+        return { name: request.name, exit: 126, output: "The instructions changed; this proposal was discarded." };
+      }
+      if (shared.toSession().goal?.open === false) {
+        return { name: request.name, exit: 126, output: "The declared check already settled this run; no further calls were executed." };
+      }
+      if (request.name === "finish") {
+        if (!options.verification) return { name: "finish", exit: 126, output: "No acceptance check was declared; the goal remains open." };
+        const basis = directiveRevision();
+        observe([{ kind: "status", label: "check", value: "checking the captured result", certainty: "active" }]);
+        const result = await options.verification.verify(activeWorkspace, activeEffect);
+        const verdict = result.verification.verdict;
+        const produced = shared.append({ kind: "work_produced", subject: activeEffect, data: { artifactId: result.artifact.artifactId, artifactDigest: result.artifact.digest, record: result.record, scope: result.artifact.scope } });
+        log(`[work_produced] ${produced.subject} ${JSON.stringify(produced.data)}`);
+        const event = shared.append({ kind: "work_verified", subject: activeEffect, data: { ...result.verification, record: result.record, checkDigest: result.checkDigest } });
+        log(`[work_verified] ${event.subject} ${JSON.stringify(event.data)}`);
+        const stillCurrent = directiveRevision() === basis;
+        observe([{ kind: "status", label: "check", value: stillCurrent ? `${verdict.toLowerCase()} by the declared check` : "checked an earlier request; your latest message keeps this run open", certainty: !stillCurrent || verdict === "INCONCLUSIVE" ? "unknown" : verdict === "VERIFIED" ? "confirmed" : "failed" }]);
+        if (verdict === "VERIFIED" && stillCurrent) {
+          const evidence = shared.append({ kind: "evidence", subject: "builder", data: { claim: "The captured result satisfies the declared check", backing: result.record, artifactDigest: result.artifact.digest, effectId: activeEffect, checkDigest: result.checkDigest } });
+          log(`[evidence] ${evidence.subject} ${JSON.stringify(evidence.data)}`);
+          const translated = translateEvent(evidence);
+          if (translated) observe([translated.entry]);
+        }
+        return { name: "finish", exit: verdict === "VERIFIED" && stillCurrent ? 0 : 1, output: JSON.stringify({ verdict, record: result.record, artifactDigest: result.artifact.digest, current: stillCurrent }) };
+      }
+      return tools.run(request);
+    },
+  };
 
   function wrapAtBoundary(inner: ModelAdapter): ModelAdapter {
     return {
       name: inner.name,
       async infer(frame) {
         // Read before the work exists. Everything after this line is the step.
-        basis = shared.revision;
+        const read = shared.revision;
+        basis = read;
+        proposalDirective = directiveRevision();
         try {
-          return await inner.infer(frame);
+          const response = await inner.infer(frame);
+          // The response was derived from the old frame. Re-recording a step
+          // cannot make its proposed actions current: discard them instead.
+          return shared.revision === read ? response : { text: "", toolCalls: [] };
         } finally {
-          const read = basis;
           basis = null;
-          if (read !== null) commitStep(read, frame);
+          commitStep(read, frame);
         }
       },
     };
@@ -303,7 +347,7 @@ export function createProducer(options: ProducerOptions): Producer {
       {
         kind: "status",
         label: "direction",
-        value: `changed while working; the run picked it up at step ${frame.step}`,
+        value: "Your message was received; the earlier proposal was discarded.",
         certainty: "active",
       },
     ]);
@@ -336,6 +380,8 @@ export function createProducer(options: ProducerOptions): Producer {
   const start = async (scope: { path: string; name: string }, goal: string): Promise<void> => {
     const subject = "builder";
     const requestId = `E-${mint()}`;
+    activeEffect = requestId;
+    activeWorkspace = scope.path;
 
     // The request is committed conditionally before the world is asked, so two
     // surfaces that both find a run allowed cannot both be right by the time it
@@ -345,6 +391,17 @@ export function createProducer(options: ProducerOptions): Producer {
     // Named `admitted` rather than `basis` because `basis` is the step's basis
     // in the boundary above, and two variables differing only by scope in the
     // same module is the kind of thing that is read wrong later.
+    if (options.toolNames?.length) {
+      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...(options.verification ? ["finish"] : [])].join(", ")}` } });
+      shared.append({ kind: "directive", subject, data: { text:
+        'These are command tools. Use input.argv with the exact tool name first, for example {"name":"ls","input":{"argv":["ls","-la"]}}. ' +
+        'cat and ls also accept input.path. Paths and commands are relative to the declared working directory. ' +
+        'Answer the user from the observed results; your text is displayed but is not verification.'
+      } });
+    }
+    if (options.verification) {
+      shared.append({ kind: "directive", subject, data: { text: "When the work is ready, propose finish with empty input. Cuesheet will independently run the owner-declared check against a captured result. You cannot select or change that check. A rejected or inconclusive verdict keeps the goal open." } });
+    }
     const admitted = shared.revision;
     const committed = shared.appendIfCurrent(admitted, {
       kind: "effect_requested",
@@ -416,7 +473,7 @@ export function createProducer(options: ProducerOptions): Producer {
     try {
       // `guarded`, not `model`: the loop is given the boundary-wrapped adapter so
       // that every step commits at the revision it read. See the header.
-      const outcome = await runAgentLoop(shared, guarded, tools, loopOptions);
+      const outcome = await runAgentLoop(shared, guarded, currentTools, loopOptions);
       observe(entryForStop(outcome.stop));
       // The run returned. That is a fact about the process, not a success, so
       // the outcome records what the loop actually stopped on rather than

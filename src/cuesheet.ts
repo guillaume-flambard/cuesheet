@@ -90,7 +90,7 @@ const COMMANDS: Record<string, CommandSpec> = {
     file: "surface-cli.ts",
     about: "the human surface (this is what plain `cuesheet` does)",
     style: "subcommand",
-    usage: "cuesheet surface",
+    usage: "cuesheet surface [--verify <self-contained Node check.mjs>]",
   },
   chat: {
     file: "chat.ts",

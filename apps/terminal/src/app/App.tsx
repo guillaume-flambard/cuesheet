@@ -42,7 +42,7 @@
  * anything, and none of them reads the filesystem.
  */
 
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useMemo, useEffect, useState } from "react";
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { useSurface } from "./store.ts";
 import type { Control, SurfaceState } from "./state.ts";
@@ -53,14 +53,12 @@ import { Composer } from "../components/Composer.tsx";
 import { StatusBar } from "../components/StatusBar.tsx";
 import { Projects } from "../overlays/Projects.tsx";
 import { Inspect } from "../overlays/Inspect.tsx";
+import { Palette } from "../overlays/Palette.tsx";
 import { Help } from "../overlays/Help.tsx";
 import { createStore, type Store } from "./store.ts";
 import { createLiveProducer, modelFor } from "../producer/runtime.ts";
 import type { Producer } from "../producer/index.ts";
 import type { Option } from "./state.ts";
-
-/** How many conversation lines stay on screen. The rest scrolls. */
-const VISIBLE = 16;
 
 export interface AppProps {
   /**
@@ -79,6 +77,12 @@ export interface AppProps {
 export function App(props: AppProps): JSX.Element {
   const { exit } = useApp();
   const { stdout } = useStdout();
+  const [, resized] = useState(0);
+  useEffect(() => {
+    const resize = () => resized((n) => n + 1);
+    stdout.on("resize", resize);
+    return () => { stdout.off("resize", resize); };
+  }, [stdout]);
 
   // The store and the producer exist once, for the life of the process. They are
   // built outside the render body on purpose: a producer is not a value, and
@@ -100,24 +104,15 @@ export function App(props: AppProps): JSX.Element {
     if (input === "?" && state.composer === "") return send({ type: "open", overlay: "help" });
   });
 
-  // The cursor sits in the composer, so Ink must not draw one elsewhere. This is
-  // the one place the surface touches the terminal directly, and it restores what
-  // it found on unmount, because a TUI that leaves the cursor hidden makes the
-  // shell unusable afterwards and a person remembers that once.
-  useEffect(() => {
-    stdout.write("?25l");
-    return () => {
-      stdout.write("?25h");
-    };
-  }, [stdout]);
-
   // One width, computed once and passed down. Three components each deciding
   // their own rule width is how a header ends up wider than the status bar, which
   // is the most visible way a terminal layout looks unfinished.
   const column = SHELL_RULE_WIDTH(stdout.columns);
+  const rows = Math.max(8, stdout.rows ?? 24);
+  const contentRows = Math.max(1, rows - 9);
 
   return (
-    <Box flexDirection="column" width={column}>
+    <Box flexDirection="column" width={column} height={rows - 1} overflow="hidden">
       <Header
         width={column}
         project={state.project}
@@ -125,7 +120,7 @@ export function App(props: AppProps): JSX.Element {
         model={producer ? modelName : "no model"}
       />
 
-      <Box flexDirection="column" flexGrow={1} paddingTop={1} paddingBottom={1}>
+      <Box flexDirection="column" flexGrow={1} flexShrink={0} height={contentRows + 2} overflow="hidden" paddingTop={1} paddingBottom={1}>
         {missing ? (
           <Notice text={missing} />
         ) : state.overlay === "projects" ? (
@@ -134,12 +129,14 @@ export function App(props: AppProps): JSX.Element {
             onChoose={(option) => producer?.choose(option)}
             onDismiss={() => send({ type: "close" })}
           />
+        ) : state.overlay === "palette" ? (
+          <Palette onOpen={(overlay) => send({ type: "open", overlay })} />
         ) : state.overlay === "inspect" ? (
-          <Inspect lines={state.log} />
+          <Inspect lines={state.log} width={column} maxLines={Math.max(1, contentRows - 2)} />
         ) : state.overlay === "help" ? (
           <Help onClose={() => send({ type: "close" })} />
         ) : (
-          <Timeline width={column} entries={state.entries} visible={VISIBLE} />
+          <Timeline width={column} entries={state.entries} visible={contentRows} rows={contentRows} />
         )}
       </Box>
 
@@ -153,6 +150,7 @@ export function App(props: AppProps): JSX.Element {
         onPalette={() => send({ type: "open", overlay: "palette" })}
         onHelp={() => send({ type: "open", overlay: "help" })}
         onInspect={() => send({ type: "open", overlay: "inspect" })}
+        active={state.overlay === "none"}
         disabled={!producer}
       />
 
@@ -217,6 +215,6 @@ function Notice({ text }: { text: string }): JSX.Element {
 
 /** Exported so a test can check the shell without a terminal. */
 export const SHELL_RULE_WIDTH = (columns: number | undefined): number =>
-  Math.max(48, Math.min(columns ?? 100, 120));
+  Math.max(1, Math.min(columns ?? 100, 120));
 
 export type { SurfaceState, Option };

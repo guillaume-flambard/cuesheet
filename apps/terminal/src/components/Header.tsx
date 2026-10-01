@@ -23,15 +23,15 @@ export function Header(props: {
 }): JSX.Element {
   const rule = inkColor(theme.rule);
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" flexShrink={0}>
       <Box justifyContent="space-between">
         <Text color={inkColor(theme.brand)} bold>cuesheet</Text>
-        <Text color={inkColor(theme.dim)}>{props.project ?? "no project"}</Text>
+        <Text wrap="truncate-middle" color={inkColor(theme.dim)}>{props.project ?? "no project"}</Text>
         <Text color={inkColor(props.busy ? theme.active : theme.confirmed)}>
           {props.busy ? `${glyph.active} working` : `${glyph.confirmed} ready`}
         </Text>
       </Box>
-      <Text color={rule}>{props.model}</Text>
+      <Text wrap="truncate-end" color={rule}>{props.model}</Text>
       <Text color={rule}>{"─".repeat(props.width)}</Text>
     </Box>
   );

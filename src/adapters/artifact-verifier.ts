@@ -23,7 +23,7 @@
  *   oracle.
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 import { readCapture, type CapturedArtifact } from "./artifact-capture.ts";
 import { describeVerification, type Verification, type VerificationEvidence } from "../verify.ts";
@@ -71,6 +71,12 @@ export function runAgainstArtifact(options: RunOptions): Verification {
     timeout: options.timeoutMs ?? 30_000,
   });
 
+  return verdictFromResult(options, result);
+}
+
+function verdictFromResult(options: RunOptions, result: { status: number | null; signal: string | null; error?: Error }): Verification {
+  const target = { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest };
+  const evidence: VerificationEvidence[] = [{ kind: "target_digest", value: options.artifact.digest }];
   // A runner that could not be started, or that was killed, tells us nothing
   // about the work. INCONCLUSIVE again, and the reason is in the evidence.
   if (result.error) {
@@ -100,6 +106,27 @@ export function runAgainstArtifact(options: RunOptions): Verification {
       },
     ],
   };
+}
+
+/** The terminal uses the same verdict rules without blocking its composer. */
+export async function runAgainstArtifactAsync(options: RunOptions): Promise<Verification> {
+  const readable = readCapture(options.artifact);
+  if (readable.kind === "unavailable") {
+    return { target: { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest }, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: readable.why }] };
+  }
+  const result = await new Promise<{ status: number | null; signal: string | null; error?: Error }>((settle) => {
+    const child = spawn(options.command, options.args, {
+      cwd: options.artifact.location, stdio: "ignore", env: { PATH: process.env.PATH ?? "" },
+    });
+    const timer = setTimeout(() => child.kill("SIGKILL"), options.timeoutMs ?? 30_000);
+    child.on("error", (error) => { clearTimeout(timer); settle({ status: null, signal: null, error }); });
+    child.on("close", (status, signal) => { clearTimeout(timer); settle({ status, signal }); });
+  });
+  const after = readCapture(options.artifact);
+  if (after.kind === "unavailable") {
+    return { target: { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest }, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: after.why }] };
+  }
+  return verdictFromResult(options, result);
 }
 
 /** A sentence for a surface, reusing the shared wording. */

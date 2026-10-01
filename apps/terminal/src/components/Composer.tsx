@@ -41,11 +41,13 @@ export function Composer(props: {
   placeholder?: string;
   /** True when there is no provider. The sentence is still recorded. */
   disabled?: boolean;
+  active?: boolean;
 }): JSX.Element {
   useInput((input, key) => {
     if (key.ctrl && input === "c") return props.onQuit();
     if (key.ctrl && input === "k") return props.onPalette();
-    if (key.ctrl && input === "i") return props.onInspect();
+    if ((key.ctrl && (input === "i" || input === "l")) || key.tab) return props.onInspect();
+    if (props.active === false) return;
     if (key.return) return props.onSubmit(props.value);
     if (key.backspace || key.delete) return props.onChange(props.value.slice(0, -1));
     if (key.escape) return props.onChange("");
@@ -53,17 +55,20 @@ export function Composer(props: {
   });
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" flexShrink={0}>
       <Text color={inkColor(theme.rule)}>{"─".repeat(props.width)}</Text>
       <Box>
         <Text color={inkColor(props.disabled ? theme.faint : theme.brand)} bold>{glyph.input} </Text>
         {props.value === "" ? (
-          <Text color={inkColor(theme.faint)}>
-            {props.disabled ? "no model to answer with" : (props.placeholder ?? "dis-moi ce que tu veux faire")}          ⌘K
-          </Text>
+          <>
+            <Text inverse>{" "}</Text>
+            <Text wrap="truncate-end" color={inkColor(theme.faint)}>
+              {props.disabled ? "no model to answer with" : (props.placeholder ?? "dis-moi ce que tu veux faire")}          Ctrl+K
+            </Text>
+          </>
         ) : (
           <>
-            <Text>{props.value}</Text>
+            <Text wrap="truncate-start">{props.value.replace(/\r?\n/g, " ")}</Text>
             <Text inverse>{" "}</Text>
           </>
         )}

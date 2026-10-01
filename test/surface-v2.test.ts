@@ -501,9 +501,8 @@ describe("a real run reaches the timeline as real observations", () => {
     // stayed there.
     assert.doesNotMatch(all, /total 4/, "tool output became a timeline line");
     assert.doesNotMatch(all, /drwxr-xr-x/, "tool output became a timeline line");
-    // The model's own sentence is not shown either: it is a claim, and the loop
-    // exists to keep claims separate from what was observed.
-    assert.doesNotMatch(all, /I have listed/, "a model claim became a timeline line");
+    // The answer is visible as model text, separate from confirmed actions.
+    assert.match(all, /I have listed/, "the model answer is visible");
 
     // Every row is one of the five kinds, and the three that were dead in V1 are
     // now constructed.
@@ -529,7 +528,7 @@ describe("a real run reaches the timeline as real observations", () => {
     const log = store.get().log.join("\n");
     assert.match(log, /\[goal\]/, "the goal event is in the log");
     assert.match(log, /a claim with no backing/, "the model's claim is in the log");
-    assert.doesNotMatch(spoken(store.get()), /a claim with no backing/, "and not in the timeline");
+    assert.match(spoken(store.get()), /a claim with no backing/, "the answer is visible without becoming evidence");
   });
 });
 

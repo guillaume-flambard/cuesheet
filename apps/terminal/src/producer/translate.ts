@@ -55,6 +55,7 @@ export const VERBS: readonly Verb[] = ["read", "inspect", "edit", "test", "verif
  */
 export function verbFor(request: ToolRequest): Verb {
   const name = request.name.toLowerCase();
+  if (name === "finish") return "verify";
   const argv = Array.isArray(request.input.argv) ? request.input.argv.map(String) : [];
   const head = (argv[1] ?? "").toLowerCase();
   const joined = `${name} ${argv.join(" ").toLowerCase()}`;
@@ -123,6 +124,8 @@ const isSubcommandTool = (name: string): boolean => SUBCOMMAND_TOOLS.has(name.to
 function refusalOf(exit: number, output: string): string | null {
   if (exit === 126 && output.includes("refusing to run in")) return "outside the working directory";
   if (exit === 126 && output.includes("refusing to read")) return "outside the working directory";
+  if (exit === 126 && output.includes("refusing executable")) return "the executable does not match the requested command";
+  if (exit === 126 && output.includes("proposal was discarded")) return "instructions changed; the earlier proposal was discarded";
   if (exit === 127) return "not one of the commands Cuesheet may run";
   if (exit === 2 && output.includes("no argv supplied")) return "the call had no command in it";
   return null;
@@ -185,7 +188,12 @@ export function translateEvent(event: Event, pending?: Pending, at?: number): Tr
       // A tool result. `data.tool` is what distinguishes it from the model's
       // own text, which arrives in the same event kind.
       const tool = event.data.tool;
-      if (typeof tool !== "string") return null;
+      if (typeof tool !== "string") {
+        const text = event.data.text;
+        return typeof text === "string" && text.trim()
+          ? { entry: { kind: "cuesheet", text } }
+          : null;
+      }
       const exit = typeof event.data.exit === "number" ? event.data.exit : null;
       const output = typeof event.data.output === "string" ? event.data.output : "";
       const refusal = exit === null ? null : refusalOf(exit, output);
@@ -217,8 +225,8 @@ export function translateEvent(event: Event, pending?: Pending, at?: number): Tr
       };
     }
 
-    // Everything else is bookkeeping: the goal echo, the capability gate, the
-    // model's own narration, directives, notes, model selection. A person
+    // Everything else is bookkeeping: the goal echo, the capability gate,
+    // directives, notes, model selection. A person
     // working all day does not read any of it, and a surface that shows it is a
     // dashboard. `/inspect` is where the log lives.
     default:

@@ -29,7 +29,7 @@
 
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -46,7 +46,13 @@ const SLICE = join(TERMINAL, "src", "main.tsx");
  * old chat avoided this by not being a raw-mode application, which is one more
  * reason it printed a different surface.
  */
-export async function surface(): Promise<number> {
+export async function surface(argv = process.argv.slice(2)): Promise<number> {
+  const args = argv[0] === "surface" ? argv.slice(1) : argv;
+  if (args.length && (args[0] !== "--verify" || args.length !== 2)) {
+    console.error("surface: usage: cuesheet surface [--verify <self-contained Node check.mjs>]");
+    return 2;
+  }
+  const verificationScript = args[1] ? resolve(process.cwd(), args[1]) : undefined;
   if (!existsSync(SLICE)) {
     console.error(`surface: the slice is missing at ${SLICE}`);
     return 1;
@@ -72,7 +78,7 @@ export async function surface(): Promise<number> {
 
   return await new Promise<number>((settle) => {
     const child = spawn(RUNNER, [SLICE], {
-      cwd: TERMINAL,
+      cwd: process.cwd(),
       stdio: "inherit",
       env: {
         // Named, not inherited wholesale, because the surface needs four things
@@ -98,6 +104,7 @@ export async function surface(): Promise<number> {
         PATH: process.env["PATH"] ?? "",
         HOME: process.env["HOME"] ?? "",
         TERM: process.env["TERM"] ?? "xterm-256color",
+        ...(verificationScript ? { CUESHEET_VERIFY_SCRIPT: verificationScript } : {}),
         ...(process.env["OPENROUTER_API_KEY"] ? { OPENROUTER_API_KEY: process.env["OPENROUTER_API_KEY"] } : {}),
       },
     });

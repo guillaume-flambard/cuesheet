@@ -32,7 +32,7 @@ export function StatusBar(props: {
   }
   const right = props.busy ? `${glyph.active} working` : failed > 0 ? `${glyph.failed} ${failed} failed` : "? for help";
   return (
-    <Box justifyContent="space-between">
+    <Box justifyContent="space-between" flexShrink={0}>
       <Text color={inkColor(theme.faint)}>
         {read} read{modified > 0 ? ` · ${modified} changed` : ""}
       </Text>

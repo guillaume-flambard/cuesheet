@@ -32,6 +32,9 @@
  * its own scope by naming a directory.
  */
 
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { createCompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
 import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
@@ -77,6 +80,13 @@ export function createLiveProducer(store: Store, cwd: string): { producer: Produ
     roots: [cwd],
     defaultCwd: cwd,
   });
-  const options: ProducerOptions = { store, model, tools, cwd };
+  let verification;
+  try {
+    const script = process.env.CUESHEET_VERIFY_SCRIPT;
+    verification = script ? createCompletionCheck({ script, root: join(homedir(), ".local", "state", "cuesheet", "verification") }) : undefined;
+  } catch (error) {
+    return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
+  }
+  const options: ProducerOptions = { store, model, tools, cwd, toolNames: ALLOWED, verification };
   return { producer: createProducer(options) };
 }

@@ -53,7 +53,8 @@ import { join, relative } from "node:path";
 export const CAPTURE_SCOPE = "declared_workspace" as const;
 
 /** Directories that are not the work's output, and are not snapshotted. */
-const IGNORED = new Set(["node_modules", ".git", ".DS_Store"]);
+const IGNORED = new Set(["node_modules", ".git", ".DS_Store", ".npmrc", ".pypirc"]);
+const excluded = (name: string): boolean => IGNORED.has(name) || name === ".env" || name.startsWith(".env.");
 
 export interface CapturedArtifact {
   /**
@@ -94,7 +95,7 @@ export interface CaptureOptions {
 function filesUnder(dir: string, base = dir): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (IGNORED.has(entry.name)) continue;
+    if (excluded(entry.name)) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...filesUnder(full, base));
@@ -151,7 +152,9 @@ export function capture(options: CaptureOptions): CapturedArtifact {
   // A provisional name, since the real one is the digest of the content.
   const staging = join(root, sessionId, "artifacts", `${effectId}.pending`);
   mkdirSync(staging, { recursive: true });
-  cpSync(workspace, staging, { recursive: true, force: true });
+  cpSync(workspace, staging, { recursive: true, force: true, filter: (source) =>
+    !relative(workspace, source).split(/[\\/]/).some(excluded)
+  });
 
   const { digest, fileCount } = digestDirectory(staging);
   const artifactId = `A-${digest.slice(0, 16)}`;

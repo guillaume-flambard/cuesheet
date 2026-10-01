@@ -26,19 +26,19 @@ import React from "react";
 import { Box, Text } from "ink";
 import { theme, inkColor } from "../theme/tokens.ts";
 
-export function Inspect(props: { lines: readonly string[] }): JSX.Element {
+export function Inspect(props: { lines: readonly string[]; maxLines?: number; width?: number }): JSX.Element {
   if (props.lines.length === 0) {
     return <Text color={inkColor(theme.dim)}>nothing has happened yet</Text>;
   }
   // The tail, because the newest line is the one being looked for, and a log
   // that starts at seq 1 and scrolls away is the same mistake the timeline
   // avoided.
-  const shown = props.lines.slice(-40);
+  const shown = props.lines.slice(-Math.max(1, props.maxLines ?? 40));
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" width={props.width}>
       <Text color={inkColor(theme.dim)}>the log, as appended</Text>
       {shown.map((line, i) => (
-        <Text key={i} color={inkColor(theme.faint)}>
+        <Text key={i} color={inkColor(theme.faint)} wrap="truncate-end">
           {line}
         </Text>
       ))}

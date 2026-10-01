@@ -25,7 +25,7 @@ export function Help(props: { onClose(): void }): JSX.Element {
         <Text>  {glyph.confirmed} where you are decides the project</Text>
         <Text>  {glyph.confirmed} the work shows up as it happens</Text>
         <Text>  {glyph.unknown} if two projects match, you pick</Text>
-        <Text>  {glyph.confirmed} ⌘I for the log · esc to close</Text>
+        <Text>  {glyph.confirmed} Ctrl+L for the log · Ctrl+K for commands · esc to close</Text>
       </Box>
       <Box marginTop={1}>
         <Text color={inkColor(theme.faint)}>press esc</Text>

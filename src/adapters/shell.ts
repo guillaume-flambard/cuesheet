@@ -99,6 +99,12 @@ export class ShellToolRunner {
       return { name, exit: 2, output: "no argv supplied" };
     }
 
+    // The declaration and the executable must be the same command. A caller
+    // cannot gain another executable by putting it behind an allowed name.
+    if (argv[0] !== name) {
+      return { name, exit: 126, output: `refusing executable ${argv[0]}: expected ${name}` };
+    }
+
     return new Promise<ToolResult>((resolvePromise) => {
       execFile(
         argv[0],

@@ -517,6 +517,20 @@ export class BinaryModelAdapter implements ModelAdapter {
    * whole.
    */
   private spawnRun(dir: string, frame: ContextFrame): Promise<RawRun> {
+    // Keep inline provider/model preferences, while reserving our proposer.
+    // Do not echo the inherited config: it can contain provider credentials.
+    let inline: Record<string, unknown> = {};
+    try {
+      if (process.env.OPENCODE_CONFIG_CONTENT) {
+        const value = JSON.parse(process.env.OPENCODE_CONFIG_CONTENT);
+        if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error();
+        inline = value;
+      }
+    } catch {
+      return Promise.reject(new FailureWithOrigin("launch", "world", "OPENCODE_CONFIG_CONTENT must be a JSON object"));
+    }
+    const inheritedAgents = inline.agent && typeof inline.agent === "object" && !Array.isArray(inline.agent) ? inline.agent : {};
+    const config = { ...inline, ...AGENT_CONFIG, agent: { ...inheritedAgents, ...(AGENT_CONFIG.agent as Record<string, unknown>) } };
     const args = [
       "run",
       "--dir",
@@ -533,7 +547,13 @@ export class BinaryModelAdapter implements ModelAdapter {
     if (this.options.model) args.splice(1, 0, "--model", this.options.model);
 
     return new Promise<RawRun>((resolve, reject) => {
-      const child = spawn(this.options.binary, args, { stdio: ["ignore", "pipe", "pipe"] });
+      // Inline config follows project config in OpenCode's merge order. The
+      // proposal boundary must apply to projects as well as scratch runs;
+      // writing a config into the user's project would mutate their settings.
+      const child = spawn(this.options.binary, args, {
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env, OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
+      });
       let stdout = "";
       let stderr = "";
       let settled = false;
