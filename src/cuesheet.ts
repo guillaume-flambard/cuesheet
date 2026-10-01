@@ -143,8 +143,9 @@ Options:
 Every subcommand takes --help. Commands that print a report also take
 --format json, because a verdict a machine cannot read is not a verdict.
 
-A run needs a provider. Set OPENROUTER_API_KEY; there is no unauthenticated
-fallback, on purpose.
+A run needs a model. It uses the local opencode binary when one is installed, at
+no credit cost; set CUESHEET_OPENCODE_BIN if it lives somewhere unusual. For the
+paid provider, set CUESHEET_PROVIDER=openrouter and OPENROUTER_API_KEY.
 `);
   process.exit(2);
 }

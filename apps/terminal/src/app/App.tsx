@@ -55,7 +55,7 @@ import { Projects } from "../overlays/Projects.tsx";
 import { Inspect } from "../overlays/Inspect.tsx";
 import { Help } from "../overlays/Help.tsx";
 import { createStore, type Store } from "./store.ts";
-import { createLiveProducer, MODEL } from "../producer/runtime.ts";
+import { createLiveProducer, modelFor } from "../producer/runtime.ts";
 import type { Producer } from "../producer/index.ts";
 import type { Option } from "./state.ts";
 
@@ -84,7 +84,7 @@ export function App(props: AppProps): JSX.Element {
   // built outside the render body on purpose: a producer is not a value, and
   // rebuilding one per frame would mint a new session per keystroke.
   const wired = useMemo(() => wire(props), [props.store, props.producer, props.cwd]);
-  const { store, producer, missing } = wired;
+  const { store, producer, missing, modelName } = wired;
   const state = useSurface(store);
 
   /** The only path from a component to a decision. */
@@ -118,7 +118,12 @@ export function App(props: AppProps): JSX.Element {
 
   return (
     <Box flexDirection="column" width={column}>
-      <Header width={column} project={state.project} busy={state.busy} model={producer ? MODEL : "no model"} />
+      <Header
+        width={column}
+        project={state.project}
+        busy={state.busy}
+        model={producer ? modelName : "no model"}
+      />
 
       <Box flexDirection="column" flexGrow={1} paddingTop={1} paddingBottom={1}>
         {missing ? (
@@ -169,9 +174,24 @@ export function App(props: AppProps): JSX.Element {
  * runs, still resolves the portfolio, and still explains itself, because a person
  * who typed `cuesheet` did not ask for a stack trace about a missing variable.
  */
-function wire(props: AppProps): { store: Store; producer: Producer | null; missing: string | null } {
+function wire(props: AppProps): {
+  store: Store;
+  producer: Producer | null;
+  missing: string | null;
+  /**
+   * What the header calls the model.
+   *
+   * Resolved where the producer is built rather than in the render body, so the
+   * header and the producer cannot name two different models. A header reading
+   * one transport while the loop runs another is a lie a person cannot detect
+   * from the screen, and this surface is the one place that claim is made.
+   */
+  modelName: string;
+} {
   const store = props.store ?? createStore();
-  if (props.producer) return { store, producer: props.producer, missing: null };
+  // A test that supplies its own producer is not running a model at all, so it
+  // has no model to name. "test" is honest where a provider id would be a guess.
+  if (props.producer) return { store, producer: props.producer, missing: null, modelName: "test" };
   const cwd = props.cwd ?? process.cwd();
   const live = createLiveProducer(store, cwd);
   if ("missing" in live) {
@@ -179,9 +199,10 @@ function wire(props: AppProps): { store: Store; producer: Producer | null; missi
       store,
       producer: null,
       missing: live.missing,
+      modelName: "no model",
     };
   }
-  return { store, producer: live.producer, missing: null };
+  return { store, producer: live.producer, missing: null, modelName: modelFor(cwd).name };
 }
 
 /** The one line that replaces the timeline when there is nothing to run with. */

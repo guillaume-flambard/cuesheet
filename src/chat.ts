@@ -43,7 +43,7 @@ import {
 } from "./core/capability.ts";
 import { runAgentLoop, type ModelAdapter, type ToolRunner } from "./core/loop.ts";
 import { EventStore, type Event } from "./core/store.ts";
-import { OpenRouterAdapter } from "./adapters/openrouter.ts";
+import { resolveModel } from "./adapters/default-model.ts";
 import { SessionStore } from "./adapters/session-store.ts";
 import { ShellToolRunner } from "./adapters/shell.ts";
 import { isEntryPoint } from "./is-entry-point.ts";
@@ -175,16 +175,16 @@ async function runGoal(
     console.log("owner override: running anyway, and the override is on the record.");
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    console.log("not running: OPENROUTER_API_KEY is not set, and there is no local runtime on this machine.");
+  const resolved = resolveModel({ project: cwd });
+  if ("missing" in resolved) {
+    console.log(`not running: ${resolved.missing}`);
     return;
   }
+  // Said before the first inference, because a run that cannot name its own
+  // model is a run whose log cannot be read back honestly.
+  console.log(`model: ${resolved.name} (${resolved.why})`);
 
-  const model: ModelAdapter = new OpenRouterAdapter({
-    apiKey,
-    model: "anthropic/claude-sonnet-4-6",
-  });
+  const model: ModelAdapter = resolved.adapter;
   const tools: ToolRunner = new ShellToolRunner({
     allow: ["node", "git", "rg", "ls", "cat", "npm", "npx", "cargo"],
     roots: [cwd],

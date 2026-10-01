@@ -16,7 +16,7 @@ import { resolveCapabilities, type Capability } from "../src/core/capability.ts"
 import { runAgentLoop, type ModelAdapter, type ToolRequest, type ToolResult } from "../src/core/loop.ts";
 import { EventStore, type Event } from "../src/core/store.ts";
 import { SkillsAdapter, type SkillListing } from "../src/adapters/skills.ts";
-import { OpenRouterAdapter } from "../src/adapters/openrouter.ts";
+import { resolveModel } from "../src/adapters/default-model.ts";
 import { SessionStore } from "../src/adapters/session-store.ts";
 import { ShellToolRunner } from "../src/adapters/shell.ts";
 import { isEntryPoint } from "./is-entry-point.ts";
@@ -51,8 +51,11 @@ function usage(): never {
   cuesheet capabilities
       resolve the live skill registry, the way a delegation would
 
-A run needs a provider. Set OPENROUTER_API_KEY; there is no local runtime on
-this machine and no unauthenticated fallback, on purpose.
+A run needs a model. It uses the local opencode binary when one is installed, at
+no credit cost; set CUESHEET_OPENCODE_BIN if it lives somewhere unusual. For the
+paid provider, set CUESHEET_PROVIDER=openrouter and OPENROUTER_API_KEY. An
+exported key alone does not switch providers, so a run's cost is never decided
+by accident.
 `);
   process.exit(2);
 }
@@ -104,19 +107,23 @@ async function cmdRun(argv: string[]): Promise<number> {
   const maxSteps = Number(flags["max-steps"] ?? 8);
   if (!Number.isFinite(maxSteps) || maxSteps <= 0) fail("--max-steps needs a positive number");
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    fail("OPENROUTER_API_KEY is not set; there is no local model runtime on this machine");
+  // The model, resolved the way every other surface resolves it. This used to
+  // demand `OPENROUTER_API_KEY` and announce that no local runtime existed on
+  // this machine, which was false: one is installed and configured. `--model`
+  // still overrides, and an explicit `CUESHEET_PROVIDER=openrouter` still opts
+  // into the paid provider.
+  const resolved = resolveModel({ project: dir, model: flags.model });
+  if ("missing" in resolved) {
+    fail(resolved.missing);
   }
 
   const requires = flags.requires ? loadRequirements(flags.requires) : [];
-  const model = new OpenRouterAdapter({
-    apiKey,
-    model: flags.model ?? "anthropic/claude-sonnet-4-6",
-  });
+  const model = resolved.adapter;
+  console.error(`model: ${resolved.name} (${resolved.why})`);
 
+  const allow = (flags.allow ?? "node,git,rg,ls,cat").split(",").map((a) => a.trim()).filter(Boolean);
   const tools = new ShellToolRunner({
-    allow: (flags.allow ?? "node,git,rg,ls,cat").split(","),
+    allow,
     roots: [dir],
     defaultCwd: dir,
   });
@@ -129,6 +136,23 @@ async function cmdRun(argv: string[]): Promise<number> {
   for (const event of durable.read(sessionId)) {
     store.append(event);
   }
+
+  // Tell the model which verbs this run can actually run.
+  //
+  // It was never told, on any provider, and the cost was invisible until a live
+  // run: the allow list was enforced at the runner, so a model proposing a verb
+  // outside it got `exit: 127` and no explanation of why the verb was unavailable.
+  // A real run recorded the model saying it could not act because no
+  // directives declared a vocabulary, which was true and unhelpful.
+  //
+  // Declared here rather than in the runner because the runner must not grow a
+  // second opinion about what it is allowed to run, and the core must not know
+  // any provider's vocabulary.
+  store.append({
+    kind: "directive",
+    subject: flags.subject ?? "builder",
+    data: { text: `tools: ${allow.join(", ")}` },
+  });
 
   const outcome = await runAgentLoop(store, model, tools, {
     subject: flags.subject ?? "builder",
