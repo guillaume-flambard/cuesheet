@@ -1,3 +1,4 @@
+import { projectEffectAttempts, mutationTool } from "./tool-receipts.ts";
 import { projectExecutions } from "./execution-state.ts";
 import type { ContextFrame } from "../core/loop.ts";
 import type { Session } from "../core/store.ts";
@@ -25,6 +26,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
       memory: projectMemory(session.events), organization: projectOrganization(session.events),
       objectives: projectObjectives(session.events),
       executions: projectExecutions(session.events),
+      uncertainEffects: projectEffectAttempts(session.events).filter(a=>a.phase==="uncertain" && mutationTool(a.tool)),
       research: session.events.filter(event=>event.kind==="note" && event.subject==="terminal.research")
         .map(event=>({sourceSeq:event.seq,operation:event.data.operation,url:event.data.finalUrl ?? event.data.url,
           path:event.data.path,digest:event.data.digest,fetchedAt:event.data.fetchedAt,query:event.data.query,results:event.data.results})),

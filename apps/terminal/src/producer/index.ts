@@ -66,6 +66,7 @@
  */
 
 import { type ModelAdapter, type ToolRunner, type LoopOptions } from "../../../../src/core/loop.ts";
+import { projectEffectAttempts, mutationTool, invocationKey, completeAttempt, reconcileEffect } from "../../../../src/adapters/tool-receipts.ts";
 import { runExecutionSlices } from "../../../../src/adapters/execution-slices.ts";
 import { EventStore, type Event } from "../../../../src/core/store.ts";
 import { temporaryWorker, type StepOutcome, type WorkLog } from "../../../../src/work-worker.ts";
@@ -273,6 +274,22 @@ export function createProducer(options: ProducerOptions): Producer {
     .filter((event) => event.kind === "directive" || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
+      const signal=controller!.signal;
+      signal.throwIfAborted();options.journal?.assertWritable();
+      if(directiveRevision()!==proposalDirective)return {name:request.name,exit:126,output:"The instructions changed; this proposal was discarded."};
+      if(options.journal){
+        if(request.name==="reconcile_effect")return reconcileEffect(shared,request,activeEffect);
+        const attempts=projectEffectAttempts(shared.toSession().events);
+        const uncertain=attempts.filter(attempt=>attempt.phase==="uncertain" && mutationTool(attempt.tool));
+        if(mutationTool(request.name) && uncertain.length)return {name:request.name,exit:126,output:JSON.stringify({reason:"A previous effect may already have run. Inspect the workspace with cat/ls, then use reconcile_effect with the successful observation sequence before proposing mutations or finish.",intentSequences:uncertain.map(a=>a.intentSeq)})};
+        if(mutationTool(request.name) && attempts.some(a=>a.phase==="performed" && a.executionId===activeEffect && invocationKey(a.tool,a.input)===invocationKey(request.name,request.input)))return {name:request.name,exit:126,output:"Inspection concluded this invocation already happened; repeating it in this resumed execution is refused."};
+        const intent=shared.append({kind:"action",subject:"terminal.intent",data:{version:1,tool:request.name,input:request.input,effectId:activeEffect,phase:"requested"}});
+        const result=await executeTool(request);signal.throwIfAborted();completeAttempt(shared,intent,result);return result;
+      }
+      return executeTool(request);
+    },
+  };
+  async function executeTool(request:Parameters<ToolRunner["run"]>[0]):Promise<Awaited<ReturnType<ToolRunner["run"]>>> {
       const signal = controller!.signal;
       signal.throwIfAborted();
       options.journal?.assertWritable();
@@ -282,7 +299,6 @@ export function createProducer(options: ProducerOptions): Producer {
       if (shared.toSession().goal?.open === false) {
         return { name: request.name, exit: 126, output: "The declared check already settled this run; no further calls were executed." };
       }
-      if (options.journal) shared.append({kind:"action",subject:"terminal.intent",data:{tool:request.name,input:request.input,effectId:activeEffect,phase:"requested"}});
       const history = readHistory(shared,request);
       if(history)return history;
       if(request.name==="list_skills" || request.name==="read_skill")return options.skills?.run(shared,request)
@@ -324,8 +340,7 @@ export function createProducer(options: ProducerOptions): Producer {
         return { name: "finish", exit: verdict === "VERIFIED" && stillCurrent ? 0 : 1, output: JSON.stringify({ verdict, record: result.record, artifactDigest: result.artifact.digest, current: stillCurrent }) };
       }
       return interruptible((tools as ToolRunner & { run(request: Parameters<ToolRunner["run"]>[0], signal?: AbortSignal): ReturnType<ToolRunner["run"]> }).run(request, signal), signal);
-    },
-  };
+  }
 
   function wrapAtBoundary(inner: ModelAdapter): ModelAdapter {
     return {
@@ -456,7 +471,7 @@ export function createProducer(options: ProducerOptions): Producer {
     // in the boundary above, and two variables differing only by scope in the
     // same module is the kind of thing that is read wrong later.
     if (options.toolNames?.length) {
-      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...AUTONOMOUS_TOOLS, "read_history", ...(options.research ? ["read_document","search_web"] : []), ...(options.skills ? ["list_skills","read_skill"] : []), ...(options.verification ? ["finish"] : [])].join(", ")}` } });
+      shared.append({ kind: "directive", subject, data: { text: `tools: ${[...options.toolNames, ...AUTONOMOUS_TOOLS, "read_history", ...(options.research ? ["read_document","search_web"] : []), ...(options.skills ? ["list_skills","read_skill"] : []), ...(options.journal ? ["reconcile_effect"] : []), ...(options.verification ? ["finish"] : [])].join(", ")}` } });
       shared.append({ kind: "directive", subject, data: { text:
         'The shell tools are command tools; organize_work, remember, create_skill, describe_objective and read_history use structured input as described separately. For command tools use input.argv with the exact tool name first, for example {"name":"ls","input":{"argv":["ls","-la"]}}. ' +
         'cat and ls also accept input.path. Paths and commands are relative to the declared working directory. ' +
@@ -495,6 +510,8 @@ export function createProducer(options: ProducerOptions): Producer {
     // The loop options, and the one that matters most: `onEvent` is how the work
     // becomes visible. It fires from a promise continuation outside React, which
     // is why the store is external (`app/store.ts`).
+    if(options.journal)shared.append({kind:"directive",subject,data:{text:"If uncertainEffects are present, inspect the current project with cat/ls, then propose reconcile_effect {intentSeq, observationSeq, conclusion, rationale}. conclusion is performed, not-performed or inconclusive. An observed workspace interpretation is not acceptance proof. Never repeat an invocation concluded performed."}});
+
     const loopOptions: LoopOptions = {
       subject,
       goal,

@@ -72,3 +72,5 @@ encore les exigences absentes du graphe ; il n'est pas exécuté à cette étape
 Exécution : producer → execution-slices.ts → core.runAgentLoop par tranche → contexte journal reconstruit. Notes terminal.execution reflètent les limites et cause de continuation. ResearchTools au runtime reçoit cwd pour documents locaux et route Brave explicite ; SkillTools reçoit racines explicites ou .cuesheet/skills.
 
 execution-state.ts projette terminal.execution v1, validé par TerminalSession avant append/reload et dans le listing des sessions. session-view dérive interrupted seulement au chargement ; shared-context expose les états sous le plafond existant.
+
+Tool-receipts.ts (distinct du ReceiptStore historique de spawn) suit terminal.intent → terminal.receipt. Producer bloque mutations/finish sur intention incertaine, admet cat/ls puis reconcile_effect ; shared-context conserve ces incertitudes comme essentiels, view les affiche. TerminalSession valide les payloads/replay/listing. Aucune conclusion de modèle ne devient preuve indépendante.

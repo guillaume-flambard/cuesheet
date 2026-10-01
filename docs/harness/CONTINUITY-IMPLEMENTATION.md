@@ -18,3 +18,14 @@ Les notes terminal.execution v1 existantes restent lisibles sans réécrire les 
 Les échecs et arrêts publient failed/cancelled lorsque le journal reste inscriptible. L’erreur d’origine reste la cause rapportée même si cette dernière écriture échoue. Un crash laisse running/continuing dans l’historique ; au chargement seulement, la projection indique interrupted sans append et sans relance. La vue indique cause/compteurs/actions possibles sans prétendre à une vérification supplémentaire. Le contexte partagé expose les états récents sous son plafond existant.
 
 Vérification : transitions/budgets invalides refusés avant append ; corruption refusée au reload sans modifier le journal ; crash réel existant avec assertion d’identité/état ; run terminé conservé ; cancellation et provider error explicites ; chargement aucune inférence/effet. Les attentes d’information/capacité fines et H05.4 restent ouvertes : les états de cette tranche décrivent les observations actuellement disponibles.
+
+
+## Tranche H05.4 : effets incertains
+
+DISCOVER : terminal.intent requested est écrit avant dispatch mais sans reçu lié ; core écrit résultat après retour. Un crash dans cet intervalle garde une intention sans résultat et la reprise repose actuellement sur une instruction au modèle.
+
+MODEL/SPECIFY : conserver l’ID seq de l’intention. Reçu terminal.receipt v1 completed avec intentSeq, tool, exit et digest de sortie, écrit avant de rendre le résultat au core. Reçu manquant après interruption = effet incertain, jamais résultat inventé. Anciens journaux : associer seulement l’observation existante du même outil dans l’intervalle série avant l’intention suivante ; absence reste inconnue. Le replay ne réécrit pas ce format.
+
+DECOMPOSE H05.4 : projection/paires et validation → reçu de dispatch → garde de reprise → reconciliation appuyée sur source réelle → tests crash/cancel/échec journal/compatibilité. Gate : tant qu’une mutation passée reste incertaine, seuls cat/ls et outils internes de lecture/organisation sont admis ; finish et mutations refusés. reconcile_effect {intentSeq, observationSeq, conclusion, rationale} admet une conclusion de modèle performed/not-performed/inconclusive seulement après observation cat/ls réussie, postérieure à l’intention, issue du core. Elle ne constitue pas une preuve d’acceptation. Inconclusive laisse la garde. Une conclusion performed interdit de répéter la même invocation dans cette exécution de reprise. Aucun exactly-once universel revendiqué.
+
+Vérification : écriture réelle puis interruption avant résultat, reload sans dispatch, mutation tentée refusée, lecture puis reconciliation source liée, pas de double append ; résultat completed mais core result absent ; conclusion sans source/relecture vieille rejetée ; historique compatible ; reçu corrompu refuse sans réécriture. Coût/capacité inconnus, compensations et idempotency providers restent à traiter dans H05.4 complet.

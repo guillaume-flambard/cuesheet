@@ -1,4 +1,5 @@
 /** Rebuild the presentation journal, keeping it separate from harness evidence. */
+import { projectEffectAttempts, mutationTool } from "../../../../src/adapters/tool-receipts.ts";
 import { projectExecutions } from '../../../../src/adapters/execution-state.ts';
 import { createStore, type Store } from '../app/store.ts';
 import { derive, emptySurface, type Control, type Entry, type SurfaceState } from '../app/state.ts';
@@ -40,6 +41,8 @@ export function restoreView(journal:TerminalSession):SurfaceState {
   const core=journal.core.toSession();
   state={...state,log:core.events.slice(-200).map(event=>`[${event.kind}] ${event.subject} ${JSON.stringify(event.data)}`)};
   if(core.goal && !core.goal.open) state=derive(state,{type:'observed',entries:[{kind:'status',label:'résultat sauvegardé',value:`But vérifié sur la capture enregistrée · ${core.evidence.at(-1)?.backing ?? 'preuve dans le journal'}`,certainty:'confirmed'}]});
+  const uncertain=projectEffectAttempts(core.events).filter(a=>a.phase==="uncertain"&&mutationTool(a.tool));
+  if(uncertain.length)state=derive(state,{type:'observed',entries:[{kind:'status',label:'effets à inspecter',value:`${uncertain.length} effet(s) sans résultat durable. Le harness inspectera le projet avant de proposer une nouvelle mutation.`,certainty:'unknown'}]});
   const execution=projectExecutions(core.events,{replaying:true}).at(-1);
   if(execution){
     const reasons:Record<string,string>={interrupted:"Exécution interrompue sans résultat final enregistré",cancelled:"Exécution arrêtée par la personne",failed:"Exécution arrêtée sur une erreur technique",limit:"Limite d’exécution atteinte",stagnation:"Exécution arrêtée sans nouvelle observation",blocked:"Exécution en attente de capacité"};
