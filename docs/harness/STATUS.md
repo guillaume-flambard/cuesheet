@@ -138,3 +138,7 @@ EV-CHECK-PALETTE : renouvellement explicite depuis la palette, snapshot de contr
 EV-MODEL-USAGE : runtime/binding → Anthropic start/usage sink → journal de consommation dédié sous la claim terminal. Aucun déplacement de révision de proposition, compteur inconnu explicite, aucun prix inventé. 747/745/0/2 full PASS. H07.4a DONE ; H07.4 parent IN_PROGRESS.
 
 EV-INSTALLED-TERMINAL : source → tsc CLI + ESM terminal bundle/asset/notices → npm pack → installation isolée → Node/TTY. PTY vrai et garde typing PASS, full 748/746/0/2 PASS. H09.4a DONE ; H09.4 reste IN_PROGRESS. Nouveau défaut de scope H09.3a en cours, avant toute clôture.
+
+Reprise actuelle (commits6e4bfd0/82988c4) : H09.3a périmètre shell/recherche/skills résolu (751/749/0/2) ; H09.5a credentials natifs exclus des enfants et H09.1a auteur historique non inventé (755/753/0/2). H05.2a reprise du projet humain déjà lié vérifiée (757/755/0/2). Preuves durables dans evaluation/scoped-runtime,tool-environment,objective-authorship,scoped-resume-evidence.md. Aucun parent clôturé par ces tranches. E01.4a consultation des scopes au clavier en vérification ;25 tests ciblés passent, full en cours.
+
+EV-SHARED-CONTEXT-UI :25 ciblés et760/758/0/2 full PASS. E01.4a DONE, parent E01.4 toujours ouvert. Compteurs machine35P0/17P1,52AC pending,10risques HIGH ouverts ; IMPLEMENTING.

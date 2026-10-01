@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "6e4bfd0",
+  "referenceCommit": "82988c4",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -2819,7 +2819,7 @@
     {
       "id": "H05.2a",
       "priority": "P1",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "requirements": [
         "REQ-H05.2"
       ],
@@ -2836,8 +2836,37 @@
         "AC-H05.2"
       ],
       "verification": "Actual session close/reopen from launch cwd, selected project resume and identity preserved; unknown/legacy/mismatched scope refused; existing recovery and full suite",
-      "evidence": [],
-      "notes": "Current resume refuses every persisted cwd different from launch cwd. Require matching objective scope and explicit human provenance; no arbitrary root selection from model."
+      "evidence": [
+        "EV-SCOPE-RESUME"
+      ],
+      "notes": "Historical actual session counterexample reproduced; reopened original project and objective identity preserved. Five unproven scope cases refused without core mutation. 21 targeted +2 refusal tests PASS;757/755/0/2 full PASS. Parent H05.2 remains open."
+    },
+    {
+      "id": "E01.4a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.4"
+      ],
+      "dependencies": [
+        "E01.1",
+        "E01.2"
+      ],
+      "description": "Read-only terminal palette inspection of explicitly mounted project/organization contexts with provenance, revisions and bounded pagination.",
+      "systems": [
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/overlays/Palette.tsx",
+        "apps/terminal/src/app/App.tsx",
+        "test/shared-context-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-E01.4"
+      ],
+      "verification": "Actual shared stores and Ink keyboard, empty/unavailable and paginated scopes, three dimensions/resize and no mutations, differential typing and regression",
+      "evidence": [
+        "EV-SHARED-CONTEXT-UI"
+      ],
+      "notes": "25 targeted and760/758/0/2 full PASS. Real App Ink pages/sources/resize/Escape without mutations. Parent E01.4 pending correction/export/team workflows."
     }
   ],
   "acceptance": [
@@ -3816,6 +3845,18 @@
       "result": "PASS_PARTIAL",
       "method": "Historical absent author counterexample; provenance replay/malformed inputs and objective/session/typing regression",
       "details": "23 targeted PASS;755/753/0/2 full PASS, evaluation/objective-authorship-evidence.md. Other migrations and R10 remain open."
+    },
+    {
+      "id": "EV-SCOPE-RESUME",
+      "result": "PASS_PARTIAL",
+      "method": "Actual session close/reopen, real file in selected project; legacy/unknown/model/mismatch/nonhuman-source refusal; recovery/receipts/types/full suite",
+      "details": "757/755/0/2 full PASS,21 targeted and2 refusal PASS. evaluation/scoped-resume-evidence.md. Parent H05.2 remains open."
+    },
+    {
+      "id": "EV-SHARED-CONTEXT-UI",
+      "result": "PASS_PARTIAL",
+      "method": "Actual shared stores, real Ink App keyboard/pagination/resize3 dimensions/no writes, typing/full regression",
+      "details": "25 targeted;760 tests758 pass0 fail2 skipped. evaluation/shared-context-ui-evidence.md. E01.4 parent remains open."
     }
   ],
   "risks": {
@@ -3825,10 +3866,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "6e4bfd0",
+    "lastPassedCommit": "82988c4",
     "lastFullSuite": {
-      "tests": 755,
-      "passed": 753,
+      "tests": 760,
+      "passed": 758,
       "failed": 0,
       "skipped": 2
     },
@@ -3848,7 +3889,9 @@
     "workingTreeInstalledTerminal": "PASS shipped bundle, real temp installation/PTY, 748/746/0/2 full. H09.3a scoped runtime defect discovered and pending; overall IMPLEMENTING.",
     "workingTreeScopes": "PASS H09.3a; actual effects scoped to chosen project;751/749/0/2 full. OS sandbox/recovery and parent H09.3 pending.",
     "workingTreeEnvironment": "PASS native harness credentials excluded from actual shell children;755/753/0/2 full. R06/R09 remain open.",
-    "workingTreeAuthorship": "PASS replay absent author unknown/model preserved/malformed rejected;755/753/0/2 full. R10 remains open."
+    "workingTreeAuthorship": "PASS replay absent author unknown/model preserved/malformed rejected;755/753/0/2 full. R10 remains open.",
+    "workingTreeScopedResume": "PASS reopened selected project, original objective identity and sourced admission;757/755/0/2 full. UI context slice in verification.",
+    "workingTreeSharedContextUI": "PASS readonly palette, actual keys/pages/sources/resize;760/758/0/2 full. Parent enterprise UI/edit/export pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -3856,7 +3899,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 52,
     "p0_open": 35,
-    "p1_open": 18
+    "p1_open": 17
   },
   "workstreams": [
     {
@@ -3870,7 +3913,9 @@
         "H01.5",
         "H02.1",
         "H02.2",
-        "H09.1"
+        "H09.1",
+        "H01.3a",
+        "H09.1a"
       ],
       "dependencies": [
         "B00"
@@ -3906,7 +3951,8 @@
         "H04.5",
         "E01.1",
         "E01.2",
-        "E01.3"
+        "E01.3",
+        "E01.D1"
       ],
       "dependencies": [
         "C1",
@@ -3924,7 +3970,9 @@
         "H05.4",
         "H05.5",
         "H09.2",
-        "H09.3"
+        "H09.3",
+        "H09.3a",
+        "H05.2a"
       ],
       "dependencies": [
         "C1",
@@ -3946,7 +3994,8 @@
         "H07.2a",
         "H07.3",
         "H07.4",
-        "H07.5"
+        "H07.5",
+        "H07.4a"
       ],
       "dependencies": [
         "C1",
@@ -3971,7 +4020,10 @@
         "H10.3",
         "H10.4",
         "H10.5",
-        "E01.4"
+        "E01.4",
+        "H09.4a",
+        "H09.5a",
+        "E01.4a"
       ],
       "dependencies": [
         "C1",
@@ -3980,7 +4032,7 @@
         "C4",
         "C5"
       ],
-      "status": "TODO"
+      "status": "IN_PROGRESS"
     }
   ]
 }

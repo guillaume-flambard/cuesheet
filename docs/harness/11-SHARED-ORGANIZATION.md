@@ -29,3 +29,11 @@ Risques : shared filesystem sans garanties POSIX n’est pas un backend distribu
 Défaut découvert E01.D1 (P1) : SessionStore.appendIfCurrent numérote le premier append conditionnel à 0 pour base -1, alors que append/nextSeq démarrent à 1. Correction requise avec régression avant journal partagé. Aucun changement core.
 
 Revue d’isolation : le binder peut sélectionner un projet différent du cwd initial. Le scope mémoire doit suivre scope.path à chaque nouvelle exécution, en conservant seulement les montages entreprise explicitement configurés. Aucun souvenir du projet initial ne doit traverser ce changement par défaut.
+
+## Tranche E01.4a : consulter les scopes au terminal
+
+Avant code : palette Contexte partagé, lecture pure du projet d’exécution et des seuls montages entreprise configurés. Présenter scope/type/ID/révision/digest, nombre de records, contenu/rationale et sources session/seq, origine modèle explicitement interprétative. Pages de 20 records, suivant/précédent au clavier, scroll/resize et Escape. Relire le snapshot à chaque ouverture/page ; un digest qui change remet la pagination à zéro. Aucun appel modèle, journal ou répertoire créé par consultation. Scope indisponible/corrompu donne une erreur explicite, aucun faux contexte vide. Sans configuration, état indisponible clair. Pas d’édition/export/permission réseau promis par cette tranche.
+
+Vérification : stores réels projet/organisation, autre projet exclu, pagination complète et source présente, lecture à vide sans mkdir, snapshot changé et corruption ; App Ink réel clavier Escape/next/resize40×14,80×24,120×36 sans débordement. Parent E01.4 reste ouvert.
+
+Affichage : retirer les caractères de contrôle des sources avant rendu terminal ; après resize conserver un offset visible. La provenance et le contenu stockés restent intacts.

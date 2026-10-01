@@ -66,3 +66,11 @@ critère pendant renouvellement ; chargement par défaut sans nouvelle exécutio
 
 Dépendances : H01, H03, H09. Runtime dans les adaptateurs et producteur terminal,
 au-dessus de `runAgentLoop`, avec une justification observée pour tout changement core.
+
+## Défaut H05.2a : reprise du projet déjà lié
+
+Tranche définie avant code : la reprise explicite d’un objectif moderne d’origine humaine utilise son scope enregistré lorsque celui-ci correspond exactement au dernier effect_requested.cwd. Le modèle ne choisit aucun nouveau root. Les factories contrôleur et le contexte suivent ce scope, la même identité d’objectif est conservée, et les gardes d’effets incertains restent actives. Si un autre cwd n’est pas justifié par un objectif moderne/human au même scope, refuser sans appel modèle ni effet. Les sessions historiques sans scope connu conservent le refus prudent. Une session ne se clôture pas par simple reprise.
+
+Acceptation : créer une vraie session depuis launch, lier target, fermer/rouvrir depuis launch puis reprendre ; vrai fichier seulement dans target, identité originale conservée. Contrat de scope modifié/inconnu/legacy ne donne pas accès à un autre root. Pas de migration inventant une autorisation ni de nouvelle session demandée pour le cas valide. Tests recovery/uncertainty et suite générale requis.
+
+Admission inter-scope : vérifier aussi la source initiale terminal.user au texte original exact et la demande postérieure à la création du contrat. Le label author:human seul n’accorde aucun accès.

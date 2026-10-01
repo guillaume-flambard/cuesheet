@@ -22,3 +22,5 @@ hérités restent visibles ; leur existence ne donne pas autorisation à un fix 
 Le statut global IMPLEMENTING ne signifie pas READY_FOR_MANUAL_ACCEPTANCE. Les
 essais externes indisponibles restent ouverts sans bloquer le travail indépendant.
 Une priorité P0/P1 n'est pas rétrogradée pour accélérer une clôture.
+
+Tranches découvertes rattachées explicitement aux six chantiers dans state.json : H09.3a→C4, H09.5a→C6, H09.1a→C1, H05.2a→C4 (dépend de H09.3a/H09.1a), E01.4a→C6 (dépend de E01.1/2). DONE de tranche ne satisfait pas l’AC parent complet. C6 IN_PROGRESS pour les parcours réellement implémentés.

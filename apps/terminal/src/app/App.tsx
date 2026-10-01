@@ -158,6 +158,7 @@ export function App(props: AppProps): JSX.Element {
             }} onClose={() => send({ type: "close" })} />
         ) : state.overlay === "palette" ? (
           <Palette width={column} rows={contentRows} onOpen={(overlay) => send({ type: "open", overlay })}
+            onContext={(offset,digest)=>producer?.sharedContextPage?.(offset,digest) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]}}
             onCheck={()=>producer?.checkConfirmation?.() ?? null} onConfirmCheck={approval=>{send({type:"close"});producer?.say(`/check confirm ${approval.id} ${approval.revision} ${approval.digest}`);}}
             onNew={()=>loadSession()} onResume={()=>{send({type:"close"});if(!missing) producer?.resume?.();}} />
         ) : state.overlay === "sessions" ? (

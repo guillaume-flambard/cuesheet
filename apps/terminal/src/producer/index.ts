@@ -135,8 +135,10 @@ interface Wiring {
 }
 
 export interface CheckConfirmation {id:string;revision:number;digest:string;text:string;scope:string;corrections:string[];criteria:string[];}
+export interface SharedContextPage {digest:string;offset:number;nextOffset:number|null;lines:string[];}
 
 export interface Producer {
+  sharedContextPage?(offset?:number,expectedDigest?:string):SharedContextPage;
   checkConfirmation?():CheckConfirmation|null;
   modelSelected?(selection:ModelPreferences): void;
   /** Stop the current run; keep the conversation and the goal open. */
@@ -634,6 +636,23 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    sharedContextPage(offset=0,expectedDigest) {
+      if(!activeContexts)return {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]};
+      try {
+        const snapshot=activeContexts.read();
+        const entries=snapshot.profiles.flatMap(profile=>profile.entries.map(entry=>({scope:profile.scope,entry})));
+        const start=expectedDigest && expectedDigest!==snapshot.digest ? 0 :
+          Number.isSafeInteger(offset) && offset>=0 ? Math.min(offset,Math.max(0,entries.length-1)) : 0;
+        const lines=[`Projet : ${activeWorkspace}`,`Digest : ${snapshot.digest}`,
+          "Interprétations modèle sourcées ; aucune permission ou preuve supplémentaire.",
+          ...snapshot.profiles.map(profile=>`${profile.scope.kind} · ${profile.scope.id} · révision ${profile.revision} · ${profile.entries.length} souvenirs`),
+          ...(entries.length ? [`Souvenirs ${start+1}–${Math.min(start+20,entries.length)} / ${entries.length}`] : ["Aucun souvenir partagé."]),
+          ...entries.slice(start,start+20).flatMap(({scope,entry})=>[
+            `${scope.kind} · ${entry.kind} · ${entry.id} · révision ${entry.revision}`,
+            entry.text,`Raison : ${entry.rationale}`,`Sources : ${entry.sources.map(source=>`${source.session}:${source.seq}`).join(", ")}`])];
+        return {digest:snapshot.digest,offset:start,nextOffset:start+20<entries.length ? start+20 : null,lines};
+      } catch {return {digest:"",offset:0,nextOffset:null,lines:["Contexte partagé indisponible ou invalide. Vérifier les racines configurées et leurs journaux ; aucune mémoire vide supposée."]};}
+    },
     checkConfirmation() {
       const current=projectObjectives(shared.toSession().events).current;
       const pinned=options.verification?.pinned;
@@ -658,7 +677,12 @@ export function createProducer(options: ProducerOptions): Producer {
       if(!goal || !goal.open) {observe([{kind:"status",label:"reprise",value:goal ? "Ce but a déjà été vérifié. Aucun travail n’a été relancé." : "Aucun but à reprendre dans cette session.",certainty:"unknown"}]);return;}
       const request=shared.toSession().events.filter(event=>event.kind==="effect_requested").at(-1);
       const path=typeof request?.data.cwd==="string" ? request.data.cwd : cwd;
-      if(path!==cwd) {observe([{kind:"failure",text:"Le dernier travail ciblait un autre répertoire. Ouvre une nouvelle session dans ce répertoire."}]);return;}
+      const objective=projectObjectives(historical.events).current;
+      const recordedHumanScope=objective && !objective.id.startsWith("legacy-") && objective.author==="human" &&
+        objective.scope===path && request && request.seq>objective.created &&
+        historical.events.some(event=>event.seq===objective.sources[0] && event.kind==="note" &&
+          event.subject==="terminal.user" && event.data.text===objective.originalText);
+      if(path!==cwd && !recordedHumanScope) {observe([{kind:"failure",text:"Reprise refusée : ce répertoire n’est pas justifié par le périmètre et la source humaine de l’objectif enregistré."}]);return;}
       try {shared.append({kind:"directive",subject:"builder",data:{text:"The user explicitly resumed this goal. Inspect the current workspace before repeating effects: any tool without a recorded result may already have run before the previous process stopped."}});} catch {return;}
       runWith({at:"cwd",path,name:typeof request?.data.project==="string" ? request.data.project : view.get().project ?? "session"},goal.text,true);
     },

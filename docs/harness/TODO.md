@@ -167,3 +167,13 @@ lot unique à cocher après la première tranche.
 
 
 Extension E01 : E01.1 et E01.2 vérifiés par EV-SHARED-SCOPES (evaluation/shared-context-evidence.md). E01.D1 corrigé et régressé. E01.3 et E01.4 restent TODO. Projet IMPLEMENTING ; aucune clôture globale.
+
+## Tranches de fiabilité et contexte partagé (état courant)
+
+- [x] H09.3a outils/recherche/skills dans le projet sélectionné — EV-SCOPED-RUNTIME.
+- [x] H09.5a credentials natifs hors environnement des outils — EV-TOOL-ENVIRONMENT.
+- [x] H09.1a provenance auteur conservatrice — EV-OBJECTIVE-AUTHORSHIP.
+- [x] H05.2a même objectif repris dans son projet lié — EV-SCOPE-RESUME.
+- [x] E01.4a consultation projet/entreprise au clavier, provenance/pagination — EV-SHARED-CONTEXT-UI.
+
+Parents H05/H09/E01.4 restent ouverts ; édition/export/workflows d’équipe, transport/auth multi-machine et preuves de remplacement restent nécessaires.
