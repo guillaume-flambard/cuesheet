@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventStore } from "../src/core/store.ts";
-import { createObjective, correctObjective, projectObjectives, verifyObjective } from "../src/adapters/objectives.ts";
+import { createObjective, bindObjectiveCheck, correctObjective, projectObjectives, verifyObjective } from "../src/adapters/objectives.ts";
 import { organizeWork, projectOrganization } from "../src/adapters/work-organizer.ts";
 import { TerminalSession } from "../src/adapters/terminal-session.ts";
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
@@ -108,4 +108,18 @@ test("legacy goals replay with sequence identities and unknown authorship withou
   assert.equal(projected.current!.author, "unknown");
   assert.equal(projected.current!.check, null);
   assert.equal(store.revision, before);
+});
+
+
+test("human check renewal requires an exact receipt and rejects earlier proof",()=>{
+ const store=new EventStore('renew',()=>0);const original=request(store);
+ const proof=store.append({kind:'work_verified',subject:'effect',data:{verdict:'VERIFIED',record:'/old.json',checkDigest:digest,objectiveId:original.id,objectiveRevision:original.revision}});
+ const correction=store.append({kind:'directive',subject:'builder',data:{text:'new requirement'}});const changed=correctObjective(store,'new requirement',correction.seq)!;
+ const before=store.revision;assert.equal(bindObjectiveCheck(store,{id:changed.id,revision:original.revision,digest,source:correction.seq}),false);assert.equal(store.revision,before);
+ assert.throws(()=>bindObjectiveCheck(store,{id:changed.id,revision:changed.revision,digest,source:correction.seq}),/Invalid objective/);assert.equal(store.revision,before);
+ const confirmation=store.append({kind:'note',subject:'terminal.user',data:{operation:'confirm_check',objectiveId:changed.id,objectiveRevision:changed.revision,checkDigest:digest}});
+ assert.equal(bindObjectiveCheck(store,{id:changed.id,revision:changed.revision,digest,source:confirmation.seq}),true);
+ const renewed=projectObjectives(store.toSession().events).current!;assert.equal(renewed.id,original.id);assert.equal(renewed.check!.boundRevision,renewed.revision);assert.equal(renewed.corrections.length,1);
+ assert.equal(verifyObjective(store,proof,digest,'/old.json'),false);
+ const fresh=store.append({kind:'work_verified',subject:'effect',data:{verdict:'VERIFIED',record:'/new.json',checkDigest:digest,objectiveId:renewed.id,objectiveRevision:renewed.revision}});assert.equal(verifyObjective(store,fresh,digest,'/new.json'),true);
 });

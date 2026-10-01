@@ -57,3 +57,5 @@ Le statut final agent sera READY_FOR_MANUAL_ACCEPTANCE, puis DONE uniquement apr
 l'acceptation humaine requise. État actuel : IMPLEMENTING, aucune clôture annoncée.
 
 Extension E01 : test/shared-memory.test.ts couvre vrai conflit entre deux processus, isolation de projets, montage entreprise explicite, source corrompue préservée, update externe pendant infer, publication par producer et récupération paginée. 20 tests ciblés avec typing/receipts/slices passent ; suite finale 736/734/0/2 PASS, puis neuf tests partagés PASS dont sélection de projet. Preuve durable : evaluation/shared-context-evidence.md. Réseau multi-machine, permissions équipe et parcours clavier scopes restent PENDING.
+
+EV-CHECK-RENEWAL : check épinglé réautorisé explicitement à un ID/révision exact ; ancienne preuve refusée, même goal repris, reload préservé. 739/737/0/2 full PASS. H01.3a DONE ; H01.3 parent toujours IN_PROGRESS.

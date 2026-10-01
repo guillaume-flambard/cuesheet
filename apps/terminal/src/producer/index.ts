@@ -86,7 +86,7 @@ import type {SharedContexts, SharedSnapshot} from "../../../../src/adapters/shar
 import { withSharedContext } from "../../../../src/adapters/shared-context.ts";
 import { memoryCommand, MEMORY_SUBJECT } from "../../../../src/adapters/work-memory.ts";
 import { organizeWork, AUTONOMOUS_TOOLS, AUTONOMOUS_POLICY, WORK_SUBJECT } from "../../../../src/adapters/work-organizer.ts";
-import { createObjective, correctObjective, projectObjectives, verifyObjective, changeObjectiveStatus, OBJECTIVE_SUBJECT } from "../../../../src/adapters/objectives.ts";
+import { createObjective, bindObjectiveCheck, correctObjective, projectObjectives, verifyObjective, changeObjectiveStatus, OBJECTIVE_SUBJECT } from "../../../../src/adapters/objectives.ts";
 import { readHistory } from "../../../../src/adapters/history-tool.ts";
 import type { ResearchTools } from "../../../../src/adapters/research-tools.ts";
 import type { SkillTools } from "../../../../src/adapters/skill-tools.ts";
@@ -353,7 +353,8 @@ export function createProducer(options: ProducerOptions): Producer {
         log(`[work_verified] ${event.subject} ${JSON.stringify(event.data)}`);
         const objective = projectObjectives(shared.toSession().events).current;
         const contractCurrent = !objective?.check || objective.check.boundRevision === objective.revision;
-        const stillCurrent = directiveRevision() === basis && contractCurrent && contextCurrent();
+        const stillCurrent = directiveRevision() === basis && contractCurrent && objective?.id === contract.objectiveId && objective?.revision === contract.objectiveRevision && contextCurrent();
+        if (!contractCurrent && objective && options.verification.pinned) observe([{kind:"status",label:"critère",value:`Le contrat a changé. Confirmer explicitement le check épinglé pour ce contrat : /check confirm ${objective.id} ${objective.revision} ${options.verification.pinned.digest}`,certainty:"unknown"}]);
         observe([{ kind: "status", label: "check", value: stillCurrent ? `${verdict.toLowerCase()} by the declared check` : "checked an earlier request; your latest message keeps this run open", certainty: !stillCurrent || verdict === "INCONCLUSIVE" ? "unknown" : verdict === "VERIFIED" ? "confirmed" : "failed" }]);
         if (verdict === "VERIFIED" && stillCurrent) {
           verifyObjective(shared, event, result.checkDigest, result.record);
@@ -629,7 +630,7 @@ export function createProducer(options: ProducerOptions): Producer {
     resume() {
       if(inFlight || options.journal?.failure) return;
       const historical=shared.toSession();
-      const pending=historical.events.filter(event=>event.kind==="note" && event.subject==="terminal.user").at(-1);
+      const pending=historical.events.filter(event=>event.kind==="note" && event.subject==="terminal.user" && event.data.operation!=="confirm_check").at(-1);
       const lastGoal=historical.events.filter(event=>event.kind==="goal").at(-1);
       if(pending && pending.seq>(lastGoal?.seq ?? -1) && typeof pending.data.text==="string") {
         runWith(resolveScope(pending.data.text,cwd,ids,bindProject,projectsRoot),pending.data.text);return;
@@ -653,6 +654,18 @@ export function createProducer(options: ProducerOptions): Producer {
       if (!said) return;
       try {
         options.journal?.assertWritable();
+        if (/^\/check(?:\s|$)/.test(said)) {
+          const match=/^\/check confirm (\S+) (\d+) ([a-f0-9]{64})$/.exec(said);
+          const objective=projectObjectives(shared.toSession().events).current;
+          const revision=match ? Number(match[2]) : NaN;
+          if(!match || !objective || objective.id!==match[1] || objective.revision!==revision || !Number.isSafeInteger(revision) || options.verification?.pinned?.digest!==match[3]) {
+            observe([{kind:"status",label:"critère",value:"Confirmation refusée : utiliser l’ID, la révision courante et le digest du check épinglé exacts.",certainty:"unknown"}]);return;
+          }
+          const source=shared.append({kind:"note",subject:"terminal.user",data:{text:said,operation:"confirm_check",objectiveId:objective.id,objectiveRevision:revision,checkDigest:match[3]}});
+          bindObjectiveCheck(shared,{id:objective.id,revision,digest:match[3]!,source:source.seq});
+          shared.append({kind:"directive",subject:"builder",data:{text:"The human explicitly renewed the pinned check for the current objective. Read the new contract revision before proposing further work; older plans and evidence remain historical.",source:"terminal.user"}});
+          send({type:"submit",text:said});observe([{kind:"status",label:"critère",value:"Check épinglé confirmé pour la nouvelle révision. Le résultat reste à vérifier.",certainty:"unknown"}]);return;
+        }
         const memory = memoryCommand(shared, said);
         if (memory !== null) {
           send({ type: "submit", text: said });

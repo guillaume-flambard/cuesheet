@@ -73,3 +73,13 @@ chaque mutation ; cycle de dépendances refusé sans append.
 
 Points d'entrée : `src/adapters/work-organizer.ts`, `src/work-state.ts`,
 `src/adapters/surface-verification.ts`, `apps/terminal/src/producer/index.ts`.
+
+## Tranche H01.3 : renouvellement du check épinglé
+
+La personne peut confirmer le check déjà configuré pour un ID/révision/digest exact via `/check confirm <id> <revision> <digest>`. Le modèle n'a aucun outil de renouvellement. Ce chemin ne choisit aucun fichier arbitraire et ne transforme pas un critère généré en autorité. Le producteur compare au digest de son check réellement épinglé, puis journalise une source terminal.user explicite et un record objectif bind_check v1 sourcé humain. La révision du contrat avance ; ID et historique restent identiques. Une base périmée ou un digest différent refuse sans append. Confirmer n'exécute aucun effet et ne reprend pas un goal automatiquement.
+
+Le replay valide source, identité, digest et révision de la confirmation. Les preuves antérieures restent historiques ; une vérification commencée avant confirmation ne peut fermer la nouvelle révision même si le check passe. Après correction/définition modèle, le check ancien reste périmé tant qu'il n'est pas renouvelé. Le terminal expose la commande exacte lorsqu'une validation échoue pour cette raison. Les critères alternatifs générés et la sélection d'un nouveau check restent des travaux distincts de H01.3.
+
+Vérification de tranche : refus périmé sans append, mauvais digest/source modèle refusés, reload du binding, preuve ancienne refusée, vrai producteur avec check réel après correction+confirmation, confirmation pendant check asynchrone sans clôture rétroactive. Full regression et garde différentielle requis. Aucune clôture de tout H01.3 par cette seule tranche.
+
+Défaut découvert dans la tranche : resume doit exclure les receipts terminal.user confirm_check de la recherche d’intention en attente. Reproduction : binding après reprise 30 au lieu de 14 et nouvelle identité, test système en échec. Correction liée H01.3 ; confirmer demeure une opération de contrôle, pas un goal.

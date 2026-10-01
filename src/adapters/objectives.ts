@@ -74,6 +74,13 @@ export function projectObjectives(events: readonly Event[]): ObjectiveState {
         // Description is a model interpretation; it cannot remove human corrections
         // or change the authoritative check binding. Its revision still invalidates plans.
         objectives.set(data.id, { ...next, revision: event.seq, descriptionAuthor: "model" });
+      } else if (data.operation === "bind_check") {
+        if (data.author !== "human" || typeof data.checkDigest !== "string" || !/^[a-f0-9]{64}$/.test(data.checkDigest) ||
+            !Number.isSafeInteger(data.source) || !events.some(source => source.seq === data.source && source.seq < event.seq &&
+              source.kind === "note" && source.subject === "terminal.user" && source.data.operation === "confirm_check" &&
+              source.data.objectiveId === prior.id && source.data.objectiveRevision === prior.revision && source.data.checkDigest === data.checkDigest)) malformed(event.seq);
+        objectives.set(data.id, {...prior,revision:event.seq,status:"active",sources:[...prior.sources,data.source as number],
+          check:{digest:data.checkDigest,boundRevision:event.seq}});
       } else if (data.operation === "verify") {
         if (!prior.check || prior.check.boundRevision !== prior.revision || data.checkDigest !== prior.check.digest ||
             !nonempty(data.record) || data.contractRevision !== prior.revision ||
@@ -112,7 +119,7 @@ export function createObjective(store: EventStore, text: string, scope: string, 
 
 export function verifyObjective(store: EventStore, verification: Event, digest: string, record: string): boolean {
   const current = projectObjectives(store.toSession().events).current;
-  if (!current || !current.check || current.check.boundRevision !== current.revision || current.check.digest !== digest) return false;
+  if (!current || !current.check || current.check.boundRevision !== current.revision || current.check.digest !== digest || verification.data.objectiveId !== current.id || verification.data.objectiveRevision !== current.revision) return false;
   const event: Event = { kind: "note", subject: OBJECTIVE_SUBJECT, seq: store.revision + 1, at: 0,
     data: { version: 1, operation: "verify", id: current.id, expected: current.revision,
       contractRevision: current.revision, verification: verification.seq, checkDigest: digest, record } };
@@ -129,4 +136,13 @@ export function correctObjective(store: EventStore, text: string, source: number
   projectObjectives([...store.toSession().events, event]);
   store.append({ kind: event.kind, subject: event.subject, data: event.data });
   return projectObjectives(store.toSession().events).current;
+}
+
+
+/** Only an explicit human receipt may renew a contract's authoritative check. */
+export function bindObjectiveCheck(store:EventStore, binding:{id:string;revision:number;digest:string;source:number}):boolean {
+  const current=projectObjectives(store.toSession().events).current;
+  if(!current || current.id!==binding.id || current.revision!==binding.revision || current.id.startsWith("legacy-"))return false;
+  const event:Event={kind:"note",subject:OBJECTIVE_SUBJECT,seq:store.revision+1,at:0,data:{version:1,operation:"bind_check",id:binding.id,expected:binding.revision,checkDigest:binding.digest,source:binding.source,author:"human"}};
+  projectObjectives([...store.toSession().events,event]);store.append({kind:event.kind,subject:event.subject,data:event.data});return true;
 }

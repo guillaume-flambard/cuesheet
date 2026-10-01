@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "1e5b28a",
+  "referenceCommit": "a74d97e",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -573,8 +573,10 @@
         "AC-H01.3"
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
-      "evidence": [],
-      "notes": "Partially implemented is not DONE."
+      "evidence": [
+        "EV-CHECK-RENEWAL"
+      ],
+      "notes": "Partially implemented is not DONE. Tranche de renouvellement humain exact du check épinglé spécifiée dans 01-OBJECTIVES.md ; vérification pending."
     },
     {
       "id": "H01.4",
@@ -2666,6 +2668,28 @@
         "EV-SHARED-SCOPES"
       ],
       "notes": "Linked discovered defect documented before correction in 11-SHARED-ORGANIZATION.md."
+    },
+    {
+      "id": "H01.3a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H01.3"
+      ],
+      "dependencies": [],
+      "description": "Check renewal receipts must not become pending goals on resume; preserve ID and renewed revision.",
+      "systems": [
+        "apps/terminal/src/producer/index.ts",
+        "test/shared-memory.test.ts"
+      ],
+      "acceptance": [
+        "AC-H01.3"
+      ],
+      "verification": "Real check, correction, exact human confirmation, reject stale result, resume same identity, fresh proof, disk reload",
+      "evidence": [
+        "EV-CHECK-RENEWAL"
+      ],
+      "notes": "Discovered during check renewal integration: reloaded binding 30 vs expected 14; fixed pending intent selection, verification running."
     }
   ],
   "acceptance": [
@@ -3602,6 +3626,12 @@
       "result": "PASS",
       "method": "independent Node processes, durable journals, actual producer and acceptance subprocess, differential typing, full regression and separate diff review",
       "details": "Full final production code: 736 tests, 734 pass, 0 fail, 2 skipped (/tmp/cuesheet-enterprise-shared-final.log). Additional binder integration added after suite workers loaded: 9 shared-memory tests PASS (/tmp/cuesheet-shared-extra.log). 12 targeted shared/typeguard PASS. Durable summary: evaluation/shared-context-evidence.md. Two-process CAS, no-read creation, exact retry, corrupt journal preserved, explicit mounts, stale inference/batch/check guards, active project binding. No network or live-model claim."
+    },
+    {
+      "id": "EV-CHECK-RENEWAL",
+      "result": "PASS_PARTIAL",
+      "method": "schema/projection, actual check subprocess, durable resume/reload, differential typing, full regression, solo diff review",
+      "details": "739 tests, 737 pass, 0 fail, 2 skipped; /tmp/cuesheet-check-renew-all.log. 23 system targeted PASS; previous 28 tests with typing/checks PASS. Older verification cannot certify renewed revision; control receipt cannot become new goal. Durable evidence evaluation/check-renewal-evidence.md. New-check selection, documentary criteria and palette usability pending."
     }
   ],
   "risks": {
@@ -3611,10 +3641,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "1e5b28a",
+    "lastPassedCommit": "a74d97e",
     "lastFullSuite": {
-      "tests": 736,
-      "passed": 734,
+      "tests": 739,
+      "passed": 737,
       "failed": 0,
       "skipped": 2
     },
@@ -3627,7 +3657,8 @@
     "workingTreeMemory": "12 targeted PASS; 722/720/0/2 full PASS. Isolated historical source reproduced duplicate extraction; new idempotent path does not append or resurrect human-modified memory. H03.1/H03.2 still incomplete.",
     "workingTreeAnthropic": "19 targeted PASS; full regression 727/725/0/2 PASS; additional Anthropic Ink ceiling test PASS. No new differential type diagnostics; no live Anthropic inference; H07.1/H07.4 remain pending.",
     "workstreamCoverage": "Six workstreams remain active; E01.1/2 verified; E01.3/4 pending. Overall IMPLEMENTING.",
-    "workingTreeShared": "PASS E01.1/2; full production code 736/734/0/2; added bound-project integration 9 shared tests PASS. Multi-machine and team workflow delivery remain pending."
+    "workingTreeShared": "PASS E01.1/2; full production code 736/734/0/2; added bound-project integration 9 shared tests PASS. Multi-machine and team workflow delivery remain pending.",
+    "workingTreeCheckRenewal": "PASS_PARTIAL: exact human reauthorization of pinned check; 739/737/0/2 full regression. Parent H01.3 remains open."
   },
   "ready_for_manual_acceptance": false,
   "counts": {

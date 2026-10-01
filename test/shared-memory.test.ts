@@ -9,6 +9,7 @@ import {SessionStore} from "../src/adapters/session-store.ts";
 import {TerminalSession} from "../src/adapters/terminal-session.ts";
 import {persistentView} from "../apps/terminal/src/producer/session-view.ts";
 import {createProducer} from "../apps/terminal/src/producer/index.ts";
+import {projectObjectives} from "../src/adapters/objectives.ts";
 import {createCompletionCheck} from "../src/adapters/surface-verification.ts";
 import {withSharedContext} from "../src/adapters/shared-context.ts";
 const item=(session='worker-a')=>({kind:'constraint' as const,text:'preserve API',rationale:'shared observed requirement',sources:[{session,seq:1}]});
@@ -127,5 +128,24 @@ test("a bound project reads its own common memory instead of the launch director
    tools:{async run(r){return {name:r.name,exit:0,output:''};}},model:{name:'binding-fixture',async infer(frame){frameText=JSON.stringify(frame);return {text:'',toolCalls:[]};}}});
   producer.say('work on target');const end=Date.now()+5000;while(store.get().busy&&Date.now()<end)await new Promise(r=>setTimeout(r,10));
   assert.equal(store.get().busy,false);assert.match(frameText,/target-only-memory/);assert.doesNotMatch(frameText,/launch-only-memory/);
+ }finally{session.close();rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("human check renewal during verification cannot certify the new revision with the old result",async()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-check-renew-'));const cwd=join(root,'work');mkdirSync(cwd);
+ const oracle=join(cwd,'accept.mjs');writeFileSync(oracle,'await new Promise(r=>setTimeout(r,200));');const verification=createCompletionCheck({script:oracle,root:join(root,'proof')});
+ const session=new TerminalSession({root:join(root,'sessions'),cwd});
+ try{
+  const store=persistentView(session);let calls=0;let finishNext=false;const producer=createProducer({store,cwd,journal:session,identities:[],projectsRoot:root,maxSlices:1,verification,
+   tools:{async run(){throw new Error('internal check');}},model:{name:'renew-fixture',async infer(){calls++;return {text:'',toolCalls:(calls===1||finishNext)?[{name:'finish',input:{}}]:[]};}}});
+  let off=()=>{};const checking=new Promise<void>(r=>{off=store.subscribe(()=>{if(store.get().entries.some(e=>e.kind==='status'&&e.label==='check'&&e.certainty==='active'))r();});});
+  producer.say('original requirement');await checking;off();producer.say('preserve the new requirement');const corrected=projectObjectives(session.core.toSession().events).current!;
+  const before=session.core.revision;producer.say(`/check confirm ${corrected.id} ${corrected.revision} ${'0'.repeat(64)}`);assert.equal(session.core.revision,before);
+  producer.say(`/check confirm ${corrected.id} ${corrected.revision} ${verification.pinned!.digest}`);const renewed=projectObjectives(session.core.toSession().events).current!;assert.equal(renewed.check!.boundRevision,renewed.revision);
+  const end=Date.now()+5000;while(store.get().busy&&Date.now()<end)await new Promise(r=>setTimeout(r,10));assert.equal(store.get().busy,false);assert.equal(session.core.toSession().evidence.length,0);
+  assert.equal(projectObjectives(session.core.toSession().events).current!.status,'active');
+  finishNext=true;producer.resume!();const resumeEnd=Date.now()+5000;while(store.get().busy&&Date.now()<resumeEnd)await new Promise(r=>setTimeout(r,10));assert.equal(store.get().busy,false);assert.equal(projectObjectives(session.core.toSession().events).current!.status,'verified');assert.equal(session.core.toSession().evidence.length,1);
+  const id=session.metadata.id;session.close();const reloaded=new TerminalSession({root:join(root,'sessions'),cwd,id});try{assert.equal(projectObjectives(reloaded.core.toSession().events).current!.check!.boundRevision,renewed.revision);}finally{reloaded.close();}
  }finally{session.close();rmSync(root,{recursive:true,force:true});}
 });
