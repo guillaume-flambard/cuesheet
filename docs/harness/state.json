@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "c0c7fe1",
+  "referenceCommit": "3736223",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -652,7 +652,7 @@
     {
       "id": "H02.2",
       "priority": "P0",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H02.2"
       ],
@@ -673,7 +673,7 @@
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [],
-      "notes": ""
+      "notes": "C1.a: versioned plan/task IDs, dependency DAG, stale plan visibility and explicit readmission implemented; export and human editing still pending."
     },
     {
       "id": "H02.3",
@@ -3376,6 +3376,12 @@
       "result": "PASS",
       "method": "full regression and solo diff inspection",
       "details": "714 tests, 712 pass, 0 fail, 2 skipped; /tmp/cuesheet-hot-switch-confirm.log. Launcher committed whitelist restored; no remaining launcher diff. Model switching transport fixtures, real filesystem effects and differential typing guard pass. Entire H07 and project acceptance remain incomplete."
+    },
+    {
+      "id": "EV-WORK-PLANS",
+      "result": "PASS_PARTIAL",
+      "method": "pure projection, actual disk reload/corruption, producer integration, differential typing, full regression",
+      "details": "11 targeted PASS; 719 full tests, 717 pass, 0 fail, 2 skipped; /tmp/cuesheet-chantiers-c1-final.log. Task IDs/revisions, dependency cycles/refusals, stale objective plan and explicit readmission, legacy no-write projection. H02.2 remains open: export/human editing not delivered."
     }
   ],
   "risks": {
@@ -3387,8 +3393,8 @@
     "status": "PENDING",
     "lastPassedCommit": "2334466",
     "lastFullSuite": {
-      "tests": 714,
-      "passed": 712,
+      "tests": 719,
+      "passed": 717,
       "failed": 0,
       "skipped": 2
     },
@@ -3396,7 +3402,8 @@
     "finalAdversarialAudit": "PENDING",
     "globalTypecheck": "known baseline diagnostics; differential guard passes",
     "workingTreeContinuity": "Lifecycle and uncertain-effect receipt/gate targeted PASS; combined full regression 714/712/0/2 PASS. Earlier launcher deletion restored; cause of recurrence not established.",
-    "workingTreeModels": "24 targeted tests PASS; full combined regression 714/712/0/2 PASS, /tmp/cuesheet-hot-switch-confirm.log. No new differential typing diagnostics; global baseline remains."
+    "workingTreeModels": "24 targeted tests PASS; full combined regression 714/712/0/2 PASS, /tmp/cuesheet-hot-switch-confirm.log. No new differential typing diagnostics; global baseline remains.",
+    "workingTreePlans": "PASS 719/717/0/2 full regression; no new differential type diagnostics. Launcher whitelist restored inline; origin of previous deletion unknown."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -3405,5 +3412,126 @@
     "acceptancePending": 50,
     "p0_open": 35,
     "p1_open": 15
-  }
+  },
+  "workstreams": [
+    {
+      "id": "C1",
+      "name": "Contrats et plans durables",
+      "tasks": [
+        "H01.1",
+        "H01.2",
+        "H01.3",
+        "H01.4",
+        "H01.5",
+        "H02.1",
+        "H02.2",
+        "H09.1"
+      ],
+      "dependencies": [
+        "B00"
+      ],
+      "status": "IN_PROGRESS"
+    },
+    {
+      "id": "C2",
+      "name": "Décisions et mémoire automatiques",
+      "tasks": [
+        "H02.3",
+        "H02.4",
+        "H02.5",
+        "H03.1",
+        "H03.2"
+      ],
+      "dependencies": [
+        "C1"
+      ],
+      "status": "TODO"
+    },
+    {
+      "id": "C3",
+      "name": "Contexte, recherche et skills",
+      "tasks": [
+        "H03.3",
+        "H03.4",
+        "H03.5",
+        "H04.1",
+        "H04.2",
+        "H04.3",
+        "H04.4",
+        "H04.5"
+      ],
+      "dependencies": [
+        "C1",
+        "C2"
+      ],
+      "status": "IN_PROGRESS"
+    },
+    {
+      "id": "C4",
+      "name": "Continuité et récupération",
+      "tasks": [
+        "H05.1",
+        "H05.2",
+        "H05.3",
+        "H05.4",
+        "H05.5",
+        "H09.2",
+        "H09.3"
+      ],
+      "dependencies": [
+        "C1",
+        "C3"
+      ],
+      "status": "IN_PROGRESS"
+    },
+    {
+      "id": "C5",
+      "name": "Agents et modèles",
+      "tasks": [
+        "H06.1",
+        "H06.2",
+        "H06.3",
+        "H06.4",
+        "H06.5",
+        "H07.1",
+        "H07.2",
+        "H07.2a",
+        "H07.3",
+        "H07.4",
+        "H07.5"
+      ],
+      "dependencies": [
+        "C1",
+        "C3",
+        "C4"
+      ],
+      "status": "IN_PROGRESS"
+    },
+    {
+      "id": "C6",
+      "name": "Terminal et validation",
+      "tasks": [
+        "H08.1",
+        "H08.2",
+        "H08.3",
+        "H08.4",
+        "H08.5",
+        "H09.4",
+        "H09.5",
+        "H10.1",
+        "H10.2",
+        "H10.3",
+        "H10.4",
+        "H10.5"
+      ],
+      "dependencies": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5"
+      ],
+      "status": "TODO"
+    }
+  ]
 }

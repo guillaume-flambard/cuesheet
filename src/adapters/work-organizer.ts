@@ -2,13 +2,14 @@ import type { Event, EventStore } from "../core/store.ts";
 import type { ToolRequest, ToolResult } from "../core/loop.ts";
 import { MEMORY_SUBJECT, projectMemory } from "./work-memory.ts";
 import { projectObjectives } from "./objectives.ts";
+import { projectWorkPlans, prepareWorkTasks } from "./work-plans.ts";
 
 export const WORK_SUBJECT = "terminal.work";
 export const AUTONOMOUS_TOOLS = ["organize_work", "remember", "create_skill", "describe_objective"];
 export const AUTONOMOUS_POLICY =
   "You manage the work process automatically. The user supplies intent and corrections, not modes or bookkeeping commands. " +
   "Choose the lightest useful next step from assessment, research, specification, build and review. " +
-  "Use organize_work when a durable plan/spec/checklist helps: input {phase,rationale,spec?,tasks?}; phases assess,research,spec,build,review; tasks are strings. " +
+  "Use organize_work when a durable plan/spec/checklist helps: input {phase,rationale,spec?,tasks?}; phases assess,research,spec,build,review; tasks are strings or {id?,text,expected,dependencies:[]}; reuse supplied IDs for revised tasks. Dependencies refer to retained task IDs. After an objective correction, submit spec and tasks explicitly before admitting the revised plan. " +
   "Revisit plans after observations or corrections. Do not create ceremony for a trivial task. " +
   "Maintain useful decisions, constraints and open questions from ordinary exchanges using remember: input {operation:'create'|'edit'|'resolve',kind?:'decision'|'constraint'|'question',id?,text,rationale,sources:[event sequence numbers]}. " +
   "Your memory is an interpretation, never a human instruction or verified evidence. Human memory cannot be overwritten by you. " +
@@ -22,16 +23,17 @@ function text(value: unknown, limit = 20000): value is string {
 }
 
 export function projectOrganization(events: readonly Event[]) {
+  const versioned = projectWorkPlans(events);
   const records = events.filter(event => event.kind === "note" && event.subject === WORK_SUBJECT);
   const objective = projectObjectives(events).current;
   const goal = events.filter(event => event.kind === "goal").at(-1)?.data.text ?? null;
   const plan = records.filter(event => event.data.operation === "plan" &&
-    (objective && !objective.id.startsWith("legacy-") ? event.data.objectiveId === objective.id && event.data.objectiveRevision === objective.revision : event.data.goal === goal)).at(-1);
+    (objective && !objective.id.startsWith("legacy-") ? event.data.objectiveId === objective.id : event.data.goal === goal)).at(-1);
   const skills = new Map<string, { revision: number; by: string; name: unknown; instructions: unknown; rationale: unknown; sources: unknown }>();
   for (const event of records) if (event.data.operation === "skill" && typeof event.data.name === "string") {
     skills.set(event.data.name, { revision: event.seq, by: "model", name: event.data.name, instructions: event.data.instructions, rationale: event.data.rationale, sources: event.data.sources });
   }
-  return { plan: plan ? { ...plan.data, spec: plan.data.spec, tasks: plan.data.tasks, revision: plan.seq, by: "model" } : null, skills: [...skills.values()] };
+  return { plan: plan ? { ...plan.data, spec: plan.data.spec, tasks: plan.data.tasks, id: versioned.get(plan.seq)?.id ?? null, taskRecords: versioned.get(plan.seq)?.tasks ?? null, current: objective && !objective.id.startsWith("legacy-") ? plan.data.objectiveRevision === objective.revision : true, revision: plan.seq, by: "model" } : null, skills: [...skills.values()] };
 }
 
 /** Model-authored work records have no path to evidence or goal closure. */
@@ -46,12 +48,18 @@ export function organizeWork(store: EventStore, request: ToolRequest): ToolResul
   if (request.name === "organize_work") {
     if (!["assess", "research", "spec", "build", "review"].includes(String(input.phase))) return refuse("Unknown phase.");
     if (input.spec !== undefined && !text(input.spec)) return refuse("Invalid specification.");
-    if (input.tasks !== undefined && (!Array.isArray(input.tasks) || input.tasks.length > 40 || !input.tasks.every(task => text(task, 2000)))) return refuse("Tasks must be a bounded array of text.");
+    if (input.tasks !== undefined && (!Array.isArray(input.tasks) || input.tasks.length > 40)) return refuse("Tasks must be a bounded array of text.");
     const events = store.toSession().events;
     const prior = projectOrganization(events).plan;
     const objective = projectObjectives(events).current;
-    data = { operation: "plan", phase: input.phase, rationale: input.rationale,
-      spec: input.spec ?? prior?.spec ?? null, tasks: input.tasks ?? prior?.tasks ?? [],
+    if (prior && !prior.current && (input.spec === undefined || input.tasks === undefined)) return refuse("The objective changed; explicitly revise the specification and tasks before readmitting this plan.");
+    const seq = basis < 0 ? 1 : basis + 1;
+    let taskRecords;
+    try { taskRecords = input.tasks === undefined ? prior?.taskRecords ?? prepareWorkTasks(prior?.tasks as unknown[] ?? [], [], seq) : prepareWorkTasks(input.tasks as unknown[], prior?.taskRecords ?? [], seq); }
+    catch (cause) { return refuse(cause instanceof Error ? cause.message : "Invalid tasks."); }
+    data = { version: 1, id: prior?.id ?? `plan-${seq}`, revision: seq, taskRecords,
+      operation: "plan", phase: input.phase, rationale: input.rationale,
+      spec: input.spec ?? prior?.spec ?? null, tasks: taskRecords.map(task => task.text),
       goal: store.toSession().goal?.text ?? null, objectiveId: objective?.id ?? null,
       objectiveRevision: objective?.revision ?? null, against: basis };
   } else if (request.name === "create_skill") {
@@ -81,6 +89,10 @@ export function organizeWork(store: EventStore, request: ToolRequest): ToolResul
       if (!prior || prior.by !== "model") return refuse("Unknown memory or human-owned record; preserve it and record your interpretation separately.");
     }
     data = { operation: input.operation, kind: input.kind, id: input.id, text: input.text, rationale: input.rationale, sources: input.sources, author: "model", against: basis };
+  }
+  if (request.name === "organize_work") {
+    try { projectWorkPlans([...store.toSession().events, {kind: "note", subject, data, seq: basis < 0 ? 1 : basis + 1, at: 0}]); }
+    catch { return refuse("Invalid plan schema or task dependency graph."); }
   }
   const event = store.appendIfCurrent(basis, { kind: "note", subject, data });
   return event ? { name: request.name, exit: 0, output: JSON.stringify({ revision: event.seq, id: subject === MEMORY_SUBJECT && input.operation === "create" ? `m-${event.seq}` : input.id, recorded: true, verified: false }) }

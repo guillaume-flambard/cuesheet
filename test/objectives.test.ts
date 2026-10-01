@@ -24,7 +24,12 @@ test("identical requests have distinct stable IDs; human correction preserves id
   const corrected = correctObjective(store, "preserve schema", source.seq)!;
   assert.equal(corrected.id, second.id);
   assert.ok(corrected.revision > second.revision);
-  assert.equal(projectOrganization(store.toSession().events).plan, null);
+  const stalePlan = projectOrganization(store.toSession().events).plan!;
+  assert.equal(stalePlan.current, false);
+  assert.equal(stalePlan.objectiveRevision, second.revision);
+  const beforeReadmission = store.revision;
+  assert.equal(organizeWork(store, {name:"organize_work",input:{phase:"build",rationale:"reuse old plan"}})!.exit, 2);
+  assert.equal(store.revision, beforeReadmission);
   assert.equal(corrected.check!.boundRevision, second.revision);
   assert.equal(corrected.corrections[0]!.source, source.seq);
   assert.deepEqual(projectObjectives(store.toSession().events), projectObjectives(store.toSession().events));
