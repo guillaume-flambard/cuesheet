@@ -40,10 +40,16 @@ export interface ShellToolRunnerOptions {
    * supplied here and cannot be widened by a request.
    */
   defaultCwd?: string;
+  /** Trusted controller environment; never accepted from a tool request. */
+  env?: NodeJS.ProcessEnv;
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_OUTPUT_BYTES = 8_000;
+const HARNESS_CREDENTIALS = new Set([
+  "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
+  "CUESHEET_API_KEY", "BRAVE_SEARCH_API_KEY",
+]);
 
 export class ShellToolRunner {
   private readonly options: Required<ShellToolRunnerOptions>;
@@ -53,6 +59,10 @@ export class ShellToolRunner {
       timeoutMs: DEFAULT_TIMEOUT_MS,
       outputBytes: DEFAULT_OUTPUT_BYTES,
       ...options,
+      // Copy at admission; neither the model nor later environment changes can
+      // inject provider credentials into an already configured tool runner.
+      env: Object.fromEntries(Object.entries(options.env ?? process.env)
+        .filter(([key]) => !HARNESS_CREDENTIALS.has(key.toUpperCase()))),
     };
   }
 
@@ -113,7 +123,7 @@ export class ShellToolRunner {
           cwd: cwd || process.env.HOME,
           timeout: this.options.timeoutMs,
           maxBuffer: this.options.outputBytes * 4,
-          env: { ...process.env, NO_COLOR: "1" },
+          env: { ...this.options.env, NO_COLOR: "1" },
           signal, killSignal: "SIGKILL",
         },
         (error, stdout, stderr) => {

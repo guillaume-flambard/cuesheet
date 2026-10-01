@@ -44,10 +44,12 @@ export function projectObjectives(events: readonly Event[]): ObjectiveState {
           !Number.isSafeInteger(data.source) || !events.some(source => source.seq === data.source && source.seq < event.seq)) malformed(event.seq);
       const check = data.checkDigest;
       if (check !== undefined && (typeof check !== "string" || !/^[a-f0-9]{64}$/.test(check))) malformed(event.seq);
+      if (data.author !== undefined && data.author !== "human" && data.author !== "model" && data.author !== "unknown") malformed(event.seq);
+      const author = data.author === undefined ? "unknown" : data.author;
       objectives.set(data.id, { id: data.id, intention: `intent-${data.source}`, text: data.text,
         scope: data.scope, exclusions: [], dependencies: [], constraints: [], criteria: [], corrections: [],
-        revision: event.seq, created: event.seq, status: "active", author: data.author === "unknown" ? "unknown" : "human",
-        descriptionAuthor: data.author === "unknown" ? "unknown" : "human", originalText: data.text, sources: [data.source as number],
+        revision: event.seq, created: event.seq, status: "active", author,
+        descriptionAuthor: author, originalText: data.text, sources: [data.source as number],
         check: typeof check === "string" ? { digest: check, boundRevision: event.seq } : null });
       current = data.id;
     } else {

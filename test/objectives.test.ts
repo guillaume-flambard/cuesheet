@@ -123,3 +123,18 @@ test("human check renewal requires an exact receipt and rejects earlier proof",(
  assert.equal(verifyObjective(store,proof,digest,'/old.json'),false);
  const fresh=store.append({kind:'work_verified',subject:'effect',data:{verdict:'VERIFIED',record:'/new.json',checkDigest:digest,objectiveId:renewed.id,objectiveRevision:renewed.revision}});assert.equal(verifyObjective(store,fresh,digest,'/new.json'),true);
 });
+
+
+test("objective replay never invents a human author from missing or model provenance", () => {
+  const source={kind:"note" as const,subject:"terminal.user",seq:1,at:0,data:{text:"repair"}};
+  const record={kind:"note" as const,subject:"terminal.objective",seq:2,at:0,data:{version:1,operation:"create",id:"objective-2",text:"repair",scope:"/workspace",source:1}};
+  const before=JSON.stringify([source,record]);
+  for(const author of [undefined,"model","human","unknown"]){
+    const data=author===undefined?record.data:{...record.data,author};
+    const current=projectObjectives([source,{...record,data}]).current!;
+    assert.equal(current.author,author??"unknown");assert.equal(current.descriptionAuthor,author??"unknown");
+    assert.equal(current.originalText,"repair");assert.deepEqual(current.sources,[1]);
+  }
+  for(const author of ["robot",null,{},1])assert.throws(()=>projectObjectives([source,{...record,data:{...record.data,author}}]),/Invalid objective/);
+  assert.equal(JSON.stringify([source,record]),before);
+});
