@@ -65,12 +65,14 @@ export function inspectContainerRoots(roots:readonly string[],masked:readonly st
 }
 export class ContainerToolRunner {
   readonly policy:string;
+  readonly names:readonly string[];
   private readonly options:ContainerToolOptions;
   private readonly admission:ShellToolRunner;
   constructor(options:ContainerToolOptions){
     if(!isAbsolute(options.socket)||/[\0\r\n]/.test(options.socket)||!imageValid(options.image))throw new Error("Container tools require a local Unix socket and immutable image digest.");
     const timeoutMs=options.timeoutMs??120000,outputBytes=options.outputBytes??8000;
     if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>3600000||!Number.isSafeInteger(outputBytes)||outputBytes<1||outputBytes>1024*1024)throw new Error("Invalid container tool limits.");
+    this.names=Object.freeze(options.allow.slice());
     this.options={...options,roots:options.roots.slice(),allow:options.allow.slice(),protectedPaths:options.protectedPaths?.slice(),timeoutMs,outputBytes};
     this.admission=new ShellToolRunner({allow:this.options.allow,roots:this.options.roots,defaultCwd:options.defaultCwd});
     this.policy=`Conteneur Linux déclaré (${options.image}) : réseau absent, contrôle masqué ; commandes selon les binaires de l’image.`;

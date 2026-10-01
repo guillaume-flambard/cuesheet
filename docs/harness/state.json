@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "98a0b9f",
+  "referenceCommit": "2622d39",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -2953,7 +2953,7 @@
     {
       "id": "H09.3c",
       "priority": "P1",
-      "status": "TODO",
+      "status": "DONE",
       "requirements": [
         "REQ-H09.3"
       ],
@@ -2969,8 +2969,10 @@
         "AC-H09.3"
       ],
       "verification": "Auto/owner override/missing or stale local daemon/image policy, enterprise no unsafe fallback, provider authority unchanged; actual terminal scenario",
-      "evidence": [],
-      "notes": "Default choice must be automatic per owner directive; manual image/socket wiring alone does not satisfy this task."
+      "evidence": [
+        "EV-AUTOMATIC-VAULT-TOOLS"
+      ],
+      "notes": "Default choice must be automatic per owner directive; manual image/socket wiring alone does not satisfy this task. Tranche locale vérifiée ; parents/AC complets restent ouverts."
     },
     {
       "id": "E01.5a",
@@ -3115,6 +3117,59 @@
         "EV-LOCAL-VAULT-CONTAINERS"
       ],
       "notes": "Owner-local mounts only, no network identity or permission claimed Tranche locale finie vérifiée ; AC/parents complets non clos."
+    },
+    {
+      "id": "E01.5c",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-E01.5",
+        "REQ-H02.2"
+      ],
+      "dependencies": [
+        "E01.5a",
+        "E01.5b1"
+      ],
+      "description": "Publication automatique sourcée de la spec courante vers Vault projet, reprise idempotente et protection humaine",
+      "systems": [
+        "src/adapters/vault-publisher.ts",
+        "src/adapters/vault.ts",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/producer/runtime.ts"
+      ],
+      "acceptance": [
+        "AC-E01.5",
+        "AC-H02.2"
+      ],
+      "verification": "Journal réel plan/spec, reprise, historique, human edit/tombstone, stale scope/source/CAS/typechecks/régression",
+      "evidence": [
+        "EV-AUTOMATIC-VAULT-TOOLS"
+      ],
+      "notes": "Interprétation documentaire partageable, aucune autorité de goal/check/permission ajoutée Tranche locale vérifiée ; parents/AC complets restent ouverts."
+    },
+    {
+      "id": "H07.2b",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H07.2"
+      ],
+      "dependencies": [
+        "H09.3c"
+      ],
+      "description": "Schémas provider utilisent les outils contrôleur courants et non le premier/union historiques",
+      "systems": [
+        "src/adapters/tool-vocabulary.ts",
+        "src/adapters/anthropic.ts",
+        "src/adapters/openrouter.ts",
+        "src/adapters/binary-model.ts"
+      ],
+      "acceptance": [
+        "AC-H07.2"
+      ],
+      "verification": "Régression prépatch requêtes API capturées/transport binaire, liste courante restreinte, noms/dédoublonnage et types/full",
+      "evidence": [],
+      "notes": "Découvert pendant route automatique ; runner continue à refuser les commandes non admises"
     }
   ],
   "acceptance": [
@@ -4159,6 +4214,12 @@
       "result": "PASS_PARTIAL",
       "method": "Real Docker, Unix HTTP fault fixtures, actual runtime/session, Vault two processes/permissions/stale inference, differential typing/build/full suite; solo adversarial review",
       "details": "780/778/0/2 full PASS;49 targeted PASS; evaluation/local-vault-containers/evidence.md. Parents auth/sync/automatic route/enterprise facade remain open."
+    },
+    {
+      "id": "EV-AUTOMATIC-VAULT-TOOLS",
+      "result": "PASS_PARTIAL",
+      "method": "Real automatic Docker runtime and refused enterprise local override, actual SIGKILL/publication recovery, current model docs/protection, typing/build/full; solo review",
+      "details": "788/786/0/2 full PASS;50 targeted and37 enterprise/static PASS. evaluation/automatic-vault-tools/evidence.md. H07.2b discovered and pending."
     }
   ],
   "risks": {
@@ -4168,10 +4229,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "98a0b9f",
+    "lastPassedCommit": "2622d39",
     "lastFullSuite": {
-      "tests": 780,
-      "passed": 778,
+      "tests": 788,
+      "passed": 786,
       "failed": 0,
       "skipped": 2
     },
@@ -4195,7 +4256,8 @@
     "workingTreeScopedResume": "PASS reopened selected project, original objective identity and sourced admission;757/755/0/2 full. UI context slice in verification.",
     "workingTreeSharedContextUI": "PASS readonly palette, actual keys/pages/sources/resize;760/758/0/2 full. Parent enterprise UI/edit/export pending.",
     "workingTreeSharedEdits": "PASS human project edit/resolve, CAS and sourced history, exact retries preserve human state, active humans not dropped;764/762/0/2 full. No enterprise auth/OS guarantee.",
-    "workingTreeVaultContainers": "PASS bounded local slices;780/778/0/2 full,49 targeted, build PASS with32 inherited diagnostics. Overall IMPLEMENTING; no global closure."
+    "workingTreeVaultContainers": "PASS bounded local slices;780/778/0/2 full,49 targeted, build PASS with32 inherited diagnostics. Overall IMPLEMENTING; no global closure.",
+    "workingTreeAutomaticVaultTools": "PASS finite local publication/auto route;788/786/0/2 full,50 targeted +37 enterprise additional. Tool vocabulary H07.2b pending, global IMPLEMENTING."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4262,7 +4324,8 @@
         "E01.6",
         "E01.7",
         "E01.6a",
-        "E01.5b1"
+        "E01.5b1",
+        "E01.5c"
       ],
       "dependencies": [
         "C1",
@@ -4307,7 +4370,8 @@
         "H07.3",
         "H07.4",
         "H07.5",
-        "H07.4a"
+        "H07.4a",
+        "H07.2b"
       ],
       "dependencies": [
         "C1",

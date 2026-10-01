@@ -19,17 +19,18 @@ export function projectVault(events:readonly Event[]):{documents:VaultVersion[];
  }
  return {documents:[...documents.values()],history,revision:events.at(-1)?.seq??-1};
 }
+export class VaultConflict extends Error {constructor(){super("Vault scope revision conflict.");this.name="VaultConflict";}}
 export class VaultStore {
  private readonly root:string;
  constructor(options:{root:string}){this.root=options.root;}
  private events():Event[]{const path=join(this.root,'documents.jsonl');if(!existsSync(path))return [];if(statSync(path).size>16*1024*1024)throw new Error('Vault journal exceeds its limit.');const events=new SessionStore({root:this.root}).read('documents');if(events.length>10000)throw new Error('Vault journal exceeds its limit.');return events;}
  read(){return projectVault(this.events());}
  write(input:VaultWrite,expectedRevision:number):VaultVersion{
-  const events=this.events();if((events.at(-1)?.seq??-1)!==expectedRevision)throw new Error('Vault scope revision conflict.');
+  const events=this.events();if((events.at(-1)?.seq??-1)!==expectedRevision)throw new VaultConflict();
   const data={version:1,...input};const projected=projectVault([...events,{seq:events.length+1,at:Date.now(),kind:'note',subject:'vault.document',data}]);
   const store=new SessionStore({root:this.root});const path=join(this.root,'documents.jsonl');
   if(!existsSync(path)){store.create('documents',[]);chmodSync(path,0o600);}
-  if(!store.appendIfCurrent('documents',expectedRevision,{seq:events.length+1,kind:'note',subject:'vault.document',at:Date.now(),data}))throw new Error('Vault scope revision conflict.');
+  if(!store.appendIfCurrent('documents',expectedRevision,{seq:events.length+1,kind:'note',subject:'vault.document',at:Date.now(),data}))throw new VaultConflict();
   return projected.history.at(-1)!;
  }
 }

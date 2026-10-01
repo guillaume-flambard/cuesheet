@@ -45,9 +45,11 @@ import { resolveModel } from "../../../../src/adapters/default-model.ts";
 import { ShellToolRunner } from "../../../../src/adapters/shell.ts";
 import { SessionContainers } from "../../../../src/adapters/container-receipts.ts";
 import { invocationKey } from "../../../../src/adapters/tool-receipts.ts";
+import { chooseToolRoute,DEFAULT_CONTAINER_TOOLS } from "../../../../src/adapters/tool-route.ts";
 import { ContainerToolRunner } from "../../../../src/adapters/container-tools.ts";
 import { ResearchTools } from "../../../../src/adapters/research-tools.ts";
 import { SessionUsage } from "../../../../src/adapters/model-usage.ts";
+import { ProjectVaultPublisher } from "../../../../src/adapters/vault-publisher.ts";
 import { VaultRetrieval } from "../../../../src/adapters/vault.ts";
 import { SharedContexts,sharedScope } from "../../../../src/adapters/shared-memory.ts";
 import { SkillTools } from "../../../../src/adapters/skill-tools.ts";
@@ -94,11 +96,13 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const image=process.env.CUESHEET_TOOL_IMAGE;
+  let route;
+  try{route=chooseToolRoute({home:homedir(),enterprise:!!process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean).length,mode:process.env.CUESHEET_TOOL_MODE,image:process.env.CUESHEET_TOOL_IMAGE,socket:process.env.CUESHEET_TOOL_SOCKET});}catch{return {missing:"Tool route requires auto/container/local mode and a local Unix socket."};}
+  const image=route.kind==="container" ? route.image : undefined;
   const containers=settings.journal ? new SessionContainers({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
   if(image)try{containers?.read();}catch{return {missing:"Container resource journal is damaged; inspect it before starting tools."};}
-  const toolsForScope=(scope:string):ToolRunner=>image ? new ContainerToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope,image,
-    socket:process.env.CUESHEET_TOOL_SOCKET ?? join(homedir(),".docker","run","docker.sock"),
+  const toolsForScope=(scope:string):ToolRunner=>route.kind==="unavailable" ? {names:[],policy:route.reason,async run(request){return {name:request.name,exit:126,output:route.reason};}} as ToolRunner : image ? new ContainerToolRunner({allow:route.kind==="container"&&route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : ALLOWED,roots:[scope],defaultCwd:scope,image,
+    socket:route.kind==="container" ? route.socket : "",
     onAdmission:(name,request)=>{
       if(!containers||!settings.journal)throw new Error("Container execution requires a durable terminal session.");
       const digest=invocationKey(request.name,request.input);
@@ -106,7 +110,7 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
       if(!intent)throw new Error("Container execution lacks an admitted intent.");
       containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
     },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
-    protectedPaths:[...(settings.journal?[settings.journal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]}) : new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope});
+    protectedPaths:[...(settings.journal?[settings.journal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]}) : Object.assign(new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope}),{policy:route.reason,names:Object.freeze(ALLOWED.slice())});
   let tools:ToolRunner;
   try {tools=toolsForScope(cwd);} catch {return {missing:"Container tool configuration requires a local Unix socket and immutable image digest."};}
   const researchForScope=(scope:string)=>new ResearchTools({root:scope,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
@@ -117,7 +121,8 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const sharedContexts=new SharedContexts({cwd,organizations:process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)});
   const organizationRoots=process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)??[];
   const vaultForScope=(scope:string)=>new VaultRetrieval({principal:"local-owner",scopes:[{kind:"project",id:sharedScope("project",scope).id,root:join(scope,".cuesheet","vault")},...organizationRoots.map(root=>({kind:"enterprise" as const,id:sharedScope("organization",root).id,root:join(resolve(root),"vault")}))],authorize:()=>true});
-  const options: ProducerOptions = {vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const vaultPublisherForScope=settings.journal ? (scope:string)=>new ProjectVaultPublisher({root:join(scope,".cuesheet","vault"),scope,sessionId:settings.journal!.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
+  const options: ProducerOptions = {vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */

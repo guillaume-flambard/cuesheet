@@ -30,3 +30,5 @@ E01.4b→C6 dépend de E01.1/2/E01.4a ; preuve EV-SHARED-MEMORY-EDIT. Le parent 
 Extension de directive Vault : E01.5a→E01.5b, E01.6a→E01.6→E01.5b→E01.7, rattachés à C3. E01.3 porte toujours auth/sync réseau. H09.3b/c→C4 distinguent backend explicite et choix automatique ; aucune tranche n'est la clôture de R06.
 
 E01.5b1→C3 : tranche automatique locale indépendante, dépend de E01.5a/E01.6a ; parent E01.5b exige encore import/intégration/permissions entreprise réelles. E01.6a ne remplace pas E01.3/E01.6.
+
+E01.5c→C3 (publication automatique) et H09.3c→C4 (route automatique) vérifiés en tranches. H07.2b→C5 dépend de H09.3c ; anciennes déclarations restent dans frame et doivent cesser d’étendre schémas provider.
