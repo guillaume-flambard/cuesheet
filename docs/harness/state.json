@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "ad65c49",
+  "referenceCommit": "1e5b28a",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3381,19 +3381,22 @@
       "id": "EV-WORK-PLANS",
       "result": "PASS_PARTIAL",
       "method": "pure projection, actual disk reload/corruption, producer integration, differential typing, full regression",
-      "details": "11 targeted PASS; 719 full tests, 717 pass, 0 fail, 2 skipped; /tmp/cuesheet-chantiers-c1-final.log. Task IDs/revisions, dependency cycles/refusals, stale objective plan and explicit readmission, legacy no-write projection. H02.2 remains open: export/human editing not delivered."
+      "details": "11 targeted PASS; 719 full tests, 717 pass, 0 fail, 2 skipped; /tmp/cuesheet-chantiers-c1-final.log. Task IDs/revisions, dependency cycles/refusals, stale objective plan and explicit readmission, legacy no-write projection. H02.2 remains open: export/human editing not delivered.",
+      "commit": "88ae665"
     },
     {
       "id": "EV-MEMORY-IDEMPOTENCE",
       "result": "PASS_PARTIAL",
       "method": "isolated historical reproduction, exact-source unit tests, actual durable restart/corruption, differential typing and full regression",
-      "details": "Historical 88ae665 isolated snapshot: repeat extraction incorrectly increments revision 2 -> 3, assertion FAIL (/tmp/cuesheet-c2-before.log). New targeted 12 PASS; combined 722 tests, 720 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c2-all.log). Source-order/dedup retry returns initial ID after human correction/resolution; source/key/version validation, model ownership, reload and damaged listing. Semantic extraction scheduling and contradictions remain open."
+      "details": "Historical 88ae665 isolated snapshot: repeat extraction incorrectly increments revision 2 -> 3, assertion FAIL (/tmp/cuesheet-c2-before.log). New targeted 12 PASS; combined 722 tests, 720 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c2-all.log). Source-order/dedup retry returns initial ID after human correction/resolution; source/key/version validation, model ownership, reload and damaged listing. Semantic extraction scheduling and contradictions remain open.",
+      "commit": "ad65c49"
     },
     {
       "id": "EV-ANTHROPIC-TRANSPORT",
       "result": "PASS_PARTIAL",
       "method": "official API contract inspection, deterministic native transport, paginated catalog, actual Ink keys, differential typing and full regression",
-      "details": "Official Messages/Models docs linked in CHANTIERS.md. 19 targeted PASS; extra Anthropic required-ceiling Ink case PASS with 3 UI tests. Full production-code regression 727 tests, 725 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c5-all.log); additional Ink case added after full worker loaded, independently verified (/tmp/cuesheet-anthropic-ui.log). No live Anthropic inference or cumulative usage accounting; H07.1 remains open."
+      "details": "Official Messages/Models docs linked in CHANTIERS.md. 19 targeted PASS; extra Anthropic required-ceiling Ink case PASS with 3 UI tests. Full production-code regression 727 tests, 725 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c5-all.log); additional Ink case added after full worker loaded, independently verified (/tmp/cuesheet-anthropic-ui.log). No live Anthropic inference or cumulative usage accounting; H07.1 remains open.",
+      "commit": "1e5b28a"
     }
   ],
   "risks": {
@@ -3403,7 +3406,7 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "ad65c49",
+    "lastPassedCommit": "1e5b28a",
     "lastFullSuite": {
       "tests": 727,
       "passed": 725,
@@ -3417,7 +3420,8 @@
     "workingTreeModels": "24 targeted tests PASS; full combined regression 714/712/0/2 PASS, /tmp/cuesheet-hot-switch-confirm.log. No new differential typing diagnostics; global baseline remains.",
     "workingTreePlans": "PASS 719/717/0/2 full regression; no new differential type diagnostics. Launcher whitelist restored inline; origin of previous deletion unknown.",
     "workingTreeMemory": "12 targeted PASS; 722/720/0/2 full PASS. Isolated historical source reproduced duplicate extraction; new idempotent path does not append or resurrect human-modified memory. H03.1/H03.2 still incomplete.",
-    "workingTreeAnthropic": "19 targeted PASS; full regression 727/725/0/2 PASS; additional Anthropic Ink ceiling test PASS. No new differential type diagnostics; no live Anthropic inference; H07.1/H07.4 remain pending."
+    "workingTreeAnthropic": "19 targeted PASS; full regression 727/725/0/2 PASS; additional Anthropic Ink ceiling test PASS. No new differential type diagnostics; no live Anthropic inference; H07.1/H07.4 remain pending.",
+    "workstreamCoverage": "PASS: all 51 post-baseline task IDs occur in six workstreams; only four completed B00 tasks excluded. Priority/acceptance counts checked against actual records. No parent acceptance newly closed by partial slices."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
