@@ -13,7 +13,7 @@ export interface CompletionResult {
   checkDigest: string;
 }
 export interface CompletionCheck {
-  verify(workspace: string, effectId: string): Promise<CompletionResult>;
+  verify(workspace: string, effectId: string, signal?: AbortSignal): Promise<CompletionResult>;
 }
 
 export function createCompletionCheck(options: { script: string; root: string; timeoutMs?: number }): CompletionCheck {
@@ -25,7 +25,8 @@ export function createCompletionCheck(options: { script: string; root: string; t
   const pinned = join(root, "oracle.mjs");
   writeFileSync(pinned, script, { flag: "wx", mode: 0o400 });
   let attempt = 0;
-  return { async verify(workspace, effectId) {
+  return { async verify(workspace, effectId, signal) {
+    signal?.throwIfAborted();
     if (!/^[A-Za-z0-9_-]+$/.test(effectId)) throw new Error("invalid effect identity");
     const sessionId = `surface-${++attempt}`;
     const working = realpathSync(workspace);
@@ -40,7 +41,7 @@ export function createCompletionCheck(options: { script: string; root: string; t
     if (!intact()) {
       verification = { target, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: "the declared check changed after admission" }] };
     } else {
-      verification = await runAgainstArtifactAsync({ artifact, command: process.execPath, args: [pinned], verificationId: `V-${effectId}`, timeoutMs: options.timeoutMs });
+      verification = await runAgainstArtifactAsync({ artifact, command: process.execPath, args: [pinned], verificationId: `V-${effectId}`, timeoutMs: options.timeoutMs, signal });
       if (!intact()) verification = { target, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: "the declared check changed during verification" }] };
     }
     const record = join(root, `${sessionId}-${effectId}-${artifact.artifactId}.json`);

@@ -56,7 +56,7 @@ export class ShellToolRunner {
     };
   }
 
-  async run(request: ToolRequest): Promise<ToolResult> {
+  async run(request: ToolRequest, signal?: AbortSignal): Promise<ToolResult> {
     const { name, input } = request;
 
     if (!this.options.allow.includes(name)) {
@@ -114,6 +114,7 @@ export class ShellToolRunner {
           timeout: this.options.timeoutMs,
           maxBuffer: this.options.outputBytes * 4,
           env: { ...process.env, NO_COLOR: "1" },
+          signal, killSignal: "SIGKILL",
         },
         (error, stdout, stderr) => {
           const output = `${stdout}${stderr}`.slice(-this.options.outputBytes);

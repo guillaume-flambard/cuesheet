@@ -481,7 +481,7 @@ export class BinaryModelAdapter implements ModelAdapter {
     return { dir: mkdtempSync(join(tmpdir(), "cuesheet-model-")), owned: true };
   }
 
-  async infer(frame: ContextFrame): Promise<BinaryModelResponse> {
+  async infer(frame: ContextFrame, signal?: AbortSignal): Promise<BinaryModelResponse> {
     const { dir, owned } = this.workingDir();
     try {
       // The agent config lives in the directory the binary is pointed at, which
@@ -490,7 +490,7 @@ export class BinaryModelAdapter implements ModelAdapter {
       if (owned) {
         writeFileSync(join(dir, "opencode.json"), JSON.stringify(AGENT_CONFIG, null, 2), "utf8");
       }
-      const run = await this.spawnRun(dir, frame);
+      const run = await this.spawnRun(dir, frame, signal);
       return parseProposal(run);
     } finally {
       // A directory this adapter created is a directory it removes. The
@@ -516,7 +516,7 @@ export class BinaryModelAdapter implements ModelAdapter {
    * stream that can be torn mid-write rather than a string that is only ever
    * whole.
    */
-  private spawnRun(dir: string, frame: ContextFrame): Promise<RawRun> {
+  private spawnRun(dir: string, frame: ContextFrame, signal?: AbortSignal): Promise<RawRun> {
     // Keep inline provider/model preferences, while reserving our proposer.
     // Do not echo the inherited config: it can contain provider credentials.
     let inline: Record<string, unknown> = {};
@@ -552,6 +552,7 @@ export class BinaryModelAdapter implements ModelAdapter {
       // writing a config into the user's project would mutate their settings.
       const child = spawn(this.options.binary, args, {
         stdio: ["ignore", "pipe", "pipe"],
+        signal, killSignal: "SIGKILL",
         env: { ...process.env, OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
       });
       let stdout = "";

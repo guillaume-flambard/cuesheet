@@ -38,6 +38,7 @@ export interface RunOptions {
   timeoutMs?: number;
   /** A stable id for this verification, for the record. */
   verificationId: string;
+  signal?: AbortSignal;
 }
 
 /**
@@ -117,6 +118,7 @@ export async function runAgainstArtifactAsync(options: RunOptions): Promise<Veri
   const result = await new Promise<{ status: number | null; signal: string | null; error?: Error }>((settle) => {
     const child = spawn(options.command, options.args, {
       cwd: options.artifact.location, stdio: "ignore", env: { PATH: process.env.PATH ?? "" },
+      signal: options.signal, killSignal: "SIGKILL",
     });
     const timer = setTimeout(() => child.kill("SIGKILL"), options.timeoutMs ?? 30_000);
     child.on("error", (error) => { clearTimeout(timer); settle({ status: null, signal: null, error }); });

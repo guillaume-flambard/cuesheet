@@ -11,7 +11,7 @@ import { createElement } from "react";
 import { render } from "ink";
 import { App } from "./app/App.tsx";
 
-const instance = render(createElement(App));
+const instance = render(createElement(App), { exitOnCtrlC: false });
 
 instance.waitUntilExit().then(
   () => process.exit(0),

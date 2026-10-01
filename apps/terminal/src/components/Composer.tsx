@@ -24,9 +24,10 @@
  * there is no provider, the composer still accepts and records a sentence, so a
  * person never loses what they typed, but it says why nothing is happening.
  */
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
+import { characters, edit, type Edit } from "./editor.ts";
 
 export function Composer(props: {
   width: number;
@@ -42,17 +43,44 @@ export function Composer(props: {
   /** True when there is no provider. The sentence is still recorded. */
   disabled?: boolean;
   active?: boolean;
+  history?: readonly string[];
 }): JSX.Element {
+  const [cursor, setCursor] = useState(characters(props.value).length);
+  const [historyAt, setHistoryAt] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
+  useEffect(() => { if (!props.value) { setCursor(0); setHistoryAt(null); } }, [props.value]);
+  const apply = (action: Edit | { insert: string }) => {
+    const next = edit(props.value, cursor, action);
+    setCursor(next.cursor); props.onChange(next.text);
+    if (next.text !== props.value) { setHistoryAt(null); setDraft(next.text); }
+  };
   useInput((input, key) => {
     if (key.ctrl && input === "c") return props.onQuit();
     if (key.ctrl && input === "k") return props.onPalette();
     if ((key.ctrl && (input === "i" || input === "l")) || key.tab) return props.onInspect();
     if (props.active === false) return;
     if (key.return) return props.onSubmit(props.value);
-    if (key.backspace || key.delete) return props.onChange(props.value.slice(0, -1));
-    if (key.escape) return props.onChange("");
-    if (!key.ctrl && !key.meta && input) return props.onChange(props.value + input);
+    if (key.upArrow || key.downArrow) {
+      const history = props.history ?? [];
+      if (!history.length) return;
+      if (historyAt === null && key.downArrow) return;
+      if (historyAt === null) setDraft(props.value);
+      const next = key.upArrow ? Math.max(0, (historyAt ?? history.length) - 1) : (historyAt ?? history.length) + 1;
+      const value = next >= history.length ? draft : history[next]!;
+      setHistoryAt(next >= history.length ? null : next); setCursor(characters(value).length); props.onChange(value); return;
+    }
+    if (key.leftArrow) return apply("left");
+    if (key.rightArrow) return apply("right");
+    if (key.ctrl && input === "a") return apply("home");
+    if (key.ctrl && input === "e") return apply("end");
+    if (key.ctrl && input === "u") return apply("clear");
+    if (key.backspace) return apply("backspace");
+    if (key.delete) return apply("delete");
+    if (key.escape) return apply("clear");
+    if (!key.ctrl && !key.meta && input) return apply({ insert: input });
   });
+  const chars = characters(props.value);
+  const at = Math.min(cursor, chars.length);
 
   return (
     <Box flexDirection="column" flexShrink={0}>
@@ -68,8 +96,9 @@ export function Composer(props: {
           </>
         ) : (
           <>
-            <Text wrap="truncate-start">{props.value.replace(/\r?\n/g, " ")}</Text>
-            <Text inverse>{" "}</Text>
+            <Text wrap="truncate-start">{chars.slice(0, at).join("")}</Text>
+            <Text inverse>{chars[at] ?? " "}</Text>
+            <Text wrap="truncate-end">{chars.slice(at + 1).join("")}</Text>
           </>
         )}
       </Box>

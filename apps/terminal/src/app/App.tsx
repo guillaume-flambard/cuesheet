@@ -100,7 +100,6 @@ export function App(props: AppProps): JSX.Element {
   // at all.
   useInput((input, key) => {
     if (key.escape) return send({ type: "close" });
-    if (key.upArrow && state.overlay === "none") return send({ type: "open", overlay: "help" });
     if (input === "?" && state.composer === "") return send({ type: "open", overlay: "help" });
   });
 
@@ -146,12 +145,13 @@ export function App(props: AppProps): JSX.Element {
         value={state.composer}
         onChange={(text) => send({ type: "compose", text })}
         onSubmit={submit}
-        onQuit={() => exit()}
+        onQuit={() => state.busy ? producer?.cancel?.() : exit()}
         onPalette={() => send({ type: "open", overlay: "palette" })}
         onHelp={() => send({ type: "open", overlay: "help" })}
         onInspect={() => send({ type: "open", overlay: "inspect" })}
         active={state.overlay === "none"}
         disabled={!producer}
+        history={state.entries.flatMap((entry) => entry.kind === "you" ? [entry.text] : [])}
       />
 
       <StatusBar

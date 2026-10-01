@@ -172,3 +172,42 @@ Final quality validation: 643 tests, 641 pass, 0 fail, 2 skipped using
 the deterministic suite command. Differential typecheck guard: 4 pass.
 The accepted live runs are recorded separately above. git diff --check
 passes and src/core remains unchanged.
+
+## Terminal UX: editing, history and interruption
+
+PgUp/PgDown now move through wrapped conversation rows; the viewport measures
+its content with Ink measureElement and retains its position when new work
+arrives. Conversation retention is still the existing 400-entry in-memory
+limit, not durable session recovery. Up/Down recalls submitted messages and
+restores the unsent draft when returning to the newest position. Left/Right
+move the cursor, Ctrl+A/E move to the ends, Ctrl+U clears, and Backspace/Delete
+remove graphemes rather than breaking Unicode emoji or combining characters.
+Pasted line breaks become spaces in the single-line composer.
+
+Ctrl+C during work requests interruption; at rest it exits. Ink automatic
+Ctrl+C exit is disabled so the application can implement that distinction.
+An AbortSignal crosses the existing adapter boundaries for model inference,
+shell execution, and the asynchronous acceptance check. Direct child processes
+receive SIGKILL; late results from signal-ignorant adapters cannot commit
+proposals or completion evidence. An interrupted result is unknown, never
+verified, and active rows are settled as unknown. Edits already made are kept.
+Killing arbitrary grandchildren created by a command is not guaranteed by this
+implementation; there is no rollback or operating-system sandbox.
+
+Seven regression tests cover Unicode and middle-of-line editing, draft restoration,
+wrapped history traversal, an actually started child with a cancelled pending
+write, cancellation during verification, and a real PTY where a cancelled model
+is followed by a fresh request in the same terminal. Source references consulted:
+https://nodejs.org/api/child_process.html and the Ink 4.4.1 documentation linked
+above. The root domain core is unchanged.
+
+Review found that an action tracked by a numeric row index could remain active
+when the history reached 400 entries and trimmed while the tool was running.
+The producer now locates that row by object identity on settlement; a test
+reproduces trimming during execution. Ctrl+C routing stays in App, so the
+composer never acquires a busy guard and new directions remain submitable
+during a run. No required Stop action is introduced before speaking.
+
+Final UX validation: 650 tests, 648 pass, zero failures, two skipped using
+the deterministic-suite command above. The differential typecheck guard
+passed, git diff --check passed, and src/core is unchanged.

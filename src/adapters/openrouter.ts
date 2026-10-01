@@ -196,7 +196,7 @@ export class OpenRouterAdapter implements ModelAdapter {
     };
   }
 
-  async infer(frame: ContextFrame): Promise<ModelResponse> {
+  async infer(frame: ContextFrame, signal?: AbortSignal): Promise<ModelResponse> {
     const { messages, tools } = this.render(frame);
     const body: Record<string, unknown> = {
       model: frame.model === "unset" ? this.options.model : frame.model,
@@ -233,6 +233,7 @@ export class OpenRouterAdapter implements ModelAdapter {
         "x-title": this.options.label ?? "cuesheet",
       },
         body: JSON.stringify(body),
+        signal,
       });
     } catch (cause) {
       throw new FailureWithOrigin(

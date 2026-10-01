@@ -11,7 +11,7 @@
  */
 import React from "react";
 import { Box, Text, useInput } from "ink";
-import { theme, glyph, inkColor } from "../theme/tokens.ts";
+import { theme, inkColor } from "../theme/tokens.ts";
 
 export function Help(props: { onClose(): void }): JSX.Element {
   useInput((_input, key) => {
@@ -19,17 +19,12 @@ export function Help(props: { onClose(): void }): JSX.Element {
   });
 
   return (
-    <Box flexDirection="column" marginTop={1}>
-      <Text color={inkColor(theme.dim)}>say what you want. anything.</Text>
-      <Box marginTop={1} flexDirection="column">
-        <Text>  {glyph.confirmed} where you are decides the project</Text>
-        <Text>  {glyph.confirmed} the work shows up as it happens</Text>
-        <Text>  {glyph.unknown} if two projects match, you pick</Text>
-        <Text>  {glyph.confirmed} Ctrl+L for the log · Ctrl+K for commands · esc to close</Text>
-      </Box>
-      <Box marginTop={1}>
-        <Text color={inkColor(theme.faint)}>press esc</Text>
-      </Box>
+    <Box flexDirection="column">
+      <Text wrap="truncate-end" color={inkColor(theme.dim)}>Pg↑/↓ : conversation · ↑/↓ : saisie</Text>
+      <Text wrap="truncate-end">←/→ : curseur · Ctrl+A/E : début/fin</Text>
+      <Text wrap="truncate-end">Ctrl+U : effacer · Esc : retour</Text>
+      <Text wrap="truncate-end">Ctrl+C : arrêter ; au repos, quitter</Text>
+      <Text wrap="truncate-end">Ctrl+K : commandes · Ctrl+L : journal</Text>
     </Box>
   );
 }

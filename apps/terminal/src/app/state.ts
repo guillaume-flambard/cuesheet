@@ -110,6 +110,7 @@ export type Control =
   | { readonly type: "began" }
   /** Producer-only. The run ended. */
   | { readonly type: "ended" }
+  | { readonly type: "interrupted" }
   /** Producer-only. Lines translated from the core's vocabulary. */
   | { readonly type: "observed"; readonly entries: readonly Entry[] }
   /**
@@ -199,6 +200,11 @@ export function derive(state: SurfaceState, control: Control): SurfaceState {
 
     case "ended":
       return { ...state, busy: false };
+
+    case "interrupted":
+      return { ...state, busy: false, entries: state.entries.map(entry =>
+        (entry.kind === "action" || entry.kind === "status") && entry.certainty === "active"
+          ? { ...entry, certainty: "unknown" as const } : entry) };
 
     case "observed": {
       if (control.entries.length === 0) return state;

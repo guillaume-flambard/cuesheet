@@ -112,6 +112,8 @@ interface Wiring {
 }
 
 export interface Producer {
+  /** Stop the current run; keep the conversation and the goal open. */
+  cancel?(): void;
   /** Hand a sentence to the surface. Any sentence. */
   say(text: string): void;
   /** Accept a choice from an offer the producer made. */
@@ -196,7 +198,9 @@ export function createProducer(options: ProducerOptions): Producer {
    * Without this the settled row would be appended and every call would show
    * twice, once still claiming to be running.
    */
-  let pendingAt: number | undefined;
+  // A row's index moves when the bounded history trims its head. Retain its
+  // object identity and locate it when the result arrives instead.
+  let pendingRow: Entry | undefined;
   /**
    * The sentence an open offer is answering.
    *
@@ -246,10 +250,13 @@ export function createProducer(options: ProducerOptions): Producer {
   let proposalDirective = 0;
   let activeEffect = "";
   let activeWorkspace = cwd;
+  let controller: AbortController | undefined;
   const directiveRevision = (): number => shared.toSession().events
     .filter((event) => event.kind === "directive").at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
+      const signal = controller!.signal;
+      signal.throwIfAborted();
       if (directiveRevision() !== proposalDirective) {
         return { name: request.name, exit: 126, output: "The instructions changed; this proposal was discarded." };
       }
@@ -260,7 +267,8 @@ export function createProducer(options: ProducerOptions): Producer {
         if (!options.verification) return { name: "finish", exit: 126, output: "No acceptance check was declared; the goal remains open." };
         const basis = directiveRevision();
         observe([{ kind: "status", label: "check", value: "checking the captured result", certainty: "active" }]);
-        const result = await options.verification.verify(activeWorkspace, activeEffect);
+        const result = await interruptible(options.verification.verify(activeWorkspace, activeEffect, signal), signal);
+        signal.throwIfAborted();
         const verdict = result.verification.verdict;
         const produced = shared.append({ kind: "work_produced", subject: activeEffect, data: { artifactId: result.artifact.artifactId, artifactDigest: result.artifact.digest, record: result.record, scope: result.artifact.scope } });
         log(`[work_produced] ${produced.subject} ${JSON.stringify(produced.data)}`);
@@ -276,7 +284,7 @@ export function createProducer(options: ProducerOptions): Producer {
         }
         return { name: "finish", exit: verdict === "VERIFIED" && stillCurrent ? 0 : 1, output: JSON.stringify({ verdict, record: result.record, artifactDigest: result.artifact.digest, current: stillCurrent }) };
       }
-      return tools.run(request);
+      return interruptible((tools as ToolRunner & { run(request: Parameters<ToolRunner["run"]>[0], signal?: AbortSignal): ReturnType<ToolRunner["run"]> }).run(request, signal), signal);
     },
   };
 
@@ -284,18 +292,20 @@ export function createProducer(options: ProducerOptions): Producer {
     return {
       name: inner.name,
       async infer(frame) {
+        const signal = controller!.signal;
+        signal.throwIfAborted();
         // Read before the work exists. Everything after this line is the step.
         const read = shared.revision;
         basis = read;
         proposalDirective = directiveRevision();
         try {
-          const response = await inner.infer(frame);
+          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(frame, signal), signal);
           // The response was derived from the old frame. Re-recording a step
           // cannot make its proposed actions current: discard them instead.
           return shared.revision === read ? response : { text: "", toolCalls: [] };
         } finally {
           basis = null;
-          commitStep(read, frame);
+          if (!signal.aborted) commitStep(read, frame);
         }
       },
     };
@@ -378,6 +388,8 @@ export function createProducer(options: ProducerOptions): Producer {
 
   /** Start the real loop. Everything here is the part V1 could not do. */
   const start = async (scope: { path: string; name: string }, goal: string): Promise<void> => {
+    controller = new AbortController();
+    const signal = controller.signal;
     const subject = "builder";
     const requestId = `E-${mint()}`;
     activeEffect = requestId;
@@ -445,18 +457,17 @@ export function createProducer(options: ProducerOptions): Producer {
             name: String(event.data.tool ?? ""),
             input: (event.data.input ?? {}) as Record<string, unknown>,
           });
-          at = view.get().entries.length;
         } else if (typeof event.data.tool === "string") {
-          at = pendingAt;
+          at = pendingRow ? view.get().entries.indexOf(pendingRow) : undefined;
         }
 
         const translated = translateEvent(event, pendingAction, at);
         if (event.kind === "action") {
-          pendingAt = at;
+          pendingRow = translated?.entry;
         }
         if (event.kind === "observation" && typeof event.data.tool === "string") {
           pendingAction = undefined;
-          pendingAt = undefined;
+          pendingRow = undefined;
         }
         if (!translated) return;
         // A settled entry replaces the open row; a new one is appended. The two
@@ -480,6 +491,13 @@ export function createProducer(options: ProducerOptions): Producer {
       // assuming it worked.
       recordObserved(outcome.stop.reason);
     } catch (cause) {
+      if (signal.aborted) {
+        send({ type: "interrupted" });
+        pendingAction = undefined; pendingRow = undefined;
+        observe([{ kind: "status", label: "work", value: "Interrompu. Le but reste ouvert ; les changements déjà faits sont conservés.", certainty: "unknown" }]);
+        recordObserved("cancelled");
+        return;
+      }
       const why = cause instanceof Error ? cause.message : String(cause);
       observe([{ kind: "failure", text: `the run stopped: ${why}` }]);
       log(`[effect_observed] ${pendingRequest ?? "E-unknown"} failed ${why}`);
@@ -498,6 +516,11 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    cancel() {
+      if (!inFlight || controller?.signal.aborted) return;
+      log(`[cancel] ${pendingRequest ?? "run"} requested by the user`);
+      controller?.abort(new Error("Run interrupted by the user"));
+    },
     say(text: string) {
       const said = text.trim();
       if (!said) return;
@@ -538,6 +561,16 @@ export function createProducer(options: ProducerOptions): Producer {
       return view.get();
     },
   };
+}
+
+/** Adapters that ignore the optional signal cannot commit a late result. */
+function interruptible<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const aborted = () => reject(signal.reason);
+    signal.addEventListener("abort", aborted, { once: true });
+    if (signal.aborted) aborted();
+    work.then(resolve, reject).finally(() => signal.removeEventListener("abort", aborted));
+  });
 }
 
 /** Render an event's data for the log without ever throwing on its shape. */
