@@ -41,7 +41,7 @@ const SLICE = join(TERMINAL, "src", "main.tsx");
 /** Only model preferences and the named credentials cross the launcher boundary. */
 export function surfaceEnvironment(args: string[], env: NodeJS.ProcessEnv = process.env): Record<string, string> {
   const keys = ["PATH", "HOME", "TERM", "XDG_CONFIG_HOME", "XDG_STATE_HOME", "CUESHEET_SESSIONS", "CUESHEET_SESSION", "CUESHEET_PROVIDER", "CUESHEET_MODEL", "CUESHEET_MAX_TOKENS", "CUESHEET_CONTEXT_CHARS",
-    "CUESHEET_BASE_URL", "CUESHEET_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "CUESHEET_OPENCODE_BIN",
+    "CUESHEET_BASE_URL", "CUESHEET_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "CUESHEET_OPENCODE_BIN",
     "CUESHEET_SEARCH_PROVIDER", "BRAVE_SEARCH_API_KEY", "CUESHEET_SKILL_ROOTS", "CUESHEET_MAX_SLICES"];
   const result: Record<string, string> = { TERM: "xterm-256color" };
   for (const key of keys) if (env[key] !== undefined) result[key] = env[key]!;
@@ -52,7 +52,7 @@ export function surfaceEnvironment(args: string[], env: NodeJS.ProcessEnv = proc
     const flag = args[i]!;
     const value = args[i + 1];
     if (!flags[flag] || !value?.trim() || value.startsWith("--") || seen.has(flag)) {
-      throw new Error("usage: cuesheet surface [--provider opencode|openrouter|openai|compatible] [--model ID] [--max-tokens N] [--base-url URL] [--verify check.mjs] [--session ID]");
+      throw new Error("usage: cuesheet surface [--provider opencode|openrouter|openai|compatible|anthropic] [--model ID] [--max-tokens N] [--base-url URL] [--verify check.mjs] [--session ID]");
     }
     seen.add(flag);
     result[flags[flag]!] = flag === "--verify" ? resolve(process.cwd(), value) : value.trim();

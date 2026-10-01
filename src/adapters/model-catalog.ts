@@ -1,5 +1,6 @@
 /** Catalog reads are metadata requests, never model inferences. */
 import { execFile } from 'node:child_process';
+import { ANTHROPIC_VERSION, readAnthropicJson } from './anthropic.ts';
 import { findBinary } from './default-model.ts';
 import { validBaseUrl, type ModelPreferences } from './model-preferences.ts';
 
@@ -19,6 +20,31 @@ export async function listModels(choice: ModelPreferences, options: { signal?: A
       });
     });
     return normalize(stdout.split('\n').filter(id => /^[\w.-]+\/[\w./:-]+$/.test(id)).map(id => ({ id, name: id })));
+  }
+  if (choice.provider === 'anthropic') {
+    if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY manque. Saisie manuelle disponible.');
+    const models:CatalogModel[]=[];const cursors=new Set<string>();let cursor:string|undefined;
+    try {
+      for(let page=0;page<20;page++) {
+        const url=new URL('https://api.anthropic.com/v1/models');url.searchParams.set('limit','100');if(cursor)url.searchParams.set('after_id',cursor);
+        const response=await fetch(url,{headers:{'x-api-key':env.ANTHROPIC_API_KEY,'anthropic-version':ANTHROPIC_VERSION},signal,redirect:'error'});
+        signal.throwIfAborted();
+        if(!response.ok){await response.body?.cancel();throw new Error(`HTTP ${response.status}`);}
+        const data=await readAnthropicJson(response,signal);
+        if(!data || typeof data!=='object' || !Array.isArray((data as {data?:unknown}).data))throw new Error('Invalid catalog');
+        const body=data as {data:unknown[];has_more?:unknown;last_id?:unknown};
+        for(const item of body.data) if(item && typeof item==='object') {
+          const m=item as Record<string,unknown>;if(typeof m.id==='string')models.push({id:m.id,name:typeof m.display_name==='string' ? m.display_name : m.id});
+        }
+        if(body.has_more===false)return normalize(models);
+        if(body.has_more!==true || typeof body.last_id!=='string' || !body.last_id || body.last_id.length>256 || cursors.has(body.last_id))throw new Error('Invalid pagination');
+        cursor=body.last_id;cursors.add(cursor);
+      }
+      throw new Error('Catalog page limit exceeded');
+    } catch(error) {
+      if(signal.aborted)throw signal.reason;
+      throw new Error(`Catalogue Anthropic indisponible${error instanceof Error && /^HTTP \d+$/.test(error.message) ? ` (${error.message})` : ''}. Saisie manuelle disponible.`);
+    }
   }
   let baseUrl: string;
   let key: string | undefined;

@@ -144,8 +144,8 @@ Every subcommand takes --help. Commands that print a report also take
 --format json, because a verdict a machine cannot read is not a verdict.
 
 A run needs a model. The default uses the local opencode binary. The terminal
-also accepts --provider openrouter|openai|compatible and --model ID. Credentials:
-OPENROUTER_API_KEY, OPENAI_API_KEY, or optional CUESHEET_API_KEY for a compatible
+also accepts --provider openrouter|openai|compatible|anthropic and --model ID. Credentials:
+OPENROUTER_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or optional CUESHEET_API_KEY for a compatible
 endpoint selected with --base-url URL. See cuesheet surface --help.
 `);
   process.exit(2);

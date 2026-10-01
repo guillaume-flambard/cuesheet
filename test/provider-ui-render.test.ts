@@ -81,3 +81,27 @@ console.log(JSON.stringify({failedCatalog,manual,invalidLimit,applied,closed}));
     assert.equal(result.closed,true);
   } finally {rmSync(root,{recursive:true,force:true});}
 });
+
+it('Anthropic selector keeps an empty required output limit on screen until corrected', () => {
+  const root=mkdtempSync(join(tmpdir(),'cuesheet-anthropic-ui-'));
+  try {
+    const terminal=resolve('apps/terminal');const script=join(root,'fixture.tsx');
+    writeFileSync(join(root,'package.json'),'{"type":"module"}');
+    writeFileSync(script,`import React from ${JSON.stringify(join(terminal,'node_modules/react/index.js'))};
+import {render} from ${JSON.stringify(join(terminal,'node_modules/ink/build/index.js'))};
+import {Models} from ${JSON.stringify(join(terminal,'src/overlays/Models.tsx'))};
+import {PassThrough} from 'node:stream';
+const out=new PassThrough();Object.assign(out,{columns:70,rows:14,isTTY:false});let last='';out.on('data',b=>last=b.toString());
+const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});let applied;let closed=false;
+const list=async()=>{throw Error('Catalogue indisponible');};
+const app=render(<Models rows={6} busy={true} selection={{provider:'anthropic'}} list={list} apply={(choice,save)=>{applied={choice,save};return {ok:true};}} onClose={()=>closed=true}/>,{stdout:out,stderr:out,stdin:input,debug:true,exitOnCtrlC:false});
+const tick=()=>new Promise(r=>setTimeout(r,50));const key=async(value)=>{input.write(value);await tick();};await tick();
+await key('\\r');await key('\\t');await key('EXPLICIT_CLAUDE_ID');await key('\\r');await key('\\r');const required=last;const appliedBefore=!!applied;
+await key('128');await key('\\r');await key('\\r');app.unmount();
+console.log(JSON.stringify({required,appliedBefore,applied,closed}));`);
+    const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:15000});
+    assert.equal(run.status,0,run.stderr);
+    const result=JSON.parse(run.stdout.trim());assert.match(result.required,/Anthropic exige une limite/);assert.equal(result.appliedBefore,false);
+    assert.deepEqual(result.applied,{choice:{provider:'anthropic',model:'EXPLICIT_CLAUDE_ID',maxTokens:128},save:true});assert.equal(result.closed,true);
+  } finally {rmSync(root,{recursive:true,force:true});}
+});

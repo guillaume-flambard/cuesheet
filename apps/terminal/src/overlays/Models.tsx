@@ -79,6 +79,7 @@ export function Models(props: ModelsProps): JSX.Element {
         setError('');
       } else if (stage === 'limit') {
         const maxTokens = input.trim() ? Number(input) : undefined;
+        if (choice.provider === 'anthropic' && maxTokens === undefined) { setError('Anthropic exige une limite de sortie explicite.'); return; }
         if (maxTokens !== undefined && (!Number.isSafeInteger(maxTokens) || maxTokens < 1)) { setError('Limite : entier positif, ou vide.'); return; }
         setChoice({ ...choice, maxTokens }); setStage('confirm'); setError('');
       } else {
@@ -101,7 +102,7 @@ export function Models(props: ModelsProps): JSX.Element {
       {choice.baseUrl && <Text wrap="truncate-end">{choice.baseUrl}</Text>}
       <Text wrap="truncate-end">{choice.provider === 'opencode' ? 'Limite configurée dans OpenCode' : choice.maxTokens ? `${choice.maxTokens} tokens` : 'Limite du provider'} · {save ? 'Appliquer et sauvegarder' : 'Appliquer pour ce terminal'}</Text>
     </> : <>
-      <Text wrap="truncate-start">{stage === 'model' ? (manual ? 'ID libre' : 'Recherche') : stage === 'limit' ? 'Tokens (vide : défaut)' : 'URL'} : {input}<Text inverse> </Text></Text>
+      <Text wrap="truncate-start">{stage === 'model' ? (manual ? 'ID libre' : 'Recherche') : stage === 'limit' ? (choice.provider === 'anthropic' ? 'Tokens (requis)' : 'Tokens (vide : défaut)') : 'URL'} : {input}<Text inverse> </Text></Text>
       {stage === 'model' && !manual && filtered.slice(start, start + Math.max(1, visible - 1)).map((model, index) => <Text key={model.id} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.id || model.name}</Text>)}
     </>}
     <Text wrap="truncate-end" dimColor>{error || (props.busy ? 'Travail en cours : le nouveau modèle prendra la suite.' : loading ? 'Chargement… Tab : ID libre · Esc : retour' : stage === 'model' ? `${catalog.length} modèles · Tab : ID libre · Entrée : choisir · Esc : retour` : stage === 'confirm' ? '↑↓ : sauvegarde · Entrée : appliquer · Esc : retour' : '↑↓ : choisir · Entrée : continuer · Esc : retour')}</Text>

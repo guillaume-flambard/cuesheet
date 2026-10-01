@@ -4,7 +4,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-export const PROVIDERS = ['opencode', 'openrouter', 'openai', 'compatible'] as const;
+export const PROVIDERS = ['opencode', 'openrouter', 'openai', 'compatible', 'anthropic'] as const;
 export type Provider = typeof PROVIDERS[number];
 export interface ModelPreferences {
   provider?: Provider;

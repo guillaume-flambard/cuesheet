@@ -9,6 +9,7 @@ Choose at startup. Flags override environment preferences:
 ```sh
 cuesheet surface --provider openrouter --model anthropic/claude-sonnet-4-6 --max-tokens 4096
 cuesheet surface --provider openai --model YOUR_MODEL_ID --max-tokens 4096
+cuesheet surface --provider anthropic --model YOUR_CLAUDE_MODEL_ID --max-tokens 4096
 cuesheet surface --provider compatible --base-url http://localhost:11434/v1 --model YOUR_LOCAL_MODEL
 cuesheet surface --provider opencode --model PROVIDER/MODEL
 ```
@@ -19,8 +20,9 @@ cuesheet surface --provider opencode --model PROVIDER/MODEL
 | openrouter | OPENROUTER_API_KEY | Direct Chat Completions HTTP |
 | openai | OPENAI_API_KEY | Direct OpenAI Chat Completions HTTP |
 | compatible | Optional CUESHEET_API_KEY | CUESHEET_BASE_URL or --base-url, including /v1 |
+| anthropic | ANTHROPIC_API_KEY | Direct Anthropic Messages HTTP |
 
-OpenAI and compatible require an explicit model. OpenRouter retains its previous
+Anthropic, OpenAI and compatible require an explicit model. Anthropic also requires an explicit positive output limit. OpenRouter retains its previous
 default if none is specified. Compatible servers must implement Chat Completions
 with function calling. A model that does not support tools cannot perform this
 coding workflow. OpenAI API authentication is independent from a ChatGPT
@@ -33,7 +35,7 @@ PATH/HOME/TERM, not the entire environment. Unknown providers refuse rather
 than fall back. The header shows transport and explicit model.
 
 OpenAI uses max_completion_tokens; OpenRouter and compatible use max_tokens.
-The output limit is optional, must be a positive integer when provided, and
+The output limit is required for Anthropic and optional for the other HTTP routes; it must be a positive integer when provided and
 includes reasoning tokens where the provider counts them. No provider call was
 made in the automated validation: request routing, auth, limit, tool decoding
 and cancellation were verified with a deterministic fake HTTP response.
@@ -41,13 +43,12 @@ and cancellation were verified with a deterministic fake HTTP response.
 In the terminal, Ctrl+K → Provider et modèle opens the selector. Choose a
 provider with arrows/Enter, search its live catalog, or press Tab for a manual
 model ID. Compatible servers prompt for the endpoint. HTTP transports prompt
-for an optional output limit. OpenCode uses its own configured limit and
+for an output limit (required for Anthropic). OpenCode uses its own configured limit and
 refuses an explicit Cuesheet output ceiling. The final screen offers Apply and save by default;
 up/down switches to Apply for this terminal only. Escape returns to the conversation.
 OpenCode can retain its configured model instead of choosing a catalog entry.
 
-Selection is refused while a task is running. Applying while idle changes the
-adapter without replacing the producer, its event store, directives or evidence.
+Selection during a task records the new choice before activation, cancels the old inference and discards late responses. An already started tool may finish and record its receipt; remaining calls from the old proposal are discarded. The next inference uses the new model and reconstructed context. The producer, event store, directives and evidence remain in place.
 The header and journal identify the applied selection. Missing credentials do not
 block opening the selector. A failed change keeps the previous adapter.
 
@@ -65,7 +66,7 @@ entry remains available on catalog errors. Actual metadata trials on 2026-10-01
 returned 540 OpenCode IDs in 866 ms and 396 filtered OpenRouter IDs in 409 ms.
 These counts are observations, not a fixed inventory or proof of task quality.
 
-Still pending: direct Anthropic, subscription OAuth, streaming, provider-specific
+Still pending: subscription OAuth, streaming, provider-specific
 inference trials. Durable terminal sessions are described in TERMINAL-SESSIONS.md. Choosing opencode still depends
 on its binary. Choosing an HTTP transport does not launch it.
 
@@ -75,3 +76,5 @@ Protocol references:
 
 Validation: provider routing, persistence, continuity, cancellation and actual
 keyboard/rendering regressions; full suite recorded in PROVIDER-UX-TODO.md.
+
+Anthropic uses the [Messages API](https://platform.claude.com/docs/en/api/messages/create) and [paginated Models API](https://platform.claude.com/docs/en/api/models/list), with native tool_use decoded into harness proposals. Truncated or malformed tool responses are refused as a whole; HTTP error bodies are not logged. Usage totals are available on the adapter (unknown values remain null); cumulative journal accounting remains pending. Catalog pagination is bounded and errors preserve manual entry. No live Anthropic inference was performed for this tranche; fixtures establish transport behavior only.

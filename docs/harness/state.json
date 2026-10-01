@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "88ae665",
+  "referenceCommit": "ad65c49",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -1538,7 +1538,7 @@
     {
       "id": "H07.1",
       "priority": "P1",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H07.1"
       ],
@@ -1563,7 +1563,7 @@
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [],
-      "notes": ""
+      "notes": "C5.a direct Messages transport, explicit key/model/output ceiling, native tool validation, bounded decoding, abort and paginated catalog implemented. Deterministic targeted tests PASS. Live configured Anthropic integration remains pending."
     },
     {
       "id": "H07.2",
@@ -3388,6 +3388,12 @@
       "result": "PASS_PARTIAL",
       "method": "isolated historical reproduction, exact-source unit tests, actual durable restart/corruption, differential typing and full regression",
       "details": "Historical 88ae665 isolated snapshot: repeat extraction incorrectly increments revision 2 -> 3, assertion FAIL (/tmp/cuesheet-c2-before.log). New targeted 12 PASS; combined 722 tests, 720 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c2-all.log). Source-order/dedup retry returns initial ID after human correction/resolution; source/key/version validation, model ownership, reload and damaged listing. Semantic extraction scheduling and contradictions remain open."
+    },
+    {
+      "id": "EV-ANTHROPIC-TRANSPORT",
+      "result": "PASS_PARTIAL",
+      "method": "official API contract inspection, deterministic native transport, paginated catalog, actual Ink keys, differential typing and full regression",
+      "details": "Official Messages/Models docs linked in CHANTIERS.md. 19 targeted PASS; extra Anthropic required-ceiling Ink case PASS with 3 UI tests. Full production-code regression 727 tests, 725 pass, 0 fail, 2 skipped (/tmp/cuesheet-chantiers-c5-all.log); additional Ink case added after full worker loaded, independently verified (/tmp/cuesheet-anthropic-ui.log). No live Anthropic inference or cumulative usage accounting; H07.1 remains open."
     }
   ],
   "risks": {
@@ -3397,10 +3403,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "2334466",
+    "lastPassedCommit": "ad65c49",
     "lastFullSuite": {
-      "tests": 722,
-      "passed": 720,
+      "tests": 727,
+      "passed": 725,
       "failed": 0,
       "skipped": 2
     },
@@ -3410,7 +3416,8 @@
     "workingTreeContinuity": "Lifecycle and uncertain-effect receipt/gate targeted PASS; combined full regression 714/712/0/2 PASS. Earlier launcher deletion restored; cause of recurrence not established.",
     "workingTreeModels": "24 targeted tests PASS; full combined regression 714/712/0/2 PASS, /tmp/cuesheet-hot-switch-confirm.log. No new differential typing diagnostics; global baseline remains.",
     "workingTreePlans": "PASS 719/717/0/2 full regression; no new differential type diagnostics. Launcher whitelist restored inline; origin of previous deletion unknown.",
-    "workingTreeMemory": "12 targeted PASS; 722/720/0/2 full PASS. Isolated historical source reproduced duplicate extraction; new idempotent path does not append or resurrect human-modified memory. H03.1/H03.2 still incomplete."
+    "workingTreeMemory": "12 targeted PASS; 722/720/0/2 full PASS. Isolated historical source reproduced duplicate extraction; new idempotent path does not append or resurrect human-modified memory. H03.1/H03.2 still incomplete.",
+    "workingTreeAnthropic": "19 targeted PASS; full regression 727/725/0/2 PASS; additional Anthropic Ink ceiling test PASS. No new differential type diagnostics; no live Anthropic inference; H07.1/H07.4 remain pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {

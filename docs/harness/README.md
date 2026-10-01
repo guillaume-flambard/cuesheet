@@ -27,7 +27,7 @@ prime sur toute continuation automatique.
 | Brique | État à la référence | Limite |
 | --- | --- | --- |
 | Sessions terminal | Journaux core et vue persistants, chargement, reprise explicite | Un seul propriétaire du journal terminal ; reprise non automatique |
-| Providers | OpenCode, OpenRouter, OpenAI, compatible ; choix interactif, préférences | Pas de transport Anthropic direct ; pas de streaming complet |
+| Providers | OpenCode, OpenRouter, OpenAI, compatible, Anthropic direct ; choix interactif, préférences | Anthropic live non vérifié ; pas de streaming complet |
 | Validation | Check déclaré, octets épinglés, capture et preuve indépendante | Critère déclaré hors du parcours conversationnel |
 | Corrections | Directive immédiate, propositions obsolètes rejetées | Pas d'éditeur complet d'objectifs |
 | Mémoire | `/memory`, auteurs et sources, mutations append-only | Extraction automatique proposée au modèle, pas mesurée en production |

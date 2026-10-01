@@ -25,6 +25,7 @@ import { homedir } from "node:os";
 
 import type { ModelAdapter } from "../core/loop.ts";
 import { BinaryModelAdapter, binaryAvailable } from "./binary-model.ts";
+import { AnthropicAdapter } from "./anthropic.ts";
 import { OpenRouterAdapter } from "./openrouter.ts";
 import { readModelPreferences, preferencesPath, validBaseUrl, type ModelPreferences } from "./model-preferences.ts";
 
@@ -108,8 +109,8 @@ export function resolveModel(options: ResolveOptions = {}): ResolvedModel | { mi
   const provider = options.provider?.trim() || env.CUESHEET_PROVIDER?.trim() || preferences.provider || "opencode";
   const sameProvider = provider === preferences.provider;
   const model = options.model === null ? null : options.model?.trim() || env.CUESHEET_MODEL?.trim() || (sameProvider ? preferences.model : null) || null;
-  if (!["opencode", "openrouter", "openai", "compatible"].includes(provider)) {
-    return { missing: `Unknown provider "${provider}". Choose opencode, openrouter, openai or compatible.` };
+  if (!["opencode", "openrouter", "openai", "compatible", "anthropic"].includes(provider)) {
+    return { missing: `Unknown provider "${provider}". Choose opencode, openrouter, openai, compatible or anthropic.` };
   }
   const ceiling = env.CUESHEET_MAX_TOKENS;
   const maxTokens = options.maxTokens ?? (ceiling === undefined ? (sameProvider ? preferences.maxTokens : undefined) : Number(ceiling));
@@ -118,6 +119,12 @@ export function resolveModel(options: ResolveOptions = {}): ResolvedModel | { mi
   }
   if (provider === "opencode" && maxTokens !== undefined) {
     return { missing: "--max-tokens applies to HTTP providers. OpenCode uses its own configured output limit." };
+  }
+  if (provider === "anthropic") {
+    if (!model) return {missing:"anthropic requires an explicit model (--model or CUESHEET_MODEL)."};
+    if (!env.ANTHROPIC_API_KEY) return {missing:"ANTHROPIC_API_KEY is not set."};
+    if (maxTokens === undefined) return {missing:"anthropic requires an explicit output limit (--max-tokens or CUESHEET_MAX_TOKENS)."};
+    return {adapter:new AnthropicAdapter({apiKey:env.ANTHROPIC_API_KEY,model,maxTokens}),name:"anthropic",model,why:`anthropic, explicitly selected, model ${model}`};
   }
   if (provider === "openai" || provider === "compatible") {
     if (!model) return { missing: `${provider} requires an explicit model (--model or CUESHEET_MODEL).` };
