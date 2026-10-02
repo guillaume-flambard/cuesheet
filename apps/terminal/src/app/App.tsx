@@ -162,6 +162,7 @@ export function App(props: AppProps): JSX.Element {
             }} onClose={() => send({ type: "close" })} />
         ) : state.overlay === "palette" ? (
           <Palette width={column} rows={contentRows} onOpen={(overlay) => {setAgentModelsMode(false);send({ type: "open", overlay });}}
+            onSituation={()=>producer?.situationPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Situation indisponible."]}}
             onAgentModels={()=>{setAgentModelsMode(true);send({type:"open",overlay:"models"});}}
             onAgents={offset=>producer?.agentPage?.(offset) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun agent disponible."]}}
             onContext={(offset,digest)=>producer?.sharedContextPage?.(offset,digest) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]}}

@@ -1,3 +1,4 @@
+import {createSituation} from '../../../../src/adapters/situation.ts';
 /**
  * The real adapters, in one place.
  *
@@ -82,6 +83,7 @@ export function modelFor(cwd: string): { name: string; model: string | null; why
  * refuses construction, because model selection cannot repair that check.
  */
 export function createLiveProducer(store: Store, cwd: string, settings: { journal?: TerminalSession; verification?: CompletionCheck; binding?: ModelBinding } = {}): { producer: Producer; binding: ModelBinding } | { missing: string } {
+  let situation;try{situation=createSituation();}catch{return {missing:"Contexte de situation invalide : vérifier fuseau, langue et labels configurés."};}
   const contextBudgetChars=process.env.CUESHEET_CONTEXT_CHARS===undefined ? undefined : Number(process.env.CUESHEET_CONTEXT_CHARS);
   if(contextBudgetChars!==undefined && (!Number.isSafeInteger(contextBudgetChars) || contextBudgetChars<4000))return {missing:"CUESHEET_CONTEXT_CHARS must be an integer of at least 4000."};
   const maxSlices=process.env.CUESHEET_MAX_SLICES===undefined ? 4 : Number(process.env.CUESHEET_MAX_SLICES);
@@ -127,7 +129,7 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const vaultPublisherForScope=settings.journal ? (scope:string)=>new ProjectVaultPublisher({root:join(scope,".cuesheet","vault"),scope,sessionId:settings.journal!.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
   const agentCredentials={...process.env};for(const key of ['CUESHEET_PROVIDER','CUESHEET_MODEL','CUESHEET_BASE_URL','CUESHEET_MAX_TOKENS'])delete agentCredentials[key];
   const agentModel=(selection:import('../../../../src/adapters/model-preferences.ts').ModelPreferences,scope:string)=>{const resolved=resolveModel({project:scope,preferences:{},env:agentCredentials,provider:selection.provider,model:selection.model??null,baseUrl:selection.baseUrl,maxTokens:selection.maxTokens,onUsage:usage?.record});if('missing' in resolved)throw Error(resolved.missing);return {adapter:resolved.adapter,label:`${resolved.name} · ${resolved.model??"modèle configuré"}`};};
-  const options: ProducerOptions = {agentModel,modelLabel:()=>binding.label,vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const options: ProducerOptions = {situation,agentModel,modelLabel:()=>binding.label,vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */

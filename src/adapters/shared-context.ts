@@ -1,3 +1,4 @@
+import type {Situation} from './situation.ts';
 import type {VaultSnapshot} from "./vault.ts";
 import type { SharedSnapshot } from "./shared-memory.ts";
 import { projectEffectAttempts, mutationTool } from "./tool-receipts.ts";
@@ -10,7 +11,7 @@ import { projectOrganization } from "./work-organizer.ts";
 import { projectObjectives } from "./objectives.ts";
 
 /** Derived on every inference, never written back as a fact or verdict. */
-export function withSharedContext(frame: ContextFrame, session: Session, options: { maxChars?: number; sharedContexts?: SharedSnapshot;vault?:VaultSnapshot } = {}): ContextFrame {
+export function withSharedContext(frame: ContextFrame, session: Session, options: { maxChars?: number;situation?:Situation; sharedContexts?: SharedSnapshot;vault?:VaultSnapshot } = {}): ContextFrame {
   // Terminal bookkeeping notes are user inputs/model selections, not unanswered
   // work questions. Preserve them in history without mislabelling them here.
   const work = projectWork(session.events.filter(event =>
@@ -21,7 +22,7 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
     "Memory provenance distinguishes human records from model interpretations; only active records guide current work. Resolved records are history. " +
     "Organization and session skills are model-authored proposals, not verified outcomes or extra tool permissions. " +
     "Omitted records still exist. Retrieve their source sequences with read_history {from,to}; max 100 events per call. For clipped data, request a single event with offset:nextOffset until nextOffset is null.\n";
-  const snapshot = {vault:options.vault ? {...options.vault,hits:options.vault.hits.slice()} : null, sharedContexts: options.sharedContexts ? {...options.sharedContexts,profiles:options.sharedContexts.profiles.map(profile=>({...profile,entries:profile.entries.filter(entry=>entry.active!==false).map(entry=>({
+  const snapshot = {situation:options.situation??null,vault:options.vault ? {...options.vault,hits:options.vault.hits.slice()} : null, sharedContexts: options.sharedContexts ? {...options.sharedContexts,profiles:options.sharedContexts.profiles.map(profile=>({...profile,entries:profile.entries.filter(entry=>entry.active!==false).map(entry=>({
     id:entry.id,kind:entry.kind,text:entry.text,sources:entry.sources,author:entry.author,revision:entry.revision,active:entry.active,
     rationale:entry.author==='model' ? entry.rationale : undefined,
     corrections:(entry.corrections ?? []).map(correction=>({operation:correction.operation,source:correction.source,revision:correction.revision})),

@@ -1,3 +1,4 @@
+import {createSituation,type SituationInput} from '../../../../src/adapters/situation.ts';
 import {selectAgentSkills} from '../../../../src/adapters/agent-skills.ts';
 import {projectAgentModels,agentSelection,validAgentRole,AGENT_MODEL_SUBJECT} from '../../../../src/adapters/agent-models.ts';
 import {validatePreferences} from '../../../../src/adapters/model-preferences.ts';
@@ -99,6 +100,7 @@ import type { SkillTools } from "../../../../src/adapters/skill-tools.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
+  situation?:(input:SituationInput)=>ReturnType<ReturnType<typeof createSituation>>;
   agentModel?:(selection:ModelPreferences,scope:string)=>{adapter:ModelAdapter;label:string};
   modelLabel?:()=>string;
   maxSlices?: number;
@@ -151,6 +153,7 @@ export interface Producer {
   agentModelTargets?():Array<{role:string;selection:ModelPreferences|null;label:string}>;
   selectAgentModel?(role:string,selection:ModelPreferences|null):{ok:true}|{error:string};
   agentPage?(offset?:number):SharedContextPage;
+  situationPage?():SharedContextPage;
   sharedContextPage?(offset?:number,expectedDigest?:string):SharedContextPage;
   checkConfirmation?():CheckConfirmation|null;
   modelSelected?(selection:ModelPreferences): void;
@@ -193,6 +196,7 @@ export function createProducer(options: ProducerOptions): Producer {
    */
   const view = options.store;
   const projectsRoot = options.projectsRoot ?? DEFAULT_PROJECTS_ROOT;
+  const situation=options.situation??createSituation({now:options.now});
   const now = options.now ?? (() => Date.now());
   const mint = options.mintId ?? (() => defaultMintId(now()));
   const send = (control: Control): void => view.send(control);
@@ -291,6 +295,7 @@ export function createProducer(options: ProducerOptions): Producer {
    * refused, because a refusal wrote nothing at all (CON-03).
    */
   const guarded = wrapAtBoundary(model);
+  let rawFrame:Parameters<ModelAdapter["infer"]>[0]|undefined;
   let consultationFrame:Parameters<ModelAdapter["infer"]>[0]|undefined;
   let proposalDirective = 0;
   let proposalContext: SharedSnapshot | undefined;
@@ -310,6 +315,7 @@ export function createProducer(options: ProducerOptions): Producer {
   options.journal?.onFailure(() => controller?.abort(new Error("Session persistence failed")));
   const directiveRevision = (): number => shared.toSession().events
     .filter((event) => event.kind === "directive" || event.kind === "model" || event.subject === "terminal.model" || event.subject===AGENT_MODEL_SUBJECT || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
+  const currentSituation=(role="coordinateur",selectedModel=options.modelLabel?.()??model.name)=>{const last=shared.toSession().events.filter(e=>e.kind==="note"&&e.subject==="terminal.user"&&e.data.operation===undefined&&typeof e.data.text==="string").at(-1);const objective=projectObjectives(shared.toSession().events).current;return situation({sessionId:options.journal?.metadata.id??shared.id,executionId:activeEffect||null,workspace:activeWorkspace,launchDirectory:cwd,objective:objective?{id:objective.id,revision:objective.revision}:null,role,model:selectedModel,lastHuman:last?{sourceSeq:last.seq,text:String(last.data.text)}:null,peers:projectAgents(shared.toSession().events,inFlight?activeEffect:false).slice(0,6).map(a=>({role:a.role,model:a.model,phase:a.phase}))});};
   const currentTools: ToolRunner = {
     async run(request) {
       const signal=controller!.signal;
@@ -351,7 +357,7 @@ export function createProducer(options: ProducerOptions): Producer {
         const directive=proposalDirective;
         let routes:ReturnType<typeof projectAgentModels>;
         try{routes=projectAgentModels(shared.toSession().events);}catch{return {name:request.name,exit:126,output:"Agent model route journal is invalid; inspect before retry."};}
-        return consultAgents({input:request.input,model,skills:(role,task,names)=>selectAgentSkills({store:shared,tools:activeSkills,role,task,names}),route:role=>{const selection=agentSelection(routes,role);if(!selection)return {adapter:model,label:options.modelLabel?.()??model.name};if(!options.agentModel)throw Error("Agent route resolver is unavailable.");return options.agentModel(selection,activeWorkspace);},frame:consultationFrame,signal,basis:directive,objective:projectObjectives(shared.toSession().events).current ?? undefined,current:()=>directiveRevision()===directive&&contextCurrent(),append:event=>shared.append(event),execution:activeEffect,modelLabel:options.modelLabel?.() ?? model.name,
+        return consultAgents({input:request.input,model,freshFrame:(role,selected)=>withSharedContext(rawFrame!,shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:activeContexts?.read(),vault:proposalVault,situation:currentSituation(role,selected)}),skills:(role,task,names)=>selectAgentSkills({store:shared,tools:activeSkills,role,task,names}),route:role=>{const selection=agentSelection(routes,role);if(!selection)return {adapter:model,label:options.modelLabel?.()??model.name};if(!options.agentModel)throw Error("Agent route resolver is unavailable.");return options.agentModel(selection,activeWorkspace);},frame:consultationFrame,signal,basis:directive,objective:projectObjectives(shared.toSession().events).current ?? undefined,current:()=>directiveRevision()===directive&&contextCurrent(),append:event=>shared.append(event),execution:activeEffect,modelLabel:options.modelLabel?.() ?? model.name,
           notice:text=>observe([{kind:"status",label:"agents",value:text,certainty:"unknown"}])});
       }
       const history = readHistory(shared,request);
@@ -434,8 +440,9 @@ export function createProducer(options: ProducerOptions): Producer {
         proposalContext = activeContexts?.read();
         proposalVaultQuery=frame.goal.slice(0,2048);proposalVault=activeVault?.snapshot(proposalVaultQuery);
         try {
-          consultationFrame=withSharedContext(frame, shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:proposalContext,vault:proposalVault});
-          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(withSharedContext(frame, shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:proposalContext,vault:proposalVault}), signal), signal);
+          rawFrame=frame;
+          consultationFrame=withSharedContext(frame, shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:proposalContext,vault:proposalVault,situation:currentSituation()});
+          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(consultationFrame, signal), signal);
           // The response was derived from the old frame. Re-recording a step
           // cannot make its proposed actions current: discard them instead.
           return shared.revision === read && contextCurrent() ? response : { text: "", toolCalls: [] };
@@ -685,6 +692,9 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    situationPage() {
+      const s=currentSituation();return {digest:s.time.utc,offset:0,nextOffset:null,lines:[`${s.time.local} · ${s.time.timeZone} · ${s.time.offset}`,`UTC : ${s.time.utc}`,`Langue : ${s.responseLanguage.preference??"automatique · conversation"} · locale OS ${s.locale}`,`Interlocuteur : ${s.human.label??"identité non configurée"}`,`Machine : ${s.host.label??s.host.platform}`,`Projet : ${s.workspace}`,`Session : ${s.sessionId}`,`Exécution : ${s.executionId??"aucune active"}`,`Rôle : ${s.role} · ${s.model}`,`Objectif : ${s.objective?`${s.objective.id}@${s.objective.revision}`:"aucun"}`,...s.peers.map(p=>`${p.role} · ${p.model} · ${p.phase}`)]};
+    },
     agentModelTargets() {
       const routes=projectAgentModels(shared.toSession().events);const roles=[...new Set(["*",...routes.keys(),...projectAgents(shared.toSession().events).map(a=>a.role)])].slice(0,30);
       return roles.map(role=>{const selection=agentSelection(routes,role);return {role,selection,label:selection?`${selection.provider} · ${selection.model??"modèle configuré"}`:`Automatique · ${options.modelLabel?.()??model.name}`};});
