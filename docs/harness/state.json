@@ -3717,7 +3717,8 @@
       ],
       "verification": "Clock/DST/locale, producer/consultant fresh scope, frame budget, launcher, Ink/differential/full/build",
       "evidence": [
-        "EV-SITUATION"
+        "EV-SITUATION",
+        "EV-TERMINAL-THEME-AUDIT"
       ],
       "notes": "Bounded slice verified;43 targeted,818/816/0/2 full before final test-only guard,build/static PASS; parent criteria pending."
     },
@@ -7789,6 +7790,15 @@
       "verification": "Sonde sur src/adapters/shared-memory.ts et src/adapters/state-graph/impact.ts : resultats identiques, complete false dans les deux cas ; ownerCheckCatalog rend 16 entrees invariant vers check, donc la liaison invariant vers test existe deja ; 5 sources declarees seulement dans src, 8 fichiers src declares sur 41 presents dans src/adapters ; 16 noeuds test et 16 invariants dans le manifeste",
       "artifacts": [
         "docs/harness/evaluation/verification-selection/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-TERMINAL-THEME-AUDIT",
+      "kind": "inspection",
+      "summary": "Le moteur de design tokens existe deja et est consomme par neuf composants du terminal. apps/terminal/src/theme/tokens.ts pose une palette truecolor en un seul endroit avec une regle explicite : un accent, quatre couleurs d etat confirmed active unknown failed, et tout le reste en gris. Le theme habille le World sans changer son langage : la regle impose que confirmed reste discret parce que la certitude est le defaut, et que unknown soit gris mais distingue par un glyphe, parce que la surface ne doit jamais peindre de la meme facon ce qui est etabli et ce qui ne l est pas. Le seul maillon manquant de la direction themes est la commande, pas le moteur.",
+      "verification": "9 composants importent theme/tokens ; par couleur theme.faint 16 usages, dim 12, brand 7, failed 5, active 4, confirmed 3, rule 3, text 2, unknown 2 ; routeIntention expose 14 IntentKind et aucune commande slash, donc /theme s insererait dans le routage existant plutot que d ajouter un mode ; les 41 sources declarees existent toutes sur disque, aucune derive d artefact",
+      "artifacts": [
+        "apps/terminal/src/theme/tokens.ts"
       ]
     }
   ],

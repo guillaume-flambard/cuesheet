@@ -134,3 +134,13 @@ Défaut d intégrité corrigé : EV-WORKER-PACKETS était cité sur une tâche D
 [EV-STATE-GRAPH-SPEC](SPEC-STATE-GRAPH-SLICES.md) : SG04.1 et SG05.1 étaient « Specification only » avec des critères runtime, donc aucun worker ne pouvait les construire sans inventer des scénarios. Le document nomme la forme d'enveloppe, l'ordre des contrôles, les trois refus, 18 scénarios, les six règles de rupture, FAIL contre UNKNOWN, et les questions ouvertes qu'il refuse de trancher en silence. Aucun critère clos, mais les deux tâches sont désormais implémentables et vérifiables.
 
 956 tests, 954 pass, 0 fail, 2 skipped (MB-01) ; capsule Linux 0 fail ; tsc 32 baseline ; artefact inchangé, shared-memory.ts n'étant pas source déclarée.
+
+## Thèmes, concepts et World — 2026-10-02
+
+[EV-TERMINAL-THEME-AUDIT] : le moteur de design tokens existe déjà et est consommé par neuf composants du terminal. `apps/terminal/src/theme/tokens.ts` pose une palette truecolor en un seul endroit avec une règle explicite : un accent, quatre couleurs d'état `confirmed`, `active`, `unknown`, `failed`, et tout le reste en gris. Le thème habille le World sans changer son langage — la règle impose que `confirmed` reste discret parce que la certitude est le défaut, et que `unknown` soit gris mais distingué par un glyphe, parce que la surface ne doit jamais peindre de la même façon ce qui est établi et ce qui ne l'est pas.
+
+Ce qui manque n'est donc pas le moteur mais la commande. `routeIntention` expose 14 `IntentKind` et aucune commande slash, donc `/theme` s'insérerait dans le routage existant plutôt que d'ajouter un mode, ce qui reste cohérent avec l'absence de modes.
+
+Aucun registre de concepts n'existe encore en code. La direction propose un registre de concepts versionné dont la documentation humaine et machine soient deux projections ; c'est cohérent avec ce que le graphe d'état et le registre d'invariants font déjà pour la structure, mais c'est une brique distincte et non commenced.
+
+Correction consignée : les 41 sources déclarées du manifeste existent toutes sur disque. Un `ls` trompeur avait suggéré l'absence de `docs/ARCHITECTURE.md` et `docs/INVARIANTS.md` ; la vérification par le manifeste montre l'inverse. Aucune dérive d'artefact.
