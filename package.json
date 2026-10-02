@@ -42,7 +42,8 @@
     "terminal:start": "pnpm --filter @cuesheet/terminal start",
     "ui:verify": "node scripts/ui/verify.mjs",
     "journey": "node scripts/ui/journey.mjs",
-    "journey:model": "node scripts/ui/journey002.mjs"
+    "journey:model": "node scripts/ui/journey002.mjs",
+    "journey:live": "node scripts/ui/journey003.mjs"
   },
   "workspaces": [
     "apps/*"

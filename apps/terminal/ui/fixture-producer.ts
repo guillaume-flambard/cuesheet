@@ -26,7 +26,7 @@ import type { Entry, Option, SurfaceState } from "../src/app/state.ts";
 const name = (n: number): string => `e:fixture:${n}`;
 
 /** A single kind of step, so the scenario reads as a list rather than as code. */
-type Step = { readonly when: RegExp; readonly emit: (store: Store) => void };
+type Step = { readonly when: RegExp; readonly emit: (store: Store) => void; readonly hold?: boolean };
 
 const say = (store: Store, entries: readonly (Entry | Omit<Entry, "id">)[]): void => {
   store.send({ type: "observed", entries: entries as readonly Entry[] });
@@ -74,6 +74,31 @@ const STEPS: readonly Step[] = [
         { id: name(20), kind: "status" as const, label: "steering", value: "RENDER_PROOF_STEERING Kollio paused, others continue", certainty: "active" as const },
         { id: name(21), kind: "action" as const, label: "verify", detail: "RENDER_PROOF_VERIFY running the affected suite", certainty: "active" as const },
         { id: name(22), kind: "status" as const, label: "verdict", value: "RENDER_PROOF_PROVEN", certainty: "confirmed" as const },
+      ]);
+      store.send({ type: "ended" });
+    },
+  },
+  {
+    // A run that stays in flight. This is what makes live reinterpretation
+    // observable in the real surface: the next sentence arrives while `busy` is
+    // still true, and the surface must record it without deferring, queueing or
+    // demanding a stop first.
+    when: /long|bloque|reste|wait/i,
+    hold: true,
+    emit: (store) => {
+      store.send({ type: "began" });
+      say(store, [
+        { id: name(30), kind: "action" as const, label: "worker A1", detail: "RENDER_PROOF_LONG_RUN holding the run open", certainty: "active" as const },
+      ]);
+    },
+  },
+  {
+    // The live instruction. It arrives during the held run and must be a fact in
+    // the shared timeline immediately, never after the run finishes.
+    when: /^.*(oui|bar|par|constraint|contrainte|finalement).*/i,
+    emit: (store) => {
+      say(store, [
+        { id: name(40), kind: "status" as const, label: "steering", value: "RENDER_PROOF_LIVE_STEER received while the run is in flight", certainty: "active" as const },
       ]);
       store.send({ type: "ended" });
     },
