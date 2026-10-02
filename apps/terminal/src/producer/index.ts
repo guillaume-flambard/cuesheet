@@ -90,7 +90,7 @@ import { temporaryWorker, type StepOutcome, type WorkLog } from "../../../../src
 import { DEFAULT_PROJECTS_ROOT } from "../../../../src/adapters/frontier.ts";
 import { bindProject, identities, resolveScope, type ProjectIdentity, type Scope } from "./context.ts";
 import { entryForStop, pendingFor, translateEvent, type Pending } from "./translate.ts";
-import type { Control, Entry, Option, SurfaceState } from "../app/state.ts";
+import type { Control, Entry, EntryBody, Option, SurfaceState } from "../app/state.ts";
 import type { Store } from "../app/store.ts";
 
 /** How long a run may go before the budget is spent. The chat's own number. */
@@ -276,8 +276,24 @@ export function createProducer(options: ProducerOptions): Producer {
   let offeredGoal = "";
 
   const log = (line: string): void => send({ type: "logged", line });
-  const observe = (entries: readonly Entry[]): void => {
-    if (entries.length > 0) send({ type: "observed", entries });
+
+  /**
+   * Say what this producer decided, without naming the lines.
+   *
+   * These notices have no journal event behind them, so there is no sequence to
+   * name them after, and a count held here would be the wrong instrument: a
+   * resumed session starts a fresh producer, its count starts at nothing, and
+   * the names it would then mint are the names the process it replaced already
+   * used. The surface counts instead, over a state that replay has already
+   * carried forward, so the first notice after a resume continues the sequence
+   * rather than colliding with it.
+   *
+   * `translate.ts` is the other half of this and uses `observed` instead: a line
+   * built from an event is named by that event, which is the strongest name
+   * available and the only one that survives a replay unchanged.
+   */
+  const observe = (entries: readonly EntryBody[]): void => {
+    for (const entry of entries) send({ type: "noted", entry });
   };
 
   /**
@@ -510,7 +526,7 @@ export function createProducer(options: ProducerOptions): Producer {
           verifyObjective(shared, event, result.checkDigest, result.record);
           const evidence = shared.append({ kind: "evidence", subject: "builder", data: { claim: "The captured result satisfies the declared check", backing: result.record, artifactDigest: result.artifact.digest, effectId: activeEffect, checkDigest: result.checkDigest, ...contract } });
           log(`[evidence] ${evidence.subject} ${JSON.stringify(evidence.data)}`);
-          const translated = translateEvent(evidence);
+          const translated = translateEvent(evidence, shared.id);
           if (translated) observe([translated.entry]);
         }
         return { name: "finish", exit: verdict === "VERIFIED" && stillCurrent ? 0 : 1, output: JSON.stringify({ verdict, record: result.record, artifactDigest: result.artifact.digest, current: stillCurrent }) };
@@ -738,22 +754,33 @@ export function createProducer(options: ProducerOptions): Producer {
           at = pendingRow ? view.get().entries.indexOf(pendingRow) : undefined;
         }
 
-        const translated = translateEvent(event, pendingAction, at);
-        if (event.kind === "action") {
-          pendingRow = translated?.entry;
-        }
+        const translated = translateEvent(event, shared.id, pendingAction, at);
         if (event.kind === "observation" && typeof event.data.tool === "string") {
           pendingAction = undefined;
           pendingRow = undefined;
         }
-        if (!translated) return;
+        if (!translated) {
+          if (event.kind === "action") pendingRow = undefined;
+          return;
+        }
         // A settled entry replaces the open row; a new one is appended. The two
         // are distinguished by whether the translator named an index, which is
         // the only thing that knows whether a row already exists.
-        if (translated.at === undefined) {
-          send({ type: "observed", entries: [translated.entry] });
-        } else {
+        //
+        // The appended one carries the name the translator gave it, which is the
+        // event's own name. So does a second delivery of the same event, which is
+        // what stops one reply from being drawn once per delivery.
+        //
+        // Built once and kept, because `pendingRow` is found again by reference:
+        // a second, equal-looking copy would not be found, and the settling
+        // observation would open a row of its own instead of settling the row
+        // already on screen.
+        if (translated.at !== undefined) {
           send({ type: "settled", at: translated.at, entry: translated.entry });
+        } else {
+          const appended: Entry = { ...translated.entry, id: translated.id };
+          if (event.kind === "action") pendingRow = appended;
+          send({ type: "observed", entries: [appended] });
         }
       },
     };
@@ -762,7 +789,11 @@ export function createProducer(options: ProducerOptions): Producer {
       // `guarded`, not `model`: the loop is given the boundary-wrapped adapter so
       // that every step commits at the revision it read. See the header.
       const outcome = await runExecutionSlices(shared, guarded, currentTools, {...loopOptions, executionId:requestId, maxSlices:options.maxSlices ?? 4, signal});
-      observe(entryForStop(outcome.stop));
+      // Sent rather than `observe`d, because the translator already named this
+      // line after the run that stopped and `observe` would name it again. One
+      // run stops once, so the second time this line is delivered the surface
+      // recognises it rather than writing it beside itself.
+      send({ type: "observed", entries: entryForStop(outcome.stop, requestId) });
       // The run returned. That is a fact about the process, not a success, so
       // the outcome records what the loop actually stopped on rather than
       // assuming it worked.

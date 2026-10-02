@@ -10,6 +10,10 @@
  * the work exists, that the artifact was recovered, and that the completion of the
  * producer is unknown. Three different certainties, side by side, in words a
  * person can act on.
+ *
+ * Every line is keyed by the identity it carries rather than by where it sits.
+ * That was the second half of one reply rendering three times: the surface could
+ * not tell one line from another, and the renderer agreed with it.
  */
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput, measureElement, type DOMElement } from "ink";
@@ -41,7 +45,13 @@ export function Timeline({ width, entries, visible, rows }: { width: number; ent
     <Box width={width} height={rows} flexDirection="column" flexShrink={0}>
       <Box height={viewport} overflow="hidden" flexDirection="column" justifyContent="flex-end" flexShrink={0}>
         <Box ref={content} flexDirection="column" flexShrink={0} marginBottom={-Math.min(offset, maximum)}>
-          {entries.map((e, i) => <Line key={i} entry={e} />)}
+          {/* Keyed by the identity the producer carried, not by the position. An
+              index key makes the renderer reconcile by where a line happens to
+              sit, so a line that arrives above another one is re-rendered as the
+              wrong line, and the settled form of a row that arrived twice is drawn
+              as if it were the original. The identity is the same one the surface
+              deduplicates on, so the two agree by construction. */}
+          {entries.map((entry) => <Line key={entry.id} entry={entry} />)}
         </Box>
       </Box>
       <Text wrap="truncate-end" color={inkColor(theme.faint)}>{offset ? "Historique · Pg↓ pour revenir" : "Pg↑ historique · ↑ messages"}</Text>

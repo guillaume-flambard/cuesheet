@@ -38,7 +38,7 @@ import {PassThrough} from 'node:stream';
 import {App} from ${JSON.stringify(join(terminal,'src/app/App.tsx'))};
 import {createStore} from ${JSON.stringify(join(terminal,'src/app/store.ts'))};
 const store=createStore();
-store.send({type:'observed',entries:[{kind:'cuesheet',text:'OLD '.repeat(500)},{kind:'cuesheet',text:'wrapped '.repeat(200)+' NEWEST_MARKER'}]});
+store.send({type:'observed',entries:[{id:'x:old',kind:'cuesheet',text:'OLD '.repeat(500)},{id:'x:new',kind:'cuesheet',text:'wrapped '.repeat(200)+' NEWEST_MARKER'}]});
 const out=new PassThrough();Object.assign(out,{columns:40,rows:18,isTTY:false});const frames=[];out.on('data',b=>frames.push({columns:out.columns,rows:out.rows,frame:b.toString()}));
 const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});const app=render(<App store={store} producer={{say(){},choose(){}} as any}/>,{stdout:out as any,stderr:out as any,stdin:input as any,debug:true,exitOnCtrlC:false});
 setTimeout(()=>{Object.assign(out,{columns:30,rows:14});out.emit('resize');},30);setTimeout(()=>{app.unmount();console.log(JSON.stringify(frames));},70);
