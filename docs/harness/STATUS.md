@@ -216,3 +216,5 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 2026-10-02 H06.2c2/H06.3c2a DONE bornés : [EV-CODE-COMPOSITION](evaluation/code-composition/evidence.md),private Container proof et integrate_code_workers {} composition/check owner/apply/source finish.14 ciblés+1 Docker,893/891/0/2 full,build32 baseline. Crash recovery/cleanup/quota/UX dédiée et modèle réel restent ouverts. Global IMPLEMENTING.
 
 2026-10-02 C7 : [STATE-GRAPH.md](STATE-GRAPH.md),9 epics/27 tâches, SG01.1 READY et suite TODO. Graphe versionné/impact/invariants/état événementiel/contrats-mocks/contexte/MCP/CI/UX. Spécification uniquement ; preuves pending, global IMPLEMENTING.
+
+2026-10-02 SG01.1/2 DONE bornés : [EV-STATE-GRAPH-FOUNDATION](evaluation/state-graph-foundation/evidence.md), validateur JSON et loader/hash local,6 ciblés/build32 baseline PASS. Pas raccordés au runtime ; AC-SG01 PENDING, SG01.3/SG02.1 READY. Global IMPLEMENTING.

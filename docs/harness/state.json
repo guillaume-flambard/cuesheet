@@ -4470,7 +4470,7 @@
     {
       "id": "SG01.1",
       "priority": "P0",
-      "status": "READY",
+      "status": "DONE",
       "requirements": [
         "REQ-SG01"
       ],
@@ -4483,13 +4483,15 @@
         "AC-SG01"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-STATE-GRAPH-FOUNDATION"
+      ],
+      "notes": "Bounded validator/loader only; AC-SG01 pending canonical Cuesheet manifest and integration."
     },
     {
       "id": "SG01.2",
       "priority": "P0",
-      "status": "TODO",
+      "status": "DONE",
       "requirements": [
         "REQ-SG01"
       ],
@@ -4504,13 +4506,15 @@
         "AC-SG01"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-STATE-GRAPH-FOUNDATION"
+      ],
+      "notes": "Bounded validator/loader only; AC-SG01 pending canonical Cuesheet manifest and integration."
     },
     {
       "id": "SG01.3",
       "priority": "P0",
-      "status": "TODO",
+      "status": "READY",
       "requirements": [
         "REQ-SG01"
       ],
@@ -4531,7 +4535,7 @@
     {
       "id": "SG02.1",
       "priority": "P0",
-      "status": "TODO",
+      "status": "READY",
       "requirements": [
         "REQ-SG02"
       ],
@@ -6306,6 +6310,12 @@
       "result": "PASS_PARTIAL",
       "method": "Actual producer/Git/scoped composition/goal check, private Docker admission/cleanup, full/build, solo review",
       "details": "evaluation/code-composition/evidence.md"
+    },
+    {
+      "id": "EV-STATE-GRAPH-FOUNDATION",
+      "result": "PASS_PARTIAL",
+      "method": "Pure schema/deterministic revision and real owner file loader tests, build/diff/solo review",
+      "details": "evaluation/state-graph-foundation/evidence.md"
     }
   ],
   "risks": {
@@ -6362,14 +6372,14 @@
     "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending.",
     "workingTreeOwnerCapsule": "PASS_PARTIAL owner-pinned container oracle on capture/scratch with admitted outputs and anonymous tmp volume;851 Linux PASS/18 explicit skips,869/867/0/2 host,44 targeted/46 portable,build32 baseline. Source/index/capture intact; no real model/parallel worker/full recovery closure.",
     "workingTreeCodeWorkers": "Terminal→private workers→scoped composition→owner check→recoverable source apply→finish PASS.14 targeted+1 actual Docker;893/891/0/2 full,build32 baseline. Crash recovery/cleanup/live model pending.",
-    "stateGraph": "PLANNED; 9 epics/27 tasks, criteria and risks specified; no runtime evidence."
+    "stateGraph": "SG01.1/2 bounded PASS6 targeted/build32 baseline. Loader not runtime-connected; AC-SG01 pending, SG01.3/SG02.1 READY."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 71,
     "acceptanceVerified": 7,
     "acceptancePending": 64,
-    "p0_open": 59,
+    "p0_open": 57,
     "p1_open": 33
   },
   "workstreams": [
@@ -6600,7 +6610,7 @@
         "C4",
         "C5"
       ],
-      "status": "TODO"
+      "status": "IN_PROGRESS"
     }
   ]
 }

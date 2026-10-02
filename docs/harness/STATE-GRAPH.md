@@ -208,3 +208,37 @@ Indexation automatique des sources et suggestions de liens : P2 après mesure de
 Moteur/schémas/API : `src/adapters/state-graph/` ; CLI au niveau adapters/surface existant ; tests `test/state-graph*.test.ts`. Raccordements ciblés aux plans/objectifs, shared-context, producer/runtime et pipeline CI existants. Ces chemins décrivent la cible, aucun module n’a été créé par ce lot de spécification. Les systèmes exacts et seuils sont affinés avant chaque tâche, sans toucher `src/core` pour la première tranche.
 
 Revue de plan du 2026-10-02 : JSON state.json parse,27 IDs/requis/critères liés, dépendances acycliques et aucun faux DONE vérifiés ; diff check PASS. Tests runtime non applicables à ce lot documentaire.
+
+## SG01.1 — format strict retenu avant implémentation
+
+JSON v1 exact : {version:1,nodes:[],edges:[]}. Node : id/kind/domainId/revision
+(entier positif), sourceRefs:[{path,digest}], ownerRef (identifiant, pas droit),
+contractRefs/invariantRefs/checkRefs (IDs vers kind contract/invariant/test|ci).
+Domain node a domainId égal à son propre ID ; autres nodes pointent un domain.
+Edge : id/type/dependent/dependency/sourceRef:{path,digest}. depends_on,
+implements,validates,contains,describes sont les seuls types v1. Identifiants
+ASCII stables ≤128 caractères, références uniques et tous endpoints résolus.
+Nodes/edges bornés à10k/50k,JSON UTF-8≤2MiB, champs inconnus refusés.
+Chemins de sources relatifs portables, sans traversal/segments ambigus, Git
+metadata ou credentials ; digest SHA256. Aucun contenu executable/droits dans
+ce format. Validation structurelle uniquement, pas preuve de vérité des hashes,
+de couverture du dépôt ni autorisation owner. Cycles de dépendances acceptés
+pour SCC ultérieur ; self edge refusé comme définition dégénérée. Le résultat
+est détaché et gelé, aucun fichier lu/écrit par le validateur.
+Vérification : références/types/malformed/borne/chemins/cycles/immutabilité et
+compatibilité build ; moteur impact, hash et loader restent SG01.2/SG02.
+
+## SG01.2 — loader et empreinte v1
+
+loadStateGraph(rootOwner) lit uniquement .cuesheet/project/graph.json sous une
+racine owner canonique ; parents/sources symlink, fichier spécial/hardlink,
+manifest >2MiB et lecture modifiée refusés. Le loader ne charge ni tous les
+fichiers sources ni un document distant. Digest brut du manifeste + empreinte
+sémantique normalisée retournés avec chemin canonique. L’ordre des nodes,edges
+et listes de refs est non sémantique et trié avec comparateur ordinal ; aucun
+localeCompare ni horloge dans revision. Normalisation indépendante des clefs
+et espaces JSON. Hash des sourceRefs déclaré seulement, pas validé comme
+preuve de fichier par ce loader. Format nouveau v1, aucune ancienne définition
+à migrer ; version inconnue refusée explicitement, pas de migration inventée.
+Fixtures : ordre/whitespace stable, changement de contrat/edge sensible,
+lecture réelle, symlink/escape/hardlink/absent/corrompu refusés, bornes.
