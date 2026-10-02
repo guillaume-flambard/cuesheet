@@ -789,3 +789,5 @@ REQ-E01.6 : entreprise/équipe/projet/personnel, autorité distincte du document
 ## AC-E01.7 (PENDING)
 
 REQ-E01.7 : corpus pertinent, mesures qualité/latence/coût, tests de reconstruction ; vectorisation seulement si gains démontrés.
+
+2026-10-02 REQ-SG01–SG09 et AC-SG01–SG09 : critères et méthodes dans STATE-GRAPH.md et state.json, tous PENDING. La validation du plan ne valide aucune fonctionnalité runtime.

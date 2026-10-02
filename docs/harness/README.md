@@ -76,3 +76,5 @@ au contrat courant peut être déclaré validé.
 Tout le périmètre ci-dessus doit être couvert avant de déclarer le dossier exécuté.
 Les seuils de performance et qualité doivent être mesurés, avec les limites qui
 restent. Aucun gain sur OpenCode n'est acquis par la seule présence de ces fonctions.
+
+Chantier State graph : [STATE-GRAPH.md](STATE-GRAPH.md), epics SG01–SG09 et 27 tâches dans state.json ; définitions versionnées et moteur TypeScript, indexation/vectoriel/base graphe différés.

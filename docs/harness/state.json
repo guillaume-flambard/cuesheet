@@ -438,6 +438,69 @@
       "acceptance": [
         "AC-E01.7"
       ]
+    },
+    {
+      "id": "REQ-SG01",
+      "description": "Un manifeste JSON validé décrit domaines, entités, contrats, sources, invariants, tests et jobs CI avec IDs stables et références résolues.",
+      "acceptance": [
+        "AC-SG01"
+      ]
+    },
+    {
+      "id": "REQ-SG02",
+      "description": "Chaque changement produit la fermeture transitive des dépendants et ses raisons ; ajout, suppression, renommage, cycles et fichiers inconnus sont traités sans impact vide trompeur.",
+      "acceptance": [
+        "AC-SG02"
+      ]
+    },
+    {
+      "id": "REQ-SG03",
+      "description": "Les invariants ont un propriétaire, des sources et des vérifications ; résultat inconnu ou périmé ne vaut pas succès.",
+      "acceptance": [
+        "AC-SG03"
+      ]
+    },
+    {
+      "id": "REQ-SG04",
+      "description": "Les événements métier reconstruisent tâches, décisions, invalidations et progrès ; un résumé de chat ne modifie ni état ni autorité.",
+      "acceptance": [
+        "AC-SG04"
+      ]
+    },
+    {
+      "id": "REQ-SG05",
+      "description": "Les contrats versionnés produisent fixtures/mocks déterministes ; consommateurs et implémentation réelle sont vérifiés indépendamment des mocks.",
+      "acceptance": [
+        "AC-SG05"
+      ]
+    },
+    {
+      "id": "REQ-SG06",
+      "description": "Chaque tâche reçoit un sous-graphe autorisé et une empreinte de contexte ; dérivation obsolète est refusée avant effet puis rafraîchie directement.",
+      "acceptance": [
+        "AC-SG06"
+      ]
+    },
+    {
+      "id": "REQ-SG07",
+      "description": "Six opérations exposent modèles, contrats, impact, tests, propositions et progrès ciblés ; les écritures sont conditionnelles et ne peuvent déclarer une réussite sans preuve.",
+      "acceptance": [
+        "AC-SG07"
+      ]
+    },
+    {
+      "id": "REQ-SG08",
+      "description": "Le graphe génère un plan CI exécuté par des commandes owner ; configuration et sous-couverture déclenchent vérification élargie, jamais un faux plan vert.",
+      "acceptance": [
+        "AC-SG08"
+      ]
+    },
+    {
+      "id": "REQ-SG09",
+      "description": "Le terminal montre état réel, impact, raisons et validations requises sans imposer une configuration manuelle systématique.",
+      "acceptance": [
+        "AC-SG09"
+      ]
     }
   ],
   "tasks": [
@@ -4403,6 +4466,586 @@
         "EV-CODE-COMPOSITION"
       ],
       "notes": "Bounded scoped runtime/composition verified; crash recovery, cleanup/quota, dedicated UX and live model remain parent work."
+    },
+    {
+      "id": "SG01.1",
+      "priority": "P0",
+      "status": "READY",
+      "requirements": [
+        "REQ-SG01"
+      ],
+      "dependencies": [],
+      "description": "Schéma JSON v1, IDs stables, kinds, edges typés et validation bornée",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG01"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG01.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG01"
+      ],
+      "dependencies": [
+        "SG01.1"
+      ],
+      "description": "Loader TypeScript, hash canonique, provenance et migration explicite",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG01"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG01.3",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG01"
+      ],
+      "dependencies": [
+        "SG01.2"
+      ],
+      "description": "Manifeste initial Cuesheet : sessions, objectifs, workers et intégration",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG01"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG02.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG02"
+      ],
+      "dependencies": [
+        "SG01.2"
+      ],
+      "description": "Index inversé, fermeture itérative et composantes fortement connexes",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG02"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG02.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG02"
+      ],
+      "dependencies": [
+        "SG02.1",
+        "SG01.3"
+      ],
+      "description": "Mapping diff dirty/commit vers seeds, suppression et couverture inconnue",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG02"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG02.3",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG02"
+      ],
+      "dependencies": [
+        "SG02.2"
+      ],
+      "description": "Plan adressable impactedNodes/invariants/tests/jobs, tri stable et cache par digest",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG02"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG03.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG03"
+      ],
+      "dependencies": [
+        "SG01.3"
+      ],
+      "description": "Registre déclaratif des invariants et liaisons vers checks owner",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG03"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG03.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG03"
+      ],
+      "dependencies": [
+        "SG03.1",
+        "SG02.3"
+      ],
+      "description": "Runner déterministe et preuves liées aux captures/contrats courants",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG03"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG03.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG03"
+      ],
+      "dependencies": [
+        "SG03.2",
+        "SG04.2"
+      ],
+      "description": "Invalidation événementielle des preuves et revue humaine sourcée",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG03"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG04.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG04"
+      ],
+      "dependencies": [
+        "SG01.2"
+      ],
+      "description": "Enveloppes événementielles avec actor/causation/context/evidence et idempotencyKey",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG04"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG04.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG04"
+      ],
+      "dependencies": [
+        "SG04.1"
+      ],
+      "description": "Projection par taskId, transitions et append conditionnel ; migration des plans existants",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG04"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG04.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG04"
+      ],
+      "dependencies": [
+        "SG04.2"
+      ],
+      "description": "Checkpoints reconstruisibles, adressage des références et tests crash/replay",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG04"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG05.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG05"
+      ],
+      "dependencies": [
+        "SG01.3"
+      ],
+      "description": "Références de contrats et règles de compatibilité, sans remplacer les objectifs existants",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG05"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG05.2",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG05"
+      ],
+      "dependencies": [
+        "SG05.1"
+      ],
+      "description": "Génération bornée des mocks/fixtures depuis contrat et seed explicite",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG05"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG05.3",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG05"
+      ],
+      "dependencies": [
+        "SG05.2",
+        "SG03.2"
+      ],
+      "description": "Tests consommateur/mock et implémentation réelle, détection du drift",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG05"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG06.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG06"
+      ],
+      "dependencies": [
+        "SG02.3",
+        "SG04.2"
+      ],
+      "description": "Compilation de sous-graphe borné, sources et permissions avant sélection",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG06"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG06.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG06"
+      ],
+      "dependencies": [
+        "SG06.1"
+      ],
+      "description": "Binding contexte aux tâches/agents, contrôle avant effet et refresh direct",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG06"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG06.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG06"
+      ],
+      "dependencies": [
+        "SG06.2",
+        "SG04.3"
+      ],
+      "description": "Reprise inter-modèle et historique ciblé, mesures taille/latence/tokens connus",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG06"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG07.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG07"
+      ],
+      "dependencies": [
+        "SG06.1",
+        "SG05.1"
+      ],
+      "description": "API TypeScript typed : six opérations et erreurs/pagination/révisions",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG07"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG07.2",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG07"
+      ],
+      "dependencies": [
+        "SG07.1",
+        "SG06.2"
+      ],
+      "description": "Transport MCP branché au registre owner de capacités/autorisations",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG07"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG07.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG07"
+      ],
+      "dependencies": [
+        "SG07.2",
+        "SG04.3"
+      ],
+      "description": "Tests protocole/permissions/limites/CAS et audit de propositions non autoritaires",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG07"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG08.1",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG08"
+      ],
+      "dependencies": [
+        "SG02.3",
+        "SG03.1"
+      ],
+      "description": "CLI impact/required-tests/ci-plan avec JSON déterministe",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG08"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG08.2",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG08"
+      ],
+      "dependencies": [
+        "SG08.1",
+        "SG05.3"
+      ],
+      "description": "Raccord CI, catalogue owner et receipts par révision/capture",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG08"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG08.3",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG08"
+      ],
+      "dependencies": [
+        "SG08.2"
+      ],
+      "description": "Comparaison sélection/validation complète et tests de sous-couverture",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG08"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG09.1",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG09"
+      ],
+      "dependencies": [
+        "SG06.2",
+        "SG08.1"
+      ],
+      "description": "Vue tâche/impact/invariants avec sources, états pending/failed/stale",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG09"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG09.2",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG09"
+      ],
+      "dependencies": [
+        "SG09.1",
+        "SG07.3",
+        "SG08.3"
+      ],
+      "description": "Parcours Cuesheet installé avec workers/revalidation/contrat et reprise",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG09"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "SG09.3",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG09"
+      ],
+      "dependencies": [
+        "SG09.2",
+        "SG06.3"
+      ],
+      "description": "Benchmarks et audit adversarial complet, checklist acceptation humaine",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [
+        "AC-SG09"
+      ],
+      "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
+      "evidence": [],
+      "notes": "Specification only; no implementation claimed."
     }
   ],
   "acceptance": [
@@ -5277,6 +5920,132 @@
       ],
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-SG01",
+      "requirement": "REQ-SG01",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "Graphe canonique versionné",
+      "then": "Charger un graphe valide puis références absentes, IDs dupliqués, version inconnue et chemin hors racine ; les erreurs refusent admission avant effet.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG02",
+      "requirement": "REQ-SG02",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "Impact déterministe",
+      "then": "Même entrée/révision donne même plan et mêmes raisons ; diamant/cycle/suppression/renommage/fichier inconnu et limites sont testés.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG03",
+      "requirement": "REQ-SG03",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "Invariants de domaine",
+      "then": "Un résultat compilation PASS avec invariant FAIL laisse le domaine non validé ; changement dépendant invalide les preuves sourcées.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG04",
+      "requirement": "REQ-SG04",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "État événementiel des tâches",
+      "then": "Replay après crash et checkpoint égale projection sans checkpoint ; doublon/CAS périmé/record tronqué refusés, historique conservé.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG05",
+      "requirement": "REQ-SG05",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "Contrats et mocks compatibles",
+      "then": "Un mock passe mais le backend réel diverge : compatibilité FAIL ; changement breaking et seed identique ont des résultats reproductibles.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG06",
+      "requirement": "REQ-SG06",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "Contexte ciblé et révision",
+      "then": "Correction pendant inférence/outil conserve les effets confirmés mais refuse la prochaine action obsolète ; aucun message queued ni session remplacée.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG07",
+      "requirement": "REQ-SG07",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "API et exposition MCP",
+      "then": "Identité sans droits, contexte périmé et progression DONE sans preuve refusés ; get ciblé ne divulgue aucun nœud inaccessible ni charge globale.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG08",
+      "requirement": "REQ-SG08",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "CI dérivée du graphe",
+      "then": "Diff ciblé sélectionne les checks attendus ; manifest/check/CI changés, graphe invalide ou fichier inconnu force baseline owner complète ou refuse clôture.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG09",
+      "requirement": "REQ-SG09",
+      "given": "Versioned graph, task and owner check fixtures in STATE-GRAPH.md",
+      "when": "Expérience terminal et évaluation",
+      "then": "Parcours feature→impact→workers→check→reprise fonctionne au clavier, après resize/crash et changement modèle ; dépenses/latences inconnues restent explicites.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -5542,7 +6311,7 @@
   "risks": {
     "register": "RISKS.md",
     "critical_open": 0,
-    "high_open": 10
+    "high_open": 13
   },
   "verification": {
     "status": "PENDING",
@@ -5592,15 +6361,16 @@
     "workingTreeWorkspaceProvider": "PASS_PARTIAL latest/live/cached workspace UI + secret-safe native provider status;79/40 targeted,859/857/0/2 full. Real free pilot403/source preserved/no quality result, H10.3a open.",
     "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending.",
     "workingTreeOwnerCapsule": "PASS_PARTIAL owner-pinned container oracle on capture/scratch with admitted outputs and anonymous tmp volume;851 Linux PASS/18 explicit skips,869/867/0/2 host,44 targeted/46 portable,build32 baseline. Source/index/capture intact; no real model/parallel worker/full recovery closure.",
-    "workingTreeCodeWorkers": "Terminal→private workers→scoped composition→owner check→recoverable source apply→finish PASS.14 targeted+1 actual Docker;893/891/0/2 full,build32 baseline. Crash recovery/cleanup/live model pending."
+    "workingTreeCodeWorkers": "Terminal→private workers→scoped composition→owner check→recoverable source apply→finish PASS.14 targeted+1 actual Docker;893/891/0/2 full,build32 baseline. Crash recovery/cleanup/live model pending.",
+    "stateGraph": "PLANNED; 9 epics/27 tasks, criteria and risks specified; no runtime evidence."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 62,
+    "requirements": 71,
     "acceptanceVerified": 7,
-    "acceptancePending": 55,
-    "p0_open": 41,
-    "p1_open": 24
+    "acceptancePending": 64,
+    "p0_open": 59,
+    "p1_open": 33
   },
   "workstreams": [
     {
@@ -5791,6 +6561,46 @@
         "C5"
       ],
       "status": "IN_PROGRESS"
+    },
+    {
+      "id": "C7",
+      "name": "State graph et revalidation déterministe",
+      "tasks": [
+        "SG01.1",
+        "SG01.2",
+        "SG01.3",
+        "SG02.1",
+        "SG02.2",
+        "SG02.3",
+        "SG03.1",
+        "SG03.2",
+        "SG03.3",
+        "SG04.1",
+        "SG04.2",
+        "SG04.3",
+        "SG05.1",
+        "SG05.2",
+        "SG05.3",
+        "SG06.1",
+        "SG06.2",
+        "SG06.3",
+        "SG07.1",
+        "SG07.2",
+        "SG07.3",
+        "SG08.1",
+        "SG08.2",
+        "SG08.3",
+        "SG09.1",
+        "SG09.2",
+        "SG09.3"
+      ],
+      "dependencies": [
+        "C1",
+        "C3",
+        "C4",
+        "C5"
+      ],
+      "status": "TODO"
     }
   ]
 }
