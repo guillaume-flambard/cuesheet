@@ -114,3 +114,15 @@ H09.3f4 P1 DEFECT IN_PROGRESS : portable imports/fixtures/CWD ; requis avant ora
 Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
 
 Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.
+
+## Six tranches parallèles — 2026-10-02
+
+Vague de six workers à portées de fichiers disjointes, chacune vérifiée indépendamment avant intégration et non acceptée sur rapport. [EV-CAPSULE-TEARDOWN](evaluation/capsule-teardown/evidence.md), [EV-STATE-GRAPH-SEED-MAPPING](evaluation/state-graph-seed-mapping/evidence.md), [EV-STATE-GRAPH-INVARIANTS](evaluation/state-graph-invariants/evidence.md), [EV-SHARED-GRANTS](evaluation/shared-grants/evidence.md), [EV-NOTIFICATIONS-PARENT](evaluation/notifications-parent/evidence.md), [EV-WORKTREE-RECOVERY](evaluation/worktree-recovery/evidence.md).
+
+952 tests, 950 pass, 0 fail, 2 skipped (MB-01) ; capsule Linux 0 fail ; tsc 32 baseline, typecheck-guard 4/4. Artefact régénéré une fois : managed-worktrees.ts est source déclarée, seul drift.
+
+H09.1c DONE borné : la cause n était ni une écriture tardive ni un enfant actif, mais Docker qui rend 204 avant que la libération du bind mount ne soit visible par l hôte ; rmdir touchait le masque 22 à 108 ms trop tôt et maxRetries ne s engageait pas, l appel échouant en 2 à 7 ms. AC-H09.1-capsule-teardown VERIFIED. Trois fichiers frères gardent la même fragilité latente, hors périmètre.
+
+SG02.2, SG03.1 et H08.3n IN_PROGRESS : preuve livrée et vérifiée, mais les critères parents couvrent des moitiés qui appartiennent à SG02.3, SG03.2/3 et H08.3n4. Aucun AC promu pour ces trois. E01.6 : tranche livrée, SharedRetrieval non raccordée au runtime, AC-E01.6 reste PENDING. H06.3b : tranche récupération livrée, réservation durable, quotas, integration et cleanup récupérable restent ouverts.
+
+Défaut d intégrité corrigé : EV-WORKER-PACKETS était cité sur une tâche DONE mais absent du registre ; l entrée a été créée en lisant le fichier réel. Les références par chemin de fichier restent la convention de la maison.

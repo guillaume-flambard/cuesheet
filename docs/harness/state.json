@@ -3831,7 +3831,7 @@
     {
       "id": "H08.3n",
       "priority": "P1",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H08.3"
       ],
@@ -3846,8 +3846,10 @@
         "AC-H08.3"
       ],
       "verification": "Actual temporary Git/crash/concurrency or notifications replay/Ink, full/build/differential",
-      "evidence": [],
-      "notes": "Bounded slices; no parent completion claim."
+      "evidence": [
+        "EV-NOTIFICATIONS-PARENT"
+      ],
+      "notes": "Bounded slices; no parent completion claim. Tranche livree et verifiee sur EV-NOTIFICATIONS-PARENT : source portee, deduplication par execution, correction en place. Restent ouverts le canal local optionnel, les routes question et permission, l aggregation des causes agent communes et les niveaux silencieux et manuel. AC-H08.3 reste PENDING."
     },
     {
       "id": "H06.3a1",
@@ -4734,7 +4736,7 @@
     {
       "id": "SG02.2",
       "priority": "P0",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-SG02"
       ],
@@ -4750,8 +4752,10 @@
         "AC-SG02"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed. An unmapped path must reach unresolved with complete:false through this mapping; a composition of nodesForSourcePath plus computeImpact today yields a silently empty complete:true plan. Found by adversarial review, not invented."
+      "evidence": [
+        "EV-STATE-GRAPH-SEED-MAPPING"
+      ],
+      "notes": "Specification only; no implementation claimed. An unmapped path must reach unresolved with complete:false through this mapping; a composition of nodesForSourcePath plus computeImpact today yields a silently empty complete:true plan. Found by adversarial review, not invented. Tranche livree et verifiee sur EV-STATE-GRAPH-SEED-MAPPING : un chemin non mape atteint unresolved avec complete false. AC-SG02 reste PENDING car elle exige aussi le mapping de SG02.3."
     },
     {
       "id": "SG02.3",
@@ -4777,7 +4781,7 @@
     {
       "id": "SG03.1",
       "priority": "P0",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-SG03"
       ],
@@ -4792,8 +4796,10 @@
         "AC-SG03"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-STATE-GRAPH-INVARIANTS"
+      ],
+      "notes": "Specification only; no implementation claimed. Tranche livree et verifiee sur EV-STATE-GRAPH-INVARIANTS : le registre existe et detecte un invariant sans check impose. Les deux moities runtime du critere (compilation verte avec invariant en echec, invalidation par changement dependant) appartiennent a SG03.2 et SG03.3, donc AC-SG03 reste PENDING."
     },
     {
       "id": "SG03.2",
@@ -5685,7 +5691,7 @@
     {
       "id": "H09.1c",
       "priority": "P1",
-      "status": "TODO",
+      "status": "DONE",
       "requirements": [
         "REQ-H09.1"
       ],
@@ -5698,8 +5704,10 @@
         "AC-H09.1-capsule-teardown"
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
-      "evidence": [],
-      "notes": "Observation directe : test/node-capsule.test.ts echoue en rmSync du teardown sous charge de suite complete, et passe 3/3 en isolation. Fragilite preexistante, non causee par SG01.3 ni SG02.1, mais elle rend chaque futur releve de suite complete non deterministe."
+      "evidence": [
+        "EV-CAPSULE-TEARDOWN"
+      ],
+      "notes": "Observation directe : test/node-capsule.test.ts echoue en rmSync du teardown sous charge de suite complete, et passe 3/3 en isolation. Fragilite preexistante, non causee par SG01.3 ni SG02.1, mais elle rend chaque futur releve de suite complete non deterministe. Tranche livree et verifiee sur EV-CAPSULE-TEARDOWN : le teardown ne peut plus echouer de facon intermittente. Les trois fichiers freres container-tools, capsule-verification et worktree-build portent la meme fragilite latente et ne sont pas traites ici."
     },
     {
       "id": "H06.6",
@@ -7237,8 +7245,10 @@
         "automated",
         "runtime"
       ],
-      "status": "PENDING",
-      "evidence": []
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CAPSULE-TEARDOWN"
+      ]
     },
     {
       "id": "AC-H06.6",
@@ -7566,6 +7576,70 @@
       "result": "PASS",
       "method": "targeted tests, mutation evidence, determinism in process and across processes, full gated suite",
       "details": "SG02.1: reverse index, iterative closure and strongly connected components. 11 targeted tests plus 6 regression; diamond, cycle, removed dependency, rename, unmapped file, bound and determinism all exercised, plus a 20000-deep chain proving no recursion. Determinism proven three ways, including revision equivalence implying plan equivalence, which is the literal AC-SG02 claim. All five edge types participate by default, narrowed only by explicit caller policy. DEFAULT_MAX_IMPACTED=10000 equals the schema ceiling; overflow throws and returns no partial plan. No revision field on the plan and no diff-to-seed mapping, both belong to SG02.3 and SG02.2. Full gated suite 914 tests, 912 pass, 0 fail. See evaluation/state-graph-impact/evidence.md"
+    },
+    {
+      "id": "EV-CAPSULE-TEARDOWN",
+      "kind": "automated",
+      "summary": "Cause reelle du ENOTEMPTY de teardown capsule : Docker rend 204 sur force remove avant que la liberation du bind mount ne soit visible par l hote, donc rmdir touchait le point de masque .cuesheet 22 a 108 ms trop tot ; maxRetries existant ne s engageait jamais, l appel echouant en 2 a 7 ms. Attente bornee du point de release, retour immediat dans le cas nominal, et erreur nommant le residu au lieu d une fuite de repertoire temporaire.",
+      "verification": "10 executions consecutives propres ; 0/40 echecs a 8-way, 0/48 a 16-way, 0/24 a 12-way ; suite complete hote et capsule Linux vertes",
+      "artifacts": [
+        "docs/harness/evaluation/capsule-teardown/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-STATE-GRAPH-SEED-MAPPING",
+      "kind": "automated",
+      "summary": "Un chemin non mape ne peut plus lire comme complet. computeChangeImpact restreint complete sur le mapping, seul endroit qui sache qu un chemin n a pas ete atteint : un fichier nomme comme un identifiant de noeud etait absorbe comme seed declare puis effacait sa propre liste unresolved. Recherche de prototype et disparitions silencieuses egalement fermees. Non-vacuite : revoquer le retrecissement echoue un test.",
+      "verification": "32 tests cibles sur les quatre fichiers du graphe, 0 echec ; trois mutations detectees",
+      "artifacts": [
+        "docs/harness/evaluation/state-graph-seed-mapping/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-STATE-GRAPH-INVARIANTS",
+      "kind": "automated",
+      "summary": "Registre declaratif des invariants lie au check owner qui les impose. Un invariant sans check imposé est rapporte non impose plutot que suppose. Un binding partiel n impose rien. La resolution verifie le catalogue, pas le manipulateur.",
+      "verification": "9 tests, 0 echec ; sept mutations des regles de resolution, chacune capturee par 3 a 5 assertions",
+      "artifacts": [
+        "docs/harness/evaluation/state-graph-invariants/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-SHARED-GRANTS",
+      "kind": "automated",
+      "summary": "Grants separes comme autorite, avec revocation effective avant toute lecture et recontrole apres projection. Aucune fenetre de donnees par cache, jeton ou chemin en vol. Un principal revoque ne recoit ni donnee ni indice d existence.",
+      "verification": "18 tests sur shared-memory et shared-memory-edit, 0 echec ; mutation allows=true fait echouer exactement les 4 nouveaux tests, les 10 preexistants restant verts",
+      "artifacts": [
+        "docs/harness/evaluation/shared-grants/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-NOTIFICATIONS-PARENT",
+      "kind": "automated",
+      "summary": "L execution est la cle du fait. Un resultat repete s effondre dans la notification existante et garde son premier sourceSeq ; un resultat change mis a jour en place et prend le slot le plus recent, donc la borne de 50 le jette en dernier et non en premier. Sans identite positive d execution, aucune notification.",
+      "verification": "9 tests, 0 echec, dont 3 preexistants H08.3n1a inchanges ; garde differentielle : la version de base fait echouer 3 des nouveaux",
+      "artifacts": [
+        "docs/harness/evaluation/notifications-parent/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-WORKTREE-RECOVERY",
+      "kind": "automated",
+      "summary": "Defaut d identite corrige : la recuperation comparait inspectAgentGit(path).repository a la source enregistree, ce qui est faux pour tout worktree lie sain, donc aucun n etait healthy et aucun candidat de reutilisation valide n existait. Desormais le chemin manage exact et le repertoire Git commun enregistre. La recuperation lit et ne repare jamais.",
+      "verification": "17 tests sur git-snapshot et workspace-runtime, 0 echec ; enfant controleur reel SIGKILL et ecrans de reutilisation propre/sale ; trois mutations detectees",
+      "artifacts": [
+        "docs/harness/evaluation/worktree-recovery/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-WORKER-PACKETS",
+      "kind": "automated",
+      "summary": "Validation des paquets de code workers uniquement, avant raccordement runtime : conflits parent/enfant, casse et normalisation Unicode, chemins Windows et POSIX, credentials et cache, bornes, champs d autorite et modification tardive de proposition. Revue adversariale ayant ajoute le refus des noms Windows reserves et des segments espace ou point final apres recherche de collisions portables.",
+      "verification": "14 tests cibles PASS/0 fail ; consultations existantes et deux vrais processus fournisseurs PASS ; build final PASS avec 32 diagnostics herites ; aucun src/core modifie",
+      "artifacts": [
+        "docs/harness/evaluation/worker-packets/evidence.md"
+      ],
+      "note": "Enregistre dans le registre le 2026-10-02 : la reference existait sur une tache DONE mais l entree manquait dans la collection evidence."
     }
   ],
   "risks": {
@@ -7627,10 +7701,10 @@
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 94,
-    "acceptanceVerified": 8,
-    "acceptancePending": 99,
+    "acceptanceVerified": 9,
+    "acceptancePending": 98,
     "p0_open": 70,
-    "p1_open": 44
+    "p1_open": 43
   },
   "workstreams": [
     {
