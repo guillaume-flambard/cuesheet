@@ -4120,7 +4120,8 @@
       ],
       "verification": "Installed package PTY, actual temp Git/project/check/Engine/journal/file/index, no paid provider",
       "evidence": [
-        "evaluation/installed-selfhost/evidence.md"
+        "evaluation/installed-selfhost/evidence.md",
+        "EV-SELFHOST-CAPSULE"
       ],
       "notes": "Fixture proves wiring; real model quality, enterprise and parallel code workers remain pending."
     },
@@ -7846,6 +7847,15 @@
       "verification": "constate par mesure, chaque obstacle reproduit puis resolu ; le conflit de dependance racine a ete detecte par test/portability.test.ts et PORT-05, corriges",
       "artifacts": [
         "docs/harness/evaluation/ui-render-proof/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-SELFHOST-CAPSULE",
+      "kind": "runtime",
+      "summary": "La Self-Hosting Capsule existe et passe deja : test/worktree-build.test.ts capture un snapshot git reel de CUESHEET, alloue un vrai worktree du depot via allocateWorktree, lance le vrai npm run build dans une capsule Linux, verifie build ok, dist/apps/terminal/main.mjs present et tsc a la baseline 32, execute des tests cibles dans le worktree, puis affirme que la source originale est inchangeee. Le lien controller-seul-ecrivain du modele est donc deja une isolation reelle.",
+      "verification": "test/worktree-build.test.ts passe 1/1 avec les variables capsule, capsule interne 57/57 ; le snapshot original est preserve",
+      "artifacts": [
+        "test/worktree-build.test.ts"
       ]
     }
   ],

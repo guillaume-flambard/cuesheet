@@ -154,3 +154,9 @@ La réponse d'accueil est livrée deux fois avec une seule identité, donc la pr
 [EV-PTY-HARNESS-LESSONS](evaluation/ui-render-proof/evidence.md) : quatre obstacles mesurés. Le `spawn-helper` de node-pty perd son bit exécutable à la décompression et tout spawn échoue en `posix_spawnp failed`. node-pty appartient au workspace terminal, car `test/portability.test.ts` impose que le `package.json` racine ne déclare aucune dépendance : l'ajouter à la racine a fait échouer ce test et PORT-05, constaté puis corrigé. Un pipe n'est pas un terminal, Ink refuse le raw mode hors TTY, et un strip ANSI n'est pas un écran car Ink redessine par déplacement de curseur. Enfin le texte et Entrée doivent être deux écritures séparées, car un pty coalesce un read et Ink le parse comme une seule touche.
 
 Limite dite : c'est une preuve de présentation, pas de runtime. Le scénario est scripté, donc il montre que la surface rend ces états correctement, pas que le runtime les produit. Aucun critère promu.
+
+## Dogfood Gate 0 : ce qui est déjà prouvé — 2026-10-02
+
+[EV-SELFHOST-CAPSULE](evaluation/state-graph/../worktree-build) : la Self-Hosting Capsule existe et passe. `test/worktree-build.test.ts` capture un snapshot git réel de CUESHEET, alloue un vrai worktree du dépôt, lance le vrai `npm run build` dans une capsule Linux, vérifie `build: ok`, `dist/apps/terminal/main.mjs` présent et tsc à 32, exécute des tests cibles dans le worktree, puis affirme que la source originale est inchangée. Le lien contrôleur-seul-écrivain est une isolation réelle, pas une intention.
+
+Trois liens sur quatre de la chaîne Dogfood Gate 0 sont donc déjà prouvés : Render Proof (`ui:verify`), World resolution depuis `~` (nouveau test dans `scope-runtime.test.ts`), Self-Hosting Capsule (ce test existant). Le lien manquant est le Global UI Journey / Bootstrap Journey 001 : l'intention floue sur sa propre interface, édition d'un candidat, lancement, Render Proof, Human Delta.
