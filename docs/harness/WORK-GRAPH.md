@@ -176,3 +176,9 @@ Cycle piloté par la spec d'autonomie. Ordre décidé par dépendance et non par
 [EV-JOURNEY-002] : étape 2 de la trajectoire d'auto-hébergement atteinte. Un modèle réel reçoit un objectif borné et un contexte de dépôt réel, choisit son édition dans un seul fichier, et un vérificateur qu'il n'a jamais vu juge le résultat. Le harnais fixe le dépôt, l'objectif, le fichier, la build et le vérificateur ; pas l'édition. Deux exécutions, deux passes. Le vérificateur est copié après la fin du modèle et rend la vraie surface plutôt que de lire le diff.
 
 Distinction maintenue partout : Journey 001 prouve l'orchestration sous édition scriptée ; Journey 002 prouve la décision du modèle. Ne jamais présenter l'un comme l'autre.
+
+## Journey 003 : réinterprétation en direct — 2026-10-02
+
+[EV-JOURNEY-003](evaluation/state-graph/../worktree-build) : le mécanisme était déjà livré et couvert par quatorze tests unitaires, mais aucun ne montrait que la **surface réelle** se comporte ainsi. `npm run journey:live` tient un run en vol, frappe une phrase pendant qu'il tourne, et vérifie qu'elle devient un fait sur la timeline immédiatement, verbatim, sans Stop exigé et sans file. Le composer accepte ensuite une seconde phrase, donc il ne s'est jamais fermé.
+
+Le fixture gagne un run qui reste en vol : un fixture purement synchrone ne peut pas représenter ce cas, donc le scénario était intestable sans lui. Non-vacuité mesurée en rendant muette l'étape mi-run : le journey échoue avec le bon message.

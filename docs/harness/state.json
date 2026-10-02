@@ -4532,7 +4532,9 @@
         "AC-H06.4a"
       ],
       "verification": "Scenarios in MULTI-WORKER.md; meaningful tests, runtime/full regression/build for integrated changes",
-      "evidence": [],
+      "evidence": [
+        "EV-JOURNEY-003"
+      ],
       "notes": "Parent acceptance remains pending."
     },
     {
@@ -7909,6 +7911,16 @@
       "verification": "4 tests ; reintroduire le defaut ui:verify en fait echouer un",
       "artifacts": [
         "test/command-truthfulness.test.ts"
+      ]
+    },
+    {
+      "id": "EV-JOURNEY-003",
+      "kind": "runtime",
+      "summary": "La reinterpretation en direct est prouvee dans la vraie surface et plus seulement en unitaire. Un run est tenu en vol, une phrase est frappee pendant qu il tourne, et elle devient un fait sur la timeline immediatement, verbatim, sans Stop exige et sans file. Le composer accepte ensuite une seconde phrase, donc il ne s est jamais ferme. Le mecanisme lui-meme etait deja livre et couvert par quatorze tests unitaires : store unique, directive sur le journal partage, aucune file.",
+      "verification": "npm run journey:live PASS ; non-vacuite mesuree en rendant muette l etape mi-run, le journey echoue avec le bon message ; le fixture gagne un run qui reste en vol car un fixture purement synchrone ne peut pas representer ce cas",
+      "artifacts": [
+        "scripts/ui/journey003.mjs",
+        "apps/terminal/ui/fixture-producer.ts"
       ]
     }
   ],
