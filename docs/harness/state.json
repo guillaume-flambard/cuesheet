@@ -3718,7 +3718,8 @@
       "verification": "Clock/DST/locale, producer/consultant fresh scope, frame budget, launcher, Ink/differential/full/build",
       "evidence": [
         "EV-SITUATION",
-        "EV-TERMINAL-THEME-AUDIT"
+        "EV-TERMINAL-THEME-AUDIT",
+        "EV-UI-THEME-CONTRACT"
       ],
       "notes": "Bounded slice verified;43 targeted,818/816/0/2 full before final test-only guard,build/static PASS; parent criteria pending."
     },
@@ -7800,6 +7801,31 @@
       "artifacts": [
         "apps/terminal/src/theme/tokens.ts"
       ]
+    },
+    {
+      "id": "EV-UI-EXACTLY-ONCE",
+      "kind": "runtime",
+      "summary": "Une reponse assistant rendue trois fois dans le terminal reel, cause structurelle : Entry etait une union a cinq variantes sans champ identite, derive ajoutait les entries observees sans aucune deduplication faute de champ, translate laissait tomber le seq de l evenement avant la surface, et Timeline cle React sur l index du tableau. Chaque ligne porte desormais une identite montee depuis le seq durable, la surface laisse tomber une ligne dont elle tient deja l identite, et la cle React est cette identite. La deduplication par contenu est rejetee sur preuve : une run ou le modele repond le meme mot a chaque etape produit huit reponses reellement distinctes qu un hash de contenu fusionnerait en une.",
+      "verification": "984 tests, 970 pass, 0 fail, 14 skipped ; 12 tests dedies couvrant livraison dupliquee, replay de projection, flux interrompu puis reprise, bascule de modele et remontage, plus un rendu du vrai App dans un processus separe comptant la reponse dans le buffer terminal avant et apres demontage ; non-vacuite mesuree en neutralisant le mecanisme de seen, 1 test tombe ; typecheck terminal revenu a ses 3 diagnostics herites ; tsconfig.build a 32 ; src/core intact",
+      "artifacts": [
+        "docs/harness/evaluation/ui-exactly-once/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-UI-THEME-CONTRACT",
+      "kind": "automated",
+      "summary": "Le contrat de theme, ecrit en commentaire dans tokens.ts, devient une assertion qui echoue : exactement un accent et quatre couleurs d etat, confirmed separable de unknown par luminance relative avec un plancher de 1.5 y compris sur la grille 4 bits, aucun litteral de couleur hors palette, confirmed plus discret que active, et un glyphe distincte par certitude pour que la couleur ne soit jamais le seul canal. La mesure a trouve deux problemes de palette laisses a une decision produit : brand et confirmed sont le meme octet, et dim et unknown aussi.",
+      "verification": "14 tests, 8 mutations non vacues restaurees a l octet pres ; aucune litteral hex, aucun appel couleur numerique et aucune couleur nommee dans apps/terminal/src hors tokens.ts ; seuils 1.5 nommes comme choisis et volontairement sous la mesure",
+      "artifacts": [
+        "docs/harness/evaluation/ui-theme-contract/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-UI-PTY-LAUNCH",
+      "kind": "runtime",
+      "summary": "Le terminal reel a ete lance dans un vrai PTY a 120 colonnes sur 40 lignes, a accepte la saisie hello there et a rendu une reponse en cours d arrivee lors de l arret du processus. Cette preuve est partielle et le dit : elle etablit que la surface rend et lit dans un vrai terminal, pas qu un scenario deterministe a ete capture. Un pipe ordinaire ne suffit pas, Ink refuse le raw mode hors TTY, et node-pty est absent de la machine.",
+      "verification": "lancement via script -q avec COLUMNS et LINES forces ; capture dans /tmp/cs-ui-real.log ; aucun scenario deterministe, aucun rendu multi-tailles, aucune interaction suivie jusqu au bout",
+      "artifacts": []
     }
   ],
   "risks": {
@@ -8160,6 +8186,98 @@
         "C10"
       ],
       "status": "TODO"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "elastic-workforce",
+      "summary": "Équipe élastique : les workers réclament des unités par capacité au lieu de recevoir une file. Le parallélisme est borné par le travail utile, jamais par un compte statique. Implémenté comme H06.6 à H06.9.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "concept-forge",
+      "summary": "Les idées deviennent des objets versionnés plutôt que de la prose, avec une vue humaine et un contrat machine. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "resilient-model-fabric",
+      "summary": "Une panne de provider ne devient jamais une panne de travail. Le modèle est du calcul remplaçable, le worker est durable. Implémenté comme H07.6 à H07.8.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "verification-planner",
+      "summary": "Le moteur d'impact choisit les preuves à exécuter au lieu de tout lancer. Partiellement livré par SG02.3, bloqué par la couverture du manifeste.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "render-proof",
+      "summary": "Une modification d'interface n'est prouvée que si la vraie surface a été rendue dans un vrai terminal. En cours, c'est le bloquant actuel.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "living-runtime",
+      "summary": "CUESHEET modifie un candidat pendant que la version stable qui orchestre reste intacte, et la personne observe le candidat évoluer. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "peer-intelligence-fabric",
+      "summary": "Les runtimes d'une même équipe partagent des preuves et des capacités plutôt que du contexte, en local-first. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "steward",
+      "summary": "Une responsabilité persistante qui dort tant qu'aucun signal ne la réveille, opposée au worker qui naît d'une tâche. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "world-library",
+      "summary": "Un espace durable d'objets réutilisables qui n'appartiennent à aucune conversation. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "attention-graph",
+      "summary": "Ce qui mérite du calcul maintenant, distinct de tout ce qui existe. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "ambient-intelligence",
+      "summary": "L'intelligence déclenchée par un signal peu coûteux et filtré par pertinence, pas par une boucle de modèles permanente. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "epistemic-runtime",
+      "summary": "Chaque affirmation porte son statut epistemology et son fraîcheur, pour que l'inférence guide mais ne clôture pas. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "proof-carrying-work",
+      "summary": "Un résultat transporte sa preuve, et le producteur ne décide pas seul de sa correction. Partiellement présent via les critères et les preuves.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "capability-evolution",
+      "summary": "Une incapacité rencontrée devient un candidat skill ou concept soumis à admission. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "living-customization",
+      "summary": "Personnaliser au niveau sémantique le plus haut possible et ne modifier le source qu'au niveau le plus bas nécessaire. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
     }
   ]
 }
