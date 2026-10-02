@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventStore } from "../src/core/store.ts";
-import { createObjective, bindObjectiveCheck, correctObjective, projectObjectives, verifyObjective } from "../src/adapters/objectives.ts";
+import { createObjective, bindObjectiveCheck, correctObjective, changeObjectiveStatus, projectObjectives, verifyObjective } from "../src/adapters/objectives.ts";
 import { organizeWork, projectOrganization } from "../src/adapters/work-organizer.ts";
 import { TerminalSession } from "../src/adapters/terminal-session.ts";
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
@@ -137,4 +137,119 @@ test("objective replay never invents a human author from missing or model proven
   }
   for(const author of ["robot",null,{},1])assert.throws(()=>projectObjectives([source,{...record,data:{...record.data,author}}]),/Invalid objective/);
   assert.equal(JSON.stringify([source,record]),before);
+});
+
+
+test("documentary objective never shows a false verified status", () => {
+  // An objective whose proof is documentary has no programmatic check bound to
+  // its contract, so no evidence may promote it: its state must keep saying
+  // produced, not verified.
+  const store = new EventStore("documentary", () => 0);
+  const source = store.append({ kind: "note", subject: "terminal.user", data: { text: "write the migration report" } });
+  const objective = createObjective(store, "write the migration report", "/workspace", source.seq);
+  assert.equal(objective.check, null, "a documentary objective pins no programmatic check");
+  const proof = store.append({ kind: "work_verified", subject: "effect",
+    data: { verdict: "VERIFIED", record: "/report.json", checkDigest: digest, objectiveId: objective.id, objectiveRevision: objective.revision } });
+  const before = store.revision;
+  assert.equal(verifyObjective(store, proof, digest, "/report.json"), false, "evidence without a bound check cannot verify");
+  assert.equal(store.revision, before, "the refusal writes nothing");
+  assert.equal(projectObjectives(store.toSession().events).current!.status, "active");
+  const forged = { kind: "note", subject: "terminal.objective", seq: store.revision + 1, at: 0,
+    data: { version: 1, operation: "status", id: objective.id, expected: objective.revision, status: "verified", reason: "human review done" } };
+  assert.throws(() => projectObjectives([...store.toSession().events, forged]), /Invalid objective/, "a status record cannot hand-write verified");
+  assert.equal(store.revision, before);
+  const root = mkdtempSync(join(tmpdir(), "cuesheet-documentary-"));
+  let session: TerminalSession | undefined;
+  try {
+    session = new TerminalSession({root,cwd:root});
+    const id = session.metadata.id;
+    const note = session.core.append({ kind: "note", subject: "terminal.user", data: { text: "publish the audit note" } });
+    const documented = createObjective(session.core, "publish the audit note", "/workspace", note.seq);
+    const path = join(root, `${id}.jsonl`);
+    const bytes = readFileSync(path, "utf8");
+    assert.throws(() => session!.core.append({ kind: "note", subject: "terminal.objective",
+      data: { version: 1, operation: "status", id: documented.id, expected: documented.revision, status: "verified", reason: "human review done" } }), /Invalid objective/);
+    assert.equal(readFileSync(path, "utf8"), bytes, "the journal keeps no false verified record");
+    assert.equal(projectObjectives(session.core.toSession().events).current!.status, "active");
+    session.close(); session = new TerminalSession({root,cwd:root,id});
+    assert.equal(projectObjectives(session.core.toSession().events).current!.status, "active", "reload still shows the true state");
+  } finally {session?.close();rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("every objective mutation reloads from the durable journal unchanged", () => {
+  const root = mkdtempSync(join(tmpdir(), "cuesheet-objectives-reload-"));
+  let session: TerminalSession | undefined;
+  const reload = () => {
+    const before = projectObjectives(session!.core.toSession().events);
+    const id = session!.metadata.id;
+    session!.close(); session = new TerminalSession({root,cwd:root,id});
+    assert.deepEqual(projectObjectives(session.core.toSession().events), before);
+    return before;
+  };
+  try {
+    session = new TerminalSession({root,cwd:root});
+    request(session.core);
+    const created = reload();
+    const correction = session.core.append({ kind: "directive", subject: "builder", data: { text: "preserve schema" } });
+    correctObjective(session.core, "preserve schema", correction.seq);
+    const corrected = reload();
+    assert.equal(corrected.current!.corrections.length, 1);
+    assert.equal(organizeWork(session.core, { name: "describe_objective", input: {
+      text: "clear result", rationale: "derived", exclusions: [], dependencies: [], constraints: ["preserve schema"], criteria: ["generated test passes"],
+    } })!.exit, 0);
+    const described = reload();
+    assert.equal(described.current!.descriptionAuthor, "model");
+    changeObjectiveStatus(session.core, "paused", "waiting for the owner");
+    const paused = reload();
+    assert.equal(paused.current!.status, "paused");
+    const receipt = session.core.append({ kind: "note", subject: "terminal.user",
+      data: { operation: "confirm_check", objectiveId: paused.current!.id, objectiveRevision: paused.current!.revision, checkDigest: digest } });
+    assert.equal(bindObjectiveCheck(session.core, { id: paused.current!.id, revision: paused.current!.revision, digest, source: receipt.seq }), true);
+    const bound = reload();
+    assert.deepEqual(bound.current!.check, { digest, boundRevision: bound.current!.revision });
+    const proof = session.core.append({ kind: "work_verified", subject: "effect",
+      data: { verdict: "VERIFIED", record: "/proof.json", checkDigest: digest, objectiveId: bound.current!.id, objectiveRevision: bound.current!.revision } });
+    assert.equal(verifyObjective(session.core, proof, digest, "/proof.json"), true);
+    const verified = reload();
+    assert.equal(verified.current!.status, "verified");
+    assert.equal(verified.objectives.length, 1, "no mutation invented a second identity");
+  } finally {session?.close();rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("renewed check binding reloads with its human receipt and stays authoritative", () => {
+  const root = mkdtempSync(join(tmpdir(), "cuesheet-binding-reload-"));
+  let session: TerminalSession | undefined;
+  try {
+    session = new TerminalSession({root,cwd:root});
+    const id = session.metadata.id;
+    const objective = request(session.core);
+    const correction = session.core.append({ kind: "directive", subject: "builder", data: { text: "new requirement" } });
+    const changed = correctObjective(session.core, "new requirement", correction.seq)!;
+    assert.notEqual(changed.check!.boundRevision, changed.revision, "the pinned check is stale until a human renews it");
+    const receipt = session.core.append({ kind: "note", subject: "terminal.user",
+      data: { operation: "confirm_check", objectiveId: changed.id, objectiveRevision: changed.revision, checkDigest: digest } });
+    assert.equal(bindObjectiveCheck(session.core, { id: changed.id, revision: changed.revision, digest, source: receipt.seq }), true);
+    const renewed = projectObjectives(session.core.toSession().events).current!;
+    session.close(); session = new TerminalSession({root,cwd:root,id});
+    const loaded = projectObjectives(session.core.toSession().events).current!;
+    assert.deepEqual(loaded, renewed, "the renewed binding replays exactly");
+    assert.equal(loaded.id, objective.id, "identity survives the renewal and the reload");
+    assert.equal(loaded.check!.digest, digest);
+    assert.equal(loaded.check!.boundRevision, loaded.revision, "the renewed binding is authoritative after reload");
+    assert.ok(loaded.sources.includes(receipt.seq), "the human receipt stays the provenance of the renewal");
+    const stale = session.core.append({ kind: "work_verified", subject: "effect",
+      data: { verdict: "VERIFIED", record: "/old.json", checkDigest: digest, objectiveId: loaded.id, objectiveRevision: changed.revision } });
+    const before = session.core.revision;
+    assert.equal(verifyObjective(session.core, stale, digest, "/old.json"), false, "proof from before the renewal still cannot close it");
+    assert.equal(session.core.revision, before, "the refusal writes nothing");
+    const fresh = session.core.append({ kind: "work_verified", subject: "effect",
+      data: { verdict: "VERIFIED", record: "/new.json", checkDigest: digest, objectiveId: loaded.id, objectiveRevision: loaded.revision } });
+    assert.equal(verifyObjective(session.core, fresh, digest, "/new.json"), true);
+    const proven = projectObjectives(session.core.toSession().events).current!;
+    assert.equal(proven.status, "verified");
+    session.close(); session = new TerminalSession({root,cwd:root,id});
+    assert.deepEqual(projectObjectives(session.core.toSession().events).current!, proven, "the verified state survives a second reload");
+  } finally {session?.close();rmSync(root,{recursive:true,force:true});}
 });
