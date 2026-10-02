@@ -80,3 +80,7 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 ## H09.4b/b1/b2/b3 — checkpoint 2026-10-02
 
 [EV-INSTALLED-SELFHOST](evaluation/installed-selfhost/evidence.md) : parcours installé PTY réel, provider fixture, code/test Linux isolés, intégration/check source, journal/notification/ressources confirmés.5 install/56 ciblés PASS,857/855/0/2 full et build séquentiel/différentiel32 baseline PASS. Défauts alias stockage/fallback après refus/alias dépendances Git corrigés. Tranches DONE ; modèle réel, check toolchain complet, workers parallèles et recovery restent ouverts. Global IMPLEMENTING.
+
+## Workspaces et refus provider — 2026-10-02
+
+[EV-WORKSPACE-PROVIDER](evaluation/workspace-provider/evidence.md) : H06.3d1/H07.1d DONE bornés, live projection unique/cache/next action et erreurs provider sûres.79/40 ciblés,859/857/0/2 full,build/différentiel32 baseline PASS. H10.3a reste ouvert :3 essais gratuits natifs reçus403 avant code, traces/goal/source préservés. Pas de contournement ni fallback payant, aucun résultat qualité modèle. Global IMPLEMENTING.

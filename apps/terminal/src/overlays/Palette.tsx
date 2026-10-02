@@ -28,7 +28,7 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
   const [notificationsMode,setNotificationsMode]=useState(false);
   const [situationMode,setSituationMode]=useState(false);
   const [agentsMode,setAgentsMode]=useState(false);
-  useEffect(()=>{if(!agentsMode&&!situationMode&&!notificationsMode)return;const timer=setInterval(()=>setContextPage(p=>notificationsMode?props.onNotifications?.()??p:situationMode?props.onSituation?.()??p:props.onAgents?.(p?.offset??0)??p),situationMode?1000:500);return ()=>clearInterval(timer);},[agentsMode,situationMode,notificationsMode,props.onAgents,props.onSituation,props.onNotifications]);
+  useEffect(()=>{if(!agentsMode&&!situationMode&&!notificationsMode&&!workspacesMode)return;const timer=setInterval(()=>setContextPage(p=>{if(workspacesMode){const next=props.onWorkspaces?.();return !next||next.digest===p?.digest?p:next;}return notificationsMode?props.onNotifications?.()??p:situationMode?props.onSituation?.()??p:props.onAgents?.(p?.offset??0)??p;}),situationMode?1000:500);return ()=>clearInterval(timer);},[agentsMode,situationMode,notificationsMode,workspacesMode,props.onAgents,props.onSituation,props.onNotifications,props.onWorkspaces]);
   const [notice,setNotice]=useState("");
   const [offset,setOffset]=useState(0);const [height,setHeight]=useState(0);const content=useRef<DOMElement>(null);
   const viewport=Math.max(1,(props.rows ?? 10)-3);
@@ -70,7 +70,7 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
     <Text color={inkColor(theme.brand)}>{workspacesMode?"Workspaces":notificationsMode?"Notifications":situationMode?"Situation":agentsMode ? "Agents" : "Contexte partagé"}</Text>
     <Box height={viewport} overflow="hidden" flexDirection="column" flexShrink={0}>
       <Box ref={content} flexDirection="column" flexShrink={0} marginTop={-offset}>
-        {contextPage.lines.map((line,i)=><Text key={i}>{line.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,"")}</Text>)}
+        {contextPage.lines.map((line,i)=><Text key={i} color={workspacesMode?inkColor(line.startsWith("× ")?theme.failed:line.startsWith("◇ ")?theme.active:line.startsWith("✓ ")?theme.confirmed:line.startsWith("? ")?theme.unknown:line.startsWith("Base Git")?theme.dim:theme.text):undefined}>{line.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,"")}</Text>)}
       </Box>
     </Box>
     <Text wrap="truncate-end" color={inkColor(theme.faint)}>{workspacesMode?"↑↓ lire · Esc fermer":notificationsMode?"↑↓ lire · M marquer lues · Esc fermer":situationMode?"↑↓ lire · Esc fermer":"↑↓ lire · N/P pages · Esc fermer"}</Text>

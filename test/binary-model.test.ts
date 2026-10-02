@@ -198,7 +198,7 @@ describe("MB-01 a torn or broken stream is a failure, never an answer", () => {
 
   it("a non-zero exit is refused, and the exit is named", () => {
     const run: RawRun = { stdout: "", stderr: "402 insufficient credits", exit: 1, signal: null };
-    assert.throws(() => parseProposal(run), /exited 1: 402 insufficient credits/);
+    assert.throws(() => parseProposal(run), /exited 1/);
   });
 
   it("a non-zero exit that still printed an answer is still refused", () => {
@@ -710,3 +710,8 @@ function readFileUtf8(path: string): string {
 function readdirUtf8(path: string): string[] {
   return readdirSync(path);
 }
+
+describe('provider errors are useful without leaking provider payloads',()=>{
+ it('reports actual free-tier policy refusal for nonzero and zero exit, never accepting accompanying proposal',()=>{for(const exit of [0,1]){const secret='provider-secret-fixture';const stdout=JSON.stringify({type:'error',error:{name:'APIError',data:{statusCode:403,message:"OpenCode's free tier can only be used from within OpenCode",responseHeaders:{authorization:secret},responseBody:secret}}})+'\n'+text('{"text":"done","toolCalls":[]}');assert.throws(()=>parseProposal({stdout,stderr:secret,exit,signal:null}),(error:Error)=>error.message.includes('HTTP 403')&&error.message.includes('free tier')&&!error.message.includes(secret));}});
+ it('classifies status but never echoes arbitrary error text or stderr',()=>{for(const status of [401,403,429,500]){const secret='key-in-provider-error';assert.throws(()=>parseProposal({stdout:JSON.stringify({type:'error',error:{name:'APIError',data:{statusCode:status,message:secret}}})+'\n',stderr:secret,exit:1,signal:null}),(error:Error)=>error.message.includes('HTTP '+status)&&!error.message.includes(secret));}assert.throws(()=>parseProposal({stdout:'',stderr:'secret-in-stderr',exit:1,signal:null}),(error:Error)=>error.message.includes('exited 1')&&!error.message.includes('secret-in-stderr'));});
+});

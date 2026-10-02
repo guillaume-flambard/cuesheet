@@ -71,3 +71,7 @@ nouveau problème.
 Dépendances : corpus initial immédiatement ; runs confirmatoires après les fonctions
 concernées. Les preuves historiques restent dans `docs/EVIDENCE.md` et les rapports
 de tranche ; un nouveau résultat porte sa date et son commit.
+
+## Pilote modèle gratuit — H10.3a
+
+Un cas réel avant benchmark confirmatoire : BinaryModelAdapter/--pure, opencode/big-pickle explicitement choisi, HOME neuf sans config/key owner et small_model identique. Tarification gratuite vérifiée dans https://opencode.ai/docs/en/zen/ au2026-10-02 ; liste locale contient ce modèle. Pas de fallback paid, pas de changements préférences. Projet Git temporaire non confidentiel : clamp(value,min,max) actuellement faux, test projet et oracle hors projet épinglés sur bornes, intérieur/négatifs/input ; modifications humaines/stagées préservées. Goal naturel exige workspace, code/tests/revue/intégration/finish ; budget2slices×8steps fixé avant essai, timeout par inférence90s. Modèle propose, conteneur Linux exécute, owner check indépendante ferme. Identités[] empêchent routage vers vrai portfolio. Tout résultat/échec et trace conservés sous root du pilote ; métriques temps/calls/bytes, tokens/coût connus ou inconnus explicitement. Un pilote réussi ne clôt pas H10.3/4 ni ne prouve supériorité, autonomie long terme ou selfhost complet. Si échec : enregistrer cause, créer défaut requis avant correction, ne pas changer l'oracle pour obtenir une réussite.

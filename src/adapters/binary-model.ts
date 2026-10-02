@@ -207,6 +207,7 @@ export function readStream(stdout: string): {
   truncated: boolean;
   /** Every `tool_use` event the stream contained. Never honoured. */
   toolEvents: string[];
+  providerErrors: string[];
 } {
   // An empty or whitespace-only stream has no lines at all, so it is not
   // truncated: there is nothing to be cut off from.
@@ -218,6 +219,7 @@ export function readStream(stdout: string): {
   const texts: string[] = [];
   const usage: StepUsage[] = [];
   const toolEvents: string[] = [];
+  const providerErrors:string[]=[];
   let malformed = 0;
 
   for (const line of lines) {
@@ -234,6 +236,12 @@ export function readStream(stdout: string): {
       continue;
     }
     const event = parsed as Record<string, unknown>;
+    if(event.type==="error"){
+      const error=event.error as {name?:unknown;data?:{statusCode?:unknown;message?:unknown}}|undefined;
+      const status=error?.name==="APIError"&&Number.isSafeInteger(error.data?.statusCode)&&Number(error.data?.statusCode)>=400&&Number(error.data?.statusCode)<=599 ? Number(error.data!.statusCode):null;
+      const free=status===403&&typeof error?.data?.message==="string"&&error.data.message.includes("free tier")&&error.data.message.includes("within OpenCode");
+      providerErrors.push(free?"provider refused HTTP 403: its free tier is restricted to OpenCode usage; choose a provider/model admitted for this harness. No fallback was selected.":status===401?"provider refused HTTP 401: verify authentication for the selected provider.":status===403?"provider refused HTTP 403: access is not admitted for this request.":status===429?"provider refused HTTP 429: rate or quota limit; retry later or choose an admitted model.":status!==null?`provider refused HTTP ${status}; no proposal was accepted.`:"provider emitted an error; no proposal was accepted.");continue;
+    }
     const part = event["part"] as Record<string, unknown> | undefined;
     if (!part) {
       malformed++;
@@ -251,7 +259,7 @@ export function readStream(stdout: string): {
     }
   }
 
-  return { texts, usage, malformed, truncated: !endsClean && lines.length > 0, toolEvents };
+  return { texts, usage, malformed, truncated: !endsClean && lines.length > 0, toolEvents,providerErrors };
 }
 
 /**
@@ -303,25 +311,11 @@ export function parseProposal(run: RawRun): BinaryModelResponse {
   if (run.signal) {
     refuse(`terminated on ${run.signal} before it answered`);
   }
-  if (run.exit !== 0) {
-    const detail = run.stderr.trim().slice(0, 300);
-    refuse(
-      `exited ${run.exit}${detail ? `: ${detail}` : ""}${
-        run.stdout.trim() ? "" : " and wrote no answer"
-      }`,
-    );
-  }
-
   const stream = readStream(run.stdout);
-  if (stream.toolEvents.length > 0) {
-    // Never reached if the guarantee holds, and deliberately fatal if it does
-    // not: see the function comment.
-    refuse(
-      `the deny-list did not hold, it emitted tool events: ${[
-        ...new Set(stream.toolEvents),
-      ].join(", ")}`,
-    );
-  }
+  if (stream.toolEvents.length > 0)refuse(`the deny-list did not hold, it emitted ${stream.toolEvents.length} native tool event(s)`);
+  if(stream.providerErrors.length)refuse(stream.providerErrors[0]!);
+  if(run.exit!==0)refuse(`exited ${run.exit}${run.stdout.trim()?"":" and wrote no answer"}`);
+
   if (stream.truncated) refuse("the stream ended mid-line, so the answer is incomplete");
   if (stream.malformed > 0) {
     refuse(`${stream.malformed} line(s) were not valid events`);
@@ -331,14 +325,14 @@ export function parseProposal(run: RawRun): BinaryModelResponse {
   const raw = stream.texts.join("").trim();
   const envelope = envelopeOf(raw);
   if (envelope === null) {
-    refuse(`the answer was not the requested JSON object: ${raw.slice(0, 200)}`);
+    refuse(`the answer was not the requested JSON object: response content omitted`);
   }
 
   let parsed: Proposal;
   try {
     parsed = JSON.parse(envelope) as Proposal;
   } catch {
-    refuse(`the envelope was not valid JSON: ${envelope.slice(0, 200)}`);
+    refuse(`the envelope was not valid JSON: response content omitted`);
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     refuse("the envelope was not an object");

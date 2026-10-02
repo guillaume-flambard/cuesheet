@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "d7ced65",
+  "referenceCommit": "a603332",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3939,6 +3939,87 @@
         "evaluation/installed-selfhost/evidence.md"
       ],
       "notes": "DEFECT observed installed contribution refusal despite successful Linux tests."
+    },
+    {
+      "id": "H10.3a",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H10.3",
+        "REQ-H10.4"
+      ],
+      "dependencies": [
+        "H09.4b"
+      ],
+      "description": "Pilote naturel réel sous modèle explicitement gratuit, oracle extérieur/trace/budget/source préservée",
+      "systems": [
+        "10-VALIDATION.md",
+        "scripts/dogfood-free-model.ts"
+      ],
+      "acceptance": [
+        "AC-H10.3",
+        "AC-H10.4"
+      ],
+      "verification": "Actual native binary + Linux tools + temp Git natural feature, immutable owner oracle, preserve failed trace and metrics; no superiority claim",
+      "evidence": [],
+      "notes": "Bounded pilot, free-listed provider/current official pricing; parent comparative/repeated real quality not closed. Three attempted runs stop before tool effects with actual HTTP403 free-tier policy; traces retained. Real semantic model result not obtained, task remains open; other work continues."
+    },
+    {
+      "id": "H06.3d1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H08.3",
+        "REQ-H08.4"
+      ],
+      "dependencies": [
+        "H09.4b"
+      ],
+      "description": "Workspaces lisible/live : dernières contributions uniques, états/actions clairs, cache/scroll/draft",
+      "systems": [
+        "AGENT-GIT.md",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/overlays/Palette.tsx",
+        "test/workspace-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H08.3",
+        "AC-H08.4"
+      ],
+      "verification": "Actual runtime grouped projection/cache/revision purity + real Ink update/keyboard/resize3sizes, differential/full/build",
+      "evidence": [
+        "evaluation/workspace-provider/evidence.md"
+      ],
+      "notes": "Frontend-design adapted to owner terminal identity; no cleanup or worktree switch permissions."
+    },
+    {
+      "id": "H07.1d",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H07.1",
+        "REQ-H09.5"
+      ],
+      "dependencies": [
+        "H09.4b"
+      ],
+      "description": "Classifier provider refus structured/safe sans rawstdout/stderr ni fallback payant",
+      "systems": [
+        "07-PROVIDERS.md",
+        "src/adapters/binary-model.ts",
+        "test/binary-model.test.ts"
+      ],
+      "acceptance": [
+        "AC-H07.1",
+        "AC-H09.5"
+      ],
+      "verification": "Actual pilot403 + structured fixtures401/403/429/5xx/code0 + secretcanary/differential/full/build",
+      "evidence": [
+        "evaluation/workspace-provider/evidence.md"
+      ],
+      "notes": "DEFECT uncovered actual free provider policy refusal; not a model quality result. No circumvention."
     }
   ],
   "acceptance": [
@@ -5064,10 +5145,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "d7ced65",
+    "lastPassedCommit": "a603332",
     "lastFullSuite": {
-      "tests": 857,
-      "passed": 855,
+      "tests": 859,
+      "passed": 857,
       "failed": 0,
       "skipped": 2
     },
@@ -5106,7 +5187,8 @@
     "workingTreeWorkspaceRuntime": "PASS_PARTIAL terminal dirty worktree preparation/scoped effects/explicit resume/no fallback/finish refusal;51 targeted,842/840/0/2 full/build/static32 baseline. Integration/parallel code workers/selfhost pending.",
     "workingTreeWorkspaceIntegration": "PASS_PARTIAL bounded recoverable owner-checked source integration;43 final targeted,849/847/0/2 full before final wording-only clarification;build/differential32 baseline PASS. Dependencies/parallel workers/recovery/selfhost pending.",
     "workingTreeWorkspaceBuild": "PASS_PARTIAL curated owner image capsule + actual Cuesheet Linux worktree build/56 tests/source unchanged;21 final targeted,853/851/0/2 full; sequential shipped build/differential32 baseline PASS. Installed/model quality/parallel worker recovery pending.",
-    "workingTreeInstalledSelfhost": "PASS_PARTIAL installed actual PTY/fixture transport/Linux tools/source integration/independent captured source check/reopened journal;5 installed,56 targeted,857/855/0/2 full;build32 inherited diagnostics PASS. Real model/full dependency owner check/parallel workers/UX recovery pending."
+    "workingTreeInstalledSelfhost": "PASS_PARTIAL installed actual PTY/fixture transport/Linux tools/source integration/independent captured source check/reopened journal;5 installed,56 targeted,857/855/0/2 full;build32 inherited diagnostics PASS. Real model/full dependency owner check/parallel workers/UX recovery pending.",
+    "workingTreeWorkspaceProvider": "PASS_PARTIAL latest/live/cached workspace UI + secret-safe native provider status;79/40 targeted,859/857/0/2 full. Real free pilot403/source preserved/no quality result, H10.3a open."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -5114,7 +5196,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 22
+    "p1_open": 23
   },
   "workstreams": [
     {
@@ -5238,7 +5320,8 @@
         "H06.3a1",
         "H06.3b2",
         "H06.3b3",
-        "H06.3c1"
+        "H06.3c1",
+        "H07.1d"
       ],
       "dependencies": [
         "C1",
@@ -5276,7 +5359,9 @@
         "H09.4b",
         "H09.4b1",
         "H09.4b2",
-        "H09.4b3"
+        "H09.4b3",
+        "H10.3a",
+        "H06.3d1"
       ],
       "dependencies": [
         "C1",
