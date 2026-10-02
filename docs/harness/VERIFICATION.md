@@ -95,3 +95,7 @@ H06.3b1/H06.3a1 tranche adapter vérifiée : [EV-WORKTREE-ALLOCATION](evaluation
 ## Notifications et selfhost — checkpoint 2026-10-02
 
 H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :37 targeted,835/833/0/2 final full,build/différentiel PASS32 baseline. Centre live/M/read durable et badge sans calls externes ; parent H08.3n reste ouvert. [SELFHOST.md](SELFHOST.md) rend explicite le parcours développer Cuesheet depuis Cuesheet, non encore prouvé. H06.3b2 snapshot dirty IN_PROGRESS ; admission worker/intégration/dependencies/recovery restent ouverts. Global IMPLEMENTING.
+
+## H06.3b2 — checkpoint 2026-10-02
+
+[EV-GIT-SNAPSHOT](evaluation/git-snapshot/evidence.md) :48 targeted,838/836/0/2 final full,build/différentiel PASS32 baseline. Snapshot dirty humain/cible équivalente/source index conservé API livrée, tâche bornée DONE. Admission terminal, dépendances ignorées et intégration parent restent ouverts. Global IMPLEMENTING.

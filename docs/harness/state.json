@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "dc99d60",
+  "referenceCommit": "8c04a51",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3672,7 +3672,7 @@
     {
       "id": "H06.3b2",
       "priority": "P1",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "requirements": [
         "REQ-H06.3",
         "REQ-H06.4"
@@ -3683,16 +3683,19 @@
       ],
       "description": "Snapshot attribué des modifications humaines et transfert vérifié au worktree",
       "systems": [
-        "AGENT-GIT.md",
-        "SELFHOST.md"
+        "src/adapters/git-snapshot.ts",
+        "src/adapters/managed-worktrees.ts",
+        "test/git-snapshot.test.ts"
       ],
       "acceptance": [
         "AC-H06.3",
         "AC-H06.4"
       ],
       "verification": "Actual dirty/staged/untracked Git, changed/oversize/path/symlink refusal, snapshot worktree equivalence/source intact, full/build/differential",
-      "evidence": [],
-      "notes": "Content snapshot only; staging preserved in source, ignored dependencies and runtime admission separate."
+      "evidence": [
+        "EV-GIT-SNAPSHOT"
+      ],
+      "notes": "Bounded content transfer API verified;48 targeted,838/836/0/2 full/build/static PASS. Runtime admission/index-intent/dependencies/integration remain parent work."
     }
   ],
   "acceptance": [
@@ -4797,6 +4800,12 @@
       "result": "PASS_PARTIAL",
       "method": "Actual TerminalSession/projection/stale read/dedup/replay, real Ink, full/build/differential/solo review",
       "details": "evaluation/notifications/evidence.md. No external channel delivery."
+    },
+    {
+      "id": "EV-GIT-SNAPSHOT",
+      "result": "PASS_PARTIAL",
+      "method": "Actual Git dirty staged/new/deleted/binary/untracked, stale/fabricated/size/symlink, target digest/source index preserved, full/build/differential/solo review",
+      "details": "evaluation/git-snapshot/evidence.md; runtime/integration/selfhost pending."
     }
   ],
   "risks": {
@@ -4806,10 +4815,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "dc99d60",
+    "lastPassedCommit": "8c04a51",
     "lastFullSuite": {
-      "tests": 835,
-      "passed": 833,
+      "tests": 838,
+      "passed": 836,
       "failed": 0,
       "skipped": 2
     },
@@ -4843,7 +4852,8 @@
     "workingTreeSituation": "PASS_PARTIAL fresh clock/zone/locale/language/identity/scope/session/role per inference and live readonly palette;818/816/0/2 full before added test-only launcher guard;43 final targeted/build/static PASS. Global IMPLEMENTING.",
     "workingTreeAgentGit": "PASS_PARTIAL H06.3a read-only inventory/pure decision;4 actual Git tests,37 targeted,823/821/0/2 final full;build PASS32 inherited diagnostics. No runtime worktree lifecycle/integration yet.",
     "workingTreeWorktrees": "PASS_PARTIAL allocation manager and implicit Git effect refusal;831/829/0/2 full before final descendant-name root guard;45 final targeted/build PASS32 baseline after. No terminal code-agent admission yet; notifications specified only.",
-    "workingTreeNotifications": "PASS_PARTIAL local centre/badge/durable read,37 targeted,835/833/0/2 full,build32 baseline. Parent external channels/questions/selfhost pending."
+    "workingTreeNotifications": "PASS_PARTIAL local centre/badge/durable read,37 targeted,835/833/0/2 full,build32 baseline. Parent external channels/questions/selfhost pending.",
+    "workingTreeGitSnapshot": "PASS_PARTIAL bounded dirty source snapshot and equivalent owned worktree;48 targeted,838/836/0/2 full,build/static32 baseline. Terminal wiring pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4851,7 +4861,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 23
+    "p1_open": 22
   },
   "workstreams": [
     {
