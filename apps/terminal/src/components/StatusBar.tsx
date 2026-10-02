@@ -17,6 +17,7 @@ import type { Entry } from "../app/state.ts";
 
 export function StatusBar(props: {
   width: number;
+  notifications?:number;
   entries: readonly Entry[];
   busy: boolean;
   onHelp(): void;
@@ -34,7 +35,7 @@ export function StatusBar(props: {
   return (
     <Box justifyContent="space-between" flexShrink={0}>
       <Text color={inkColor(theme.faint)}>
-        {read} read{modified > 0 ? ` · ${modified} changed` : ""}
+        {read} read{props.notifications?` · ${props.notifications} notification(s)`:""}{modified > 0 ? ` · ${modified} changed` : ""}
       </Text>
       <Text color={inkColor(props.busy ? theme.active : theme.faint)}>{right}</Text>
     </Box>

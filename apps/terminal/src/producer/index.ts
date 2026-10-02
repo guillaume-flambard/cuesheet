@@ -1,3 +1,4 @@
+import {NotificationProjection} from '../../../../src/adapters/notifications.ts';
 import {createSituation,type SituationInput} from '../../../../src/adapters/situation.ts';
 import {selectAgentSkills} from '../../../../src/adapters/agent-skills.ts';
 import {projectAgentModels,agentSelection,validAgentRole,AGENT_MODEL_SUBJECT} from '../../../../src/adapters/agent-models.ts';
@@ -154,6 +155,9 @@ export interface Producer {
   selectAgentModel?(role:string,selection:ModelPreferences|null):{ok:true}|{error:string};
   agentPage?(offset?:number):SharedContextPage;
   situationPage?():SharedContextPage;
+  notificationCount?():number;
+  notificationPage?():SharedContextPage;
+  readNotifications?(digest:string):SharedContextPage;
   sharedContextPage?(offset?:number,expectedDigest?:string):SharedContextPage;
   checkConfirmation?():CheckConfirmation|null;
   modelSelected?(selection:ModelPreferences): void;
@@ -316,6 +320,9 @@ export function createProducer(options: ProducerOptions): Producer {
   const directiveRevision = (): number => shared.toSession().events
     .filter((event) => event.kind === "directive" || event.kind === "model" || event.subject === "terminal.model" || event.subject===AGENT_MODEL_SUBJECT || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
   const currentSituation=(role="coordinateur",selectedModel=options.modelLabel?.()??model.name)=>{const last=shared.toSession().events.filter(e=>e.kind==="note"&&e.subject==="terminal.user"&&e.data.operation===undefined&&typeof e.data.text==="string").at(-1);const objective=projectObjectives(shared.toSession().events).current;return situation({sessionId:options.journal?.metadata.id??shared.id,executionId:activeEffect||null,workspace:activeWorkspace,launchDirectory:cwd,objective:objective?{id:objective.id,revision:objective.revision}:null,role,model:selectedModel,lastHuman:last?{sourceSeq:last.seq,text:String(last.data.text)}:null,peers:projectAgents(shared.toSession().events,inFlight?activeEffect:false).slice(0,6).map(a=>({role:a.role,model:a.model,phase:a.phase}))});};
+  const notifications=new NotificationProjection();let notificationRevision=-2;let notificationSnapshot:ReturnType<NotificationProjection["update"]>;
+  const notificationState=()=>{if(shared.revision!==notificationRevision){const session=shared.toSession();notificationSnapshot=notifications.update(session.events,projectObjectives(session.events).current);notificationRevision=shared.revision;}return notificationSnapshot;};
+  const notificationPage=():SharedContextPage=>{const n=notificationState();return {digest:n.digest,offset:0,nextOffset:null,lines:[`${n.unread} non lue(s) · ${n.items.length} dernières`,...n.items.flatMap(i=>[`${i.unread?"●":"·"} ${i.title}${i.historical?" · historique":""}`,`Exécution : ${i.execution} · source #${i.sourceSeq}`,`Objectif : ${i.objective?`${i.objective}@${i.revision}`:"provenance inconnue"}`,i.phase==="goal-closed"?"Validation enregistrée par le contrôleur.":"Objectif ouvert : inspecter puis reprendre si approprié."]),...(n.items.length?[]:["Aucune notification de travail."])]};};
   const currentTools: ToolRunner = {
     async run(request) {
       const signal=controller!.signal;
@@ -692,6 +699,9 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    notificationCount(){return notificationState().unread;},
+    notificationPage,
+    readNotifications(digest){const n=notificationState();if(n.digest===digest&&n.unread>0){options.journal?.assertWritable();shared.append({kind:"note",subject:"terminal.notification_read",data:{version:1,author:"human",throughSeq:n.throughSeq}});}return notificationPage();},
     situationPage() {
       const s=currentSituation();return {digest:s.time.utc,offset:0,nextOffset:null,lines:[`${s.time.local} · ${s.time.timeZone} · ${s.time.offset}`,`UTC : ${s.time.utc}`,`Langue : ${s.responseLanguage.preference??"automatique · conversation"} · locale OS ${s.locale}`,`Interlocuteur : ${s.human.label??"identité non configurée"}`,`Machine : ${s.host.label??s.host.platform}`,`Projet : ${s.workspace}`,`Session : ${s.sessionId}`,`Exécution : ${s.executionId??"aucune active"}`,`Rôle : ${s.role} · ${s.model}`,`Objectif : ${s.objective?`${s.objective.id}@${s.objective.revision}`:"aucun"}`,...s.peers.map(p=>`${p.role} · ${p.model} · ${p.phase}`)]};
     },

@@ -16,15 +16,17 @@ const commands = [
   { label: "Agents", overlay: "agents" },
   { label: "Modèles des agents", overlay: "agent-models" },
   { label: "Situation", overlay: "situation" },
+  { label: "Notifications", overlay: "notifications" },
 ] as const;
 
-export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onSituation?():SharedContextPage; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
+export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onNotifications?():SharedContextPage; onReadNotifications?(digest:string):SharedContextPage; onSituation?():SharedContextPage; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
   const [at, setAt] = useState(0);
   const [approval,setApproval]=useState<CheckConfirmation|null>(null);
   const [contextPage,setContextPage]=useState<SharedContextPage|null>(null);
+  const [notificationsMode,setNotificationsMode]=useState(false);
   const [situationMode,setSituationMode]=useState(false);
   const [agentsMode,setAgentsMode]=useState(false);
-  useEffect(()=>{if(!agentsMode&&!situationMode)return;const timer=setInterval(()=>setContextPage(p=>situationMode?props.onSituation?.()??p:props.onAgents?.(p?.offset??0)??p),situationMode?1000:500);return ()=>clearInterval(timer);},[agentsMode,situationMode,props.onAgents,props.onSituation]);
+  useEffect(()=>{if(!agentsMode&&!situationMode&&!notificationsMode)return;const timer=setInterval(()=>setContextPage(p=>notificationsMode?props.onNotifications?.()??p:situationMode?props.onSituation?.()??p:props.onAgents?.(p?.offset??0)??p),situationMode?1000:500);return ()=>clearInterval(timer);},[agentsMode,situationMode,notificationsMode,props.onAgents,props.onSituation,props.onNotifications]);
   const [notice,setNotice]=useState("");
   const [offset,setOffset]=useState(0);const [height,setHeight]=useState(0);const content=useRef<DOMElement>(null);
   const viewport=Math.max(1,(props.rows ?? 10)-3);
@@ -33,6 +35,7 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
     if(contextPage){
       if(key.downArrow || key.pageDown)setOffset(i=>Math.min(Math.max(0,height-viewport),i+(key.pageDown?viewport:1)));
       if(key.upArrow || key.pageUp)setOffset(i=>Math.max(0,i-(key.pageUp?viewport:1)));
+      if(notificationsMode&&input.toLowerCase()==="m"){setContextPage(props.onReadNotifications?.(contextPage.digest)??contextPage);return;}
       const page=input.toLowerCase();
       if((page==="n" && contextPage.nextOffset!==null) || (page==="p" && contextPage.offset>0)){
         setContextPage((agentsMode ? props.onAgents : props.onContext)?.(page==="n" ? contextPage.nextOffset! : Math.max(0,contextPage.offset-20),contextPage.digest) ?? null);setOffset(0);
@@ -52,6 +55,7 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
       if(selected==="new") props.onNew?.();
       else if(selected==="resume") props.onResume?.();
       else if(selected==="check") {const snapshot=props.onCheck?.() ?? null;setApproval(snapshot);setOffset(0);setNotice(snapshot ? "" : "Aucun check épinglé à renouveler pour le contrat courant.");}
+      else if(selected==="notifications") {setNotificationsMode(true);setContextPage(props.onNotifications?.()??{digest:"",offset:0,nextOffset:null,lines:["Notifications indisponibles."]});setOffset(0);}
       else if(selected==="situation") {setSituationMode(true);setContextPage(props.onSituation?.()??{digest:"",offset:0,nextOffset:null,lines:["Situation indisponible."]});setOffset(0);}
       else if(selected==="agent-models")props.onAgentModels?.();
       else if(selected==="agents") {setAgentsMode(true);setContextPage(props.onAgents?.() ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun agent disponible."]});setOffset(0);}
@@ -60,13 +64,13 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
     }
   });
   if(contextPage)return <Box width={props.width} flexDirection="column">
-    <Text color={inkColor(theme.brand)}>{situationMode?"Situation":agentsMode ? "Agents" : "Contexte partagé"}</Text>
+    <Text color={inkColor(theme.brand)}>{notificationsMode?"Notifications":situationMode?"Situation":agentsMode ? "Agents" : "Contexte partagé"}</Text>
     <Box height={viewport} overflow="hidden" flexDirection="column" flexShrink={0}>
       <Box ref={content} flexDirection="column" flexShrink={0} marginTop={-offset}>
         {contextPage.lines.map((line,i)=><Text key={i}>{line.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,"")}</Text>)}
       </Box>
     </Box>
-    <Text wrap="truncate-end" color={inkColor(theme.faint)}>{situationMode?"↑↓ lire · Esc fermer":"↑↓ lire · N/P pages · Esc fermer"}</Text>
+    <Text wrap="truncate-end" color={inkColor(theme.faint)}>{notificationsMode?"↑↓ lire · M marquer lues · Esc fermer":situationMode?"↑↓ lire · Esc fermer":"↑↓ lire · N/P pages · Esc fermer"}</Text>
   </Box>;
   if(approval)return <Box width={props.width} flexDirection="column">
     <Text color={inkColor(theme.brand)}>Confirmer le critère épinglé</Text>

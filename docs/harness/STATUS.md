@@ -174,3 +174,7 @@ Inventaire Git read-only et décision controller-owned implémentés dans agent-
 ## Allocation worktrees et notifications — 2026-10-02
 
 H06.3b1/H06.3a1 tranche adapter vérifiée : [EV-WORKTREE-ALLOCATION](evaluation/worktree-allocation/evidence.md), attribution/receipts/création detached/reuse physique/récupération conservative et refus Git filters ;45 ciblés finaux,831/829/0/2 full avant correction finale predicate racine, build PASS32 diagnostics hérités après. H06.3b/c/d et runtime admission restent ouverts. [NOTIFICATIONS.md](NOTIFICATIONS.md), H08.3n TODO, notifications significatives/dédup/références/source/canaux sobres, aucune notification livrée. Global IMPLEMENTING.
+
+## Notifications et selfhost — checkpoint 2026-10-02
+
+H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :37 targeted,835/833/0/2 final full,build/différentiel PASS32 baseline. Centre live/M/read durable et badge sans calls externes ; parent H08.3n reste ouvert. [SELFHOST.md](SELFHOST.md) rend explicite le parcours développer Cuesheet depuis Cuesheet, non encore prouvé. H06.3b2 snapshot dirty IN_PROGRESS ; admission worker/intégration/dependencies/recovery restent ouverts. Global IMPLEMENTING.

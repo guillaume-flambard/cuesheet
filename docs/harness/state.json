@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "df75782",
+  "referenceCommit": "dc99d60",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3638,6 +3638,61 @@
         "EV-WORKTREE-ALLOCATION"
       ],
       "notes": "Bounded API verified;45 final targeted,831/829/0/2 full before final path guard,build/static PASS. Parent/runtime/recovery gaps explicit in evidence."
+    },
+    {
+      "id": "H08.3n1a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H08.3",
+        "REQ-H08.5"
+      ],
+      "dependencies": [
+        "H08.3a"
+      ],
+      "description": "Centre notifications terminal sourcées et lecture durable avec projection incrémentale",
+      "systems": [
+        "src/adapters/notifications.ts",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/overlays/Palette.tsx",
+        "apps/terminal/src/components/StatusBar.tsx",
+        "test/notifications.test.ts",
+        "test/notification-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H08.3",
+        "AC-H08.5"
+      ],
+      "verification": "Projection/replay/stale/dedup, producer no-run, actual Ink keys/resize/draft, full/build/differential",
+      "evidence": [
+        "EV-NOTIFICATIONS"
+      ],
+      "notes": "Bounded centre/badge/read projection verified,835/833/0/2 full,37 targeted/build/differential PASS. Parent dispatch/questions and selfhost remain open."
+    },
+    {
+      "id": "H06.3b2",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H06.4"
+      ],
+      "dependencies": [
+        "H06.3b1",
+        "H06.3a1"
+      ],
+      "description": "Snapshot attribué des modifications humaines et transfert vérifié au worktree",
+      "systems": [
+        "AGENT-GIT.md",
+        "SELFHOST.md"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H06.4"
+      ],
+      "verification": "Actual dirty/staged/untracked Git, changed/oversize/path/symlink refusal, snapshot worktree equivalence/source intact, full/build/differential",
+      "evidence": [],
+      "notes": "Content snapshot only; staging preserved in source, ignored dependencies and runtime admission separate."
     }
   ],
   "acceptance": [
@@ -4736,6 +4791,12 @@
       "result": "PASS_PARTIAL",
       "method": "Actual local Git worktrees/two controllers/durable receipts/preserved changes and synthetic recovery, implicit effect canaries; full/build/differential/solo review",
       "details": "evaluation/worktree-allocation/evidence.md. Lifecycle/integration/runtime/notifications remain open."
+    },
+    {
+      "id": "EV-NOTIFICATIONS",
+      "result": "PASS_PARTIAL",
+      "method": "Actual TerminalSession/projection/stale read/dedup/replay, real Ink, full/build/differential/solo review",
+      "details": "evaluation/notifications/evidence.md. No external channel delivery."
     }
   ],
   "risks": {
@@ -4745,10 +4806,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "df75782",
+    "lastPassedCommit": "dc99d60",
     "lastFullSuite": {
-      "tests": 831,
-      "passed": 829,
+      "tests": 835,
+      "passed": 833,
       "failed": 0,
       "skipped": 2
     },
@@ -4781,7 +4842,8 @@
     "workingTreeAgentSkills": "PASS_PARTIAL sourced installed/session skill routing, version guards and UI;814/812/0/2 full,49 initial/44 final targeted,build/static PASS. Global IMPLEMENTING.",
     "workingTreeSituation": "PASS_PARTIAL fresh clock/zone/locale/language/identity/scope/session/role per inference and live readonly palette;818/816/0/2 full before added test-only launcher guard;43 final targeted/build/static PASS. Global IMPLEMENTING.",
     "workingTreeAgentGit": "PASS_PARTIAL H06.3a read-only inventory/pure decision;4 actual Git tests,37 targeted,823/821/0/2 final full;build PASS32 inherited diagnostics. No runtime worktree lifecycle/integration yet.",
-    "workingTreeWorktrees": "PASS_PARTIAL allocation manager and implicit Git effect refusal;831/829/0/2 full before final descendant-name root guard;45 final targeted/build PASS32 baseline after. No terminal code-agent admission yet; notifications specified only."
+    "workingTreeWorktrees": "PASS_PARTIAL allocation manager and implicit Git effect refusal;831/829/0/2 full before final descendant-name root guard;45 final targeted/build PASS32 baseline after. No terminal code-agent admission yet; notifications specified only.",
+    "workingTreeNotifications": "PASS_PARTIAL local centre/badge/durable read,37 targeted,835/833/0/2 full,build32 baseline. Parent external channels/questions/selfhost pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4789,7 +4851,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 22
+    "p1_open": 23
   },
   "workstreams": [
     {
@@ -4908,7 +4970,8 @@
         "H06.3c",
         "H06.3d",
         "H06.3b1",
-        "H06.3a1"
+        "H06.3a1",
+        "H06.3b2"
       ],
       "dependencies": [
         "C1",
@@ -4941,7 +5004,8 @@
         "H06.5a",
         "H06.5b",
         "H08.3a",
-        "H08.3n"
+        "H08.3n",
+        "H08.3n1a"
       ],
       "dependencies": [
         "C1",
