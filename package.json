@@ -43,7 +43,8 @@
     "ui:verify": "node scripts/ui/verify.mjs",
     "journey": "node scripts/ui/journey.mjs",
     "journey:model": "node scripts/ui/journey002.mjs",
-    "journey:live": "node scripts/ui/journey003.mjs"
+    "journey:live": "node scripts/ui/journey003.mjs",
+    "journey:recovery": "node scripts/ui/journey004.mjs"
   },
   "workspaces": [
     "apps/*"
