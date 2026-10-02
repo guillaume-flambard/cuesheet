@@ -31,6 +31,31 @@ test('selected project controls real shell effects, local research and default p
  }finally{session.close();rmSync(root,{recursive:true,force:true});}
 });
 
+test('a sentence naming a project resolves from outside the portfolio and runs there',async()=>{
+ // The World is larger than the working directory. A terminal launched from a
+ // directory that belongs to no project must still resolve a sentence that names
+ // one, and the run must happen there rather than in whatever directory the
+ // person happened to be standing in. This is the claim `World > cwd` makes, and
+ // the case every existing scope test missed because each one launched inside
+ // the portfolio or inside the project itself.
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-world-'));const projects=join(root,'projects');const home=join(root,'home');const target=join(projects,'cuesheet');
+ for(const d of [home,target])mkdirSync(d,{recursive:true});
+ try{
+  // The decision, as a pure function, before any run is involved.
+  const scope=resolveScope('travaille sur cuesheet',home,[identity('cuesheet')],bindProject,projects);
+  assert.equal(scope.at,'bound','naming a project from outside the portfolio binds to it');
+  if(scope.at==='bound')assert.equal(scope.path,target);
+
+  // And the effects happen in the resolved project, never in the launch directory.
+  const store=createStore();let calls=0;const tools=(cwd:string)=>new ShellToolRunner({allow:['node'],roots:[cwd],defaultCwd:cwd});
+  const producer=createProducer({store,cwd:home,projectsRoot:projects,identities:[identity('cuesheet')],toolNames:['node'],maxSlices:1,tools:tools(home),toolsForScope:tools,
+   model:{name:'world-fixture',async infer(){calls++;return {text:'',toolCalls:calls===1?[{name:'node',input:{argv:['node','-e',"require('fs').writeFileSync('here.txt','world')"]}}]:[]};}}});
+  producer.say('travaille sur cuesheet');await idle(store);
+  assert.equal(existsSync(join(home,'here.txt')),false,'the launch directory must stay untouched');
+  assert.equal(readFileSync(join(target,'here.txt'),'utf8'),'world');
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
 test('ambiguous project offers contain absolute workspace paths',()=>{
  const root=mkdtempSync(join(tmpdir(),'cuesheet-scope-choice-'));
  try{
