@@ -233,7 +233,17 @@
       "id": "REQ-H06.2",
       "description": "Deux processus réels publient des receipts à un état durable commun ; sortie R refusée après changement pertinent R+1.",
       "acceptance": [
-        "AC-H06.2"
+        "AC-H06.2",
+        "AC-H06.2a",
+        "AC-H06.2b",
+        "AC-H06.2c",
+        "AC-H06.2b1",
+        "AC-H06.2c1",
+        "AC-H06.2c2",
+        "AC-H06.4a",
+        "AC-H06.3c2",
+        "AC-H06.3c2a",
+        "AC-H06.5c"
       ]
     },
     {
@@ -6860,6 +6870,154 @@
       ],
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-H06.2a",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "lot de 1–2 tâches strict, rôles distincts, fichiers relatifs sûrs et responsabilités sans recouvrement ; lot invalide refusé avant effet ; données détachées de la proposition",
+      "verification": [
+        "automated",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.2b",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "routes configurées et deux worktrees distincts avant effets ; deux processus réels exécutent dans leurs scopes ; aucun fallback fournisseur",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.2c",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "journaux privés et admission conditionnelle, aucun finish/intégration enfant ; le contrôleur conserve seul l'autorité",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.2b1",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "deux worktrees réels depuis source dirty/staged intacte, aucun appel infer, refus route avant allocation, correction en préparation sans ready, source drift refusé et aucun fallback",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": [
+        "EV-CODE-WORKER-FOUNDATIONS"
+      ]
+    },
+    {
+      "id": "AC-H06.2c1",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "effets simultanés attribués séparément, null sans receipt/retry, outils interdits non exécutés, correction pendant inférence et entre deux outils, append échoué avant intent et exécution bornée",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": [
+        "EV-CODE-WORKER-FOUNDATIONS"
+      ]
+    },
+    {
+      "id": "AC-H06.2c2",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "vrai producer/journal et deux processus, outputs utilisés à l'inférence suivante, correction immédiate sans nouvelle session, journaux réouverts avec receipts, phase interrupted après reload et finish refusé pour contributions non intégrées",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": [
+        "EV-TERMINAL-CODE-WORKERS",
+        "EV-CODE-COMPOSITION"
+      ]
+    },
+    {
+      "id": "AC-H06.4a",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "correction directe arrête les effets futurs et écarte les réponses R ; les changements déjà produits restent inspectables",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.3c2",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "résultat composé vérifié, conflits et drift refusés, source/index préservés en refus",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.3c2a",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "deux deltas disjoints intégrés sans réversion du premier, source dirty/index préservés ; scope réel hors paquet, conflit, drift, journal incertain, ancien contrat ou check refusé => source intacte ; composition et plan attribués persistés ; finish ne ferme que via check indépendant",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": [
+        "EV-CODE-COMPOSITION"
+      ]
+    },
+    {
+      "id": "AC-H06.5c",
+      "requirement": "REQ-H06.2",
+      "given": "The context and fixtures stated in MULTI-WORKER.md",
+      "when": "Admission et exécution de deux workers code isolés",
+      "then": "UI montre responsabilités, modèle, phase, contribution et consommation sourcées ; restart affiche interruption",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -7126,6 +7284,13 @@
       "result": "PASS_PARTIAL",
       "method": "Pure schema/deterministic revision and real owner file loader tests, build/diff/solo review",
       "details": "evaluation/state-graph-foundation/evidence.md"
+    },
+    {
+      "id": "EV-MULTI-WORKER-CRITERIA",
+      "commit": "3602364",
+      "result": "PASS",
+      "method": "canonical reference reconciliation and bidirectional integrity check; no runtime behaviour changed",
+      "details": "Ten multi-worker criteria referenced by tasks but absent from acceptance located verbatim in MULTI-WORKER.md (6 in the tranche table lines 34-39, 4 in sections at lines 75/92/115/155), mirrored verbatim, attached to REQ-H06.2 and to its acceptance list. All ten remain PENDING: no PASS invented. Candidate evidence attached for 2b1, 2c1, 2c2, 3c2a. Post-fix dangling references zero in both directions; counts.acceptancePending 83 to 93 measured; 160 insertions 2 deletions, whitespace clean. Second defect found and left open: seven evidence references on DONE tasks do not resolve in the evidence collection (six are file paths, one is EV-WORKER-PACKETS). See evaluation/multi-worker-criteria/evidence.md"
     }
   ],
   "risks": {
@@ -7188,7 +7353,7 @@
   "counts": {
     "requirements": 90,
     "acceptanceVerified": 7,
-    "acceptancePending": 83,
+    "acceptancePending": 93,
     "p0_open": 72,
     "p1_open": 37
   },
