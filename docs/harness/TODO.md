@@ -238,3 +238,7 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 ## Build worktrees — 2026-10-02
 
 [WORKTREE-BUILD.md](WORKTREE-BUILD.md) : H09.3f1→H09.3f2 (C4), capsule Node/Linux owner/image épinglée → metadata cache → prévalidation alias deps root/apps/packages → même conteneur readonly/networknone/receipts → vrai build/tests snapshot Cuesheet → source préservée. Vérification en cours ; aucun AC parent clos.
+
+## H09.4b/b1/b2/b3 — checkpoint 2026-10-02
+
+[EV-INSTALLED-SELFHOST](evaluation/installed-selfhost/evidence.md) : parcours installé PTY réel, provider fixture, code/test Linux isolés, intégration/check source, journal/notification/ressources confirmés.5 install/56 ciblés PASS,857/855/0/2 full et build séquentiel/différentiel32 baseline PASS. Défauts alias stockage/fallback après refus/alias dépendances Git corrigés. Tranches DONE ; modèle réel, check toolchain complet, workers parallèles et recovery restent ouverts. Global IMPLEMENTING.

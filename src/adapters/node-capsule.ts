@@ -1,6 +1,9 @@
 /** Dependency aliases are admitted by the owner-selected immutable image, never a tool request. */
 export const NODE_CAPSULE_LABEL='io.cuesheet.node-capsule';
 export const NODE_CAPSULE_ROOT='/opt/cuesheet-deps/node_modules';
+export function derivedCapsuleAlias(path:string,target:string):boolean {
+ const parts=path.split(/[\\/]/);return target===NODE_CAPSULE_ROOT&&(parts.length===1&&parts[0]==='node_modules'||parts.length===3&&['apps','packages'].includes(parts[0]!)&&!['.','..'].includes(parts[1]!)&&parts[2]==='node_modules');
+}
 export function nodeCapsule(labels:unknown):boolean {
  if(labels===undefined||labels===null)return false;
  if(typeof labels!=='object'||Array.isArray(labels))throw Error('Invalid image labels.');

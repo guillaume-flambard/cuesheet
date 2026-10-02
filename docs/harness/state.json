@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "6890117",
+  "referenceCommit": "d7ced65",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3828,7 +3828,7 @@
     {
       "id": "H09.4b",
       "priority": "P1",
-      "status": "TODO",
+      "status": "DONE",
       "requirements": [
         "REQ-H09.3",
         "REQ-H09.4"
@@ -3836,7 +3836,10 @@
       "dependencies": [
         "H09.3f2",
         "H06.3c1",
-        "H09.4a"
+        "H09.4a",
+        "H09.4b1",
+        "H09.4b2",
+        "H09.4b3"
       ],
       "description": "Parcours terminal installé réel PTY, code isolé/test Linux/intégration/check source/notification sous provider fixture",
       "systems": [
@@ -3848,8 +3851,94 @@
         "AC-H09.4"
       ],
       "verification": "Installed package PTY, actual temp Git/project/check/Engine/journal/file/index, no paid provider",
-      "evidence": [],
+      "evidence": [
+        "evaluation/installed-selfhost/evidence.md"
+      ],
       "notes": "Fixture proves wiring; real model quality, enterprise and parallel code workers remain pending."
+    },
+    {
+      "id": "H09.4b1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H06.3b3"
+      ],
+      "description": "Canonicaliser stockage durable owner avant chemins worktree/intégration",
+      "systems": [
+        "WORKTREE-BUILD.md",
+        "src/adapters/terminal-session.ts",
+        "apps/terminal/src/producer/index.ts",
+        "test/workspace-runtime.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H06.3"
+      ],
+      "verification": "Actual owner alias durable reopen + failed prepare provider ignores refusal/source preservation/readonly/resume/installed PTY",
+      "evidence": [
+        "evaluation/installed-selfhost/evidence.md"
+      ],
+      "notes": "DEFECT discovered by first installed selfhost fixture; no silently dropping isolation assertion."
+    },
+    {
+      "id": "H09.4b2",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H06.3b3"
+      ],
+      "description": "Refuser mutations/finish source après préparation isolée non sélectionnée, y compris reload",
+      "systems": [
+        "WORKTREE-BUILD.md",
+        "src/adapters/terminal-session.ts",
+        "apps/terminal/src/producer/index.ts",
+        "test/workspace-runtime.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H06.3"
+      ],
+      "verification": "Actual owner alias durable reopen + failed prepare provider ignores refusal/source preservation/readonly/resume/installed PTY",
+      "evidence": [
+        "evaluation/installed-selfhost/evidence.md"
+      ],
+      "notes": "DEFECT discovered by first installed selfhost fixture; no silently dropping isolation assertion."
+    },
+    {
+      "id": "H09.4b3",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H09.3f1"
+      ],
+      "description": "Exclure de snapshot seulement alias capsule exact non suivi, conserver refus symlinks étrangers",
+      "systems": [
+        "WORKTREE-BUILD.md",
+        "src/adapters/git-snapshot.ts",
+        "src/adapters/node-capsule.ts",
+        "test/git-snapshot.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H06.3"
+      ],
+      "verification": "Exact alias vs foreign/normal/tracked, snapshot stable, actual installed integration and full regressions",
+      "evidence": [
+        "evaluation/installed-selfhost/evidence.md"
+      ],
+      "notes": "DEFECT observed installed contribution refusal despite successful Linux tests."
     }
   ],
   "acceptance": [
@@ -4975,10 +5064,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "6890117",
+    "lastPassedCommit": "d7ced65",
     "lastFullSuite": {
-      "tests": 853,
-      "passed": 851,
+      "tests": 857,
+      "passed": 855,
       "failed": 0,
       "skipped": 2
     },
@@ -5016,7 +5105,8 @@
     "workingTreeGitSnapshot": "PASS_PARTIAL bounded dirty source snapshot and equivalent owned worktree;48 targeted,838/836/0/2 full,build/static32 baseline. Terminal wiring pending.",
     "workingTreeWorkspaceRuntime": "PASS_PARTIAL terminal dirty worktree preparation/scoped effects/explicit resume/no fallback/finish refusal;51 targeted,842/840/0/2 full/build/static32 baseline. Integration/parallel code workers/selfhost pending.",
     "workingTreeWorkspaceIntegration": "PASS_PARTIAL bounded recoverable owner-checked source integration;43 final targeted,849/847/0/2 full before final wording-only clarification;build/differential32 baseline PASS. Dependencies/parallel workers/recovery/selfhost pending.",
-    "workingTreeWorkspaceBuild": "PASS_PARTIAL curated owner image capsule + actual Cuesheet Linux worktree build/56 tests/source unchanged;21 final targeted,853/851/0/2 full; sequential shipped build/differential32 baseline PASS. Installed/model quality/parallel worker recovery pending."
+    "workingTreeWorkspaceBuild": "PASS_PARTIAL curated owner image capsule + actual Cuesheet Linux worktree build/56 tests/source unchanged;21 final targeted,853/851/0/2 full; sequential shipped build/differential32 baseline PASS. Installed/model quality/parallel worker recovery pending.",
+    "workingTreeInstalledSelfhost": "PASS_PARTIAL installed actual PTY/fixture transport/Linux tools/source integration/independent captured source check/reopened journal;5 installed,56 targeted,857/855/0/2 full;build32 inherited diagnostics PASS. Real model/full dependency owner check/parallel workers/UX recovery pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -5024,7 +5114,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 23
+    "p1_open": 22
   },
   "workstreams": [
     {
@@ -5183,7 +5273,10 @@
         "H08.3a",
         "H08.3n",
         "H08.3n1a",
-        "H09.4b"
+        "H09.4b",
+        "H09.4b1",
+        "H09.4b2",
+        "H09.4b3"
       ],
       "dependencies": [
         "C1",

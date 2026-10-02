@@ -194,3 +194,7 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 ## H09.3f1/2 — checkpoint 2026-10-02
 
 [EV-WORKTREE-BUILD](evaluation/worktree-build/evidence.md) : capsule owner Node/Linux automatique, dépendances readonly et source Cuesheet préservée ; build réel snapshot et56 tests Linux PASS.21 ciblés finaux,853/851/0/2 full avant ajout assertion test nested-package ; build host séquentiel/différentiel PASS32 baseline. Tranches DONE ; H09.4b parcours installé suivant, parents selfhost restent ouverts.
+
+## H09.4b/b1/b2/b3 — checkpoint 2026-10-02
+
+[EV-INSTALLED-SELFHOST](evaluation/installed-selfhost/evidence.md) : parcours installé PTY réel, provider fixture, code/test Linux isolés, intégration/check source, journal/notification/ressources confirmés.5 install/56 ciblés PASS,857/855/0/2 full et build séquentiel/différentiel32 baseline PASS. Défauts alias stockage/fallback après refus/alias dépendances Git corrigés. Tranches DONE ; modèle réel, check toolchain complet, workers parallèles et recovery restent ouverts. Global IMPLEMENTING.

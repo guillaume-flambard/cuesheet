@@ -43,8 +43,8 @@ export class TerminalSession {
   readonly viewEvents: Event[];
 
   constructor(options: { root: string; cwd: string; id?: string; check?: TerminalMetadata['check']; now?: () => number }) {
-    this.root = options.root;
-    mkdirSync(this.root, { recursive:true, mode:0o700 });
+    mkdirSync(options.root, { recursive:true, mode:0o700 });
+    this.root = realpathSync(options.root);
     const id = options.id ?? `t-${randomUUID()}`;
     if (!validId(id)) throw new Error('Identifiant de session terminal invalide.');
     this.claim = acquire(this.root, id);

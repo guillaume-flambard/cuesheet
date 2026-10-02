@@ -346,6 +346,9 @@ export function createProducer(options: ProducerOptions): Producer {
       if(directiveRevision()!==proposalDirective || !contextCurrent())return {name:request.name,exit:126,output:"The instructions changed; this proposal was discarded."};
       if(options.journal){
         if(request.name==="reconcile_effect")return reconcileEffect(shared,request,activeEffect);
+        const objective=projectObjectives(shared.toSession().events).current;
+        const admission=workspaceEnabled&&activeWorkspace===activeSource&&objective ? shared.toSession().events.filter(e=>e.subject==="terminal.workspace"&&e.data.objective===objective.id).at(-1) : undefined;
+        if(admission&&admission.data.phase!=="integrated"&&request.name!=="prepare_workspace"&&mutationTool(request.name))return {name:request.name,exit:126,output:"Isolated preparation was not selected. Source mutations and finish are refused; inspect the workspace and retry prepare_workspace. No source fallback."};
         const attempts=projectEffectAttempts(shared.toSession().events);
         const uncertain=attempts.filter(attempt=>attempt.phase==="uncertain" && mutationTool(attempt.tool));
         if(mutationTool(request.name) && uncertain.length)return {name:request.name,exit:126,output:JSON.stringify({reason:"A previous effect may already have run. Inspect the workspace with cat/ls, then use reconcile_effect with the successful observation sequence before proposing mutations or finish.",intentSequences:uncertain.map(a=>a.intentSeq)})};
@@ -389,14 +392,15 @@ export function createProducer(options: ProducerOptions): Producer {
         if(typeof request.input.unit!=="string"||!request.input.unit.trim()||request.input.unit.length>120||/[\x00-\x1f\x7f]/.test(request.input.unit)||Object.keys(request.input).some(k=>k!=="unit"))return {name:request.name,exit:2,output:"Expected {unit:short work description}; paths/base/branches are controller-owned."};
         if(activeWorkspace!==activeSource)return {name:request.name,exit:0,output:JSON.stringify({workspace:activeWorkspace,alreadySelected:true,verified:false})};
         const objective=projectObjectives(shared.toSession().events).current;if(!objective)return {name:request.name,exit:126,output:"No current objective."};const basis=proposalDirective,id=`w-${randomUUID()}`;
-        let attempted=false;
+        let attempted=false;let workspaceData={version:1,id,unit:request.input.unit.trim(),path:join(resolve(options.worktreeRoot!),id),source:activeSource,base:null as string|null,sourceDigest:null as string|null,objective:objective.id,revision:objective.revision,execution:activeEffect};
+        shared.append({kind:"note",subject:"terminal.workspace",data:{...workspaceData,phase:"preparing"}});
         try{const snapshot=await captureGitSnapshot(activeSource,signal);if(directiveRevision()!==basis||!contextCurrent())return {name:request.name,exit:126,output:"Instructions changed during capture; no workspace admitted."};
-          const workspaceData={version:1,id,unit:request.input.unit.trim(),path:join(resolve(options.worktreeRoot!),id),source:snapshot.workspace,base:snapshot.base,sourceDigest:snapshot.digest,objective:objective.id,revision:objective.revision,execution:activeEffect};shared.append({kind:"note",subject:"terminal.workspace",data:{...workspaceData,phase:"requested"}});attempted=true;
+          workspaceData={...workspaceData,source:snapshot.workspace,base:snapshot.base,sourceDigest:snapshot.digest};shared.append({kind:"note",subject:"terminal.workspace",data:{...workspaceData,phase:"requested"}});attempted=true;
           const result=await allocateWorktree({repository:activeSource,root:options.worktreeRoot!,allocation:{id,unit:request.input.unit.trim(),agent:"builder",objective:objective.id,revision:objective.revision,base:snapshot.base},snapshot,signal});
           if(result.kind!=="ready"){shared.append({kind:"note",subject:"terminal.workspace",data:{...workspaceData,phase:result.kind}});return {name:request.name,exit:result.kind==="uncertain"?null:126,output:JSON.stringify(result)};}
           const current=directiveRevision()===basis&&contextCurrent()&&!signal.aborted;shared.append({kind:"note",subject:"terminal.workspace",data:{...workspaceData,phase:current?"prepared":"historical"}});
           if(!current)return {name:request.name,exit:126,output:"Workspace preserved but instructions changed; no retargeted effects."};selectWorkspace(result.path);shared.append({kind:"note",subject:"terminal.workspace",data:{...workspaceData,phase:"selected"}});return {name:request.name,exit:0,output:JSON.stringify({workspace:result.path,source:snapshot.workspace,base:snapshot.base,verified:false,integration:"pending"})};
-        }catch{return {name:request.name,exit:attempted?null:126,output:"Workspace capture/allocation refused or unconfirmed; source is preserved. Inspect Git/configuration/limits and durable receipts before retry."};}
+        }catch{shared.append({kind:"note",subject:"terminal.workspace",data:{...workspaceData,phase:attempted?"uncertain":"refused"}});return {name:request.name,exit:attempted?null:126,output:"Workspace capture/allocation refused or unconfirmed; source is preserved. Inspect Git/configuration/limits and durable receipts before retry."};}
       }
       if(request.name==="finish"&&activeWorkspace!==activeSource)return {name:request.name,exit:126,output:"Isolated contribution is pending integration and verification in the source project; goal remains open."};
       if(request.name==="search_vault"||request.name==="read_vault_reference"){

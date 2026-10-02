@@ -1,9 +1,10 @@
 /** Bounded owner-local content transfer. Model payloads cannot manufacture an attestation. */
 import {execFile} from 'node:child_process';
 import {constants} from 'node:fs';
-import {lstat,realpath,mkdir,open} from 'node:fs/promises';
+import {lstat,realpath,mkdir,open,readlink} from 'node:fs/promises';
 import {resolve,relative,isAbsolute,sep,dirname} from 'node:path';
 import {createHash} from 'node:crypto';
+import {derivedCapsuleAlias} from './node-capsule.ts';
 import {inspectAgentGit} from './agent-git.ts';
 interface SnapshotFile {readonly path:string;readonly bytes:string;readonly mode:number;}
 export interface GitContentSnapshot {readonly workspace:string;readonly commonDirectory:string;readonly base:string;readonly patch:string;readonly files:readonly SnapshotFile[];readonly digest:string;}
@@ -19,7 +20,7 @@ export async function captureGitSnapshot(workspace:string,signal?:AbortSignal):P
  const names=(await git(i.workspace,['ls-files','--others','--exclude-standard','-z'],signal)).split('\0').filter(Boolean);if(names.length>100)throw Error('Snapshot exceeds 100 untracked files.');
  let size=Buffer.byteLength(patch);const files:SnapshotFile[]=[];
  for(const path of names){signal?.throwIfAborted();const target=resolve(i.workspace,path);if(!within(i.workspace,target)||path.split(/[\\/]/).includes('.git'))throw Error('Snapshot path refused.');
-  const stat=await lstat(target);if(!stat.isFile()||stat.isSymbolicLink()||!within(i.workspace,await realpath(target)))throw Error('Snapshot requires regular files inside its source.');size+=stat.size;if(size>LIMIT)throw Error('Snapshot content exceeds 2MiB.');
+  const stat=await lstat(target);if(stat.isSymbolicLink()&&derivedCapsuleAlias(path,await readlink(target)))continue;if(!stat.isFile()||stat.isSymbolicLink()||!within(i.workspace,await realpath(target)))throw Error('Snapshot requires regular files inside its source.');size+=stat.size;if(size>LIMIT)throw Error('Snapshot content exceeds 2MiB.');
   const handle=await open(target,constants.O_RDONLY|constants.O_NOFOLLOW);let bytes:Buffer;try{const buffer=Buffer.alloc(stat.size+1);const read=await handle.read(buffer,0,buffer.length,0);if(read.bytesRead!==stat.size)throw Error('Snapshot file changed during capture.');bytes=buffer.subarray(0,read.bytesRead);}finally{await handle.close();}files.push(Object.freeze({path,bytes:bytes.toString('base64'),mode:stat.mode&0o777}));
  }
  if(size>LIMIT)throw Error('Snapshot content exceeds 2MiB.');

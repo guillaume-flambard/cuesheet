@@ -256,3 +256,36 @@ exit [lindex $result 3]
  const run=spawnSync('/usr/bin/expect',[driver],{cwd:project,encoding:'utf8',timeout:25000,env:{PATH:`${bin}:${NODE_DIR}:/usr/bin:/bin`,HOME:home,TERM:'xterm-256color',CUESHEET_SESSIONS:join(stage,'terminal-sessions'),CUESHEET_OPENCODE_BIN:binary,CUESHEET_MAX_SLICES:'1'}});
  assert.equal(run.status,0,`${run.error??''}\n${run.stdout}\n${run.stderr}`);assert.match(run.stdout,/INSTALLED_TERMINAL_OK/);assert.match(run.stdout.slice(-1000),/\x1b\[\?25h/,'the cursor is restored before exiting');assert.doesNotMatch(run.stdout,/ERR_MODULE_NOT_FOUND|Dynamic require.*not supported/);assert.ok(existsSync(join(stage,'terminal-sessions')));
 });
+
+
+it("installed terminal completes isolated Linux code/test/integration/source verification with durable ownership",{skip:!existsSync('/usr/bin/expect')||!process.env.CUESHEET_TEST_CAPSULE_IMAGE||!process.env.CUESHEET_TEST_TOOL_SOCKET},async()=>{
+ const result=oracle();assert.equal(result.ok,true,result.why);assert.ok(result.terminal);const {installed,home,stage}=result.terminal!;
+ const source=join(stage,'qz-installed-selfhost'),state=join(stage,'selfhost-sessions');mkdirSync(source);
+ const git=(...args:string[])=>execFileSync('git',args,{cwd:source,encoding:'utf8',env:childEnv({home,sessions:state})}).trim();
+ git('init','-q');git('config','user.name','Fixture');git('config','user.email','fixture@example.invalid');
+ writeFileSync(join(source,'.gitignore'),'node_modules/\n.cuesheet/\n');writeFileSync(join(source,'feature.mjs'),'export const value=1;\n');writeFileSync(join(source,'feature.test.mjs'),"import {test} from 'node:test';import assert from 'node:assert/strict';import {value} from './feature.mjs';test('requested result',()=>assert.equal(value,2));\n");writeFileSync(join(source,'human'),'base');git('add','.');git('commit','-qm','base');writeFileSync(join(source,'human'),'human pending');writeFileSync(join(source,'human-staged'),'keep');git('add','human-staged');const head=git('rev-parse','HEAD'),index=git('diff','--cached','--binary');
+ const check=join(stage,'selfhost-check.mjs');writeFileSync(check,"import assert from 'node:assert/strict';import {join} from 'node:path';import {pathToFileURL} from 'node:url';const mod=await import(pathToFileURL(join(process.cwd(),'feature.mjs')).href);assert.equal(mod.value,2);console.log('OWNER_CHECK_PASS');\n");
+ const binary=join(stage,'selfhost-provider'),counter=join(stage,'selfhost-step');
+ const calls=[{name:'prepare_workspace',input:{unit:'fixture feature'}},{name:'node',input:{argv:['node','-e',"require('fs').writeFileSync('feature.mjs','export const value=2;\\n')"]}},{name:'node',input:{argv:['node','--test','feature.test.mjs']}},{name:'integrate_workspace',input:{}},{name:'finish',input:{}}];
+ writeFileSync(binary,`#!${NODE}\nconst fs=require('fs');if(!process.argv.includes('--pure'))process.exit(4);const path=${JSON.stringify(counter)};let n=0;try{n=Number(fs.readFileSync(path,'utf8'))}catch{}fs.writeFileSync(path,String(n+1));const call=${JSON.stringify(calls)}[n];console.log(JSON.stringify({type:'text',part:{type:'text',text:JSON.stringify({text:'',toolCalls:call?[call]:[]})}}));\n`,{mode:0o755});
+ const driver=join(stage,'selfhost.exp');writeFileSync(driver,`set stty_init {rows 32 columns 120}
+match_max -d 200000
+proc seen {pattern} {expect -timeout 20 -re $pattern {} timeout {catch {close};exit 8} eof {exit 9}}
+proc waitms {ms} {set end [expr {[clock milliseconds]+$ms}];while {[clock milliseconds]<$end} {expect -timeout 1 -re {(?s).+} {} timeout {} eof {return}}}
+spawn {${NODE}} {${join(installed,'dist','src','cuesheet.js')}} surface --verify {${check}}
+seen {Ctrl\\+K}
+waitms 500
+send "qzinstalledselfhost fixture"
+waitms 300
+send "\\r"
+seen {verified by the declared check}
+waitms 500
+send "\\003"
+expect -timeout 5 eof {} timeout {catch {close};exit 10}
+set result [wait]
+exit [lindex $result 3]
+`);
+ const run=spawnSync('/usr/bin/expect',[driver],{cwd:source,encoding:'utf8',timeout:35000,env:{PATH:`${NODE_DIR}:/usr/bin:/bin`,HOME:home,TERM:'xterm-256color',CUESHEET_SESSIONS:state,CUESHEET_OPENCODE_BIN:binary,CUESHEET_MAX_SLICES:'1',CUESHEET_TOOL_IMAGE:process.env.CUESHEET_TEST_CAPSULE_IMAGE!,CUESHEET_TOOL_SOCKET:process.env.CUESHEET_TEST_TOOL_SOCKET!}});
+ assert.equal(run.status,0,`${run.error??''}\n${run.stdout.slice(-12000)}\n${run.stderr}`);assert.doesNotMatch(run.stdout,/ERR_MODULE_NOT_FOUND|Dynamic require.*not supported/);assert.equal(readFileSync(join(source,'feature.mjs'),'utf8'),'export const value=2;\n');assert.equal(readFileSync(join(source,'human'),'utf8'),'human pending');assert.equal(readFileSync(join(source,'human-staged'),'utf8'),'keep');assert.equal(git('rev-parse','HEAD'),head);assert.equal(git('diff','--cached','--binary'),index);
+ const {TerminalSession,listTerminalSessions}=await import(join(installed,'dist','src','adapters','terminal-session.js'));const listed=listTerminalSessions(state);assert.equal(listed.length,1);assert.equal(listed[0].damaged,false);const journal=new TerminalSession({root:state,cwd:source,id:listed[0].id});try{const session=journal.core.toSession();assert.equal(session.goal.open,false);assert.ok(session.events.some((e:any)=>e.subject==='terminal.workspace'&&e.data.phase==='integrated'));assert.equal(session.events.filter((e:any)=>e.kind==='work_verified').length,1);assert.ok(session.events.some((e:any)=>e.subject==='terminal.execution'&&e.data.state==='goal-closed'));const {SessionContainers}=await import(join(installed,'dist','src','adapters','container-receipts.js'));const containers=new SessionContainers({root:state,sessionId:journal.metadata.id}).read();assert.equal(containers.length,2);assert.ok(containers.every((c:any)=>c.status==='removed'));assert.ok(containers.every((c:any)=>session.events.some((e:any)=>e.seq===c.intentSeq&&e.subject==='terminal.intent')));const {NotificationProjection}=await import(join(installed,'dist','src','adapters','notifications.js'));const projection=new NotificationProjection();const n=projection.update(session.events);assert.ok(n.items.some((i:any)=>i.phase==='goal-closed'));}finally{journal.close();}
+});

@@ -1,6 +1,6 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync, existsSync, chmodSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync, existsSync, chmodSync, symlinkSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
@@ -166,3 +166,5 @@ it('a view write failure never displays the refused message and still permits in
     store.send({type:'open',overlay:'inspect'});assert.equal(store.get().overlay,'inspect');
   }finally{session?.close();rmSync(root,{recursive:true,force:true});}
 });
+
+it('owner storage alias is canonical before claims and managed workspace paths, and reopens same journal',()=>{const {root,cwd,storage}=fixture();const alias=join(root,'owner-alias');mkdirSync(storage);symlinkSync(storage,alias,'dir');let journal=new TerminalSession({root:alias,cwd});const id=journal.metadata.id;try{assert.equal(journal.root,realpathSync(storage));journal.core.append({kind:'note',subject:'fixture',data:{value:'durable'}});journal.close();journal=new TerminalSession({root:alias,cwd,id});assert.equal(journal.root,realpathSync(storage));assert.ok(journal.core.toSession().events.some(e=>e.subject==='fixture'));}finally{journal.close();rmSync(root,{recursive:true,force:true});}});
