@@ -1,0 +1,2057 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "contract.integration.binding",
+      "kind": "contract",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/project-binding.ts",
+          "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.integration.context",
+      "kind": "contract",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/shared-context.ts",
+          "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.integration.entry",
+      "kind": "contract",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/cuesheet.ts",
+          "digest": "50d323d5b5b757bab49525c826bc5094f1fc0267ecc3dcdce1becfd2e841f384"
+        },
+        {
+          "path": "src/index.ts",
+          "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.integration.plan",
+      "kind": "contract",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/worktree-integration.ts",
+          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.objectives.intent",
+      "kind": "contract",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/core/intent.ts",
+          "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.objectives.plan",
+      "kind": "contract",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/work-plans.ts",
+          "digest": "b395a07ea137642cefd879ded686b4073726d56e94d59fde17b7964341f9a981"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.objectives.record",
+      "kind": "contract",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/objectives.ts",
+          "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.sessions.store",
+      "kind": "contract",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/session-store.ts",
+          "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.sessions.terminal",
+      "kind": "contract",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/terminal-session.ts",
+          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.workers.packet",
+      "kind": "contract",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/code-worker-packets.ts",
+          "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "contract.workers.requirements",
+      "kind": "contract",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/core/delegation.ts",
+          "digest": "774d589cfdd6ff19fc19719401b076e9326dffd4e6507f70d79e3ba55f47928c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "domain.integration",
+      "kind": "domain",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/ARCHITECTURE.md",
+          "digest": "3aa0e71161a18ba35f7803c664412928b902342ce46e3fedee885828de4bc0e6"
+        },
+        {
+          "path": "src/index.ts",
+          "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "domain.objectives",
+      "kind": "domain",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/harness/01-OBJECTIVES.md",
+          "digest": "840d99104bbdf8f8b6b6b5c3fe1d3155d1cd318fbff9f4ec0eadc1d1aea2fd18"
+        },
+        {
+          "path": "src/adapters/objectives.ts",
+          "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "domain.sessions",
+      "kind": "domain",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/session-store.ts",
+          "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+        },
+        {
+          "path": "src/adapters/terminal-session.ts",
+          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "domain.workers",
+      "kind": "domain",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/harness/MULTI-WORKER.md",
+          "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+        },
+        {
+          "path": "src/core/delegation.ts",
+          "digest": "774d589cfdd6ff19fc19719401b076e9326dffd4e6507f70d79e3ba55f47928c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.integration.composition",
+      "kind": "entity",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/code-worker-integration.ts",
+          "digest": "74c35859d54ef5014a8decafd414da4488dc7aba253c89383b3b48edd2f39821"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.integration.producer",
+      "kind": "entity",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "apps/terminal/src/producer/index.ts",
+          "digest": "1fd5e7ddd8e2bc723be448859ad85d2aa42819a1f7befe185d55cb69fbbf4eff"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.integration.project_binding",
+      "kind": "entity",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/project-binding.ts",
+          "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.integration.binding"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.integration.shared_context",
+      "kind": "entity",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/shared-context.ts",
+          "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.integration.context"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.integration.surface",
+      "kind": "entity",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/cuesheet.ts",
+          "digest": "50d323d5b5b757bab49525c826bc5094f1fc0267ecc3dcdce1becfd2e841f384"
+        },
+        {
+          "path": "src/index.ts",
+          "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.integration.entry"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.integration.worktree_merge",
+      "kind": "entity",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/worktree-integration.ts",
+          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.integration.plan"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.objectives.intent",
+      "kind": "entity",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/core/intent.ts",
+          "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.objectives.intent"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.objectives.objective",
+      "kind": "entity",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/objectives.ts",
+          "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.objectives.record"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.objectives.plan",
+      "kind": "entity",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/work-plans.ts",
+          "digest": "b395a07ea137642cefd879ded686b4073726d56e94d59fde17b7964341f9a981"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.objectives.plan"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.sessions.journal",
+      "kind": "entity",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/session-store.ts",
+          "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.sessions.store"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.sessions.terminal",
+      "kind": "entity",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/terminal-session.ts",
+          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.sessions.terminal"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.sessions.view",
+      "kind": "entity",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "apps/terminal/src/producer/session-view.ts",
+          "digest": "9ba6d61ab79ed2ea4190cbc6ae35d44133129fe1e5140a4aaa769820d90faa82"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.workers.delegation",
+      "kind": "entity",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/core/delegation.ts",
+          "digest": "774d589cfdd6ff19fc19719401b076e9326dffd4e6507f70d79e3ba55f47928c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.workers.requirements"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.workers.loop",
+      "kind": "entity",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/code-worker-loop.ts",
+          "digest": "ed3281a941338c613f9f3ba9f0a16bd60779c0143b7a739067ac71c456c8412d"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.workers.packets",
+      "kind": "entity",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/code-worker-packets.ts",
+          "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [
+        "contract.workers.packet"
+      ],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.workers.process",
+      "kind": "entity",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/worker.ts",
+          "digest": "40da8c81bbd1317dd7bb175644870dd4023283c5ae3b5df6c081b6fde0a5dee0"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "entity.workers.workspaces",
+      "kind": "entity",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/code-worker-workspaces.ts",
+          "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+        },
+        {
+          "path": "src/adapters/managed-worktrees.ts",
+          "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "invariant.integration.ambiguity",
+      "kind": "invariant",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/project-binding.ts",
+          "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+        },
+        {
+          "path": "test/project-binding.test.ts",
+          "digest": "b9602dcadb26ed105a5685962a2e632ec283131184cdb7d3dc08a6b04acce753"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.integration.binding"
+      ]
+    },
+    {
+      "id": "invariant.integration.checkable_path",
+      "kind": "invariant",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/worktree-integration.ts",
+          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        },
+        {
+          "path": "test/worktree-integration.test.ts",
+          "digest": "16890cf4f3219669346a4d620484e938cca8419dd3c85a456ae878ee6c907f10"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.integration.worktrees"
+      ]
+    },
+    {
+      "id": "invariant.integration.drift",
+      "kind": "invariant",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/worktree-integration.ts",
+          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        },
+        {
+          "path": "test/worktree-integration.test.ts",
+          "digest": "16890cf4f3219669346a4d620484e938cca8419dd3c85a456ae878ee6c907f10"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.integration.worktrees"
+      ]
+    },
+    {
+      "id": "invariant.integration.load",
+      "kind": "invariant",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/INVARIANTS.md",
+          "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+        },
+        {
+          "path": "test/loadability.test.ts",
+          "digest": "1bbb82397603fd55e0c2bb88c193c069e97f7dd861b3cbf1fb6354080b5a1501"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.integration.loadability"
+      ]
+    },
+    {
+      "id": "invariant.integration.portability",
+      "kind": "invariant",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/INVARIANTS.md",
+          "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+        },
+        {
+          "path": "test/portability.test.ts",
+          "digest": "4c26d51067d804ba766e6590a632c43db044d7d2225cf1a26c04fb8763859db3"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.integration.portability"
+      ]
+    },
+    {
+      "id": "invariant.objectives.hypothesis",
+      "kind": "invariant",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/objectives.ts",
+          "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+        },
+        {
+          "path": "test/objectives.test.ts",
+          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.objectives.objectives"
+      ]
+    },
+    {
+      "id": "invariant.objectives.identity",
+      "kind": "invariant",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/objectives.ts",
+          "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+        },
+        {
+          "path": "test/objectives.test.ts",
+          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.objectives.objectives"
+      ]
+    },
+    {
+      "id": "invariant.objectives.plan_refusal",
+      "kind": "invariant",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/work-plans.ts",
+          "digest": "b395a07ea137642cefd879ded686b4073726d56e94d59fde17b7964341f9a981"
+        },
+        {
+          "path": "test/work-plans.test.ts",
+          "digest": "8df15cb9db9037928befc32ba3d48dca1f8ce9a61f1ff0162b64fabc38c64d35"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.objectives.plans"
+      ]
+    },
+    {
+      "id": "invariant.objectives.proof",
+      "kind": "invariant",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/objectives.ts",
+          "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+        },
+        {
+          "path": "test/objectives.test.ts",
+          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.objectives.objectives"
+      ]
+    },
+    {
+      "id": "invariant.objectives.routing",
+      "kind": "invariant",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/core/intent.ts",
+          "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+        },
+        {
+          "path": "test/intent.test.ts",
+          "digest": "9aa53b87a6ed601041cea86e7c1ca8bc9fcd11a3d552b8d9cb7f2fbeb9a680f8"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.objectives.intent"
+      ]
+    },
+    {
+      "id": "invariant.sessions.durable",
+      "kind": "invariant",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/terminal-session.ts",
+          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        },
+        {
+          "path": "test/terminal-sessions.test.ts",
+          "digest": "852719ebe06f986e97c334cb44d3d7a28c641de1ab24028a8265bc2b85248029"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.sessions.durability"
+      ]
+    },
+    {
+      "id": "invariant.sessions.refusal",
+      "kind": "invariant",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/session-store.ts",
+          "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+        },
+        {
+          "path": "test/terminal-sessions.test.ts",
+          "digest": "852719ebe06f986e97c334cb44d3d7a28c641de1ab24028a8265bc2b85248029"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.sessions.durability"
+      ]
+    },
+    {
+      "id": "invariant.workers.admission",
+      "kind": "invariant",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/code-worker-packets.ts",
+          "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+        },
+        {
+          "path": "test/code-worker-packets.test.ts",
+          "digest": "10b49ce32b117fe7b8cf49b52d1b7d7553ae79e7955e153d92049c98f1d5068c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.workers.packets"
+      ]
+    },
+    {
+      "id": "invariant.workers.confinement",
+      "kind": "invariant",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/INVARIANTS.md",
+          "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+        },
+        {
+          "path": "src/worker.ts",
+          "digest": "40da8c81bbd1317dd7bb175644870dd4023283c5ae3b5df6c081b6fde0a5dee0"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.workers.runtime"
+      ]
+    },
+    {
+      "id": "invariant.workers.isolation",
+      "kind": "invariant",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/adapters/code-worker-workspaces.ts",
+          "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+        },
+        {
+          "path": "test/code-worker-workspaces.test.ts",
+          "digest": "e6812225fda887acdb00d660bd2d7617d5d0f0cb3eda160a76632981188872df"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.workers.workspaces",
+        "test.workers.worktrees"
+      ]
+    },
+    {
+      "id": "invariant.workers.receipt",
+      "kind": "invariant",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/INVARIANTS.md",
+          "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+        },
+        {
+          "path": "src/work.ts",
+          "digest": "976e3f1ea2171a717147f6e499207eb06cb81609731977c37f9f972cc1a93b8c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.workers.runtime"
+      ]
+    },
+    {
+      "id": "source.integration.architecture",
+      "kind": "source",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/ARCHITECTURE.md",
+          "digest": "3aa0e71161a18ba35f7803c664412928b902342ce46e3fedee885828de4bc0e6"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "source.integration.invariants",
+      "kind": "source",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/INVARIANTS.md",
+          "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "source.objectives.spec",
+      "kind": "source",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/harness/01-OBJECTIVES.md",
+          "digest": "840d99104bbdf8f8b6b6b5c3fe1d3155d1cd318fbff9f4ec0eadc1d1aea2fd18"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "source.sessions.continuity",
+      "kind": "source",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/harness/05-CONTINUITY.md",
+          "digest": "7f3c484b923256ab1ccc9392b79acd62e4ea1274ab39d1827bca878de29dcd6c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "source.workers.multi",
+      "kind": "source",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/harness/MULTI-WORKER.md",
+          "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "test.integration.binding",
+      "kind": "test",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/project-binding.test.ts",
+          "digest": "b9602dcadb26ed105a5685962a2e632ec283131184cdb7d3dc08a6b04acce753"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.integration.ambiguity"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.integration.context",
+      "kind": "test",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/shared-context.test.ts",
+          "digest": "866870c4da2a3618b9b16734db51a44f2e4a5180749cac8e1d357ec8f4c2d96b"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "test.integration.loadability",
+      "kind": "test",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/loadability.test.ts",
+          "digest": "1bbb82397603fd55e0c2bb88c193c069e97f7dd861b3cbf1fb6354080b5a1501"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.integration.load"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.integration.path",
+      "kind": "test",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/integration-path.test.ts",
+          "digest": "4c58ca7bd5fa9255d818e2b28522b9f89be359d336034115ea6b11804508c371"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "test.integration.portability",
+      "kind": "test",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/portability.test.ts",
+          "digest": "4c26d51067d804ba766e6590a632c43db044d7d2225cf1a26c04fb8763859db3"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.integration.portability"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.integration.worktrees",
+      "kind": "test",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/worktree-integration.test.ts",
+          "digest": "16890cf4f3219669346a4d620484e938cca8419dd3c85a456ae878ee6c907f10"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.integration.checkable_path",
+        "invariant.integration.drift"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.objectives.intent",
+      "kind": "test",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/intent.test.ts",
+          "digest": "9aa53b87a6ed601041cea86e7c1ca8bc9fcd11a3d552b8d9cb7f2fbeb9a680f8"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.objectives.routing"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.objectives.objectives",
+      "kind": "test",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/objectives.test.ts",
+          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.objectives.hypothesis",
+        "invariant.objectives.identity",
+        "invariant.objectives.proof"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.objectives.plans",
+      "kind": "test",
+      "domainId": "domain.objectives",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/work-plans.test.ts",
+          "digest": "8df15cb9db9037928befc32ba3d48dca1f8ce9a61f1ff0162b64fabc38c64d35"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.objectives.plan_refusal"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.sessions.durability",
+      "kind": "test",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/terminal-sessions.test.ts",
+          "digest": "852719ebe06f986e97c334cb44d3d7a28c641de1ab24028a8265bc2b85248029"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.sessions.durable",
+        "invariant.sessions.refusal"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.sessions.journal",
+      "kind": "test",
+      "domainId": "domain.sessions",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/adapters.test.ts",
+          "digest": "30dcad0dfae315eca9388529b4e0e2fd5549c3bee16923a8b21b3485ceb11b39"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "test.workers.delegation",
+      "kind": "test",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/delegation.test.ts",
+          "digest": "be4fa90778d00bf4e25c2f4090b3ff090cff36d4a384b7759ef49b9bf4ec358e"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "test.workers.packets",
+      "kind": "test",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/code-worker-packets.test.ts",
+          "digest": "10b49ce32b117fe7b8cf49b52d1b7d7553ae79e7955e153d92049c98f1d5068c"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.workers.admission"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.workers.runtime",
+      "kind": "test",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/worker-runtime.test.ts",
+          "digest": "c0772343e89c1eeb7eca551f2acd7ef9d1ff285129404c870ddc6d0ec398e891"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.workers.confinement",
+        "invariant.workers.receipt"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.workers.workspaces",
+      "kind": "test",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/code-worker-workspaces.test.ts",
+          "digest": "e6812225fda887acdb00d660bd2d7617d5d0f0cb3eda160a76632981188872df"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.workers.isolation"
+      ],
+      "checkRefs": []
+    },
+    {
+      "id": "test.workers.worktrees",
+      "kind": "test",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/managed-worktrees.test.ts",
+          "digest": "17355d23435b4f1f3d00e3d14a34c942fce0a1d30a6ac73bb2b85bbbb16ec9f9"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.workers.isolation"
+      ],
+      "checkRefs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:contains:domain.integration--entity.integration.composition",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "entity.integration.composition",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-integration.ts",
+        "digest": "74c35859d54ef5014a8decafd414da4488dc7aba253c89383b3b48edd2f39821"
+      }
+    },
+    {
+      "id": "edge:contains:domain.integration--entity.integration.producer",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "entity.integration.producer",
+      "sourceRef": {
+        "path": "apps/terminal/src/producer/index.ts",
+        "digest": "1fd5e7ddd8e2bc723be448859ad85d2aa42819a1f7befe185d55cb69fbbf4eff"
+      }
+    },
+    {
+      "id": "edge:contains:domain.integration--entity.integration.project_binding",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "entity.integration.project_binding",
+      "sourceRef": {
+        "path": "src/adapters/project-binding.ts",
+        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+      }
+    },
+    {
+      "id": "edge:contains:domain.integration--entity.integration.shared_context",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "entity.integration.shared_context",
+      "sourceRef": {
+        "path": "src/adapters/shared-context.ts",
+        "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+      }
+    },
+    {
+      "id": "edge:contains:domain.integration--entity.integration.surface",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "entity.integration.surface",
+      "sourceRef": {
+        "path": "src/index.ts",
+        "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
+      }
+    },
+    {
+      "id": "edge:contains:domain.integration--entity.integration.worktree_merge",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "entity.integration.worktree_merge",
+      "sourceRef": {
+        "path": "src/adapters/worktree-integration.ts",
+        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+      }
+    },
+    {
+      "id": "edge:contains:domain.integration--source.integration.architecture",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "source.integration.architecture",
+      "sourceRef": {
+        "path": "docs/ARCHITECTURE.md",
+        "digest": "3aa0e71161a18ba35f7803c664412928b902342ce46e3fedee885828de4bc0e6"
+      }
+    },
+    {
+      "id": "edge:contains:domain.integration--source.integration.invariants",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "source.integration.invariants",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:contains:domain.objectives--entity.objectives.intent",
+      "type": "contains",
+      "dependent": "domain.objectives",
+      "dependency": "entity.objectives.intent",
+      "sourceRef": {
+        "path": "src/core/intent.ts",
+        "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+      }
+    },
+    {
+      "id": "edge:contains:domain.objectives--entity.objectives.objective",
+      "type": "contains",
+      "dependent": "domain.objectives",
+      "dependency": "entity.objectives.objective",
+      "sourceRef": {
+        "path": "src/adapters/objectives.ts",
+        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+      }
+    },
+    {
+      "id": "edge:contains:domain.objectives--entity.objectives.plan",
+      "type": "contains",
+      "dependent": "domain.objectives",
+      "dependency": "entity.objectives.plan",
+      "sourceRef": {
+        "path": "src/adapters/work-plans.ts",
+        "digest": "b395a07ea137642cefd879ded686b4073726d56e94d59fde17b7964341f9a981"
+      }
+    },
+    {
+      "id": "edge:contains:domain.objectives--source.objectives.spec",
+      "type": "contains",
+      "dependent": "domain.objectives",
+      "dependency": "source.objectives.spec",
+      "sourceRef": {
+        "path": "docs/harness/01-OBJECTIVES.md",
+        "digest": "840d99104bbdf8f8b6b6b5c3fe1d3155d1cd318fbff9f4ec0eadc1d1aea2fd18"
+      }
+    },
+    {
+      "id": "edge:contains:domain.sessions--entity.sessions.journal",
+      "type": "contains",
+      "dependent": "domain.sessions",
+      "dependency": "entity.sessions.journal",
+      "sourceRef": {
+        "path": "src/adapters/session-store.ts",
+        "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+      }
+    },
+    {
+      "id": "edge:contains:domain.sessions--entity.sessions.terminal",
+      "type": "contains",
+      "dependent": "domain.sessions",
+      "dependency": "entity.sessions.terminal",
+      "sourceRef": {
+        "path": "src/adapters/terminal-session.ts",
+        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+      }
+    },
+    {
+      "id": "edge:contains:domain.sessions--entity.sessions.view",
+      "type": "contains",
+      "dependent": "domain.sessions",
+      "dependency": "entity.sessions.view",
+      "sourceRef": {
+        "path": "apps/terminal/src/producer/session-view.ts",
+        "digest": "9ba6d61ab79ed2ea4190cbc6ae35d44133129fe1e5140a4aaa769820d90faa82"
+      }
+    },
+    {
+      "id": "edge:contains:domain.sessions--source.sessions.continuity",
+      "type": "contains",
+      "dependent": "domain.sessions",
+      "dependency": "source.sessions.continuity",
+      "sourceRef": {
+        "path": "docs/harness/05-CONTINUITY.md",
+        "digest": "7f3c484b923256ab1ccc9392b79acd62e4ea1274ab39d1827bca878de29dcd6c"
+      }
+    },
+    {
+      "id": "edge:contains:domain.workers--entity.workers.delegation",
+      "type": "contains",
+      "dependent": "domain.workers",
+      "dependency": "entity.workers.delegation",
+      "sourceRef": {
+        "path": "src/core/delegation.ts",
+        "digest": "774d589cfdd6ff19fc19719401b076e9326dffd4e6507f70d79e3ba55f47928c"
+      }
+    },
+    {
+      "id": "edge:contains:domain.workers--entity.workers.loop",
+      "type": "contains",
+      "dependent": "domain.workers",
+      "dependency": "entity.workers.loop",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-loop.ts",
+        "digest": "ed3281a941338c613f9f3ba9f0a16bd60779c0143b7a739067ac71c456c8412d"
+      }
+    },
+    {
+      "id": "edge:contains:domain.workers--entity.workers.packets",
+      "type": "contains",
+      "dependent": "domain.workers",
+      "dependency": "entity.workers.packets",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-packets.ts",
+        "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+      }
+    },
+    {
+      "id": "edge:contains:domain.workers--entity.workers.process",
+      "type": "contains",
+      "dependent": "domain.workers",
+      "dependency": "entity.workers.process",
+      "sourceRef": {
+        "path": "src/worker.ts",
+        "digest": "40da8c81bbd1317dd7bb175644870dd4023283c5ae3b5df6c081b6fde0a5dee0"
+      }
+    },
+    {
+      "id": "edge:contains:domain.workers--entity.workers.workspaces",
+      "type": "contains",
+      "dependent": "domain.workers",
+      "dependency": "entity.workers.workspaces",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-workspaces.ts",
+        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+      }
+    },
+    {
+      "id": "edge:contains:domain.workers--source.workers.multi",
+      "type": "contains",
+      "dependent": "domain.workers",
+      "dependency": "source.workers.multi",
+      "sourceRef": {
+        "path": "docs/harness/MULTI-WORKER.md",
+        "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.integration.composition--entity.integration.worktree_merge",
+      "type": "depends_on",
+      "dependent": "entity.integration.composition",
+      "dependency": "entity.integration.worktree_merge",
+      "sourceRef": {
+        "path": "src/adapters/worktree-integration.ts",
+        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.integration.composition--entity.workers.workspaces",
+      "type": "depends_on",
+      "dependent": "entity.integration.composition",
+      "dependency": "entity.workers.workspaces",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-workspaces.ts",
+        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.integration.producer--entity.integration.composition",
+      "type": "depends_on",
+      "dependent": "entity.integration.producer",
+      "dependency": "entity.integration.composition",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-integration.ts",
+        "digest": "74c35859d54ef5014a8decafd414da4488dc7aba253c89383b3b48edd2f39821"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.integration.producer--entity.integration.shared_context",
+      "type": "depends_on",
+      "dependent": "entity.integration.producer",
+      "dependency": "entity.integration.shared_context",
+      "sourceRef": {
+        "path": "src/adapters/shared-context.ts",
+        "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.integration.surface--entity.integration.project_binding",
+      "type": "depends_on",
+      "dependent": "entity.integration.surface",
+      "dependency": "entity.integration.project_binding",
+      "sourceRef": {
+        "path": "src/adapters/project-binding.ts",
+        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.objectives.plan--entity.objectives.objective",
+      "type": "depends_on",
+      "dependent": "entity.objectives.plan",
+      "dependency": "entity.objectives.objective",
+      "sourceRef": {
+        "path": "src/adapters/objectives.ts",
+        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.sessions.terminal--entity.objectives.objective",
+      "type": "depends_on",
+      "dependent": "entity.sessions.terminal",
+      "dependency": "entity.objectives.objective",
+      "sourceRef": {
+        "path": "src/adapters/objectives.ts",
+        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.sessions.terminal--entity.objectives.plan",
+      "type": "depends_on",
+      "dependent": "entity.sessions.terminal",
+      "dependency": "entity.objectives.plan",
+      "sourceRef": {
+        "path": "src/adapters/work-plans.ts",
+        "digest": "b395a07ea137642cefd879ded686b4073726d56e94d59fde17b7964341f9a981"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.sessions.terminal--entity.sessions.journal",
+      "type": "depends_on",
+      "dependent": "entity.sessions.terminal",
+      "dependency": "entity.sessions.journal",
+      "sourceRef": {
+        "path": "src/adapters/session-store.ts",
+        "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.sessions.view--entity.sessions.terminal",
+      "type": "depends_on",
+      "dependent": "entity.sessions.view",
+      "dependency": "entity.sessions.terminal",
+      "sourceRef": {
+        "path": "src/adapters/terminal-session.ts",
+        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.workers.loop--entity.workers.workspaces",
+      "type": "depends_on",
+      "dependent": "entity.workers.loop",
+      "dependency": "entity.workers.workspaces",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-workspaces.ts",
+        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.workers.workspaces--entity.workers.packets",
+      "type": "depends_on",
+      "dependent": "entity.workers.workspaces",
+      "dependency": "entity.workers.packets",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-packets.ts",
+        "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+      }
+    },
+    {
+      "id": "edge:describes:source.integration.architecture--entity.integration.surface",
+      "type": "describes",
+      "dependent": "source.integration.architecture",
+      "dependency": "entity.integration.surface",
+      "sourceRef": {
+        "path": "docs/ARCHITECTURE.md",
+        "digest": "3aa0e71161a18ba35f7803c664412928b902342ce46e3fedee885828de4bc0e6"
+      }
+    },
+    {
+      "id": "edge:describes:source.integration.invariants--invariant.integration.load",
+      "type": "describes",
+      "dependent": "source.integration.invariants",
+      "dependency": "invariant.integration.load",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:describes:source.integration.invariants--invariant.integration.portability",
+      "type": "describes",
+      "dependent": "source.integration.invariants",
+      "dependency": "invariant.integration.portability",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:describes:source.integration.invariants--invariant.workers.confinement",
+      "type": "describes",
+      "dependent": "source.integration.invariants",
+      "dependency": "invariant.workers.confinement",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:describes:source.integration.invariants--invariant.workers.receipt",
+      "type": "describes",
+      "dependent": "source.integration.invariants",
+      "dependency": "invariant.workers.receipt",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:describes:source.objectives.spec--entity.objectives.intent",
+      "type": "describes",
+      "dependent": "source.objectives.spec",
+      "dependency": "entity.objectives.intent",
+      "sourceRef": {
+        "path": "docs/harness/01-OBJECTIVES.md",
+        "digest": "840d99104bbdf8f8b6b6b5c3fe1d3155d1cd318fbff9f4ec0eadc1d1aea2fd18"
+      }
+    },
+    {
+      "id": "edge:describes:source.objectives.spec--entity.objectives.objective",
+      "type": "describes",
+      "dependent": "source.objectives.spec",
+      "dependency": "entity.objectives.objective",
+      "sourceRef": {
+        "path": "docs/harness/01-OBJECTIVES.md",
+        "digest": "840d99104bbdf8f8b6b6b5c3fe1d3155d1cd318fbff9f4ec0eadc1d1aea2fd18"
+      }
+    },
+    {
+      "id": "edge:describes:source.sessions.continuity--entity.sessions.journal",
+      "type": "describes",
+      "dependent": "source.sessions.continuity",
+      "dependency": "entity.sessions.journal",
+      "sourceRef": {
+        "path": "docs/harness/05-CONTINUITY.md",
+        "digest": "7f3c484b923256ab1ccc9392b79acd62e4ea1274ab39d1827bca878de29dcd6c"
+      }
+    },
+    {
+      "id": "edge:describes:source.sessions.continuity--entity.sessions.terminal",
+      "type": "describes",
+      "dependent": "source.sessions.continuity",
+      "dependency": "entity.sessions.terminal",
+      "sourceRef": {
+        "path": "docs/harness/05-CONTINUITY.md",
+        "digest": "7f3c484b923256ab1ccc9392b79acd62e4ea1274ab39d1827bca878de29dcd6c"
+      }
+    },
+    {
+      "id": "edge:describes:source.workers.multi--entity.workers.process",
+      "type": "describes",
+      "dependent": "source.workers.multi",
+      "dependency": "entity.workers.process",
+      "sourceRef": {
+        "path": "docs/harness/MULTI-WORKER.md",
+        "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+      }
+    },
+    {
+      "id": "edge:describes:source.workers.multi--entity.workers.workspaces",
+      "type": "describes",
+      "dependent": "source.workers.multi",
+      "dependency": "entity.workers.workspaces",
+      "sourceRef": {
+        "path": "docs/harness/MULTI-WORKER.md",
+        "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+      }
+    },
+    {
+      "id": "edge:implements:entity.integration.project_binding--contract.integration.binding",
+      "type": "implements",
+      "dependent": "entity.integration.project_binding",
+      "dependency": "contract.integration.binding",
+      "sourceRef": {
+        "path": "src/adapters/project-binding.ts",
+        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+      }
+    },
+    {
+      "id": "edge:implements:entity.integration.surface--contract.integration.entry",
+      "type": "implements",
+      "dependent": "entity.integration.surface",
+      "dependency": "contract.integration.entry",
+      "sourceRef": {
+        "path": "src/index.ts",
+        "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
+      }
+    },
+    {
+      "id": "edge:implements:entity.integration.worktree_merge--contract.integration.plan",
+      "type": "implements",
+      "dependent": "entity.integration.worktree_merge",
+      "dependency": "contract.integration.plan",
+      "sourceRef": {
+        "path": "src/adapters/worktree-integration.ts",
+        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+      }
+    },
+    {
+      "id": "edge:implements:entity.objectives.intent--contract.objectives.intent",
+      "type": "implements",
+      "dependent": "entity.objectives.intent",
+      "dependency": "contract.objectives.intent",
+      "sourceRef": {
+        "path": "src/core/intent.ts",
+        "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+      }
+    },
+    {
+      "id": "edge:implements:entity.objectives.objective--contract.objectives.record",
+      "type": "implements",
+      "dependent": "entity.objectives.objective",
+      "dependency": "contract.objectives.record",
+      "sourceRef": {
+        "path": "src/adapters/objectives.ts",
+        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+      }
+    },
+    {
+      "id": "edge:implements:entity.objectives.plan--contract.objectives.plan",
+      "type": "implements",
+      "dependent": "entity.objectives.plan",
+      "dependency": "contract.objectives.plan",
+      "sourceRef": {
+        "path": "src/adapters/work-plans.ts",
+        "digest": "b395a07ea137642cefd879ded686b4073726d56e94d59fde17b7964341f9a981"
+      }
+    },
+    {
+      "id": "edge:implements:entity.sessions.journal--contract.sessions.store",
+      "type": "implements",
+      "dependent": "entity.sessions.journal",
+      "dependency": "contract.sessions.store",
+      "sourceRef": {
+        "path": "src/adapters/session-store.ts",
+        "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+      }
+    },
+    {
+      "id": "edge:implements:entity.sessions.terminal--contract.sessions.terminal",
+      "type": "implements",
+      "dependent": "entity.sessions.terminal",
+      "dependency": "contract.sessions.terminal",
+      "sourceRef": {
+        "path": "src/adapters/terminal-session.ts",
+        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+      }
+    },
+    {
+      "id": "edge:implements:entity.workers.delegation--contract.workers.requirements",
+      "type": "implements",
+      "dependent": "entity.workers.delegation",
+      "dependency": "contract.workers.requirements",
+      "sourceRef": {
+        "path": "src/core/delegation.ts",
+        "digest": "774d589cfdd6ff19fc19719401b076e9326dffd4e6507f70d79e3ba55f47928c"
+      }
+    },
+    {
+      "id": "edge:implements:entity.workers.packets--contract.workers.packet",
+      "type": "implements",
+      "dependent": "entity.workers.packets",
+      "dependency": "contract.workers.packet",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-packets.ts",
+        "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+      }
+    },
+    {
+      "id": "edge:validates:test.integration.binding--invariant.integration.ambiguity",
+      "type": "validates",
+      "dependent": "test.integration.binding",
+      "dependency": "invariant.integration.ambiguity",
+      "sourceRef": {
+        "path": "src/adapters/project-binding.ts",
+        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+      }
+    },
+    {
+      "id": "edge:validates:test.integration.context--contract.integration.context",
+      "type": "validates",
+      "dependent": "test.integration.context",
+      "dependency": "contract.integration.context",
+      "sourceRef": {
+        "path": "src/adapters/shared-context.ts",
+        "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+      }
+    },
+    {
+      "id": "edge:validates:test.integration.loadability--invariant.integration.load",
+      "type": "validates",
+      "dependent": "test.integration.loadability",
+      "dependency": "invariant.integration.load",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:validates:test.integration.path--entity.integration.surface",
+      "type": "validates",
+      "dependent": "test.integration.path",
+      "dependency": "entity.integration.surface",
+      "sourceRef": {
+        "path": "src/index.ts",
+        "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
+      }
+    },
+    {
+      "id": "edge:validates:test.integration.portability--invariant.integration.portability",
+      "type": "validates",
+      "dependent": "test.integration.portability",
+      "dependency": "invariant.integration.portability",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:validates:test.integration.worktrees--invariant.integration.checkable_path",
+      "type": "validates",
+      "dependent": "test.integration.worktrees",
+      "dependency": "invariant.integration.checkable_path",
+      "sourceRef": {
+        "path": "src/adapters/worktree-integration.ts",
+        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+      }
+    },
+    {
+      "id": "edge:validates:test.integration.worktrees--invariant.integration.drift",
+      "type": "validates",
+      "dependent": "test.integration.worktrees",
+      "dependency": "invariant.integration.drift",
+      "sourceRef": {
+        "path": "src/adapters/worktree-integration.ts",
+        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+      }
+    },
+    {
+      "id": "edge:validates:test.objectives.intent--invariant.objectives.routing",
+      "type": "validates",
+      "dependent": "test.objectives.intent",
+      "dependency": "invariant.objectives.routing",
+      "sourceRef": {
+        "path": "src/core/intent.ts",
+        "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+      }
+    },
+    {
+      "id": "edge:validates:test.objectives.objectives--invariant.objectives.hypothesis",
+      "type": "validates",
+      "dependent": "test.objectives.objectives",
+      "dependency": "invariant.objectives.hypothesis",
+      "sourceRef": {
+        "path": "src/adapters/objectives.ts",
+        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+      }
+    },
+    {
+      "id": "edge:validates:test.objectives.objectives--invariant.objectives.identity",
+      "type": "validates",
+      "dependent": "test.objectives.objectives",
+      "dependency": "invariant.objectives.identity",
+      "sourceRef": {
+        "path": "src/adapters/objectives.ts",
+        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+      }
+    },
+    {
+      "id": "edge:validates:test.objectives.objectives--invariant.objectives.proof",
+      "type": "validates",
+      "dependent": "test.objectives.objectives",
+      "dependency": "invariant.objectives.proof",
+      "sourceRef": {
+        "path": "src/adapters/objectives.ts",
+        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
+      }
+    },
+    {
+      "id": "edge:validates:test.objectives.plans--invariant.objectives.plan_refusal",
+      "type": "validates",
+      "dependent": "test.objectives.plans",
+      "dependency": "invariant.objectives.plan_refusal",
+      "sourceRef": {
+        "path": "src/adapters/work-plans.ts",
+        "digest": "b395a07ea137642cefd879ded686b4073726d56e94d59fde17b7964341f9a981"
+      }
+    },
+    {
+      "id": "edge:validates:test.sessions.durability--invariant.sessions.durable",
+      "type": "validates",
+      "dependent": "test.sessions.durability",
+      "dependency": "invariant.sessions.durable",
+      "sourceRef": {
+        "path": "src/adapters/terminal-session.ts",
+        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+      }
+    },
+    {
+      "id": "edge:validates:test.sessions.durability--invariant.sessions.refusal",
+      "type": "validates",
+      "dependent": "test.sessions.durability",
+      "dependency": "invariant.sessions.refusal",
+      "sourceRef": {
+        "path": "src/adapters/session-store.ts",
+        "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+      }
+    },
+    {
+      "id": "edge:validates:test.sessions.journal--contract.sessions.store",
+      "type": "validates",
+      "dependent": "test.sessions.journal",
+      "dependency": "contract.sessions.store",
+      "sourceRef": {
+        "path": "src/adapters/session-store.ts",
+        "digest": "267f46f3cb695843b18521ed40c2d272945ce83d9e9ed4a0695454263aa38b05"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.delegation--contract.workers.requirements",
+      "type": "validates",
+      "dependent": "test.workers.delegation",
+      "dependency": "contract.workers.requirements",
+      "sourceRef": {
+        "path": "src/core/delegation.ts",
+        "digest": "774d589cfdd6ff19fc19719401b076e9326dffd4e6507f70d79e3ba55f47928c"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.packets--invariant.workers.admission",
+      "type": "validates",
+      "dependent": "test.workers.packets",
+      "dependency": "invariant.workers.admission",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-packets.ts",
+        "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.runtime--entity.workers.process",
+      "type": "validates",
+      "dependent": "test.workers.runtime",
+      "dependency": "entity.workers.process",
+      "sourceRef": {
+        "path": "src/worker.ts",
+        "digest": "40da8c81bbd1317dd7bb175644870dd4023283c5ae3b5df6c081b6fde0a5dee0"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.runtime--invariant.workers.confinement",
+      "type": "validates",
+      "dependent": "test.workers.runtime",
+      "dependency": "invariant.workers.confinement",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.runtime--invariant.workers.receipt",
+      "type": "validates",
+      "dependent": "test.workers.runtime",
+      "dependency": "invariant.workers.receipt",
+      "sourceRef": {
+        "path": "docs/INVARIANTS.md",
+        "digest": "f9b042517baed6c39f42453654bf5af83165ede43c26100707728df1eb47a489"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.workspaces--invariant.workers.isolation",
+      "type": "validates",
+      "dependent": "test.workers.workspaces",
+      "dependency": "invariant.workers.isolation",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-workspaces.ts",
+        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.worktrees--invariant.workers.isolation",
+      "type": "validates",
+      "dependent": "test.workers.worktrees",
+      "dependency": "invariant.workers.isolation",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-workspaces.ts",
+        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+      }
+    }
+  ]
+}
