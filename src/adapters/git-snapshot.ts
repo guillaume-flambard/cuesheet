@@ -35,3 +35,5 @@ export async function applyGitSnapshot(snapshot:GitContentSnapshot,workspace:str
  for(const file of snapshot.files){signal?.throwIfAborted();const target=resolve(i.workspace,file.path);if(!within(i.workspace,target))throw Error('Snapshot target escaped.');await prepareParent(i.workspace,target);const h=await open(target,'wx',file.mode);try{await h.writeFile(Buffer.from(file.bytes,'base64'));await h.chmod(file.mode);await h.sync();}finally{await h.close();}}
  if(!await snapshotMatches(snapshot,i.workspace,signal))throw Error('Transferred snapshot does not match its source.');
 }
+
+export async function snapshotChangedPaths(snapshot:GitContentSnapshot,signal?:AbortSignal):Promise<string[]>{if(!trusted.has(snapshot))throw Error('Unattested snapshot.');const tracked=(await git(snapshot.workspace,['diff','--name-only','--no-ext-diff','--no-textconv','HEAD','-z','--'],signal)).split('\0').filter(Boolean);return [...new Set([...tracked,...snapshot.files.map(f=>f.path)])].sort();}

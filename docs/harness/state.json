@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "f8a2980",
+  "referenceCommit": "408f218",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3727,6 +3727,38 @@
         "EV-WORKSPACE-RUNTIME"
       ],
       "notes": "Bounded coordinator terminal preparation/retarget/resume verified,51 targeted/842-840-0-2 full/build/static PASS. Parallel code agents/integration/dependencies parent open."
+    },
+    {
+      "id": "H06.3c1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H06.4",
+        "REQ-H09.2"
+      ],
+      "dependencies": [
+        "H06.3b3"
+      ],
+      "description": "Plan récupérable, intégration locale sérialisée sous check owner et finish source",
+      "systems": [
+        "AGENT-GIT.md",
+        "SELFHOST.md",
+        "src/adapters/worktree-integration.ts",
+        "apps/terminal/src/producer/index.ts",
+        "test/worktree-integration.test.ts",
+        "test/workspace-integration-runtime.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H06.4",
+        "AC-H09.2"
+      ],
+      "verification": "Actual temp Git delta/index/source/lock/stale/failure, owner check producer goal closure/rejection, full/build/differential",
+      "evidence": [
+        "evaluation/worktree-integration/evidence.md"
+      ],
+      "notes": "No commit/push/cleanup; partial effect uncertain, hostile host CAS/recovery parent open."
     }
   ],
   "acceptance": [
@@ -4852,10 +4884,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "f8a2980",
+    "lastPassedCommit": "408f218",
     "lastFullSuite": {
-      "tests": 842,
-      "passed": 840,
+      "tests": 849,
+      "passed": 847,
       "failed": 0,
       "skipped": 2
     },
@@ -4891,7 +4923,8 @@
     "workingTreeWorktrees": "PASS_PARTIAL allocation manager and implicit Git effect refusal;831/829/0/2 full before final descendant-name root guard;45 final targeted/build PASS32 baseline after. No terminal code-agent admission yet; notifications specified only.",
     "workingTreeNotifications": "PASS_PARTIAL local centre/badge/durable read,37 targeted,835/833/0/2 full,build32 baseline. Parent external channels/questions/selfhost pending.",
     "workingTreeGitSnapshot": "PASS_PARTIAL bounded dirty source snapshot and equivalent owned worktree;48 targeted,838/836/0/2 full,build/static32 baseline. Terminal wiring pending.",
-    "workingTreeWorkspaceRuntime": "PASS_PARTIAL terminal dirty worktree preparation/scoped effects/explicit resume/no fallback/finish refusal;51 targeted,842/840/0/2 full/build/static32 baseline. Integration/parallel code workers/selfhost pending."
+    "workingTreeWorkspaceRuntime": "PASS_PARTIAL terminal dirty worktree preparation/scoped effects/explicit resume/no fallback/finish refusal;51 targeted,842/840/0/2 full/build/static32 baseline. Integration/parallel code workers/selfhost pending.",
+    "workingTreeWorkspaceIntegration": "PASS_PARTIAL bounded recoverable owner-checked source integration;43 final targeted,849/847/0/2 full before final wording-only clarification;build/differential32 baseline PASS. Dependencies/parallel workers/recovery/selfhost pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -5020,7 +5053,8 @@
         "H06.3b1",
         "H06.3a1",
         "H06.3b2",
-        "H06.3b3"
+        "H06.3b3",
+        "H06.3c1"
       ],
       "dependencies": [
         "C1",
