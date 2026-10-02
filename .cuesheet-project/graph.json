@@ -285,7 +285,7 @@
       "sourceRefs": [
         {
           "path": "apps/terminal/src/producer/index.ts",
-          "digest": "dfd5ccaf567abba1f8eff494d85cdd01620c902ddb795a28225697423be5635e"
+          "digest": "9669dd06c8d5ea4b8093208d4df5e14ad6c68f82f5cfe0dc81bd0453fd252683"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1300,7 +1300,7 @@
       "dependency": "entity.integration.producer",
       "sourceRef": {
         "path": "apps/terminal/src/producer/index.ts",
-        "digest": "dfd5ccaf567abba1f8eff494d85cdd01620c902ddb795a28225697423be5635e"
+        "digest": "9669dd06c8d5ea4b8093208d4df5e14ad6c68f82f5cfe0dc81bd0453fd252683"
       }
     },
     {
