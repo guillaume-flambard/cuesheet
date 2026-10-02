@@ -1,0 +1,13 @@
+# H06.1b — routes de modèles des agents
+
+Intention : défaut automatique hérité du coordinateur, choix humain optionnel d'une route différente pour les consultations ou un rôle observé. Réutiliser Models et ses catalogues ; aucune nouvelle commande obligatoire, aucun provider payant implicite.
+
+Flux : palette « Modèles des agents » → cible (tous les consultants / rôle observé) → sélecteur provider/modèle existant → validation/resolution owner → note terminal.agent-model version1 → routes lues au prochain consult_agents. Modèle du coordinateur inchangé. Retour « Automatique » retire override de la cible et retrouve fallback rôle→tous→binding courant. UI choix visible, Escape conserve composer, erreurs restent corrigeables ; pas de sauvegarde globale par défaut. Routes persistées avec session, credentials hors journal.
+
+Autorité : seule méthode contrôleur appelée depuis interface humaine écrit la route. Payload consult_agents ne choisit pas provider/model. Replay valide role/preference/version/author et refuse toute configuration ambiguë/corrompue au lancement des consultations, sans inventer une route. Résolution reçoit scope courant et snapshot owner credentials, jamais env injecté par modèle. Indisponible : agent failed/refused sans fallback vers autre provider. Aucun changement core.
+
+Concurrency : chaque batch snapshot route par rôle avant appels, noms attribués exacts. Changement humain route écrit révision de contexte, rend anciennes réponses stale ; modèle coordinateur continue, effets déjà démarrés suivent protocole existant. Consultation annulable via signal existant, coûts inconnus. Les providers distincts ne partagent pas de modèle mutable. Claims/persistence assurées contrôleur.
+
+AC-H06.1/H06.4/H06.5/H07.5/H08.3 tranche : deux rôles utilisant deux modèles distincts, route héritée par défaut ; override global puis rôle puis reset ; replay sans mutations/secrets ; payload hostile route ignorée ; mauvais role/provider/config refusé ; indisponibilité sans fallback ; mutation pendant batch invalide ancienne sortie ; catalogue/clavier vraie UI, tailles/resize/Escape/brouillon. H06 multi-write et budgets complets restent ouverts.
+
+TODO fini H06.1b P1 (runtime/routes durable) → H06.5b P1 (UI targets + Models reuse). Vérification unit/replay/producer, UI Ink, régression modèle/context, type guard, full/build. Autorisations/données réseau identiques aux transports déjà sélectionnables, pas d'appel distant pendant construction ; pas de sync/rôles entreprise ajoutés. Migration additive notes, ancien journal hérite binding ; rollback précédent code ignore nouvelles notes. Performance30 roles max/1000 notes de routes dans le journal, UI scroll borné ; no credential persistence. R06/R09 globaux restent ouverts.

@@ -1,3 +1,5 @@
+import {projectAgentModels,agentSelection,validAgentRole,AGENT_MODEL_SUBJECT} from '../../../../src/adapters/agent-models.ts';
+import {validatePreferences} from '../../../../src/adapters/model-preferences.ts';
 import { consultAgents,projectAgents } from '../../../../src/adapters/agent-consultation.ts';
 /**
  * The producer. The thing that makes the surface able to act.
@@ -96,6 +98,7 @@ import type { SkillTools } from "../../../../src/adapters/skill-tools.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 
 export interface ProducerOptions {
+  agentModel?:(selection:ModelPreferences,scope:string)=>{adapter:ModelAdapter;label:string};
   modelLabel?:()=>string;
   maxSlices?: number;
   sharedContexts?: SharedContexts;
@@ -144,6 +147,8 @@ export interface CheckConfirmation {id:string;revision:number;digest:string;text
 export interface SharedContextPage {digest:string;offset:number;nextOffset:number|null;lines:string[];}
 
 export interface Producer {
+  agentModelTargets?():Array<{role:string;selection:ModelPreferences|null;label:string}>;
+  selectAgentModel?(role:string,selection:ModelPreferences|null):{ok:true}|{error:string};
   agentPage?(offset?:number):SharedContextPage;
   sharedContextPage?(offset?:number,expectedDigest?:string):SharedContextPage;
   checkConfirmation?():CheckConfirmation|null;
@@ -303,7 +308,7 @@ export function createProducer(options: ProducerOptions): Producer {
   let controller: AbortController | undefined;
   options.journal?.onFailure(() => controller?.abort(new Error("Session persistence failed")));
   const directiveRevision = (): number => shared.toSession().events
-    .filter((event) => event.kind === "directive" || event.kind === "model" || event.subject === "terminal.model" || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
+    .filter((event) => event.kind === "directive" || event.kind === "model" || event.subject === "terminal.model" || event.subject===AGENT_MODEL_SUBJECT || event.subject === MEMORY_SUBJECT || event.subject === WORK_SUBJECT || event.subject === OBJECTIVE_SUBJECT).at(-1)?.seq ?? 0;
   const currentTools: ToolRunner = {
     async run(request) {
       const signal=controller!.signal;
@@ -343,7 +348,9 @@ export function createProducer(options: ProducerOptions): Producer {
       if(request.name==="consult_agents"){
         if(!consultationFrame)return {name:request.name,exit:126,output:"No current frame available."};
         const directive=proposalDirective;
-        return consultAgents({input:request.input,model,frame:consultationFrame,signal,basis:directive,objective:projectObjectives(shared.toSession().events).current ?? undefined,current:()=>directiveRevision()===directive&&contextCurrent(),append:event=>shared.append(event),execution:activeEffect,modelLabel:options.modelLabel?.() ?? model.name,
+        let routes:ReturnType<typeof projectAgentModels>;
+        try{routes=projectAgentModels(shared.toSession().events);}catch{return {name:request.name,exit:126,output:"Agent model route journal is invalid; inspect before retry."};}
+        return consultAgents({input:request.input,model,route:role=>{const selection=agentSelection(routes,role);if(!selection)return {adapter:model,label:options.modelLabel?.()??model.name};if(!options.agentModel)throw Error("Agent route resolver is unavailable.");return options.agentModel(selection,activeWorkspace);},frame:consultationFrame,signal,basis:directive,objective:projectObjectives(shared.toSession().events).current ?? undefined,current:()=>directiveRevision()===directive&&contextCurrent(),append:event=>shared.append(event),execution:activeEffect,modelLabel:options.modelLabel?.() ?? model.name,
           notice:text=>observe([{kind:"status",label:"agents",value:text,certainty:"unknown"}])});
       }
       const history = readHistory(shared,request);
@@ -677,6 +684,20 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    agentModelTargets() {
+      const routes=projectAgentModels(shared.toSession().events);const roles=[...new Set(["*",...routes.keys(),...projectAgents(shared.toSession().events).map(a=>a.role)])].slice(0,30);
+      return roles.map(role=>{const selection=agentSelection(routes,role);return {role,selection,label:selection?`${selection.provider} · ${selection.model??"modèle configuré"}`:`Automatique · ${options.modelLabel?.()??model.name}`};});
+    },
+    selectAgentModel(role,selection) {
+      try{
+        if(!validAgentRole(role))return {error:"Rôle invalide."};options.journal?.assertWritable();
+        const routes=projectAgentModels(shared.toSession().events);if(!routes.has(role)&&routes.size>=30)return {error:"Limite de rôles atteinte."};
+        const clean=selection===null?null:validatePreferences(selection);
+        if(clean){if(!clean.provider||!options.agentModel)return {error:"Route explicite indisponible."};options.agentModel(clean,activeWorkspace);}
+        shared.append({kind:"note",subject:AGENT_MODEL_SUBJECT,data:{version:1,author:"human",role,selection:clean}});
+        observe([{kind:"status",label:"agents",value:`${role==="*"?"Tous les consultants":role} · ${clean?`${clean.provider} · ${clean.model??"modèle configuré"}`:"automatique"}`,certainty:"confirmed"}]);return {ok:true};
+      }catch{return {error:"Choix refusé : vérifier provider, modèle, limite et stockage de session."};}
+    },
     agentPage(offset=0) {
       const agents=projectAgents(shared.toSession().events,inFlight?activeEffect:false);const start=Number.isSafeInteger(offset)&&offset>=0 ? Math.min(offset,Math.max(0,agents.length-1)):0;
       const labels:Record<string,string>={active:"en cours",result:"proposition reçue · non vérifiée",failed:"échec",stale:"contexte périmé",cancelled:"arrêté",interrupted:"interrompu"};

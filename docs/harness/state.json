@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "802d8b7",
+  "referenceCommit": "1d94f1e",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3285,6 +3285,70 @@
         "EV-AGENT-CONSULTATION"
       ],
       "notes": "Bounded consultation/UI verified. Models inherited, no concurrent code writing or full H06 claim. 802/800/0/2 full before final execution-aware projection adjustment;39 targeted/build PASS after it."
+    },
+    {
+      "id": "H06.1b",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.1",
+        "REQ-H06.4",
+        "REQ-H07.5"
+      ],
+      "dependencies": [
+        "H06.1a"
+      ],
+      "description": "Routes modèles de consultation par rôle, owner only, héritage et replay",
+      "systems": [
+        "src/adapters/agent-models.ts",
+        "src/adapters/agent-consultation.ts",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/producer/runtime.ts",
+        "apps/terminal/src/overlays/AgentModels.tsx",
+        "test/agent-models.test.ts",
+        "test/agent-model-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.1",
+        "AC-H06.4",
+        "AC-H07.5"
+      ],
+      "verification": "Replay/routes/refusals, two model adapters, active correction, actual Ink/differential/full/build",
+      "evidence": [
+        "EV-AGENT-MODELS"
+      ],
+      "notes": "Bounded owner-selected consultation routes/UI verified, no full H06/H07 closure.44 targeted,808/806/0/2 full;7 additional including actual binary IDs;build/static PASS."
+    },
+    {
+      "id": "H06.5b",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.5",
+        "REQ-H08.3"
+      ],
+      "dependencies": [
+        "H06.1b"
+      ],
+      "description": "Sélection de cible et provider/modèle par agent depuis palette",
+      "systems": [
+        "src/adapters/agent-models.ts",
+        "src/adapters/agent-consultation.ts",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/producer/runtime.ts",
+        "apps/terminal/src/overlays/AgentModels.tsx",
+        "test/agent-models.test.ts",
+        "test/agent-model-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.5",
+        "AC-H08.3"
+      ],
+      "verification": "Replay/routes/refusals, two model adapters, active correction, actual Ink/differential/full/build",
+      "evidence": [
+        "EV-AGENT-MODELS"
+      ],
+      "notes": "Bounded owner-selected consultation routes/UI verified, no full H06/H07 closure.44 targeted,808/806/0/2 full;7 additional including actual binary IDs;build/static PASS."
     }
   ],
   "acceptance": [
@@ -4353,6 +4417,12 @@
       "result": "PASS_PARTIAL",
       "method": "Concurrent adapters, two binary subprocesses, direct correction/stop, Ink real input/resize, typing/build/full and solo review",
       "details": "evaluation/agent-consultation/evidence.md;58 targeted,5 processes,802/800/0/2 full,39 final targeted. Scope and verification timing explicit."
+    },
+    {
+      "id": "EV-AGENT-MODELS",
+      "result": "PASS_PARTIAL",
+      "method": "Owner route/replay/current-generation refusals, actual session reopen, Ink provider/catalog/reset, actual binary model IDs, differential/build/full, solo review",
+      "details": "evaluation/agent-models/evidence.md;44 targeted,808/806/0/2 full,7 extra. No live provider quality or all-agent code integration claim."
     }
   ],
   "risks": {
@@ -4362,10 +4432,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "802d8b7",
+    "lastPassedCommit": "1d94f1e",
     "lastFullSuite": {
-      "tests": 802,
-      "passed": 800,
+      "tests": 808,
+      "passed": 806,
       "failed": 0,
       "skipped": 2
     },
@@ -4393,7 +4463,8 @@
     "workingTreeAutomaticVaultTools": "PASS finite local publication/auto route;788/786/0/2 full,50 targeted +37 enterprise additional. Tool vocabulary H07.2b pending, global IMPLEMENTING.",
     "workingTreeCurrentTools": "PASS H07.2b finite current namespace in schemas/prompts;793/791/0/2 full,42 targeted, build PASS32 baseline diagnostics.",
     "workingTreeRouteAlias": "PASS bounded refresh/alias masking;50 targeted,796/794/0/2 full; build PASS32 inherited diagnostics. Overall IMPLEMENTING.",
-    "workingTreeAgentConsultation": "PASS_PARTIAL:802/800/0/2 full before final projection adjustment;39 targeted/build PASS after. H06 parents remain open."
+    "workingTreeAgentConsultation": "PASS_PARTIAL:802/800/0/2 full before final projection adjustment;39 targeted/build PASS after. H06 parents remain open.",
+    "workingTreeAgentModels": "PASS_PARTIAL owner routes and session UI;808/806/0/2 full,44 targeted,7 added binary ID/UX tests. Global IMPLEMENTING."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4510,7 +4581,8 @@
         "H07.5",
         "H07.4a",
         "H07.2b",
-        "H06.1a"
+        "H06.1a",
+        "H06.1b"
       ],
       "dependencies": [
         "C1",
@@ -4540,7 +4612,8 @@
         "H09.5a",
         "E01.4a",
         "E01.4b",
-        "H06.5a"
+        "H06.5a",
+        "H06.5b"
       ],
       "dependencies": [
         "C1",

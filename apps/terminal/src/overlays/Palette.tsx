@@ -14,9 +14,10 @@ const commands = [
   { label: "Critère de validation", overlay: "check" },
   { label: "Contexte partagé", overlay: "context" },
   { label: "Agents", overlay: "agents" },
+  { label: "Modèles des agents", overlay: "agent-models" },
 ] as const;
 
-export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
+export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
   const [at, setAt] = useState(0);
   const [approval,setApproval]=useState<CheckConfirmation|null>(null);
   const [contextPage,setContextPage]=useState<SharedContextPage|null>(null);
@@ -49,6 +50,7 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
       if(selected==="new") props.onNew?.();
       else if(selected==="resume") props.onResume?.();
       else if(selected==="check") {const snapshot=props.onCheck?.() ?? null;setApproval(snapshot);setOffset(0);setNotice(snapshot ? "" : "Aucun check épinglé à renouveler pour le contrat courant.");}
+      else if(selected==="agent-models")props.onAgentModels?.();
       else if(selected==="agents") {setAgentsMode(true);setContextPage(props.onAgents?.() ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun agent disponible."]});setOffset(0);}
       else if(selected==="context") {setContextPage(props.onContext?.() ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]});setOffset(0);}
       else props.onOpen(selected);

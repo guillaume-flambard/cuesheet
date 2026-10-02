@@ -1,3 +1,4 @@
+import {AgentModels} from '../overlays/AgentModels.tsx';
 /**
  * The shell: header, timeline, composer, status bar.
  *
@@ -97,6 +98,7 @@ export function App(props: AppProps): JSX.Element {
   const wired=replacement ?? initial;
   useEffect(()=>()=>wired.session?.close(),[wired]);
   const { store, producer, binding } = wired;
+  const [agentModelsMode,setAgentModelsMode]=useState(false);
   const [, changedModel] = useState(0);
   const missing = binding ? binding.missing : wired.missing;
   const modelName = binding ? binding.label : wired.modelName;
@@ -144,7 +146,9 @@ export function App(props: AppProps): JSX.Element {
       />
 
       <Box flexDirection="column" flexGrow={1} flexShrink={0} height={contentRows + 2} overflow="hidden" paddingTop={1} paddingBottom={1}>
-        {state.overlay === "models" && binding ? (
+        {state.overlay === "models" && agentModelsMode && producer ? (
+          <AgentModels rows={contentRows} busy={state.busy} targets={()=>producer.agentModelTargets?.()??[]} apply={(role,choice)=>producer.selectAgentModel?.(role,choice)??{error:"Sélection indisponible."}} list={catalog} onClose={()=>send({type:"close"})}/>
+        ) : state.overlay === "models" && binding ? (
           <Models selection={binding.selection} rows={contentRows} busy={state.busy} list={catalog}
             apply={(choice, save) => {
               const result = binding.select(choice, { save, busy: store.get().busy, beforeCommit:selection=>producer?.modelSelected?.(selection) });
@@ -157,7 +161,8 @@ export function App(props: AppProps): JSX.Element {
               return result;
             }} onClose={() => send({ type: "close" })} />
         ) : state.overlay === "palette" ? (
-          <Palette width={column} rows={contentRows} onOpen={(overlay) => send({ type: "open", overlay })}
+          <Palette width={column} rows={contentRows} onOpen={(overlay) => {setAgentModelsMode(false);send({ type: "open", overlay });}}
+            onAgentModels={()=>{setAgentModelsMode(true);send({type:"open",overlay:"models"});}}
             onAgents={offset=>producer?.agentPage?.(offset) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun agent disponible."]}}
             onContext={(offset,digest)=>producer?.sharedContextPage?.(offset,digest) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]}}
             onCheck={()=>producer?.checkConfirmation?.() ?? null} onConfirmCheck={approval=>{send({type:"close"});producer?.say(`/check confirm ${approval.id} ${approval.revision} ${approval.digest}`);}}

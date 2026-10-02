@@ -4,6 +4,8 @@ import { PROVIDERS, type ModelPreferences } from '../../../../src/adapters/model
 import type { CatalogModel } from '../../../../src/adapters/model-catalog.ts';
 
 export interface ModelsProps {
+  titlePrefix?:string;
+  sessionOnly?:boolean;
   selection: ModelPreferences;
   rows: number;
   busy: boolean;
@@ -24,7 +26,7 @@ export function Models(props: ModelsProps): JSX.Element {
   const [catalog, setCatalog] = useState<CatalogModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [save, setSave] = useState(true);
+  const [save, setSave] = useState(!props.sessionOnly);
   useEffect(() => {
     if (stage !== 'model') return;
     const controller = new AbortController();
@@ -55,7 +57,7 @@ export function Models(props: ModelsProps): JSX.Element {
     if (key.escape) return props.onClose();
     if (key.tab && stage === 'model') { setManual(value => !value); setAt(0); return; }
     if (key.upArrow || key.downArrow) {
-      if (stage === 'confirm') setSave(value => !value);
+      if (stage === 'confirm' && !props.sessionOnly) setSave(value => !value);
       else setAt(value => Math.max(0, Math.min(items.length - 1, value + (key.downArrow ? 1 : -1))));
       return;
     }
@@ -96,15 +98,15 @@ export function Models(props: ModelsProps): JSX.Element {
   });
   const title = stage === 'provider' ? 'Provider et modèle' : `${choice.provider} · ${stage === 'endpoint' ? 'URL du serveur' : stage === 'model' ? 'Modèle' : stage === 'limit' ? 'Limite de sortie' : 'Appliquer'}`;
   return <Box flexDirection="column" height={props.rows} overflow="hidden">
-    <Text bold wrap="truncate-end">{title}</Text>
+    <Text bold wrap="truncate-end">{props.titlePrefix ? `${props.titlePrefix} · ${title}` : title}</Text>
     {stage === 'provider' ? items.slice(start, start + visible).map((item, index) => <Text key={item} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{item}</Text>) : stage === 'confirm' ? <>
       <Text wrap="truncate-end">{choice.model ?? 'Modèle configuré dans OpenCode'}</Text>
       {choice.baseUrl && <Text wrap="truncate-end">{choice.baseUrl}</Text>}
-      <Text wrap="truncate-end">{choice.provider === 'opencode' ? 'Limite configurée dans OpenCode' : choice.maxTokens ? `${choice.maxTokens} tokens` : 'Limite du provider'} · {save ? 'Appliquer et sauvegarder' : 'Appliquer pour ce terminal'}</Text>
+      <Text wrap="truncate-end">{choice.provider === 'opencode' ? 'Limite configurée dans OpenCode' : choice.maxTokens ? `${choice.maxTokens} tokens` : 'Limite du provider'} · {props.sessionOnly ? 'Appliquer à cette session' : save ? 'Appliquer et sauvegarder' : 'Appliquer pour ce terminal'}</Text>
     </> : <>
       <Text wrap="truncate-start">{stage === 'model' ? (manual ? 'ID libre' : 'Recherche') : stage === 'limit' ? (choice.provider === 'anthropic' ? 'Tokens (requis)' : 'Tokens (vide : défaut)') : 'URL'} : {input}<Text inverse> </Text></Text>
       {stage === 'model' && !manual && filtered.slice(start, start + Math.max(1, visible - 1)).map((model, index) => <Text key={model.id} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.id || model.name}</Text>)}
     </>}
-    <Text wrap="truncate-end" dimColor>{error || (props.busy ? 'Travail en cours : le nouveau modèle prendra la suite.' : loading ? 'Chargement… Tab : ID libre · Esc : retour' : stage === 'model' ? `${catalog.length} modèles · Tab : ID libre · Entrée : choisir · Esc : retour` : stage === 'confirm' ? '↑↓ : sauvegarde · Entrée : appliquer · Esc : retour' : '↑↓ : choisir · Entrée : continuer · Esc : retour')}</Text>
+    <Text wrap="truncate-end" dimColor>{error || (props.busy ? 'Travail en cours : le nouveau modèle prendra la suite.' : loading ? 'Chargement… Tab : ID libre · Esc : retour' : stage === 'model' ? `${catalog.length} modèles · Tab : ID libre · Entrée : choisir · Esc : retour` : stage === 'confirm' ? props.sessionOnly ? 'Entrée : appliquer · Esc : retour' : '↑↓ : sauvegarde · Entrée : appliquer · Esc : retour' : '↑↓ : choisir · Entrée : continuer · Esc : retour')}</Text>
   </Box>;
 }

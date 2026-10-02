@@ -1,0 +1,13 @@
+# EV-AGENT-MODELS — 2026-10-02
+
+Base1d94f1e; specification AGENT-MODELS.md written before code. H06.1b/H06.5b bounded consultations; parent requirements remain incomplete.
+
+Owner routes replay from versioned terminal.agent-model notes; controller interface alone writes choices, unknown/secret-bearing/model-authored route records refuse. Validation copies known fields, credentials never persist. Role→consultant default→active coordinator inheritance, no implicit provider fallback. Explicit selected routes resolve from startup owner credential/config snapshot against current scope. Batch preflights all routes before admission/inference. Per-role model labels recorded; coordinator remains selected independently. Route change increments context revision and invalidates pending proposals. Routes recovered on actual TerminalSession reopen, inspection writes nothing.
+
+UX: palette Modèles des agents → target → existing provider/catalog/model picker. A resets automatic inheritance. Choice scoped to session, global defaults untouched; confirmation states session and target. Existing composer remains mounted/inactive under modal. Real Ink input/catalog fixture/reset/confirm/Escape and40×14,80×24,120×36 PASS. Existing composer-preservation/resize tests remain green.
+
+44 targeted PASS; full production regression808 tests806 PASS0 FAIL2 explicit skips. Build PASS with32 inherited diagnostics, differential guard PASS. Additional actual binary model-ID test added after full workers loaded:7 tests PASS, including two subprocess transports with distinct --model IDs and --pure. Evidence does not claim a live provider inference or model quality. git diff --check PASS. Solo adversarial review: route payload in consult request cannot select provider; unavailable preflight has zero admissions/calls, active human route replacement makes old text stale, bad storage cannot claim a configured route, defaults remain same authorized binding.
+
+Remaining: autonomous multi-step code agents/workspace integration/replacement, total role budgets and accounting UI, evaluated skill promotion loop, enterprise authentication/sync, comparative benchmarks. Main model API usage outside Anthropic remains incomplete. Binary provider inherits established trust boundary, not new kernel containment. No paid calls, push or deployment. Global IMPLEMENTING; no parent acceptance marked verified by these slices.
+
+Manual: palette → Modèles des agents; choose Tous les consultants or observed role; select provider/model; confirm session; consult and inspect model labels under Agents. A returns role to inherited default. OpenCode price/availability is its configured route, not guaranteed free for arbitrary IDs.
