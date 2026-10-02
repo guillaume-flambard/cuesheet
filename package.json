@@ -40,7 +40,8 @@
     "prepack": "bash scripts/build.sh",
     "terminal:typecheck": "pnpm --filter @cuesheet/terminal typecheck",
     "terminal:start": "pnpm --filter @cuesheet/terminal start",
-    "ui:verify": "node scripts/ui-verify.mjs"
+    "ui:verify": "node scripts/ui/verify.mjs",
+    "journey": "node scripts/ui/journey.mjs"
   },
   "workspaces": [
     "apps/*"
