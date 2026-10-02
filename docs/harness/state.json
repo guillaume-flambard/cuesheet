@@ -8374,6 +8374,24 @@
       "summary": "Personnaliser au niveau sémantique le plus haut possible et ne modifier le source qu'au niveau le plus bas nécessaire. Non commencé.",
       "status": "FROZEN",
       "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
+    },
+    {
+      "id": "elastic-compute-mesh",
+      "summary": "CPU, RAM, GPU, sandboxes et capabilities repartis entre les machines autorisees d une equipe. L execution commence toujours par le local deterministe, puis la machine courante, puis les pairs LAN de confiance, puis le serveur, puis le cloud. Chaque machine annonce une enveloppe de ressource avec une politique, jamais un acces anarchique, et le travail suit la capacite disponible. Un peer avec GPU et modele local devient aussi un peer d inference. Non commence.",
+      "status": "FROZEN",
+      "note": "Capture sur demande du proprietaire, gele hors du chemin critique. Une idee n est pas un travail."
+    },
+    {
+      "id": "compute-follows-data",
+      "summary": "Le worker va vers le compute autorise, jamais les donnees vers un compute arbitraire. Un peer autorise a un environnement sensible l execute localement ; ce qui revient est un constat, une preuve, un digest, un verdict, sans rapatrier la donnee. Non commence.",
+      "status": "FROZEN",
+      "note": "Capture sur demande du proprietaire, gele hors du chemin critique. Une idee n est pas un travail."
+    },
+    {
+      "id": "team-computer",
+      "summary": "L equipe entiere vue comme un ordinateur unique : coeurs, RAM, GPU et capabilities agreges, sur lesquels l Elastic Workforce se deploie. Reste une direction tant que l Elastic Workforce locale ne fonctionne pas ; rendre l emplacement d execution interchangeable entre local et peer est le chemin naturel, pas un prerequis.",
+      "status": "FROZEN",
+      "note": "Capture sur demande du proprietaire, gele hors du chemin critique. Une idee n est pas un travail."
     }
   ]
 }
