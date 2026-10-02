@@ -108,8 +108,9 @@ export class SharedContexts {
 export type SharedOperation="search"|"read";
 export type SharedRealm="enterprise"|"team"|"project"|"personal";
 export interface SharedGrant {principal:string;realm:SharedRealm;scope:SharedScope;operations:SharedOperation[];}
-export interface SharedReference {scope:SharedScope;id:string;revision:number;}
-export interface SharedScopeStore {readonly scope:SharedScope;read():SharedProfile;}
+/** A reference is untrusted input a principal can rewrite, so `root` is a spelling of a directory the controller declared, never a way to pick one. */
+export interface SharedReference {scope:SharedScope;id:string;revision:number;root?:string;}
+export interface SharedScopeStore {readonly scope:SharedScope;readonly root?:string;read():SharedProfile;}
 export interface SharedSearchHit {scope:SharedScope;entry:SharedMemory;score:number;passage:string;}
 export interface SharedSearchResult {digest:string;hits:SharedSearchHit[];}
 const REALMS:readonly SharedRealm[]=["enterprise","team","project","personal"];
@@ -117,6 +118,11 @@ const OPERATIONS:readonly SharedOperation[]=["search","read"];
 const scopeKey=(scope:SharedScope)=>`${scope.kind}:${scope.id}`;
 const sameScope=(a:SharedScope,b:SharedScope)=>a.kind===b.kind&&a.id===b.id;
 const validScope=(scope:unknown):scope is SharedScope=>!!scope && typeof scope==='object' && ["project","organization"].includes((scope as SharedScope).kind) && text((scope as SharedScope).id,128) && /^[A-Za-z0-9_-]+$/.test((scope as SharedScope).id);
+// A reference root is compared lexically with resolve(), which folds `..` without touching the
+// filesystem. Nothing is stat'ed on the untrusted side, so a foreign, traversing or symlinked
+// spelling cannot open a journal nor report whether the path exists, and a store that never
+// declared its root cannot be addressed by one either.
+const namedRoot=(root:unknown,store:SharedScopeStore|undefined):boolean=>root===undefined || (!!store && typeof root==='string' && !!root.trim() && root.length<=4096 && typeof store.root==='string' && resolve(root)===resolve(store.root));
 const grantKey=(principal:string,realm:SharedRealm,scope:SharedScope)=>`${principal}\u0000${realm}\u0000${scopeKey(scope)}`;
 const queryTerms=(query:string)=>[...new Set(query.toLocaleLowerCase('en').match(/[\p{L}\p{N}_]{2,}/gu)??[])];
 
@@ -196,10 +202,10 @@ export class SharedRetrieval {
     if(!this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read authorization changed.');
     return profile;
   }
-  /** An old reference is only a lookup key: revocation refuses it like any other read. */
+  /** An old reference is only a lookup key: revocation refuses it like any other read, and so does a root it does not own. */
   readReference(reference:SharedReference):SharedMemory {
-    const store=this.declared(reference.scope);
-    if(!store || !this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read is not authorized.');
+    const store=reference&&typeof reference==='object'?this.declared(reference.scope):undefined;
+    if(!store || !namedRoot(reference.root,store) || !this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read is not authorized.');
     const profile=store.read();
     if(!this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read authorization changed.');
     const found=profile.entries.find(entry=>entry.id===reference.id && entry.revision===reference.revision);

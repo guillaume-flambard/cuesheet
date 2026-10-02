@@ -1,11 +1,11 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {mkdtempSync,mkdirSync,existsSync,readFileSync,writeFileSync,rmSync} from "node:fs";
+import {mkdtempSync,mkdirSync,existsSync,readFileSync,writeFileSync,rmSync,symlinkSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {join,resolve} from "node:path";
+import {join,resolve,sep} from "node:path";
 import {spawn} from "node:child_process";
 import {SharedContexts,SharedMemoryStore,sharedScope,SharedGrants,SharedRetrieval} from "../src/adapters/shared-memory.ts";
-import type {SharedRealm,SharedOperation} from "../src/adapters/shared-memory.ts";
+import type {SharedRealm,SharedOperation,SharedScopeStore} from "../src/adapters/shared-memory.ts";
 import {SessionStore} from "../src/adapters/session-store.ts";
 import {TerminalSession} from "../src/adapters/terminal-session.ts";
 import {persistentView} from "../apps/terminal/src/producer/session-view.ts";
@@ -298,6 +298,157 @@ test("a scope without a grant is never opened and revocation only touches the gr
   assert.equal(access.search('preserve').hits.length,0);
   assert.throws(()=>access.read(orgScope),/not authorized/);
   assert.throws(()=>access.read(projectScope),/not authorized/);
-  assert.throws(()=>access.readReference({scope:orgScope,id:'anything',revision:1}),/not authorized/);
+assert.throws(()=>access.readReference({scope:orgScope,id:'anything',revision:1}),/not authorized/);
+  } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+// The message every unadmitted reference gets. Comparing against it is what
+// proves a refusal leaks nothing: a forged root, an invented scope and a denied
+// scope have to be indistinguishable from outside.
+const refusalOf=(run:()=>unknown):string=>{let message='';try{run();assert.fail('a refusal was expected');}catch(error){message=String(error);}return message;};
+const UNADMITTED=/Shared memory read is not authorized\./;
+
+
+test("a reference root forged onto another scope cannot redirect a granted read",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-forge-root-'));
+ try {
+  const company=join(root,'company');mkdirSync(company);
+  const project=join(root,'project');mkdirSync(project);
+  const orgStore=new SharedMemoryStore({root:company,scope:sharedScope('organization',company)});
+  const contexts=new SharedContexts({cwd:project});
+  const made=contexts.project.create(item('project-owner'),-1);assert.ok(!('conflict' in made));
+  const secret=orgStore.create({kind:'decision',text:'organization only acquisition target',rationale:'confidential to the organization',sources:[{session:'org-owner',seq:1}]},-1);assert.ok(!('conflict' in secret));
+  let opened=0;
+  const watched:SharedScopeStore={scope:orgStore.scope,root:orgStore.root,read(){opened++;return orgStore.read();}};
+  const grants=new SharedGrants();const scope=contexts.project.scope;
+  // Alice holds both scopes legitimately, so a refusal below can only come from the forged root, not from a missing grant.
+  grants.grant({principal:'alice',realm:'enterprise',scope,operations:['search','read']});
+  grants.grant({principal:'alice',realm:'enterprise',scope:orgStore.scope,operations:['search','read']});
+  const stores=[contexts.project,watched] as const;
+  const access=new SharedRetrieval({principal:'alice',realm:'enterprise',grants,stores});
+  // The faithful spelling of the granted root is admitted, so the guard below is a comparison, not a blanket refusal.
+  assert.equal(access.readReference({scope,id:made.entry.id,revision:made.entry.revision,root:contexts.project.root}).text,'preserve API');
+  const denied=refusalOf(()=>access.readReference({scope:{kind:'project',id:'scope-forged'},id:made.entry.id,revision:made.entry.revision}));
+  assert.match(denied,UNADMITTED);
+  // Scope A, entry id of scope B, root of scope B: the root is the only thing naming B, and it may not.
+  for(const forgedRoot of [orgStore.root,`${orgStore.root}/`,join(orgStore.root,'nowhere','..')]) {
+   const message=refusalOf(()=>access.readReference({scope,id:secret.entry.id,revision:secret.entry.revision,root:forgedRoot}));
+   assert.equal(message,denied,'a foreign root is refused exactly like a denied scope, so it cannot be probed');
+   assert.doesNotMatch(message,/acquisition target/,'the refusal never carries the foreign text');
+  }
+  // Scope B named honestly, root A grafted on it: the mirror image of the forgery above, same refusal.
+  assert.equal(refusalOf(()=>access.readReference({scope:orgStore.scope,id:secret.entry.id,revision:secret.entry.revision,root:contexts.project.root})),denied);
+  assert.equal(opened,0,'no forged root ever opened another scope journal');
+  // Scope B still answers when the reference is honest, so nothing above was a blanket refusal.
+  assert.equal(access.readReference({scope:orgStore.scope,id:secret.entry.id,revision:secret.entry.revision,root:orgStore.root}).text,'organization only acquisition target');
+  assert.equal(opened,1);
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("an invented scope id is refused even when its root is a real granted directory",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-forge-scope-'));
+ try {
+  const project=join(root,'project');mkdirSync(project);
+  const contexts=new SharedContexts({cwd:project});
+  const made=contexts.project.create(item('owner'),-1);assert.ok(!('conflict' in made));
+  const grants=new SharedGrants();const scope=contexts.project.scope;
+  grants.grant({principal:'alice',realm:'project',scope,operations:['search','read']});
+  const access=new SharedRetrieval({principal:'alice',realm:'project',grants,stores:contexts.stores()});
+  const reference={id:made.entry.id,revision:made.entry.revision};
+  assert.equal(access.readReference({...reference,scope,root:contexts.project.root}).id,made.entry.id);
+  const denied=refusalOf(()=>access.readReference({...reference,scope:{kind:'project',id:'scope-forged'}}));
+  assert.match(denied,UNADMITTED);
+  // A real directory as the root does not launder an id the registry never issued.
+  for(const forgedScope of [{kind:'project',id:'scope-forged'},{kind:'project',id:`${scope.id}0`},{kind:'organization',id:scope.id},{kind:'project',id:'scope forged'},{kind:'elsewhere',id:scope.id} as never])
+   for(const forgedRoot of [contexts.project.root,undefined])
+    assert.equal(refusalOf(()=>access.readReference({...reference,scope:forgedScope,root:forgedRoot})),denied,'an invented scope refuses with or without a plausible root');
+  // Dropping the root does not open it either, and the honest spelling still answers.
+  assert.equal(refusalOf(()=>access.readReference({...reference,scope:{kind:'project',id:'scope-forged'}})),denied);
+  assert.equal(access.readReference({...reference,scope}).id,made.entry.id);
+  // The door is total: a reference that is not a reference refuses like the rest.
+  assert.equal(refusalOf(()=>access.readReference(null as never)),denied);
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("a reference already returned is refused on replay after revocation or retargeted to another scope",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-replay-'));
+ try {
+  const company=join(root,'company');mkdirSync(company);
+  const project=join(root,'project');mkdirSync(project);
+  const orgStore=new SharedMemoryStore({root:company,scope:sharedScope('organization',company)});
+  const contexts=new SharedContexts({cwd:project,organizations:[company]});
+  const made=contexts.project.create(item('project-owner'),-1);assert.ok(!('conflict' in made));
+  const orgMade=orgStore.create(item('org-owner'),-1);assert.ok(!('conflict' in orgMade));
+  const grants=new SharedGrants();const scope=contexts.project.scope;const orgScope=orgStore.scope;
+  grants.grant({principal:'alice',realm:'enterprise',scope,operations:['search','read']});
+  grants.grant({principal:'alice',realm:'enterprise',scope:orgScope,operations:['search','read']});
+  const access=new SharedRetrieval({principal:'alice',realm:'enterprise',grants,stores:contexts.stores()});
+  const reference={scope,id:made.entry.id,revision:made.entry.revision,root:contexts.project.root};
+  const entry=access.readReference(reference);assert.equal(entry.text,'preserve API');
+  const denied=refusalOf(()=>access.readReference({...reference,scope:{kind:'project',id:'scope-forged'}}));
+  // A reference carried to another scope may only keep pointing at that scope. Root A on a B reference is incoherent and refuses like a denial.
+  for(const forged of [{...reference,scope:orgScope,root:contexts.project.root},{...reference,scope:orgScope,root:join(root,'unrelated')}])
+   assert.equal(refusalOf(()=>access.readReference(forged)),denied,'a replayed reference cannot be retargeted with another scope root');
+  // Root B (or none at all) is a coherent reference to a granted scope, so it is admitted and then misses: never A's entry, never a leak of it.
+  for(const replayed of [{...reference,scope:orgScope,root:orgStore.root},{scope:orgScope,id:reference.id,revision:reference.revision}])
+   assert.equal(refusalOf(()=>access.readReference(replayed)),'Error: Shared memory reference not found.','a coherent retarget misses instead of answering with the other scope entry');
+  assert.equal(access.readReference({scope:orgScope,id:orgMade.entry.id,revision:orgMade.entry.revision,root:orgStore.root}).text,'preserve API','the honest organization reference still answers, so the misses above were misses and not a blanket refusal');
+  // The re-check after the projection is not dead code: a grant that is live when the door opens and spent by the read itself still refuses.
+  grants.grant({principal:'dave',realm:'enterprise',scope,operations:['read']});
+  const racing=new SharedRetrieval({principal:'dave',realm:'enterprise',grants,stores:[{scope,root:contexts.project.root,read(){const profile=contexts.project.read();grants.revoke({principal:'dave',scope});return profile;}}]});
+  const inFlight=refusalOf(()=>racing.readReference(reference));
+  assert.match(inFlight,/authorization changed/);
+  assert.doesNotMatch(inFlight,/preserve API/,'the entry the racing read produced never reaches the principal');
+  // Revoke and replay the untouched object on the accessor that already served it: no cache, no stale window.
+  grants.revoke({principal:'alice',scope});
+  assert.equal(refusalOf(()=>access.readReference(reference)),denied);
+  assert.throws(()=>access.read(reference.scope),/not authorized/);
+  // The revocation named the project scope, so the organization door stays open but still cannot answer with the project entry.
+  assert.equal(refusalOf(()=>access.readReference({...reference,scope:orgScope,root:orgStore.root})),'Error: Shared memory reference not found.');
+  // The scope is still granted to nobody under that principal, whoever asks.
+  grants.revoke({principal:'alice'});
+  assert.equal(refusalOf(()=>access.readReference(reference)),denied);
+  assert.equal(refusalOf(()=>new SharedRetrieval({principal:'alice',realm:'enterprise',grants,stores:contexts.stores()}).readReference(reference)),denied);
+  // A principal that still holds the organization grant is untouched by the revocation that named project scope.
+  grants.grant({principal:'alice',realm:'enterprise',scope:orgScope,operations:['read']});
+  const fresh=new SharedRetrieval({principal:'alice',realm:'enterprise',grants,stores:contexts.stores()});
+  assert.equal(fresh.readReference({scope:orgScope,id:orgMade.entry.id,revision:orgMade.entry.revision,root:orgStore.root}).text,'preserve API');
+  assert.equal(refusalOf(()=>fresh.readReference(reference)),denied);
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("a root outside every declared scope, a traversal spelling and a symlink are refused unopened",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-outside-'));
+ try {
+  const project=join(root,'project');mkdirSync(project);
+  const outside=join(root,'outside');mkdirSync(outside);
+  // Both bad roots sit on a real directory with its own damage: opening one would either answer with its text or raise its own error.
+  const outsider=new SharedMemoryStore({root:outside,scope:sharedScope('organization',outside)});
+  assert.ok(!('conflict' in outsider.create(item('outsider'),-1)));
+  const damaged=join(root,'damaged');mkdirSync(damaged);writeFileSync(join(damaged,'context.jsonl'),'not a journal\n');
+  const link=join(root,'link-to-project');symlinkSync(project,link);
+  const contexts=new SharedContexts({cwd:project});
+  const made=contexts.project.create(item('owner'),-1);assert.ok(!('conflict' in made));
+  const grants=new SharedGrants();const scope=contexts.project.scope;
+  grants.grant({principal:'alice',realm:'project',scope,operations:['search','read']});
+  const access=new SharedRetrieval({principal:'alice',realm:'project',grants,stores:contexts.stores()});
+  const reference={scope,id:made.entry.id,revision:made.entry.revision};
+  const denied=refusalOf(()=>access.readReference({...reference,scope:{kind:'project',id:'scope-forged'}}));
+  assert.match(denied,UNADMITTED);
+  for(const foreignRoot of [outside,join(contexts.project.root,'..','outside'),damaged,join(contexts.project.root,'..','damaged'),link,join(contexts.project.root,'..','link-to-project'),'/etc',`${outside}${sep}`]) {
+   const message=refusalOf(()=>access.readReference({...reference,root:foreignRoot}));
+   assert.equal(message,denied,`a root outside every declared scope is refused like a denied scope: ${foreignRoot}`);
+   assert.doesNotMatch(message,/not a journal|is not a directory|preserve API/,`nothing about ${foreignRoot} may surface`);
+  }
+  // `..` is normalization, not an escape: the spellings that land back on the granted root are admitted, and open nothing else.
+  assert.equal(access.readReference({...reference,root:join(contexts.project.root,'..','shared')}).text,'preserve API');
+  assert.equal(access.readReference({...reference,root:join(contexts.project.root,'nowhere','..')}).text,'preserve API');
+  assert.equal(access.readReference({...reference,root:`${contexts.project.root}/`}).text,'preserve API');
+  // The granted scope itself still answers, so the refusals above are not the root being banned wholesale.
+  assert.equal(access.readReference(reference).text,'preserve API');
  } finally {rmSync(root,{recursive:true,force:true});}
 });
