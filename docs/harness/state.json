@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "8adcb0e",
+  "referenceCommit": "802d8b7",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3225,6 +3225,66 @@
         "EV-ROUTE-ALIAS"
       ],
       "notes": "Discovery raw resolve vs realpath ; vérifier sans aucun fichier utilisateur Bounded slice verified after alias correction:50 targeted PASS;796/794/0/2 full. Parents and R06 remain open."
+    },
+    {
+      "id": "H06.1a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.1",
+        "REQ-H06.2",
+        "REQ-H06.4"
+      ],
+      "dependencies": [
+        "H07.2b"
+      ],
+      "description": "Consultations agents parallèles sous contrôleur avec sorties sourcées et stale refusal",
+      "systems": [
+        "src/adapters/agent-consultation.ts",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/overlays/Palette.tsx",
+        "test/agent-consultation.test.ts",
+        "test/agent-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.1",
+        "AC-H06.2",
+        "AC-H06.4"
+      ],
+      "verification": "Parallel adapters, late/stale/stop/refusal, durable read, Ink three sizes, differential/full/build",
+      "evidence": [
+        "EV-AGENT-CONSULTATION"
+      ],
+      "notes": "Bounded consultation/UI verified. Models inherited, no concurrent code writing or full H06 claim. 802/800/0/2 full before final execution-aware projection adjustment;39 targeted/build PASS after it."
+    },
+    {
+      "id": "H06.5a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.5",
+        "REQ-H08.3"
+      ],
+      "dependencies": [
+        "H06.1a"
+      ],
+      "description": "Palette agents live, rôles/modèles/résultats et historique sans mutation",
+      "systems": [
+        "src/adapters/agent-consultation.ts",
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/overlays/Palette.tsx",
+        "test/agent-consultation.test.ts",
+        "test/agent-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.5",
+        "AC-H08.3"
+      ],
+      "verification": "Parallel adapters, late/stale/stop/refusal, durable read, Ink three sizes, differential/full/build",
+      "evidence": [
+        "EV-AGENT-CONSULTATION"
+      ],
+      "notes": "Bounded consultation/UI verified. Models inherited, no concurrent code writing or full H06 claim. 802/800/0/2 full before final execution-aware projection adjustment;39 targeted/build PASS after it."
     }
   ],
   "acceptance": [
@@ -4287,6 +4347,12 @@
       "result": "PASS_PARTIAL",
       "method": "Before/after actual Docker/runtime, snapshots, differential typing/build/full; solo review",
       "details": "50 targeted PASS;796/794/0/2 full PASS. evaluation/route-alias/evidence.md. Parents and R06 remain open."
+    },
+    {
+      "id": "EV-AGENT-CONSULTATION",
+      "result": "PASS_PARTIAL",
+      "method": "Concurrent adapters, two binary subprocesses, direct correction/stop, Ink real input/resize, typing/build/full and solo review",
+      "details": "evaluation/agent-consultation/evidence.md;58 targeted,5 processes,802/800/0/2 full,39 final targeted. Scope and verification timing explicit."
     }
   ],
   "risks": {
@@ -4296,10 +4362,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "8adcb0e",
+    "lastPassedCommit": "802d8b7",
     "lastFullSuite": {
-      "tests": 796,
-      "passed": 794,
+      "tests": 802,
+      "passed": 800,
       "failed": 0,
       "skipped": 2
     },
@@ -4326,7 +4392,8 @@
     "workingTreeVaultContainers": "PASS bounded local slices;780/778/0/2 full,49 targeted, build PASS with32 inherited diagnostics. Overall IMPLEMENTING; no global closure.",
     "workingTreeAutomaticVaultTools": "PASS finite local publication/auto route;788/786/0/2 full,50 targeted +37 enterprise additional. Tool vocabulary H07.2b pending, global IMPLEMENTING.",
     "workingTreeCurrentTools": "PASS H07.2b finite current namespace in schemas/prompts;793/791/0/2 full,42 targeted, build PASS32 baseline diagnostics.",
-    "workingTreeRouteAlias": "PASS bounded refresh/alias masking;50 targeted,796/794/0/2 full; build PASS32 inherited diagnostics. Overall IMPLEMENTING."
+    "workingTreeRouteAlias": "PASS bounded refresh/alias masking;50 targeted,796/794/0/2 full; build PASS32 inherited diagnostics. Overall IMPLEMENTING.",
+    "workingTreeAgentConsultation": "PASS_PARTIAL:802/800/0/2 full before final projection adjustment;39 targeted/build PASS after. H06 parents remain open."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4442,7 +4509,8 @@
         "H07.4",
         "H07.5",
         "H07.4a",
-        "H07.2b"
+        "H07.2b",
+        "H06.1a"
       ],
       "dependencies": [
         "C1",
@@ -4471,7 +4539,8 @@
         "H09.4a",
         "H09.5a",
         "E01.4a",
-        "E01.4b"
+        "E01.4b",
+        "H06.5a"
       ],
       "dependencies": [
         "C1",

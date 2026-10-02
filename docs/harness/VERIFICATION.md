@@ -70,3 +70,6 @@ Vérification locale Vault/conteneurs : test/vault.test.ts (versions/source/CAS 
 
 
 H09.3d/e : refresh de route au start/reprise et protection des contrôleurs sous alias vérifiés, EV-ROUTE-ALIAS (evaluation/route-alias/evidence.md).50 ciblés PASS;796 tests/794 pass/0 fail/2 skipped;build PASS32 diagnostics hérités, garde différentielle PASS. H09.3b rétabli après correction du contre-exemple. Parents/R06 ouverts;global IMPLEMENTING.
+
+
+2026-10-02 H06.1a/H06.5a : consultations parallèles via binding sélectionné → notes terminal.agent → propositions non vérifiées → palette Agents live. EV-AGENT-CONSULTATION ;58 ciblés, deux processus réels,802/800/0/2 full avant dernière correction projection,39 ciblés/build après. Configuration multi-modèle distinct par agent, code concurrent et auto-amélioration évaluée restent parents ouverts. Global IMPLEMENTING.

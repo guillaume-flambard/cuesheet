@@ -100,3 +100,6 @@ Effet outil → intent durable contrôleur → admission Shell.prepare → Docke
 Autorités par domaine : objectifs/preuves restent dans leurs journaux contrôlés existants ; mémoire structurée conserve son journal partagé/corrections. Le Vault document actuel ajoute le corpus documentaire versionné, avec références de sources ; il ne duplique pas autorité des goals, critères ou permissions. La façade canonique entreprise unifiée et les liens plan/goal sont encore H01/H02/E01.5b, sans inventer leur livraison.
 
 Plan/spec modèle courant → ProjectVaultPublisher avant prochaine infer → journal Vault projet sous claim/source → index reconstruit. Phase seule déduplique ; humain/résolu protège ; crash plan/pub repris. Outils : chooseToolRoute auto/config owner → container/local annoncé/unavailable entreprise ; aucun document n’accorde route ou grant.
+
+
+2026-10-02 H06.1a/H06.5a : consultations parallèles via binding sélectionné → notes terminal.agent → propositions non vérifiées → palette Agents live. EV-AGENT-CONSULTATION ;58 ciblés, deux processus réels,802/800/0/2 full avant dernière correction projection,39 ciblés/build après. Configuration multi-modèle distinct par agent, code concurrent et auto-amélioration évaluée restent parents ouverts. Global IMPLEMENTING.

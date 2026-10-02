@@ -47,7 +47,7 @@ it("a correction discards old text and actions, and fresh proposals use the new 
   await new Promise((r) => setTimeout(r, 10));
   assert.deepEqual(calls.map((c) => c.name), ["ls"]);
   assert.ok(frames[1]!.directives.some((d) => d.text === "show the directory instead"));
-  assert.ok(frames[0]!.directives.some((d) => d.text === "tools: ls, cat, organize_work, remember, create_skill, describe_objective, read_history"));
+  assert.ok(frames[0]!.directives.some((d) => d.text === "tools: ls, cat, organize_work, remember, create_skill, describe_objective, consult_agents, read_history"));
   assert.equal(store.get().entries.some((e) => e.kind === "cuesheet" && e.text === "obsolete answer"), false);
   assert.ok(store.get().entries.some((e) => e.kind === "cuesheet" && e.text === "fresh answer"));
   assert.equal(store.get().entries.some((e) => e.kind === "status" && e.label === "work" && e.certainty === "confirmed"), false);

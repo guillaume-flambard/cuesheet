@@ -13,12 +13,15 @@ const commands = [
   { label: "Reprendre le travail", overlay: "resume" },
   { label: "Critère de validation", overlay: "check" },
   { label: "Contexte partagé", overlay: "context" },
+  { label: "Agents", overlay: "agents" },
 ] as const;
 
-export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
+export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
   const [at, setAt] = useState(0);
   const [approval,setApproval]=useState<CheckConfirmation|null>(null);
   const [contextPage,setContextPage]=useState<SharedContextPage|null>(null);
+  const [agentsMode,setAgentsMode]=useState(false);
+  useEffect(()=>{if(!agentsMode)return;const timer=setInterval(()=>setContextPage(p=>props.onAgents?.(p?.offset??0)??p),500);return ()=>clearInterval(timer);},[agentsMode,props.onAgents]);
   const [notice,setNotice]=useState("");
   const [offset,setOffset]=useState(0);const [height,setHeight]=useState(0);const content=useRef<DOMElement>(null);
   const viewport=Math.max(1,(props.rows ?? 10)-3);
@@ -29,7 +32,7 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
       if(key.upArrow || key.pageUp)setOffset(i=>Math.max(0,i-(key.pageUp?viewport:1)));
       const page=input.toLowerCase();
       if((page==="n" && contextPage.nextOffset!==null) || (page==="p" && contextPage.offset>0)){
-        setContextPage(props.onContext?.(page==="n" ? contextPage.nextOffset! : Math.max(0,contextPage.offset-20),contextPage.digest) ?? null);setOffset(0);
+        setContextPage((agentsMode ? props.onAgents : props.onContext)?.(page==="n" ? contextPage.nextOffset! : Math.max(0,contextPage.offset-20),contextPage.digest) ?? null);setOffset(0);
       }
       return;
     }
@@ -46,12 +49,13 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
       if(selected==="new") props.onNew?.();
       else if(selected==="resume") props.onResume?.();
       else if(selected==="check") {const snapshot=props.onCheck?.() ?? null;setApproval(snapshot);setOffset(0);setNotice(snapshot ? "" : "Aucun check épinglé à renouveler pour le contrat courant.");}
+      else if(selected==="agents") {setAgentsMode(true);setContextPage(props.onAgents?.() ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun agent disponible."]});setOffset(0);}
       else if(selected==="context") {setContextPage(props.onContext?.() ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]});setOffset(0);}
       else props.onOpen(selected);
     }
   });
   if(contextPage)return <Box width={props.width} flexDirection="column">
-    <Text color={inkColor(theme.brand)}>Contexte partagé</Text>
+    <Text color={inkColor(theme.brand)}>{agentsMode ? "Agents" : "Contexte partagé"}</Text>
     <Box height={viewport} overflow="hidden" flexDirection="column" flexShrink={0}>
       <Box ref={content} flexDirection="column" flexShrink={0} marginTop={-offset}>
         {contextPage.lines.map((line,i)=><Text key={i}>{line.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,"")}</Text>)}

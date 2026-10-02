@@ -125,7 +125,7 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const organizationRoots=process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)??[];
   const vaultForScope=(scope:string)=>new VaultRetrieval({principal:"local-owner",scopes:[{kind:"project",id:sharedScope("project",scope).id,root:join(scope,".cuesheet","vault")},...organizationRoots.map(root=>({kind:"enterprise" as const,id:sharedScope("organization",root).id,root:join(resolve(root),"vault")}))],authorize:()=>true});
   const vaultPublisherForScope=settings.journal ? (scope:string)=>new ProjectVaultPublisher({root:join(scope,".cuesheet","vault"),scope,sessionId:settings.journal!.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
-  const options: ProducerOptions = {vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const options: ProducerOptions = {modelLabel:()=>binding.label,vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */
