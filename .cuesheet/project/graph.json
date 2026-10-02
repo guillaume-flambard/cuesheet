@@ -278,6 +278,22 @@
       "checkRefs": []
     },
     {
+      "id": "entity.integration.producer",
+      "kind": "entity",
+      "domainId": "domain.integration",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "apps/terminal/src/producer/index.ts",
+          "digest": "1fd5e7ddd8e2bc723be448859ad85d2aa42819a1f7befe185d55cb69fbbf4eff"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
       "id": "entity.integration.project_binding",
       "kind": "entity",
       "domainId": "domain.integration",
@@ -1278,6 +1294,16 @@
       }
     },
     {
+      "id": "edge:contains:domain.integration--entity.integration.producer",
+      "type": "contains",
+      "dependent": "domain.integration",
+      "dependency": "entity.integration.producer",
+      "sourceRef": {
+        "path": "apps/terminal/src/producer/index.ts",
+        "digest": "1fd5e7ddd8e2bc723be448859ad85d2aa42819a1f7befe185d55cb69fbbf4eff"
+      }
+    },
+    {
       "id": "edge:contains:domain.integration--entity.integration.project_binding",
       "type": "contains",
       "dependent": "domain.integration",
@@ -1498,6 +1524,26 @@
       }
     },
     {
+      "id": "edge:depends_on:entity.integration.producer--entity.integration.composition",
+      "type": "depends_on",
+      "dependent": "entity.integration.producer",
+      "dependency": "entity.integration.composition",
+      "sourceRef": {
+        "path": "src/adapters/code-worker-integration.ts",
+        "digest": "74c35859d54ef5014a8decafd414da4488dc7aba253c89383b3b48edd2f39821"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.integration.producer--entity.integration.shared_context",
+      "type": "depends_on",
+      "dependent": "entity.integration.producer",
+      "dependency": "entity.integration.shared_context",
+      "sourceRef": {
+        "path": "src/adapters/shared-context.ts",
+        "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+      }
+    },
+    {
       "id": "edge:depends_on:entity.integration.surface--entity.integration.project_binding",
       "type": "depends_on",
       "dependent": "entity.integration.surface",
@@ -1688,16 +1734,6 @@
       }
     },
     {
-      "id": "edge:implements:entity.integration.composition--entity.integration.surface",
-      "type": "implements",
-      "dependent": "entity.integration.composition",
-      "dependency": "entity.integration.surface",
-      "sourceRef": {
-        "path": "src/index.ts",
-        "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
-      }
-    },
-    {
       "id": "edge:implements:entity.integration.project_binding--contract.integration.binding",
       "type": "implements",
       "dependent": "entity.integration.project_binding",
@@ -1705,16 +1741,6 @@
       "sourceRef": {
         "path": "src/adapters/project-binding.ts",
         "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
-      }
-    },
-    {
-      "id": "edge:implements:entity.integration.shared_context--entity.integration.surface",
-      "type": "implements",
-      "dependent": "entity.integration.shared_context",
-      "dependency": "entity.integration.surface",
-      "sourceRef": {
-        "path": "src/index.ts",
-        "digest": "b9d071df8d6b83655e1570232b05528a3bf19efa987ed1b715f7784d6ae630eb"
       }
     },
     {
