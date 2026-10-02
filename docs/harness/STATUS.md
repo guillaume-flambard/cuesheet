@@ -208,3 +208,5 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 2026-10-02 H09.3f3/f3a/f4/f3b DONE bornés : [EV-OWNER-CAPSULE](evaluation/owner-capsule/evidence.md), oracle image épinglé/capture/scratch/source guards, tmp Linux privé, portabilité et cache dérivé.869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 ciblés/46 portable,build32 baseline. Modèle réel/agents code parallèles/recovery complet restent ouverts, global IMPLEMENTING.
 
 2026-10-02 H06.2a DONE borné : [EV-WORKER-PACKETS](evaluation/worker-packets/evidence.md),14 ciblés PASS/build32 baseline. Validation pure des responsabilités ; admission/exécution/récupération et UI code workers encore pending. Global IMPLEMENTING.
+
+2026-10-02 H06.2b1/c1 DONE bornés : [EV-CODE-WORKER-FOUNDATIONS](evaluation/code-worker-foundations/evidence.md),23 ciblés,882/880/0/2 full,build32 baseline. Préparation Git et boucles privées avec vrais processus Node ; raccordement terminal/journaux durables, skills/UI/intégration/recovery restent ouverts. Global IMPLEMENTING.

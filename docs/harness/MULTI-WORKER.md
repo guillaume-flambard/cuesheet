@@ -59,3 +59,37 @@ Compatibilité : anciens journaux et consultations inchangés ; UI réutilise la
 palette Agents. Auth distante et synchronisation entreprise restent aux parents.
 
 H06.2a vérifié borné : [EV-WORKER-PACKETS](evaluation/worker-packets/evidence.md). Adaptateur pur non raccordé ; tous les critères runtime des étapes suivantes restent pending.
+
+## H06.2b1 — préparation atomique du lot avant exécution
+
+Le contrôleur valide et copie le lot complet, résout toutes les routes configurées
+avant toute allocation puis capture une seule base/source dirty. Les allocations
+sont distinctes, controller-owned UUID, et séquentielles ; aucune boucle modèle
+ne démarre avant disponibilité de tout le lot et revalidation de la source et
+du contrat. Les callbacks de route sont owner-only et ne reçoivent aucun chemin
+modèle. Le journal commun enregistre preparing/ready ou refused/uncertain/stale
+avec IDs, paths et provenance. Une allocation partielle est conservée, jamais
+effacée ; un échec empêche la publication du lot comme prêt. Cette étape ne
+prouve pas encore exécution parallèle, isolation des effets ni intégration.
+
+AC-H06.2b1 : deux worktrees réels depuis source dirty/staged intacte, aucun appel
+infer, refus route avant allocation, correction en préparation sans ready,
+source drift refusé et aucun fallback. Vérification Git réel et chemins de refus.
+
+## H06.2c1 — boucle privée et admission de chaque effet
+
+Adaptateur de boucle bornée owner (1–8 inférences), modèle déjà résolu et
+exécuteur déjà scoppé. Chaque callback append privé doit persister avant retour.
+Un intent lié à un effect ID propre est inscrit avant chaque appel externe, puis
+un receipt lié seulement si exit entier est confirmé. Exit null, exception
+après intent ou correction pendant effet termine en uncertain ; aucune répétition
+automatique. Les outils déclarés viennent uniquement de owner allowlist, jamais
+des tâches ; prepare/integrate/finish/git et capacités de gouvernance sont exclus.
+Avant chaque inférence et chaque effet : signal et contrat courant contrôlés ;
+inférence tardive après correction écartée. Aucun texte ou sortie outils ne
+ferme un goal. Append en échec bloque les effets ; pas de transcript privé
+communiqué automatiquement. Les deux workers ne partagent aucun champ mutable.
+AC-H06.2c1 : effets simultanés attribués séparément, null sans receipt/retry,
+outils interdits non exécutés, correction pendant inférence et entre deux outils,
+append échoué avant intent et exécution bornée. Raccordement runtime/journal
+durable effectif et processus fournisseurs encore aux parents.

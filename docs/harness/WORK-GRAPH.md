@@ -98,3 +98,5 @@ H09.3f4 P1 DEFECT IN_PROGRESS : portable imports/fixtures/CWD ; requis avant ora
 2026-10-02 [MULTI-WORKER.md](MULTI-WORKER.md) : H06.2a IN_PROGRESS → H06.2b → H06.2c → H06.4a → H06.3c2 → H06.5c. Deux workers code isolés, journaux privés, correction directe, intégration vérifiée et UI ; tous les critères runtime restent ouverts.
 
 2026-10-02 H06.2a DONE borné : [EV-WORKER-PACKETS](evaluation/worker-packets/evidence.md),14 ciblés PASS/build32 baseline. Validation pure des responsabilités ; admission/exécution/récupération et UI code workers encore pending. Global IMPLEMENTING.
+
+2026-10-02 H06.2b1/c1 DONE bornés : [EV-CODE-WORKER-FOUNDATIONS](evaluation/code-worker-foundations/evidence.md),23 ciblés,882/880/0/2 full,build32 baseline. Préparation Git et boucles privées avec vrais processus Node ; raccordement terminal/journaux durables, skills/UI/intégration/recovery restent ouverts. Global IMPLEMENTING.

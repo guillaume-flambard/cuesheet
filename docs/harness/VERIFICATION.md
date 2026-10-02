@@ -127,3 +127,5 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 2026-10-02 H05.2b/H06.3b4 DONE bornés : [EV-AUTOMATIC-ISOLATION](evaluation/automatic-isolation/evidence.md),55 ciblés,866/864/0/2 full,build/différentiel32 baseline PASS. Première commande code Git isolée par contrôleur, anciens appels rejetés ; null reste incertain/replay gated. Global IMPLEMENTING, parents ouverts.
 
 2026-10-02 H09.3f3/f3a/f4/f3b DONE bornés : [EV-OWNER-CAPSULE](evaluation/owner-capsule/evidence.md), oracle image épinglé/capture/scratch/source guards, tmp Linux privé, portabilité et cache dérivé.869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 ciblés/46 portable,build32 baseline. Modèle réel/agents code parallèles/recovery complet restent ouverts, global IMPLEMENTING.
+
+2026-10-02 H06.2b1/c1 DONE bornés : [EV-CODE-WORKER-FOUNDATIONS](evaluation/code-worker-foundations/evidence.md),23 ciblés,882/880/0/2 full,build32 baseline. Préparation Git et boucles privées avec vrais processus Node ; raccordement terminal/journaux durables, skills/UI/intégration/recovery restent ouverts. Global IMPLEMENTING.
