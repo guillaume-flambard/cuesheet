@@ -49,6 +49,100 @@ fois complets et validés. Un flux interrompu ne produit pas un outil partiel ni
 fausse réponse finale. Réduire les écritures de vue tout en garantissant la
 durabilité des faits ; mesurer fréquence de refresh et comportement après crash.
 
+## Fabric de modèles résilient
+
+Tout provider externe peut échouer. Quota épuisé, limite atteinte, timeout, perte
+réseau, indisponibilité, surcharge, dépassement de contexte, réponse malformée,
+flux interrompu, authentification absente, modèle renommé ou retiré : ce sont des
+événements d'infrastructure, pas des échecs de travail.
+
+Une panne de provider ne doit pas devenir une panne de travail. Le modèle n'est
+pas l'identité du worker. Un worker porte son état de travail, sa capsule de
+contexte, ses capacités requises et ses preuves accumulées ; le modèle est du
+calcul remplaçable. Le provider expose des modèles et n'est pas encodé dans l'état
+de travail. Le routage va du travail vers les exigences de capacité, puis vers le
+modèle, puis vers un provider disponible.
+
+Avant toute inférence coûteuse, un point de reprise durable existe déjà hors du
+modèle : unité de travail, intention courante, révision de contexte,
+constats établis, preuves, question ouverte et contrat de sortie attendu. Si le flux
+meurt après quarante secondes, le modèle est perdu et l'état du worker reste
+intact ; un autre modèle continue.
+
+### Idempotence des effets
+
+Distinguer inférence, effet demandé, effet observé et preuve durable. Avant
+d'exécuter un effet, vérifier s'il a déjà été observé : si oui, réutiliser le
+résultat. Si un réseau coupe après la création d'une migration, le modèle suivant
+ne doit pas la recréer.
+
+### Classification avant reprise
+
+Transient : timeout, reset réseau, 5xx, flux interrompu, donc reprise avec backoff.
+Quota épuisé : ne pas réessayer en boucle, marquer indisponible sur l'horizon
+adapté et basculer. Contexte dépassé : ne pas renvoyer la même requête, réduire ou
+décomposer le contexte, ou choisir un modèle à fenêtre plus large. Échec
+d'authentification : ne pas marteler le provider, marquer indisponible. Modèle
+indisponible : mettre le catalogue à jour et rerouter. Requête invalide : corriger
+la requête, un autre provider ne répond pas à une requête invalide.
+
+### Bascules
+
+Le remplacement doit préserver les capacités exigées par l'inférence courante :
+outils, taille de contexte, force de code, latence admissible. Si aucun équivalent
+n'existe, réduire la requête en sécurité, décomposer le travail, escalader vers un
+autre provider, ou remonter la limite à la personne. Jamais de dégradation silencieuse
+sous le niveau requis. L'échelle est dynamique, requirements plus disponibilité
+courante plus coût plus latence plus qualité plus budget restant. Un modèle préféré
+en panne ne force pas l'usage d'un modèle cher si un modèle suffisant et gratuit
+existe.
+
+### Disjoncteurs et protection du troupeau
+
+Si un provider échoue à répétition, ouvrir un disjoncteur, le retirer du routage,
+sonder périodiquement, puis refermer en demi-ouvert sur sonde réussie. Avec une
+équipe élastique, la pression provider est vue globalement : réduire la concurrence,
+répartir les workers sur plusieurs modèles et providers, différer l'inférence non
+critique, prioriser le chemin critique. Trente workers ne répéteront pas le même
+mur. La backpressure est globale, pas par worker. Le quota est une ressource de
+budget au même titre que les tokens, l'argent, le temps, la CPU et la mémoire.
+
+### Invariants
+
+1. Les providers sont de l'infrastructure, les modèles sont du calcul remplaçable,
+   les workers sont durables, l'intention survit à la panne. Si une limite de quota,
+   une coupure réseau ou une indisponibilité peut détruire une mission
+   récupérable, l'architecture du runtime est fausse.
+2. Une panne de calcul locale n'est pas une panne du flux global. L'échec d'un seul
+   worker ou provider n'affecte que la plus petite partie possible du graphe ; le
+   travail indépendant continue.
+3. Un modèle ne dégrade jamais silencieusement sous les capacités requises, et
+   l'identité du worker, l'unité de travail et les preuves accumulées survivent à
+   toute bascule.
+4. La récupération est visible sans être intrusive. Les reprises normales se
+   montrent en une ligne sobre ; on n'interrompt la personne que si aucune
+   alternative acceptable n'existe, si des credentials sont requises, si la
+   politique de coût serait dépassée, ou si l'intention ne peut pas continuer sans
+   danger.
+
+### Dégradation gracieuse et hedges mesurés
+
+Si seuls des modèles faibles ou gratuits restent, changer de stratégie plutôt que de
+confier une décision d'architecture difficile à un modèle seul : exploration
+déterministe, décomposition, plusieurs analyses ciblées peu coûteuses, vérification
+indépendante et synthèse. Le runtime compense un modèle plus faible par une meilleure
+ingénierie de harnais. Le model hedging, envoyer la même question bornée à deux
+modèles en parallèle, ne se justifie que pour du travail sensible au temps et
+incertain ; la première réponse étayée gagne, la requête inutile est annulée. La revue
+peut employer délibérément une autre famille de modèle pour casser la corrélation de
+défaillance, seulement si le risque justifie le calcul supplémentaire.
+
+La politique de routage est un état vivant synchronisé avec l'exécution. La
+personne peut dire « n'utilise aucun modèle payant », « seulement Zen et Go », «
+pour celui-ci le plus fort disponible », ou « arrête d'utiliser ce modèle » ; les
+workers actifs se réconcilient à la frontière sûre. Les performances réelles par
+type de travail sont apprises de l'exécution, pas de impressions.
+
 ## Acceptation et tâches
 
 - [ ] H07.1 Anthropic direct et contrats par provider avec docs et essais réels.

@@ -675,6 +675,27 @@
       "acceptance": [
         "AC-H06.9"
       ]
+    },
+    {
+      "id": "REQ-H07.6",
+      "description": "Une panne de provider ne devient jamais une panne de travail : le modèle est du calcul remplaçable, distinct du worker qui porte l'état, du contexte, les capacités requises et les preuves accumulées ; le provider expose des modèles et n'est pas encodé dans l'état de travail.",
+      "acceptance": [
+        "AC-H07.6"
+      ]
+    },
+    {
+      "id": "REQ-H07.7",
+      "description": "Les échecs sont classifiés avant toute reprise et le remplacement préserve les capacités exigées : transient, quota épuisé, contexte dépassé, authentification absente, modèle indisponible, requête invalide ; jamais de dégradation silencieuse sous le niveau requis, et l'identité du worker, l'unité de travail et les preuves survivent à la bascule.",
+      "acceptance": [
+        "AC-H07.7"
+      ]
+    },
+    {
+      "id": "REQ-H07.8",
+      "description": "Avant toute inférence coûteuse, un point de reprise durable existe hors du modèle ; un flux interrompu conserve les effets confirmés, rejette l'inférence incomplète et ne duplique aucun effet déjà observé ; la pression provider applique une backpressure globale plutôt que de laisser chaque worker marteler le même mur.",
+      "acceptance": [
+        "AC-H07.8"
+      ]
     }
   ],
   "tasks": [
@@ -5792,6 +5813,69 @@
       "verification": "Tests des trois commandes, des checkpoints et de la réévaluation des travaux actifs",
       "evidence": [],
       "notes": "Spécification ajoutée le 2026-10-02 ; aucune implémentation revendiquée. Garantie d'autorité humaine : priorité, contrainte et portée modifiables en direct."
+    },
+    {
+      "id": "H07.6",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.6"
+      ],
+      "dependencies": [
+        "H07.1"
+      ],
+      "description": "Séparer l'identité du worker de son modèle et classified provider failures comme infrastructure.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.6"
+      ],
+      "verification": "Tests d'indépendance worker/modèle et de classification de panne ; preuve dans evaluation/",
+      "evidence": [],
+      "notes": "Spécification ajoutée le 2026-10-02 à partir de la direction Fabric de modèles résilient ; aucune implémentation revendiquée."
+    },
+    {
+      "id": "H07.7",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.7"
+      ],
+      "dependencies": [
+        "H07.6"
+      ],
+      "description": "Bascule préservant les capacités, classification des échecs et échelle de remplacement dynamique.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.7"
+      ],
+      "verification": "Tests d'exclusion des candidats non conformes et de non-dégradation silencieuse",
+      "evidence": [],
+      "notes": "Spécification ajoutée le 2026-10-02 ; aucune implémentation revendiquée. Ne jamais dégrader sous le niveau de capacité requis."
+    },
+    {
+      "id": "H07.8",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H07.8"
+      ],
+      "dependencies": [
+        "H07.6"
+      ],
+      "description": "Point de reprise hors modèle, récupération de flux interrompu sans rejouer d'effet, et backpressure globale.",
+      "systems": [
+        "07-PROVIDERS.md"
+      ],
+      "acceptance": [
+        "AC-H07.8"
+      ],
+      "verification": "Tests de reprise après flux interrompu et de non-duplication d'effet observé",
+      "evidence": [],
+      "notes": "Spécification ajoutée le 2026-10-02 ; aucune implémentation revendiquée. S'appuie sur le modèle effet demandé / effet observé existant."
     }
   ],
   "acceptance": [
@@ -7289,6 +7373,36 @@
       "verification": "automated,runtime",
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-H07.6",
+      "requirement": "REQ-H07.6",
+      "given": "Un worker en cours d'exécution avec son unité de travail, sa capsule de contexte, ses capacités requises et ses preuves accumulées.",
+      "when": "Le modèle assigned devient indisponible, quota épuisé ou en erreur.",
+      "then": "L'événement est classé comme incident d'infrastructure et non comme échec de travail ; le worker n'est ni détruit ni reformulé ; une route compatible est sélectionnée parmi les providers autorisés et autorisés par la politique de coût, et l'exécution reprend sur le même état ; aucune route payante n'est empruntée silencieusement.",
+      "verification": "automated,runtime,inspection",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.7",
+      "requirement": "REQ-H07.7",
+      "given": "Une inférence dont les exigences de capacité sont connues et plusieurs modèles candidats, dont certains conformes et d'autres non.",
+      "when": "Une bascule doit être décidée.",
+      "then": "Un candidat non conforme est écarté pour la raison exacte, par exemple outil manquant ou fenêtre de contexte insuffisante ; aucun modèle ne dégrade sous le niveau requis sans que la limite soit remontée ; si aucun équivalent n'existe, la requête est réduite en sécurité, décomposée, escaladée, ou la limitation est exposée à la personne.",
+      "verification": "automated,inspection",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H07.8",
+      "requirement": "REQ-H07.8",
+      "given": "Une mission dont plusieurs workers sont en cours et dont un fournisseur commence à throttler.",
+      "when": "Un flux s'interrompt en cours d'inférence et que la pression provider monte.",
+      "then": "Les effets déjà observés ne sont pas rejoués par le modèle suivant ; l'inférence incomplète est rejetée et non ajoutée aux preuves ; la reprise utilise un état durable hors modèle ; la concurrence est réduite ou répartie globalement plutôt que de laisser chaque worker réessayer indépendamment.",
+      "verification": "automated,runtime",
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -7700,11 +7814,11 @@
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 94,
+    "requirements": 97,
     "acceptanceVerified": 9,
-    "acceptancePending": 98,
+    "acceptancePending": 101,
     "p0_open": 70,
-    "p1_open": 43
+    "p1_open": 46
   },
   "workstreams": [
     {
