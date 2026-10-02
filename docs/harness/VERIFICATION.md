@@ -131,3 +131,5 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 2026-10-02 H06.2b1/c1 DONE bornés : [EV-CODE-WORKER-FOUNDATIONS](evaluation/code-worker-foundations/evidence.md),23 ciblés,882/880/0/2 full,build32 baseline. Préparation Git et boucles privées avec vrais processus Node ; raccordement terminal/journaux durables, skills/UI/intégration/recovery restent ouverts. Global IMPLEMENTING.
 
 2026-10-02 H06.2c2 VERIFYING : [EV-TERMINAL-CODE-WORKERS](evaluation/terminal-code-workers/evidence.md),run_code_workers branché producer/runtime, journaux privés durables, Agents, correction et model change directs.35+9 ciblés,886/884/0/2 full,build32 baseline. Preuve Container privé dédiée et intégration composée/recovery/live model restent ouverts. Global IMPLEMENTING.
+
+2026-10-02 H06.2c2/H06.3c2a DONE bornés : [EV-CODE-COMPOSITION](evaluation/code-composition/evidence.md),private Container proof et integrate_code_workers {} composition/check owner/apply/source finish.14 ciblés+1 Docker,893/891/0/2 full,build32 baseline. Crash recovery/cleanup/quota/UX dédiée et modèle réel restent ouverts. Global IMPLEMENTING.

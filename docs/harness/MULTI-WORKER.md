@@ -127,3 +127,33 @@ Frame final worker plafonné avant inférence (48k caractères ou budget owner),
 observations privées bornées ; dépassement refuse sans supprimer une contrainte.
 Publication des résultats via allSettled pour attendre les autres workers avant
 fermeture des journaux, même si une publication échoue.
+
+## H06.3c2a — composition et intégration contrôleur
+
+integrate_code_workers {} sélectionne uniquement le lot ready du journal parent
+et ses workers proposal au contrat courant. Les journaux privés sont réouverts
+avec claim ; effet incertain ou processus actif refuse. Les chemins/journaux/
+scopes sont recalculés et attestés depuis les admissions owner ; aucune entrée
+modèle ne sélectionne un fichier ou ne lie un check. Les deltas réels sont
+calculés tous contre la même source/base épinglée avant toute écriture ; chaque
+chemin doit être annoncé dans le paquet et les deltas de workers ne doivent
+pas se chevaucher (parent/enfant, casse ou normalisation Unicode compris).
+
+Créer une composition worktree controller-owned depuis la source dirty, puis
+y appliquer les deltas sans toucher la source. Vérifier captures workers/source
+avant et après copie, et comparer le delta composé exactement à lunion des
+deltas admis. Limites100 fichiers/4MiB par plan conservées ; copie de fichiers
+réguliers seulement, aucune installation/commande modèle durant composition.
+Le check owner épinglé au contrat courant valide le résultat composé ; aucune
+validation texte enfant. Ensuite plan composition→source existant, rechecks
+digest/contrat, application récupérable sous claim Git. Refus pré-apply laisse
+source/index/HEAD intacts ; apply partiel retourne null/uncertain et préserve
+composition/plan. Après applied, marquer le lot intégré et déverrouiller finish
+qui reste un check indépendant de la source. Les contributions et compositions
+ne sont jamais nettoyées automatiquement dans ce lot.
+
+AC-H06.3c2a : deux deltas disjoints intégrés sans réversion du premier, source
+dirty/index préservés ; scope réel hors paquet, conflit, drift, journal incertain,
+ancien contrat ou check refusé => source intacte ; composition et plan attribués
+persistés ; finish ne ferme que via check indépendant. Tests Git réels/runtime,
+full/build ; cleanup/crash recovery reste parent, risque R06/R09 ouvert.

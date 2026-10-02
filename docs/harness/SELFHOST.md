@@ -19,3 +19,5 @@ Pilote modèle réel H10.3a : trois essais natifs OpenCode/Big Pickle refusés p
 Admission premier code automatique livrée : contrôleur prépare worktree Git avant effet, sans décision demandée au modèle ; contexte frais requis, pas source fallback. Tranches [EV-AUTOMATIC-ISOLATION](evaluation/automatic-isolation/evidence.md) et owner oracle ajoutent les garanties vérifiées ; plein parcours selfhost reste non accepté.
 
 2026-10-02 H06.2c2 VERIFYING : [EV-TERMINAL-CODE-WORKERS](evaluation/terminal-code-workers/evidence.md),run_code_workers branché producer/runtime, journaux privés durables, Agents, correction et model change directs.35+9 ciblés,886/884/0/2 full,build32 baseline. Preuve Container privé dédiée et intégration composée/recovery/live model restent ouverts. Global IMPLEMENTING.
+
+2026-10-02 H06.2c2/H06.3c2a DONE bornés : [EV-CODE-COMPOSITION](evaluation/code-composition/evidence.md),private Container proof et integrate_code_workers {} composition/check owner/apply/source finish.14 ciblés+1 Docker,893/891/0/2 full,build32 baseline. Crash recovery/cleanup/quota/UX dédiée et modèle réel restent ouverts. Global IMPLEMENTING.

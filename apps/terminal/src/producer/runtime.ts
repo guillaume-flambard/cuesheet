@@ -99,23 +99,7 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const toolsForScope=(scope:string,resourceJournal=settings.journal):ToolRunner=>{
-    const containers=resourceJournal ? new SessionContainers({root:resourceJournal.root,sessionId:resourceJournal.metadata.id,assertWritable:()=>resourceJournal.assertWritable()}) : undefined;
-    const route=selectRoute();
-    if(route.kind==="unavailable")return {names:[],policy:route.reason,async run(request){return {name:request.name,exit:126,output:route.reason};}} as ToolRunner;
-    if(route.kind==="local")return Object.assign(new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope}),{policy:route.reason,names:Object.freeze(ALLOWED.slice())});
-    try{containers?.read();}catch{throw new Error("Container resource journal is damaged; inspect it before starting tools.");}
-    const image=route.image;
-    return new ContainerToolRunner({allow:route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : ALLOWED,roots:[scope],defaultCwd:scope,image,socket:route.socket,
-      onAdmission:(name,request)=>{
-        if(!containers||!resourceJournal)throw new Error("Container execution requires a durable terminal session.");
-        const digest=invocationKey(request.name,request.input);
-        const intent=resourceJournal.core.toSession().events.filter(e=>e.kind==="action"&&e.subject==="terminal.intent"&&e.data.tool===request.name&&e.data.scopeCwd===scope&&invocationKey(request.name,e.data.input as Record<string,unknown>)===digest).at(-1);
-        if(!intent)throw new Error("Container execution lacks an admitted intent.");
-        containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
-      },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
-      protectedPaths:[...(resourceJournal?[resourceJournal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]});
-  };
+  const toolsForScope=(scope:string,resourceJournal=settings.journal):ToolRunner=>createScopedToolRunner({scope,journal:resourceJournal,route:selectRoute(),protectedPaths:verification?.pinned?[verification.pinned.script]:[]});
   let tools:ToolRunner;
   try {tools=toolsForScope(cwd);} catch {return {missing:"Tool route is invalid or its resource journal is damaged; verify mode, local Unix socket, immutable image and session resources."};}
   const researchForScope=(scope:string)=>new ResearchTools({root:scope,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
@@ -159,4 +143,23 @@ export function createTerminalRuntime(cwd: string, id?: string): { store: Store;
     store.send({type:"logged",line:`[session] ${session.metadata.id} ${session.metadata.cwd}`});
     return {store,producer:live.producer,binding,session};
   } catch(error) {session?.close();return {missing:error instanceof Error ? error.message : String(error)};}
+}
+
+/** Same scoped admission factory for controller and private worker journals. */
+export function createScopedToolRunner(options:{scope:string;journal?:TerminalSession;route:import("../../../../src/adapters/tool-route.ts").ToolRoute;protectedPaths?:string[]}):ToolRunner{
+  const {scope,journal:resourceJournal,route}=options;const protectedPaths=options.protectedPaths??[];
+    const containers=resourceJournal ? new SessionContainers({root:resourceJournal.root,sessionId:resourceJournal.metadata.id,assertWritable:()=>resourceJournal.assertWritable()}) : undefined;
+    if(route.kind==="unavailable")return {names:[],policy:route.reason,async run(request){return {name:request.name,exit:126,output:route.reason};}} as ToolRunner;
+    if(route.kind==="local")return Object.assign(new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope}),{policy:route.reason,names:Object.freeze(ALLOWED.slice())});
+    try{containers?.read();}catch{throw new Error("Container resource journal is damaged; inspect it before starting tools.");}
+    const image=route.image;
+    return new ContainerToolRunner({allow:route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : ALLOWED,roots:[scope],defaultCwd:scope,image,socket:route.socket,
+      onAdmission:(name,request)=>{
+        if(!containers||!resourceJournal)throw new Error("Container execution requires a durable terminal session.");
+        const digest=invocationKey(request.name,request.input);
+        const intent=resourceJournal.core.toSession().events.filter(e=>e.kind==="action"&&e.subject==="terminal.intent"&&e.data.tool===request.name&&e.data.scopeCwd===scope&&invocationKey(request.name,e.data.input as Record<string,unknown>)===digest).at(-1);
+        if(!intent)throw new Error("Container execution lacks an admitted intent.");
+        containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
+      },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
+      protectedPaths:[...(resourceJournal?[resourceJournal.root]:[]),...protectedPaths]});
 }

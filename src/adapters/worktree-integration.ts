@@ -16,6 +16,26 @@ export async function planWorktreeIntegration(options:{source:string;workspace:s
  if(!await snapshotMatches(source,source.workspace,options.signal)||!await snapshotMatches(result,result.workspace,options.signal))throw Error('Files changed during integration planning.');
  const digest=createHash('sha256').update(JSON.stringify([source.digest,result.digest,files])).digest('hex');const plan=Object.freeze({id:`i-${randomUUID()}`,source,result,files:Object.freeze(files),digest});admitted.add(plan);return plan;
 }
+/** Compose only attested disjoint deltas in a newly allocated workspace. Source is never written. */
+export async function composeWorktreePlans(plans:readonly IntegrationPlan[],workspace:string,signal?:AbortSignal):Promise<IntegrationPlan>{
+ if(plans.length<1||plans.length>2||plans.some(plan=>!admitted.has(plan)))throw Error('Unattested composition.');
+ const first=plans[0]!;const files=plans.flatMap(plan=>[...plan.files]);
+ if(files.length>100||plans.some(plan=>plan.source.digest!==first.source.digest||plan.source.workspace!==first.source.workspace))throw Error('Composition attribution/bounds mismatch.');
+ const portable=(path:string)=>path.normalize('NFC').toLowerCase();
+ for(let i=0;i<files.length;i++)for(let j=0;j<i;j++){const a=portable(files[i]!.path),b=portable(files[j]!.path);if(a===b||a.startsWith(b+'/')||b.startsWith(a+'/'))throw Error('Conflicting contributions.');}
+ if(files.reduce((n,file)=>n+(file.after?Buffer.from(file.after.bytes,'base64').length:0)+(file.before?Buffer.from(file.before.bytes,'base64').length:0),0)>MAX)throw Error('Composition exceeds4MiB.');
+ const initial=await captureGitSnapshot(workspace,signal);
+ if(initial.digest!==first.source.digest||initial.commonDirectory!==first.source.commonDirectory||workspace===first.source.workspace||plans.some(plan=>workspace===plan.result.workspace))throw Error('Composition workspace not isolated at admitted base.');
+ for(const plan of plans)if(!await snapshotMatches(plan.source,plan.source.workspace,signal)||!await snapshotMatches(plan.result,plan.result.workspace,signal))throw Error('Contribution changed before composition.');
+ for(const file of files){signal?.throwIfAborted();if(!equal(await state(workspace,file.path),file.before))throw Error('Composition changed before copy.');const target=resolve(workspace,file.path);await parents(workspace,target);
+  if(file.after){const temporary=join(dirname(target),'.cuesheet-'+randomUUID()+'.tmp');let own=false;try{const h=await open(temporary,'wx',0o600);own=true;try{await h.writeFile(Buffer.from(file.after.bytes,'base64'));await h.chmod(file.after.mode);await h.sync();}finally{await h.close();}if(!equal(await state(workspace,file.path),file.before))throw Error('Composition changed before replacement.');if(file.before)await rename(temporary,target);else await link(temporary,target);}finally{if(own)await unlink(temporary);}}
+  else await unlink(target);
+ }
+ for(const plan of plans)if(!await snapshotMatches(plan.source,plan.source.workspace,signal)||!await snapshotMatches(plan.result,plan.result.workspace,signal))throw Error('Contribution changed during composition.');
+ const composed=await planWorktreeIntegration({source:first.source.workspace,workspace,sourceDigest:first.source.digest,signal});
+ const expected=[...files].sort((a,b)=>a.path.localeCompare(b.path)),actual=[...composed.files].sort((a,b)=>a.path.localeCompare(b.path));
+ if(JSON.stringify(expected)!==JSON.stringify(actual))throw Error('Composition differs from admitted union.');return composed;
+}
 async function parents(root:string,path:string):Promise<void>{let at=root;const parent=relative(root,dirname(path));for(const part of parent?parent.split(sep):[]){at=join(at,part);try{const s=await lstat(at);if(!s.isDirectory()||s.isSymbolicLink())throw Error('Integration parent refused.');}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;await mkdir(at,{mode:0o700});}if(!inside(root,await realpath(at)))throw Error('Integration parent escaped.');}}
 export type IntegrationResult={kind:'applied';record:string;files:number}|{kind:'refused'|'uncertain';reason:string;record:string|null;files:number};
 export async function applyWorktreeIntegration(plan:IntegrationPlan,options:{root:string;current():boolean;signal?:AbortSignal}):Promise<IntegrationResult>{

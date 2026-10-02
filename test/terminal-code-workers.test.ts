@@ -12,6 +12,7 @@ import {childEnv} from './fixtures/hermetic-env.ts';
 import {projectEffectAttempts} from '../src/adapters/tool-receipts.ts';
 import {pendingCodeWorkers} from '../src/adapters/terminal-code-workers.ts';
 import {projectAgents} from '../src/adapters/agent-consultation.ts';
+import {createCompletionCheck} from '../src/adapters/surface-verification.ts';
 async function fixture(run:(source:string,root:string,git:(...args:string[])=>string)=>Promise<void>){
   const dir=realpathSync(mkdtempSync(join(tmpdir(),'cs-terminal-workers-'))),source=join(dir,'source'),root=join(dir,'state');mkdirSync(source);
   const git=(...args:string[])=>execFileSync('git',args,{cwd:source,env:childEnv({home:dir,sessions:root}),encoding:'utf8'}).trim();
@@ -54,4 +55,26 @@ for(const selectionChange of [false,true])test(`${selectionChange?"model change"
     journal.core.append({kind:'note',subject:'terminal.agent',data:{version:1,id:'interrupted-fixture',role:'review',task:'Inspect',model:'fixture',phase:'active',execution:'old'}});
     const id=journal.metadata.id;journal.close();const reopened=new TerminalSession({root,cwd:source,id});try{assert.equal(projectAgents(reopened.core.toSession().events).find(a=>a.id==='interrupted-fixture')!.phase,'interrupted');assert.ok(pendingCodeWorkers(reopened.core.toSession().events));}finally{reopened.close();}
   }finally{release?.();journal.close();}
+}));
+for(const mode of ['accepted','check-reject','outside-scope','source-drift','uncertain-journal'])test(`composed code workers ${mode}: source integration requires scoped current confirmed contributions`,async()=>fixture(async(source,root,git)=>{
+  mkdirSync(root,{recursive:true});
+  writeFileSync(join(source,'file'),'human dirty');git('add','file');const index=git('diff','--cached');
+  const script=join(root,'check.mjs');writeFileSync(script,`import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';assert.equal(readFileSync('built','utf8'),'coded');assert.equal(readFileSync('tested','utf8'),${JSON.stringify(mode==='check-reject'?'different':'coded')});`);
+  const verification=createCompletionCheck({script,root:join(root,'proof')});const journal=new TerminalSession({root,cwd:source,check:verification.pinned}),view=createStore();const privateJournals=new Map<string,TerminalSession>();let step=0;
+  try{
+    const producer=createProducer({store:view,journal,cwd:source,identities:[],maxSlices:1,verification,worktreeRoot:join(root,'workspaces',journal.metadata.id),tools:factory(source,root),toolsForScope:p=>factory(p,root),
+      toolsForWorker:(path,child,signal)=>{privateJournals.set(path,child);const runner=factory(path,root);return Object.assign({run:(r:any)=>runner.run(r,signal)},{names:runner.names});},
+      workerModel:path=>{let calls=0;return {label:'fixture-code',adapter:{name:'fixture-code',async infer(frame:any){
+        const role=/Code worker (\w+):/.exec(frame.directives.at(-1).text)![1];const file=mode==='outside-scope'&&role==='builder'?'outside':role==='builder'?'built':'tested';
+        if(++calls===1)return {text:'',toolCalls:[{name:'node',input:{argv:['node','-e',`require('fs').writeFileSync(${JSON.stringify(file)},'coded')`]}}]};
+        if(mode==='uncertain-journal'&&role==='builder')privateJournals.get(path)!.core.append({kind:'action',subject:'terminal.intent',data:{version:1,phase:'requested',tool:'node',input:{argv:['node','-e','possibly ran']},effectId:'uncertain-fixture',scopeCwd:path}});
+        return {text:'unverified contribution',toolCalls:[]};
+      }}};},model:{name:'controller',async infer(){step++;if(step===2&&mode==='source-drift')writeFileSync(join(source,'file'),'new human edit');return {text:'',toolCalls:step===1?[{name:'run_code_workers',input:tasks}]:step===2?[{name:'integrate_code_workers',input:{}}]:step===3?[{name:'finish',input:{}}]:[]};}}});
+    producer.say('qzcompose fixture');await wait(view);const events=journal.core.toSession().events;
+    assert.equal(git('diff','--cached'),index);assert.equal(readFileSync(join(source,'file'),'utf8'),mode==='source-drift'?'new human edit':'human dirty');
+    if(mode==='accepted'){
+      assert.equal(readFileSync(join(source,'built'),'utf8'),'coded');assert.equal(readFileSync(join(source,'tested'),'utf8'),'coded');assert.equal(journal.core.toSession().goal!.open,false);assert.equal(pendingCodeWorkers(events),false);
+      assert.ok(events.some(e=>e.subject==='terminal.code-composition'&&e.data.phase==='applied'));assert.equal(events.filter(e=>e.kind==='work_verified').length,1);
+    }else{assert.equal(existsSync(join(source,'built')),false);assert.equal(existsSync(join(source,'tested')),false);assert.equal(journal.core.toSession().goal!.open,true);assert.ok(pendingCodeWorkers(events));}
+  }finally{journal.close();}
 }));

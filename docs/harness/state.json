@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "95db436",
+  "referenceCommit": "3494d11",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -4355,7 +4355,7 @@
     {
       "id": "H06.2c2",
       "priority": "P0",
-      "status": "VERIFYING",
+      "status": "DONE",
       "requirements": [
         "REQ-H06.2"
       ],
@@ -4374,9 +4374,35 @@
       ],
       "verification": "Actual producer/journal/scoped effects, correction, reopen, full regression/build",
       "evidence": [
-        "EV-TERMINAL-CODE-WORKERS"
+        "EV-TERMINAL-CODE-WORKERS",
+        "EV-CODE-COMPOSITION"
       ],
-      "notes": "Producer/Shell/private durable journals verified; dedicated private Container admission proof pending. Integration/recovery/UI PTY remain parents."
+      "notes": "Bounded scoped runtime/composition verified; crash recovery, cleanup/quota, dedicated UX and live model remain parent work."
+    },
+    {
+      "id": "H06.3c2a",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H06.2c2"
+      ],
+      "description": "Composer deltas scoped et intégrer sous check owner indépendant.",
+      "systems": [
+        "MULTI-WORKER.md",
+        "src/adapters/code-worker-integration.ts",
+        "src/adapters/worktree-integration.ts"
+      ],
+      "acceptance": [
+        "AC-H06.3c2a"
+      ],
+      "verification": "Actual producer/Git/private journals and scoped composition failure scenarios; full/build",
+      "evidence": [
+        "EV-CODE-COMPOSITION"
+      ],
+      "notes": "Bounded scoped runtime/composition verified; crash recovery, cleanup/quota, dedicated UX and live model remain parent work."
     }
   ],
   "acceptance": [
@@ -5505,6 +5531,12 @@
       "result": "PASS_PARTIAL",
       "method": "Actual producer/private TerminalSession/Shell/direct correction/model change/reopen, full/build, solo adversarial review",
       "details": "evaluation/terminal-code-workers/evidence.md"
+    },
+    {
+      "id": "EV-CODE-COMPOSITION",
+      "result": "PASS_PARTIAL",
+      "method": "Actual producer/Git/scoped composition/goal check, private Docker admission/cleanup, full/build, solo review",
+      "details": "evaluation/code-composition/evidence.md"
     }
   ],
   "risks": {
@@ -5516,8 +5548,8 @@
     "status": "PENDING",
     "lastPassedCommit": "a806d2e",
     "lastFullSuite": {
-      "tests": 886,
-      "passed": 884,
+      "tests": 893,
+      "passed": 891,
       "failed": 0,
       "skipped": 2
     },
@@ -5560,14 +5592,14 @@
     "workingTreeWorkspaceProvider": "PASS_PARTIAL latest/live/cached workspace UI + secret-safe native provider status;79/40 targeted,859/857/0/2 full. Real free pilot403/source preserved/no quality result, H10.3a open.",
     "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending.",
     "workingTreeOwnerCapsule": "PASS_PARTIAL owner-pinned container oracle on capture/scratch with admitted outputs and anonymous tmp volume;851 Linux PASS/18 explicit skips,869/867/0/2 host,44 targeted/46 portable,build32 baseline. Source/index/capture intact; no real model/parallel worker/full recovery closure.",
-    "workingTreeCodeWorkers": "Terminal-connected,35+9 targeted PASS,886/884/0/2 full,build32 baseline. H06.2c2 VERIFYING for private Container proof; composed integration/crash recovery/live model pending."
+    "workingTreeCodeWorkers": "Terminal→private workers→scoped composition→owner check→recoverable source apply→finish PASS.14 targeted+1 actual Docker;893/891/0/2 full,build32 baseline. Crash recovery/cleanup/live model pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 62,
     "acceptanceVerified": 7,
     "acceptancePending": 55,
-    "p0_open": 42,
+    "p0_open": 41,
     "p1_open": 24
   },
   "workstreams": [
@@ -5708,7 +5740,8 @@
         "H06.5c",
         "H06.2b1",
         "H06.2c1",
-        "H06.2c2"
+        "H06.2c2",
+        "H06.3c2a"
       ],
       "dependencies": [
         "C1",
