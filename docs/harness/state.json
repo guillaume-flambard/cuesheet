@@ -4533,7 +4533,8 @@
       ],
       "verification": "Scenarios in MULTI-WORKER.md; meaningful tests, runtime/full regression/build for integrated changes",
       "evidence": [
-        "EV-JOURNEY-003"
+        "EV-JOURNEY-003",
+        "EV-JOURNEY-004"
       ],
       "notes": "Parent acceptance remains pending."
     },
@@ -7921,6 +7922,15 @@
       "artifacts": [
         "scripts/ui/journey003.mjs",
         "apps/terminal/ui/fixture-producer.ts"
+      ]
+    },
+    {
+      "id": "EV-JOURNEY-004",
+      "kind": "runtime",
+      "summary": "Stage 3 de la trajectoire d auto-hebergement : une tentative ratee est une preuve, et l echec alimente la tentative suivante. Le modele propose une edition, le verificateur independant la juge, et en cas d echec la sortie du verificateur est redonnee verbatim comme contexte de la tentative suivante plutot qu un resume ecrit par le harnais. Les tentatives sont conservees dans l ordre, y compris celles qui ont echoue.",
+      "verification": "npm run journey:recovery ; observe sur deux executions : une a produit une reponse vide en tentative 1 puis verifie en tentative 2, une reprise reelle ; l autre a verifie du premier coup et le journey DIT que la reprise n a pas ete exercee au lieu d encaisser le pass ; un garde echoue si plusieurs tentatives sont enregistrees sans echec entre elles ; deux echecs d essai sont devenus deux exemples, dont une reponse vide",
+      "artifacts": [
+        "scripts/ui/journey004.mjs"
       ]
     }
   ],
