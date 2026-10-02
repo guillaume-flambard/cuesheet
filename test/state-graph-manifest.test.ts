@@ -1,7 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';import {mkdirSync,mkdtempSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';import {basename,isAbsolute,join,relative,resolve} from 'node:path';import {fileURLToPath} from 'node:url';
-import {MANIFEST_PATH,buildStateGraph,stateGraphJson} from '../src/adapters/state-graph/manifest.ts';
+import {createHash} from 'node:crypto';import {mkdirSync,mkdtempSync,readFileSync,realpathSync,rmSync,statSync,symlinkSync,writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';import {basename,dirname,isAbsolute,join,relative,resolve} from 'node:path';import {fileURLToPath} from 'node:url';
+import {MANIFEST_PATH,buildStateGraph,ownerFile,stateGraphJson} from '../src/adapters/state-graph/manifest.ts';
 import {graphRevision,loadStateGraph} from '../src/adapters/state-graph/loader.ts';
 import {parseStateGraph} from '../src/adapters/state-graph/schema.ts';
 // Resolved from the test file rather than from the cwd, so the manifest is
@@ -9,7 +9,9 @@ import {parseStateGraph} from '../src/adapters/state-graph/schema.ts';
 const ROOT=fileURLToPath(new URL('..',import.meta.url)),DIGEST=/^[a-f0-9]{64}$/;
 const artifact=()=>readFileSync(join(ROOT,MANIFEST_PATH),'utf8');
 const sha256=(path:string)=>createHash('sha256').update(readFileSync(path)).digest('hex');
-const contained=(root:string,path:string)=>{const inside=relative(root,resolve(root,path));return !isAbsolute(path)&&inside.length>0&&!inside.startsWith('..')&&!isAbsolute(inside);};
+// Containment is a property of the resolved path, not of the declared string: a
+// symlink under the root can read as inside while its bytes live outside it.
+const contained=(root:string,path:string)=>{const real=realpathSync(resolve(root,path)),inside=relative(realpathSync(root),real);return !isAbsolute(path)&&inside.length>0&&!inside.startsWith('..')&&!isAbsolute(inside);};
 test('the committed manifest is what the generator produces, and the real loader admits it',async()=>{
  const committed=artifact(),graph=buildStateGraph(ROOT);
  // Byte equality is the determinism property that counts: these bytes were written
@@ -96,5 +98,48 @@ test('an absent reference, a duplicate id, an unknown version or an outside path
    const broken=JSON.parse(artifact());mutate(broken);writeFileSync(path,JSON.stringify(broken));
    await assert.rejects(loadStateGraph(root),expected,`admitted a manifest this test meant to break: ${mutate.toString()}`);
   }
- }finally{rmSync(root,{recursive:true,force:true});}
+  }finally{rmSync(root,{recursive:true,force:true});}
+ });
+test('a declared source that resolves out of the owner root is refused before any read, and a relative link that stays inside is admitted',()=>{
+ const base=mkdtempSync(join(tmpdir(),'cs-contain-')),root=join(base,'owner'),outside=join(base,'outside');
+ mkdirSync(join(root,'nested'),{recursive:true});mkdirSync(outside,{recursive:true});
+ const secret=join(outside,'secret.txt');writeFileSync(secret,'bytes no manifest may hash');
+ const target=join(root,'nested','real.ts');writeFileSync(target,'legit bytes');
+ const escape=join(root,'escape.ts'),alias=join(root,'alias.ts');
+ try{
+  // The lexical refusals share the message of the resolved one, so a caller learns
+  // that the declaration was refused without learning which check fired.
+  for(const bad of ['../outside/secret.txt',secret])assert.throws(()=>ownerFile(root,bad),/escapes the owner root/);
+  // The declared string reads as inside the root; only the resolved path betrays it.
+  symlinkSync(relative(dirname(escape),secret),escape);
+  assert.throws(()=>ownerFile(root,'escape.ts'),/escapes the owner root/,'a link out of the owner root was admitted');
+  // Reading this one first would report EISDIR. Only a check that runs before the
+  // read can produce the containment refusal for it.
+  const outsideDir=join(root,'outside-dir.ts');symlinkSync(relative(dirname(outsideDir),outside),outsideDir);
+  assert.throws(()=>ownerFile(root,'outside-dir.ts'),/escapes the owner root/);
+  symlinkSync(relative(dirname(alias),target),alias);
+  const admitted=ownerFile(root,'alias.ts');
+  assert.equal(admitted,realpathSync(target),'the admitted path must be the resolved one the read follows');
+  assert.ok(!relative(realpathSync(root),admitted).startsWith('..'),'the admitted path leaves the owner root');
+  assert.equal(readFileSync(admitted,'utf8'),'legit bytes');
+ }finally{rmSync(base,{recursive:true,force:true});}
+});
+test('the generator refuses a declared source that links out of the owner root and digests one that links inside',()=>{
+ const declared=[...new Set(buildStateGraph(ROOT).nodes.flatMap(n=>n.sourceRefs.map(s=>s.path)))],chosen='src/adapters/session-store.ts';
+ assert.ok(declared.includes(chosen),'the fixture needs a path the manifest really declares');
+ const base=mkdtempSync(join(tmpdir(),'cs-contain-build-')),root=join(base,'owner'),outside=join(base,'outside');
+ mkdirSync(join(root,dirname(chosen)),{recursive:true});mkdirSync(outside,{recursive:true});
+ const secret=join(outside,'secret.txt'),link=join(root,chosen);
+ try{
+  for(const path of declared)if(path!==chosen){const file=join(root,path);mkdirSync(dirname(file),{recursive:true});writeFileSync(file,`fixture ${path}`);}
+  // Every other declared file exists, so the only thing that can fail below is the
+  // containment refusal. Without it the build succeeds and hashes the outside bytes.
+  writeFileSync(secret,'bytes no manifest may hash');symlinkSync(relative(dirname(link),secret),link);
+  assert.throws(()=>buildStateGraph(root),/escapes the owner root/,'the generator followed a link out of the owner root');
+  rmSync(link);
+  const inside=join(root,'fixture-target.ts');writeFileSync(inside,'bytes inside the owner root');
+  symlinkSync(relative(dirname(link),inside),link);
+  const graph=buildStateGraph(root),ref=[...graph.nodes].flatMap(n=>n.sourceRefs).find(s=>s.path===chosen)!;
+  assert.equal(ref.digest,sha256(inside),`${chosen} was not digested through the link to its inside target`);
+ }finally{rmSync(base,{recursive:true,force:true});}
 });

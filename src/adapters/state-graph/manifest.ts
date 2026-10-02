@@ -14,7 +14,7 @@
  * clock, absolute path or machine identity is read.
  */
 import {createHash} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync,realpathSync} from 'node:fs';
 import {isAbsolute,relative,resolve} from 'node:path';
 import {parseStateGraph,type EdgeType,type GraphEdge,type GraphNode,type NodeKind,type SourceRef,type StateGraph} from './schema.ts';
 /** The only path the loader will read, kept beside the declaration that fills it. */
@@ -132,11 +132,19 @@ const LINKS:readonly Link[]=Object.freeze([
  e('validates','test.integration.path','entity.integration.surface'),e('validates','test.integration.worktrees','invariant.integration.checkable_path'),e('validates','test.integration.worktrees','invariant.integration.drift'),e('validates','test.integration.binding','invariant.integration.ambiguity'),e('validates','test.integration.context','contract.integration.context'),e('validates','test.integration.loadability','invariant.integration.load'),e('validates','test.integration.portability','invariant.integration.portability'),
  e('describes','source.integration.architecture','entity.integration.surface'),e('describes','source.integration.invariants','invariant.workers.confinement'),e('describes','source.integration.invariants','invariant.workers.receipt'),e('describes','source.integration.invariants','invariant.integration.load'),e('describes','source.integration.invariants','invariant.integration.portability'),
 ]);
-/** The generator reads bytes, so a declared path must not be able to leave the owner tree. */
-const ownerFile=(root:string,path:string)=>{
+/**
+ * The generator reads bytes, so a declared path must not be able to leave the
+ * owner tree, and the tree that counts is the one the bytes live in: a symlink
+ * under the root points wherever it points. Containment is therefore decided on
+ * the resolved real path, before any byte is read, and the file read afterwards
+ * is the file that passed this check.
+ */
+export const ownerFile=(root:string,path:string)=>{
  const absolute=resolve(root,path),inside=relative(root,absolute);
  if(!path||isAbsolute(path)||!inside||inside.startsWith('..')||isAbsolute(inside))throw new Error(`Manifest declaration escapes the owner root: ${path}`);
- return absolute;
+ const real=realpathSync(absolute),resolved=relative(realpathSync(root),real);
+ if(!resolved||resolved.startsWith('..')||isAbsolute(resolved))throw new Error(`Manifest declaration escapes the owner root: ${path}`);
+ return real;
 };
 const digestOf=(root:string,path:string)=>createHash('sha256').update(readFileSync(ownerFile(root,path))).digest('hex');
 /** One digest per declared path, hashed in declaration order so a missing file fails the build. */
