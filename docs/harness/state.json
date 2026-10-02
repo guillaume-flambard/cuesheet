@@ -647,6 +647,34 @@
       "acceptance": [
         "AC-HL04"
       ]
+    },
+    {
+      "id": "REQ-H06.6",
+      "description": "Le graphe de travail porte des unités aux états UNKNOWN, DISCOVERED, READY, CLAIMED, RUNNING, VERIFYING, PROVEN, BLOCKED, STALE, SUPERSEDED et CANCELLED ; un worker réclame une unité admissible au lieu de demander la suite à l'orchestrateur, et PROVEN exige une preuve.",
+      "acceptance": [
+        "AC-H06.6"
+      ]
+    },
+    {
+      "id": "REQ-H06.7",
+      "description": "Le scheduler affecte par adéquation de capacités, contexte tiède déjà payé, priorité, chemin critique, latence, risque de conflit et coût du modèle ; le spawn d'un worker supplémentaire est décidé sur le rendement marginal, sans limite arbitraire de compte.",
+      "acceptance": [
+        "AC-H06.7"
+      ]
+    },
+    {
+      "id": "REQ-H06.8",
+      "description": "Une demande d'aide ou un constat est publié en état structuré partagé et routé vers les workers concernés, qui ne reçoivent que le delta pertinent ; aucune conversation privée entre agents ne porte une décision.",
+      "acceptance": [
+        "AC-H06.8"
+      ]
+    },
+    {
+      "id": "REQ-H06.9",
+      "description": "La personne peut arrêter après le travail en cours, arrêter maintenant, ou demander une barrière de synchronisation ; une demande humaine modifie le graphe en direct et les travaux devenus incompatibles s'arrêtent à un point sûr.",
+      "acceptance": [
+        "AC-H06.9"
+      ]
     }
   ],
   "tasks": [
@@ -5626,7 +5654,9 @@
       "systems": [
         "STATE-GRAPH.md"
       ],
-      "acceptance": [],
+      "acceptance": [
+        "AC-SG02-bound"
+      ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [],
       "notes": "Revue adversariale : l'index et la carte des noeuds sont construits avant tout controle de borne, donc le cas hostile que la borne pretend couvrir est deja paye. Trouve par revue, non invente."
@@ -5645,7 +5675,9 @@
       "systems": [
         "STATE-GRAPH.md"
       ],
-      "acceptance": [],
+      "acceptance": [
+        "AC-SG01-containment"
+      ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [],
       "notes": "Revue adversariale : contained() et ownerFile n'inspectent que la chaine, donc un lien symbolique sortant de la racine owner passerait en hachant des octets hors arbre. Non exploite a ce jour, trouve par revue."
@@ -5662,10 +5694,96 @@
       "systems": [
         "STATE-GRAPH.md"
       ],
-      "acceptance": [],
+      "acceptance": [
+        "AC-H09.1-capsule-teardown"
+      ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [],
       "notes": "Observation directe : test/node-capsule.test.ts echoue en rmSync du teardown sous charge de suite complete, et passe 3/3 en isolation. Fragilite preexistante, non causee par SG01.3 ni SG02.1, mais elle rend chaque futur releve de suite complete non deterministe."
+    },
+    {
+      "id": "H06.6",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.6"
+      ],
+      "dependencies": [
+        "H06.2b"
+      ],
+      "description": "Graphe de travail dynamique : états d'unité et réclamation par capacité.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.6"
+      ],
+      "verification": "Tests ciblés sur la projection d'états et la réclamation ; preuve dans evaluation/",
+      "evidence": [],
+      "notes": "Spécification ajoutée le 2026-10-02 à partir de la direction équipe élastique ; aucune implémentation revendiquée."
+    },
+    {
+      "id": "H06.7",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.7"
+      ],
+      "dependencies": [
+        "H06.6"
+      ],
+      "description": "Scheduler de répartition : correspondance capacités/contexte et spawn au rendement marginal.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.7"
+      ],
+      "verification": "Tests d'affectation non FIFO et de refus de spawn non rentable ; inspection du scoring",
+      "evidence": [],
+      "notes": "Spécification ajoutée le 2026-10-02 ; aucune implémentation revendiquée. Le scoring n'a pas besoin d'une précision scientifique mais chaque dimension doit gouverner la décision."
+    },
+    {
+      "id": "H06.8",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.8"
+      ],
+      "dependencies": [
+        "H06.6"
+      ],
+      "description": "Demandes d'aide et constats routés par état structuré partagé, sans conversation privée.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.8"
+      ],
+      "verification": "Tests de routage du delta pertinent et d'absence de duplication de contexte",
+      "evidence": [],
+      "notes": "Spécification ajoutée le 2026-10-02 ; aucune implémentation revendiquée. Rattaché à AC-H06.8."
+    },
+    {
+      "id": "H06.9",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.9"
+      ],
+      "dependencies": [
+        "H06.6"
+      ],
+      "description": "Contrôle temps réel : arrêt après travail, arrêt immédiat, barrière de synchronisation.",
+      "systems": [
+        "06-AGENTS.md"
+      ],
+      "acceptance": [
+        "AC-H06.9"
+      ],
+      "verification": "Tests des trois commandes, des checkpoints et de la réévaluation des travaux actifs",
+      "evidence": [],
+      "notes": "Spécification ajoutée le 2026-10-02 ; aucune implémentation revendiquée. Garantie d'autorité humaine : priorité, contrainte et portée modifiables en direct."
     }
   ],
   "acceptance": [
@@ -7121,6 +7239,46 @@
       ],
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-H06.6",
+      "requirement": "REQ-H06.6",
+      "given": "Un graphe de travail et plusieurs workers réels concurrents.",
+      "when": "Une unité passe de CLAIMED à PROVEN et un worker redevient disponible.",
+      "then": "Les unités devenues admissibles sont réclamables sans passer par l'orchestrateur ; une unité sans preuve reste en VERIFYING ; une unité épinglée à une dépendance non satisfaite reste BLOCKED et n'est jamais proposée.",
+      "verification": "automated,runtime",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.7",
+      "requirement": "REQ-H06.7",
+      "given": "Des workers aux capacités et contextes tièdes différents, des unités admissibles aux priorités inégales.",
+      "when": "Le scheduler affecte le front disponible et évalue la création d'un worker supplémentaire.",
+      "then": "Aucune affectation n'est FIFO ; le contexte déjà payé et le chemin critique pèsent dans le choix ; aucun worker n'est créé quand le rendement marginal ne couvre pas le coût tokens, le coût de réconciliation et le risque de conflit ; un worker inoccupé ne prend jamais une unité dérivée d'une intention non admise dans le graphe.",
+      "verification": "automated,inspection",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.8",
+      "requirement": "REQ-H06.8",
+      "given": "Un worker bloqué sur une unité du chemin critique et un worker compétent ailleurs.",
+      "when": "Le premier publie une demande d'aide structurée, ou publie un constat utile à un pair.",
+      "then": "Le worker concerné reçoit le delta pertinent sans la conversation de l'émetteur ; le constat reste adressable par tous les concernés ; aucun coût de contexte n'est payé deux fois pour la même découverte.",
+      "verification": "automated,runtime",
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H06.9",
+      "requirement": "REQ-H06.9",
+      "given": "Trois workers en cours sur des unités de portées distinctes.",
+      "when": "La personne demande l'arrêt après travail, l'arrêt immédiat, ou une barrière de synchronisation ; puis elle change une contrainte ou une priorité en direct.",
+      "then": "Aucune nouvelle unité n'est attribuée ; les checkpoints sûrs sont posés puis l'équipe fait le point ; les unités devenues incompatibles s'arrêtent à un point sûr et les autres continuent ; le message humain n'entre jamais dans une file d'exécutions devenues obsolètes.",
+      "verification": "automated,runtime",
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -7468,11 +7626,11 @@
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 90,
+    "requirements": 94,
     "acceptanceVerified": 8,
-    "acceptancePending": 95,
+    "acceptancePending": 99,
     "p0_open": 70,
-    "p1_open": 40
+    "p1_open": 44
   },
   "workstreams": [
     {

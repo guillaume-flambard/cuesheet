@@ -47,6 +47,113 @@ objectif. Annuler les workers incompatibles avec une correction. Remplacer un
 worker disparu depuis la projection commune, après reconciliation de ses effets.
 La reprise transmet décisions et références utiles, pas toute sa conversation.
 
+## Équipe élastique : graphe, pool, scheduler, contrôle
+
+Quatre concepts. LE GRAPHE DE TRAVAIL dit ce qu'il reste réellement à accomplir.
+LE POOL DE WORKERS dit quelles capacités sont disponibles maintenant. LE SCHEDULER
+ADAPTATIF décide qui fait quoi maintenant. LE CONTRÔLE TEMPS RÉEL permet à la
+personne de changer priorité, contexte ou portée, ou d'arrêter à tout instant.
+
+Le nombre de workers n'est jamais une constante de configuration. C'est le résultat
+d'une décision de scheduler recalculée à chaque cycle. Un worker peut être créé pour
+une question pendant quarante secondes puis disparaître.
+
+### États d'une unité de travail
+
+`UNKNOWN → DISCOVERED → READY → CLAIMED → RUNNING → VERIFYING → PROVEN`, plus
+`BLOCKED`, `STALE`, `SUPERSEDED` et `CANCELLED`. Une unité n'atteint `PROVEN` qu'avec
+une preuve. En passant à `PROVEN`, elle libère les unités devenues `READY`. Elle
+n'interroge pas l'orchestrateur pour savoir quoi faire ensuite : elle annonce son
+état et le scheduler regarde le front disponible.
+
+### Réclamation par capacité, pas par file
+
+Le scheduler ne fait pas FIFO. Pour chaque unité admissible il compose : adéquation
+des capacités du worker, contexte tiède déjà payé, priorité, chemin critique, temps
+resté, latence attendue, risque de conflit et coût du modèle. Un contexte déjà payé
+est une ressource, pas un déchet. Aucune de ces dimensions ne prétend à une précision
+scientifique ; toutes doivent gouverner la décision.
+
+### Rendement marginal du spawn
+
+Un worker ne se crée pas lui-même : il demande une capacité supplémentaire. Le
+scheduler compare le temps gagné, la probabilité d'un résultat utile et la pertinence
+du chemin critique, contre le coût tokens, le coût monétaire, CPU et mémoire, le coût
+de réconciliation et la probabilité de conflit. Douze migrations indépendantes valent
+douze workers bon marché ; une seule fonction à implémenter en vaut un ; une décision
+d'architecture difficile en vaut trois suivis d'une synthèse.
+
+### Aide et constats par état partagé
+
+Un worker émet une demande d'aide ou un constat structuré, jamais une conversation
+privée adressée à un autre worker. L'état partagé le route vers le worker concerné,
+qui ne reçoit que le delta pertinent, pas la conversation de l'émetteur. La mémoire
+commune est le journal, pas une file de messages entre agents. Un worker qui découvre
+une information utile à un pair publie le constat avec ses destinataires potentiels ;
+le graphe fait le routage.
+
+### Revues proportionnées
+
+Une modification triviale va de l'implémentation au test. Une migration critique
+déclenche plusieurs revues indépendantes puis une synthèse. La revue adversariale,
+« suppose que cette solution est mauvaise », n'est lancée que lorsque le risque,
+l'incertitude et l'impact la justifient.
+
+### Découpage sous approbation
+
+Un worker peut proposer une décomposition de sa propre unité, mais il ne spawn pas.
+Le scheduler approuve ou refuse en connaissant CPU, mémoire, concurrence API, limites
+de débit, budget tokens, budget monétaire, temps resté, workers existants,
+investigations en doublon et chemin critique. Aucune explosion de workers ne peut se
+produire par multiplication récursive.
+
+### Baux de portée
+
+Le scheduler attribue un bail sur des fichiers, pas un verrou sur tout le dépôt.
+Un worker qui découvre qu'il doit toucher à un fichier pris par un autre publie un
+conflit. Le scheduler choisit la solution la moins coûteuse entre transmettre le
+constat au détenteur, attendre, transférer la propriété ou replanifier.
+
+### Contrôle temps réel
+
+Trois commandes. « Arrête après le travail en cours » : plus aucune unité n'est
+attribuée, les workers finissent ce qu'ils ont, puis l'équipe fait le point.
+« Arrête maintenant » : les workers posent un checkpoint, plus aucune écriture
+n'est permise, les outils en cours sont annulés là où c'est sûr, puis
+réconciliation. « Faisons le point » : barrière de synchronisation, aucune nouvelle
+réclamation, attente des checkpoints sûrs, puis un état d'équipe avec avancement,
+preuves produites, travail en cours, blocages, changements importants, chemin
+critique restant et décisions requises. Une demande humaine modifie le graphe en
+direct : priorité, contrainte ou portée changées, les travaux actifs sont réévalués,
+ceux qui ne sont plus compatibles s'arrêtent à un point sûr, les autres continuent.
+Le message humain n'entre jamais dans une file d'exécutions devenues obsolètes.
+
+### Nombre de workers
+
+Aucune limite arbitraire n'est posée, mais aucune liberté non bornée n'est donnée :
+la forme de l'équipe change au cours d'une même mission, selon le découpage du
+travail. Une phase de découverte a la forme d'un éventail, une phase de résolution
+a la forme d'hypothèses concurrentes suivies d'une synthèse, une phase de vérification
+a la forme de revues parallèles. Le scheduler peut réutiliser, créer, tuer, changer
+de modèle, agrandir ou réduire un contexte, réclamer une autre unité, attendre une
+dépendance, aider un worker sur le chemin critique, vérifier un travail achevé, ou
+s'arrêter parce que la preuve exigée existe.
+
+### Invariants de l'équipe élastique
+
+1. Aucune limite arbitraire d'agents. Le parallélisme est borné par le travail utile,
+   les ressources, le coût et le surcoût de réconciliation, jamais par un compte
+   statique dans un fichier de configuration.
+2. Les agents collaborent par connaissance structurée partagée, jamais par contexte
+   conversationnel dupliqué.
+3. Une capacité inoccupée est redirigée en continu vers du travail admissible qui
+   raccourcit le chemin critique ou augmente la preuve exigée. Le travail admissible
+   vient d'une intention ou d'une spec acceptée, d'une unité découverte en exécution
+   puis admise dans le graphe, du travail de preuve, ou d'une exploration
+   explicitement bornée. Un worker inoccupé ne s'invente jamais de boulot.
+4. Aucun worker capable n'attend alors qu'existe un travail utile, admissible et sans
+   conflit, sauf si la personne a demandé une barrière de synchronisation.
+
 ## Acceptation et tâches
 
 - [ ] H06.1 Contrat de délégation et choix automatique de rôles utiles.
