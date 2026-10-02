@@ -4779,7 +4779,7 @@
       "evidence": [
         "EV-STATE-GRAPH-SEED-MAPPING"
       ],
-      "notes": "Specification only; no implementation claimed. An unmapped path must reach unresolved with complete:false through this mapping; a composition of nodesForSourcePath plus computeImpact today yields a silently empty complete:true plan. Found by adversarial review, not invented. Tranche livree et verifiee sur EV-STATE-GRAPH-SEED-MAPPING : un chemin non mape atteint unresolved avec complete false. AC-SG02 reste PENDING car elle exige aussi le mapping de SG02.3."
+      "notes": "Specification only; no implementation claimed. An unmapped path must reach unresolved with complete:false through this mapping; a composition of nodesForSourcePath plus computeImpact today yields a silently empty complete:true plan. Found by adversarial review, not invented. Tranche livree et verifiee sur EV-STATE-GRAPH-SEED-MAPPING : un chemin non mape atteint unresolved avec complete false. AC-SG02 reste PENDING car elle exige aussi le mapping de SG02.3. Confirmation par sonde : le retr ecissement sur mapping.unresolved produit bien complete false pour un chemin non declare, ce qui est le mecanisme de l elargissement de verification. AC-SG02 reste PENDING car elle exige aussi SG02.3."
     },
     {
       "id": "SG02.3",
@@ -4799,8 +4799,10 @@
         "AC-SG02"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-VERIFICATION-SELECTION-PROBE"
+      ],
+      "notes": "Cette tache est deja le Verification Planner de la direction verification adaptative : un plan adressable impactedNodes, invariants, tests et jobs, tri stable et cache par digest. La sonde EV-VERIFICATION-SELECTION-PROBE mesure ce qui manque reellement plutot que de le supposer. Trois manques distincts, dans cet ordre. Un, la couverture : le manifeste ne declare que 8 fichiers src sur 41 presents dans src/adapters, dont shared-memory.ts, notifications.ts et managed-worktrees.ts sont absents, donc tout changement sur eux rend complete false et ne nomme aucun test. Rendre la couverture complete change les digests de l artefact et doit se faire dans SG01.3 ou une tranche dediee, pas en douce ici. Deux, la resolution test : le catalogue invariant vers check existe avec 16 entrees, mais rien ne relie un noeud test impacte a un fichier de test executable, donc aucun nom de fichier de test n est produit. Trois, le plan de verification lui meme : aujourd hui computeChangeImpact rend un plan d impact, pas un plan de preuves ; il manque le tri par risque et irreversibilite, l elargissement sur impact inconnu, et le declenchement des niveaux edit, commit, push et main. Aucune implementation revendiquee."
     },
     {
       "id": "SG03.1",
@@ -7778,6 +7780,15 @@
       "verification": "604 lignes, 0 tiret cadratin ni demi-cadratin ; conformite aux slices livrees et a l epic ; aucun critere clos",
       "artifacts": [
         "docs/harness/SPEC-STATE-GRAPH-SLICES.md"
+      ]
+    },
+    {
+      "id": "EV-VERIFICATION-SELECTION-PROBE",
+      "kind": "runtime",
+      "summary": "Sonde executee sur le graphe livre : computeChangeImpact accepte aujourd hui des PathChange et rend impactedNodes, invariants et unmappedPaths, mais le solveur de selection de preuves n existe pas encore. Pour un fichier source reellement modifie comme src/adapters/shared-memory.ts, la sonde rend seeds vide, unresolved egal au chemin, complete false, coverage declared 0 unmapped 1, et zero test nomme. Le systeme avoue son angle mort plutot que de rendre un plan incomplet silencieux, ce qui est le comportement voulu : un impact inconnu elargit la verification, jamais ne la reduit.",
+      "verification": "Sonde sur src/adapters/shared-memory.ts et src/adapters/state-graph/impact.ts : resultats identiques, complete false dans les deux cas ; ownerCheckCatalog rend 16 entrees invariant vers check, donc la liaison invariant vers test existe deja ; 5 sources declarees seulement dans src, 8 fichiers src declares sur 41 presents dans src/adapters ; 16 noeuds test et 16 invariants dans le manifeste",
+      "artifacts": [
+        "docs/harness/evaluation/verification-selection/evidence.md"
       ]
     }
   ],
