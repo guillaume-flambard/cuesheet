@@ -685,7 +685,7 @@
         },
         {
           "path": "test/objectives.test.ts",
-          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+          "digest": "05e7a3b5301a35bc879934eb122fe43ccecce714d133eedb2e95eab7234c3153"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -707,7 +707,7 @@
         },
         {
           "path": "test/objectives.test.ts",
-          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+          "digest": "05e7a3b5301a35bc879934eb122fe43ccecce714d133eedb2e95eab7234c3153"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -751,7 +751,7 @@
         },
         {
           "path": "test/objectives.test.ts",
-          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+          "digest": "05e7a3b5301a35bc879934eb122fe43ccecce714d133eedb2e95eab7234c3153"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1127,7 +1127,7 @@
       "sourceRefs": [
         {
           "path": "test/objectives.test.ts",
-          "digest": "dac41753e1168f0320999022b5187d94bfc8e352db96a2b0a83415b1545b9fc4"
+          "digest": "05e7a3b5301a35bc879934eb122fe43ccecce714d133eedb2e95eab7234c3153"
         }
       ],
       "ownerRef": "owner.cuesheet",
