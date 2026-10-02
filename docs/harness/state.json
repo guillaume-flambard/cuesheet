@@ -7932,6 +7932,16 @@
       "artifacts": [
         "scripts/ui/journey004.mjs"
       ]
+    },
+    {
+      "id": "EV-EXECUTION-OBSERVABILITY",
+      "kind": "automated",
+      "summary": "Le runtime distingue huit phases d execution, mais la surface les ecrasait toutes en une seule certitude : failed, blocked, cancelled, limit et stagnation etaient chacun peints unknown. C est un mensonge precis et discret, car unknown veut dire non etabli, donc un echec technique rapporte comme unknown dit au lecteur d attendre un fait qui n arrivera jamais, et un crash dessinait la meme marque qu un arret volontaire puisque la certitude pilote le glyphe et la couleur. Le mapping est desormais une fonction nommee et exportee, et seul failed est peint failed ; blocked attend une capacite, cancelled est la decision de la personne, limit et stagnation se sont terminees sans resultat, et appeler l un d eux une erreur serait le mensonge inverse, donc cette direction est assertee aussi.",
+      "verification": "5 tests, non vacue : tout repeindre en unknown fait echouer 2 tests ; tsc terminal 3 et tsconfig.build 32 inchangees ; artefact regenere car session-view.ts est source declaree",
+      "artifacts": [
+        "apps/terminal/src/producer/session-view.ts",
+        "test/execution-observability.test.ts"
+      ]
     }
   ],
   "risks": {
