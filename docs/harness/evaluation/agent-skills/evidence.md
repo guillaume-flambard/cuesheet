@@ -1,0 +1,13 @@
+# EV-AGENT-SKILLS — 2026-10-02
+
+Base39a7e9d. AGENT-SKILLS.md predates code. H04.5a/H06.1c bounded context routing, not entire H04.5/H06 closure.
+
+Implementation: installed catalog/SkillTools reader reused, plus valid latest session create_skill records with existing sources. Role/task token overlap selects up to3 skills,100 candidates,6000 instruction characters. Optional coordinator names choose registered skills only, never paths. Source seq/hash/kind/truncation recorded per consultant. Sources read via existing realpath/root/digest validation. Ambiguous names skipped (including session/installed collisions), unreadable/limited discovery explicitly reported. Complete read source preserved in journal; consultant gets bounded excerpt with trust disclaimer. Active snapshot rechecks installed versions or session revisions before admission of text and after entire batch; changed skills discard old proposals. Returned tool requests remain refused.
+
+UI: existing Agents palette displays selected names/kind/version/source sequence and read limits, no filesystem I/O or new configuration ceremony. Old agent records lack optional refs and remain readable; malformed reference metadata filtered before rendering. Producer-created skill reaches a later consultant; inspection read-only. Human context/selected model still preserved, skills confer no permissions or verification authority.
+
+Proof:49 initial targeted PASS,44 final targeted PASS including actual producer create_skill→consult→inspection and real Ink sources/scroll/three-size resize. Actual manifests, outside-root symlink refusal, duplicate name, clipped long skill, source hash and edit during suspended inference PASS. Final complete regression814 tests812 PASS0 FAIL2 explicit skips. Final build PASS32 inherited diagnostics, differential guard PASS. git diff --check PASS. Solo adversarial review; no paid live inference or quality benchmark. Tests remove only owned temp fixtures.
+
+Limits: lexical selection is not universal semantic retrieval, candidate/content limits can omit relevant instructions, no extra context-window optimization proven. Skills remain unverified instructions, not evaluated/promoted defaults. Code agents/workspace integration, improvement/promotion/rollback graph, enterprise auth/sync and comparative benchmarks remain open. R06/R09 unresolved globally. Global IMPLEMENTING, no parent acceptance promoted.
+
+Manual: request useful research/review; inspect Agents skills and source/version labels; create reusable session instruction through normal workflow and observe later consultant use; correction/skill update makes old reply stale.

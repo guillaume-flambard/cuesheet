@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "1d94f1e",
+  "referenceCommit": "39a7e9d",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3349,6 +3349,66 @@
         "EV-AGENT-MODELS"
       ],
       "notes": "Bounded owner-selected consultation routes/UI verified, no full H06/H07 closure.44 targeted,808/806/0/2 full;7 additional including actual binary IDs;build/static PASS."
+    },
+    {
+      "id": "H04.5a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H04.5",
+        "REQ-H04.4"
+      ],
+      "dependencies": [
+        "H06.1b"
+      ],
+      "description": "Sélection bornée skills installés/session avec versions sources et fraîcheur",
+      "systems": [
+        "src/adapters/agent-skills.ts",
+        "src/adapters/agent-consultation.ts",
+        "apps/terminal/src/producer/index.ts",
+        "test/agent-skills.test.ts",
+        "test/agent-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H04.5",
+        "AC-H04.4"
+      ],
+      "verification": "Distinct roles, real manifests/version/source, generated skills, stale/injection, producer/UI/typing/full/build",
+      "evidence": [
+        "EV-AGENT-SKILLS"
+      ],
+      "notes": "Bounded skill selection/context/source UI verified.49 initial/44 final targeted,814/812/0/2 final full,build/static PASS. Skills eval/promotion and full code agent parents remain open."
+    },
+    {
+      "id": "H06.1c",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.1",
+        "REQ-H06.4",
+        "REQ-H06.5"
+      ],
+      "dependencies": [
+        "H04.5a"
+      ],
+      "description": "Skills propres aux consultations et références inspectables",
+      "systems": [
+        "src/adapters/agent-skills.ts",
+        "src/adapters/agent-consultation.ts",
+        "apps/terminal/src/producer/index.ts",
+        "test/agent-skills.test.ts",
+        "test/agent-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.1",
+        "AC-H06.4",
+        "AC-H06.5"
+      ],
+      "verification": "Distinct roles, real manifests/version/source, generated skills, stale/injection, producer/UI/typing/full/build",
+      "evidence": [
+        "EV-AGENT-SKILLS"
+      ],
+      "notes": "Bounded skill selection/context/source UI verified.49 initial/44 final targeted,814/812/0/2 final full,build/static PASS. Skills eval/promotion and full code agent parents remain open."
     }
   ],
   "acceptance": [
@@ -4423,6 +4483,12 @@
       "result": "PASS_PARTIAL",
       "method": "Owner route/replay/current-generation refusals, actual session reopen, Ink provider/catalog/reset, actual binary model IDs, differential/build/full, solo review",
       "details": "evaluation/agent-models/evidence.md;44 targeted,808/806/0/2 full,7 extra. No live provider quality or all-agent code integration claim."
+    },
+    {
+      "id": "EV-AGENT-SKILLS",
+      "result": "PASS_PARTIAL",
+      "method": "Actual manifests/source hashes/current versions, generated session skills, tool refusal/producer/Ink, differential/build/full; solo review",
+      "details": "evaluation/agent-skills/evidence.md;814/812/0/2 final full. Retrieval quality and promotion loop remain parent work."
     }
   ],
   "risks": {
@@ -4432,10 +4498,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "1d94f1e",
+    "lastPassedCommit": "39a7e9d",
     "lastFullSuite": {
-      "tests": 808,
-      "passed": 806,
+      "tests": 814,
+      "passed": 812,
       "failed": 0,
       "skipped": 2
     },
@@ -4464,7 +4530,8 @@
     "workingTreeCurrentTools": "PASS H07.2b finite current namespace in schemas/prompts;793/791/0/2 full,42 targeted, build PASS32 baseline diagnostics.",
     "workingTreeRouteAlias": "PASS bounded refresh/alias masking;50 targeted,796/794/0/2 full; build PASS32 inherited diagnostics. Overall IMPLEMENTING.",
     "workingTreeAgentConsultation": "PASS_PARTIAL:802/800/0/2 full before final projection adjustment;39 targeted/build PASS after. H06 parents remain open.",
-    "workingTreeAgentModels": "PASS_PARTIAL owner routes and session UI;808/806/0/2 full,44 targeted,7 added binary ID/UX tests. Global IMPLEMENTING."
+    "workingTreeAgentModels": "PASS_PARTIAL owner routes and session UI;808/806/0/2 full,44 targeted,7 added binary ID/UX tests. Global IMPLEMENTING.",
+    "workingTreeAgentSkills": "PASS_PARTIAL sourced installed/session skill routing, version guards and UI;814/812/0/2 full,49 initial/44 final targeted,build/static PASS. Global IMPLEMENTING."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4532,7 +4599,8 @@
         "E01.7",
         "E01.6a",
         "E01.5b1",
-        "E01.5c"
+        "E01.5c",
+        "H04.5a"
       ],
       "dependencies": [
         "C1",
@@ -4582,7 +4650,8 @@
         "H07.4a",
         "H07.2b",
         "H06.1a",
-        "H06.1b"
+        "H06.1b",
+        "H06.1c"
       ],
       "dependencies": [
         "C1",

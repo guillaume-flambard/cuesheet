@@ -106,3 +106,6 @@ Plan/spec modèle courant → ProjectVaultPublisher avant prochaine infer → jo
 
 
 2026-10-02 H06.1b/H06.5b : choix humain routes par rôle/default → notes de session → resolver owner/scope → consultations modèles distincts ; palette Modèles des agents réutilise Models. EV-AGENT-MODELS :44 ciblés,808/806/0/2 full,7 tests supplémentaires IDs binary/UX,build/static PASS. Parents orchestration code/budgets/évaluation skills ouverts ; global IMPLEMENTING.
+
+
+2026-10-02 H04.5a/H06.1c : sélection skills installés/session → sources versionnées → contexte propre à chaque consultation → guards fraîcheur → Agents affiche sources/versions/limites. EV-AGENT-SKILLS :49 initial/44 final ciblés,814/812/0/2 full final,build/static PASS. Sélection lexicale bornée ; essais/promotion/rollback et agents code restent parents ouverts. Global IMPLEMENTING.
