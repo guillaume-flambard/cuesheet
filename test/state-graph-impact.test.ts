@@ -2,7 +2,7 @@ import {test} from 'node:test';import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';import {pathToFileURL} from 'node:url';
 import {parseStateGraph} from '../src/adapters/state-graph/schema.ts';import {graphRevision} from '../src/adapters/state-graph/loader.ts';
-import {buildReverseIndex,computeImpact,nodesForSourcePath,strongComponents,DEFAULT_MAX_IMPACTED,type ImpactPlan} from '../src/adapters/state-graph/impact.ts';
+import {buildReverseIndex,computeImpact,nodesForSourcePath,strongComponents,mapChanges,computeChangeImpact,DEFAULT_MAX_IMPACTED,DEFAULT_MAX_CHANGES,type ImpactPlan,type PathChange} from '../src/adapters/state-graph/impact.ts';
 const src=(path:string)=>({path,digest:'a'.repeat(64)});
 const node=(id:string,kind='entity',paths?:readonly string[])=>({id,kind,domainId:'domain',revision:1,sourceRefs:(paths??['src/'+id+'.ts']).map(src),ownerRef:'owner.project',contractRefs:[],invariantRefs:[],checkRefs:[]});
 const edge=(id:string,dependent:string,dependency:string,type='depends_on')=>({id,type,dependent,dependency,sourceRef:src('src/'+dependency+'.ts')});
@@ -168,4 +168,144 @@ test('every returned structure is frozen, so a caller cannot edit a plan it was 
  assert.throws(()=>{(plan.cycles[0] as any).push('x');},TypeError);
  assert.throws(()=>{(plan.seeds as any).push('x');},TypeError);
  assert.deepEqual(ids(plan),['a','b','c']);
+});
+
+// --- SG02.2: mapping a diff onto seeds, so an unmapped path cannot read as a clean empty impact ---
+
+test('a diff touching a path the graph never declared yields complete:false and names that path',()=>{
+ // The composition the adversarial review found: nodesForSourcePath returns [], computeImpact reads []
+ // as "nothing is affected", and the caller is handed a complete plan over a file it knows nothing about.
+ const g=graph([node('domain','domain'),node('a'),node('b')],[edge('e-b-a','b','a')]);
+ const index=buildReverseIndex(g);
+ const changed=['src/undeclared.ts'];
+ const naive=computeImpact(g,changed.flatMap(path=>nodesForSourcePath(index,path)));
+ assert.equal(naive.complete,true,'the old composition is the defect being removed');
+ assert.deepEqual(ids(naive),[],'and it is silently empty');
+
+ const changes:PathChange[]=[{path:'src/undeclared.ts',kind:'modified'}];
+ const mapping=mapChanges(index,changes);
+ assert.deepEqual(mapping.seeds,[]);
+ assert.deepEqual(mapping.unresolved,['src/undeclared.ts']);
+ assert.deepEqual(mapping.deletions,[]);
+ assert.deepEqual(mapping.coverage,{declared:0,unmapped:1});
+
+ const plan=computeChangeImpact(g,changes);
+ assert.equal(plan.complete,false);
+ assert.deepEqual(plan.unresolved,['src/undeclared.ts']);
+ assert.deepEqual(plan.unmappedPaths,['src/undeclared.ts']);
+ assert.deepEqual(plan.deletions,[]);
+ assert.deepEqual(plan.coverage,{declared:0,unmapped:1});
+ // Same shape as a genuine no-op change set, except complete stays false, so absence is never coverage.
+ const noop=computeChangeImpact(g,[]);
+ assert.deepEqual(ids(noop),[]);assert.equal(noop.complete,true);
+ assert.notEqual(plan.complete,noop.complete);
+ // Coverage is per path, not per plan: one declared change beside one unknown path is still incomplete.
+ const mixed=computeChangeImpact(g,[{path:'src/a.ts',kind:'modified'},{path:'src/undeclared.ts',kind:'modified'}]);
+ assert.deepEqual(ids(mixed),['a','b'],'the declared path still drives the closure');
+ assert.equal(mixed.complete,false);
+ assert.deepEqual(mixed.unmappedPaths,['src/undeclared.ts']);
+ assert.deepEqual(mixed.coverage,{declared:1,unmapped:1});
+});
+
+test('an unmapped path that collides with a node id is not absorbed as a covered seed',()=>{
+ // `schema.ts` admits `notes.md` as a node id, and a real repository can hold a file of that name, so the
+ // two namespaces overlap in practice. Handing an unmapped path to the closure as if it were a seed lets
+ // the closure find that node id, clear its own `unresolved`, and report complete coverage of a file the
+ // mapping never reached. The mapping is the only place that knows the path was unmapped, so the refusal
+ // cannot be delegated to the closure alone.
+ const g=graph([node('domain','domain'),node('a'),node('notes.md','source',['src/notes.md'])],[]);
+ const index=buildReverseIndex(g);
+ assert.deepEqual(nodesForSourcePath(index,'notes.md'),[],'the path is not declared by any node');
+ const raw=computeImpact(g,['notes.md']);
+ assert.deepEqual(raw.unresolved,[],'the closure alone is fooled, which is why it is not the only guard');
+ assert.equal(raw.complete,true);
+ const mapping=mapChanges(index,[{path:'notes.md',kind:'modified'}]);
+ assert.deepEqual(mapping.unresolved,['notes.md']);
+ assert.deepEqual(mapping.seeds,[],'a colliding node id is never guessed as the owner of an unmapped path');
+ const plan=computeChangeImpact(g,[{path:'notes.md',kind:'modified'}]);
+ assert.equal(plan.complete,false,'the mapping refuses coverage the closure would have granted');
+ assert.deepEqual(plan.unmappedPaths,['notes.md']);
+ assert.deepEqual(mapping.coverage,{declared:0,unmapped:1});
+});
+
+test('a deletion is represented as a change, not ignored because its file is gone',()=>{
+ const g=graph([node('domain','domain'),node('a'),node('b')],[edge('e-b-a','b','a')]);
+ const index=buildReverseIndex(g);
+ const changes:PathChange[]=[{path:'src/a.ts',kind:'deleted'}];
+ const mapping=mapChanges(index,changes);
+ // The deleted path was declared, so it is a real seed and its dependents are still impacted: a removal
+ // is a change to the same node, and dropping it would understate the blast radius.
+ assert.deepEqual(mapping.seeds,['a']);
+ assert.deepEqual(mapping.deletions,['src/a.ts']);
+ assert.deepEqual(mapping.unresolved,[]);
+ assert.deepEqual(mapping.coverage,{declared:1,unmapped:0});
+ const plan=computeChangeImpact(g,changes);
+ assert.deepEqual(ids(plan),['a','b'],'deleting a.ts must still impact b');
+ assert.equal(plan.complete,true);
+ assert.deepEqual(plan.deletions,['src/a.ts']);
+ // A file the graph never declared and that no longer exists is the honest worst case: no seed, and named.
+ const undeclared=computeChangeImpact(g,[{path:'src/vanished.ts',kind:'deleted'}]);
+ assert.deepEqual(ids(undeclared),[]);
+ assert.deepEqual(undeclared.deletions,['src/vanished.ts']);
+ assert.deepEqual(undeclared.unresolved,['src/vanished.ts']);
+ assert.equal(undeclared.complete,false);
+ assert.ok(Object.isFrozen(undeclared.deletions)&&Object.isFrozen(undeclared.unmappedPaths));
+ assert.throws(()=>{(undeclared.deletions as any).push('x');},TypeError);
+});
+
+test('a path outside declared sources cannot produce an empty complete plan by any composition',()=>{
+ const g=graph([node('domain','domain'),node('a'),node('b')],[edge('e-b-a','b','a')]);
+ const index=buildReverseIndex(g);
+ // Every path a real diff can carry and this graph never declared, including the prototype-named ones.
+ // `bySourcePath` is a plain object, so `index.bySourcePath['constructor']` is Object and not a bucket.
+ // A lookup that trusted that would return a function, treat the path as mapped, and complete the plan.
+ for(const path of ['src/absent.ts','constructor','toString','valueOf','hasOwnProperty','__proto__','node_modules/x/index.js']){
+  assert.deepEqual(nodesForSourcePath(index,path),[],`${path} must resolve to no declaration`);
+  const plan=computeChangeImpact(g,[{path,kind:'modified'}]);
+  assert.equal(plan.complete,false,`${path} must not read as covered`);
+  assert.deepEqual(plan.unresolved,[path]);
+  assert.deepEqual(ids(plan),[]);
+ }
+ // A traversing or malformed path is refused outright rather than mapped as an ordinary undeclared one.
+ // Both outcomes are non-silent, and refusing is the stronger: it never reaches a plan at all.
+ for(const bad of [{path:'',kind:'modified'},{path:'../escape.ts',kind:'modified'},{path:'/abs.ts',kind:'modified'},{path:'src/../../escape.ts',kind:'modified'},{path:'src/a.ts',kind:'teleported'},{path:'src/a.ts',kind:'renamed'},{path:'src/a.ts',kind:'modified',from:'../smuggled.ts'}] as PathChange[])
+  assert.throws(()=>mapChanges(index,[bad]),/malformed entry/);
+ // An oversized change set is refused, never truncated: a dropped tail is a change that reached no seed.
+ const many=Array.from({length:DEFAULT_MAX_CHANGES+1},(_,i)=>({path:'src/f'+i+'.ts',kind:'modified'}) as PathChange);
+ assert.throws(()=>mapChanges(index,many),/exceeds maxChanges=10000/);
+ assert.equal(DEFAULT_MAX_CHANGES,10000);
+});
+
+test('a rename seeds through either name and is incomplete only when neither is declared',()=>{
+ const both=graph([node('domain','domain'),node('a',undefined,['src/old.ts','src/new.ts']),node('b')],[edge('e-b-a','b','a')]);
+ const viaRename=computeChangeImpact(both,[{path:'src/new.ts',kind:'renamed',from:'src/old.ts'}]);
+ assert.deepEqual(ids(viaRename),['a','b']);
+ assert.equal(viaRename.complete,true);
+ // The old name is a deletion and is represented as one, even though the plan is otherwise covered.
+ assert.deepEqual(viaRename.deletions,['src/old.ts']);
+ assert.deepEqual(viaRename.unmappedPaths,[]);
+ // A graph that only ever knew the new name still reaches the same closure: no stale-name bookkeeping.
+ const onlyNew=graph([node('domain','domain'),node('a',undefined,['src/new.ts']),node('b')],[edge('e-b-a','b','a')]);
+ const partial=computeChangeImpact(onlyNew,[{path:'src/new.ts',kind:'renamed',from:'src/old.ts'}]);
+ assert.deepEqual(ids(partial),['a','b']);
+ assert.equal(partial.complete,true,'the new name is declared, which is what the graph must be read through');
+ // Neither name declared is a file this graph has never heard of, whichever way it is named.
+ const neither=computeChangeImpact(both,[{path:'src/other.ts',kind:'renamed',from:'src/gone.ts'}]);
+ assert.equal(neither.complete,false);
+ assert.deepEqual(neither.unmappedPaths,['src/gone.ts','src/other.ts']);
+ assert.deepEqual(neither.deletions,['src/gone.ts']);
+});
+
+test('the change mapping is a pure function of the index and the change set',()=>{
+ const g=graph([node('domain','domain'),node('a'),node('b')],[edge('e-b-a','b','a')]);
+ const index=buildReverseIndex(g);
+ const changes:PathChange[]=[{path:'src/b.ts',kind:'modified'},{path:'src/undeclared.ts',kind:'modified'}];
+ const forward=computeChangeImpact(g,changes),reversed=computeChangeImpact(g,[...changes].reverse());
+ assert.equal(JSON.stringify(reversed),JSON.stringify(forward),'change order is not an input');
+ assert.deepEqual(mapChanges(index,changes),mapChanges(buildReverseIndex(g),changes));
+ assert.equal(JSON.stringify(computeChangeImpact(g,changes)),JSON.stringify(computeChangeImpact(g,changes)));
+ assert.ok(Object.isFrozen(forward)&&Object.isFrozen(forward.coverage)&&Object.isFrozen(forward.unmappedPaths));
+ // Narrowed, never widened: an unmapped path is a hole whatever the closure concluded about the seeds.
+ assert.equal(computeChangeImpact(g,[{path:'src/a.ts',kind:'modified'}]).complete,true);
+ assert.equal(forward.complete,false);
 });

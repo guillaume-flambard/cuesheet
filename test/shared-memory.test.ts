@@ -4,7 +4,8 @@ import {mkdtempSync,mkdirSync,existsSync,readFileSync,writeFileSync,rmSync} from
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {spawn} from "node:child_process";
-import {SharedContexts,SharedMemoryStore,sharedScope} from "../src/adapters/shared-memory.ts";
+import {SharedContexts,SharedMemoryStore,sharedScope,SharedGrants,SharedRetrieval} from "../src/adapters/shared-memory.ts";
+import type {SharedRealm,SharedOperation} from "../src/adapters/shared-memory.ts";
 import {SessionStore} from "../src/adapters/session-store.ts";
 import {TerminalSession} from "../src/adapters/terminal-session.ts";
 import {persistentView} from "../apps/terminal/src/producer/session-view.ts";
@@ -148,4 +149,155 @@ test("human check renewal during verification cannot certify the new revision wi
   finishNext=true;producer.resume!();const resumeEnd=Date.now()+5000;while(store.get().busy&&Date.now()<resumeEnd)await new Promise(r=>setTimeout(r,10));assert.equal(store.get().busy,false);assert.equal(projectObjectives(session.core.toSession().events).current!.status,'verified');assert.equal(session.core.toSession().evidence.length,1);
   const id=session.metadata.id;session.close();const reloaded=new TerminalSession({root:join(root,'sessions'),cwd,id});try{assert.equal(projectObjectives(reloaded.core.toSession().events).current!.check!.boundRevision,renewed.revision);}finally{reloaded.close();}
  }finally{session.close();rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("a grant is required before search and before read, per principal and per realm",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-grants-'));
+ try {
+  const contexts=new SharedContexts({cwd:root});
+  const made=contexts.project.create(item('alice'),-1);assert.ok(!('conflict' in made));
+  const empty=new SharedContexts({cwd:join(root,'elsewhere')});
+  const grants=new SharedGrants();const scope=contexts.project.scope;
+  const access=(principal:string,realm:SharedRealm='project',stores=contexts.stores())=>new SharedRetrieval({principal,realm,grants,stores});
+  assert.throws(()=>grants.grant({principal:'',realm:'project',scope,operations:['read']}),/principal/);
+  assert.throws(()=>grants.grant({principal:'alice',realm:'local' as never,scope,operations:['read']}),/realm/);
+  assert.throws(()=>grants.grant({principal:'alice',realm:'project',scope:{kind:'project',id:'bad id'},operations:['read']}),/scope/);
+  assert.throws(()=>grants.grant({principal:'alice',realm:'project',scope,operations:['write' as never]}),/operations/);
+  assert.throws(()=>grants.grant({principal:'alice',realm:'project',scope,operations:[]}),/operations/);
+  assert.throws(()=>new SharedRetrieval({principal:'alice',realm:'project',grants,stores:[contexts.project,contexts.project]}),/Duplicate/);
+  assert.throws(()=>new SharedRetrieval({principal:'',realm:'project',grants,stores:contexts.stores()}),/principal/);
+  const alice=access('alice');const nowhere=access('alice','project',empty.stores());
+  // No grant: no hit, no read, and no way to tell a populated scope from an empty one.
+  assert.deepEqual(alice.search('preserve'),nowhere.search('preserve'));
+  assert.equal(alice.search('preserve').hits.length,0);
+  assert.throws(()=>alice.read(scope),/not authorized/);
+  assert.throws(()=>alice.readReference({scope,id:made.entry.id,revision:made.entry.revision}),/not authorized/);
+  // Search and read are separate rights: the search grant never opens the read door.
+  grants.grant({principal:'alice',realm:'project',scope,operations:['search']});
+  const found=alice.search('preserve');
+  assert.equal(found.hits.length,1);
+  assert.equal(found.hits[0]!.entry.id,made.entry.id);
+  assert.ok(found.hits[0]!.passage.includes('preserve API'));
+  assert.throws(()=>alice.read(scope),/not authorized/);
+  assert.throws(()=>alice.readReference({scope,id:made.entry.id,revision:made.entry.revision}),/not authorized/);
+  grants.grant({principal:'alice',realm:'project',scope,operations:['read']});
+  assert.equal(alice.read(scope).entries.length,1);
+  assert.equal(alice.readReference({scope,id:made.entry.id,revision:made.entry.revision}).text,'preserve API');
+  // A second identity holds nothing: no data and no sign that any exists.
+  const bob=access('bob');
+  assert.deepEqual(bob.search('preserve'),nowhere.search('preserve'));
+  assert.throws(()=>bob.read(scope),/not authorized/);
+  assert.throws(()=>bob.readReference({scope,id:made.entry.id,revision:made.entry.revision}),/not authorized/);
+  // Realms are explicit: a grant issued in one realm is never inherited by another.
+  const team=access('alice','team');
+  assert.equal(team.search('preserve').hits.length,0);
+  assert.throws(()=>team.read(scope),/not authorized/);
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("revocation is observed by the very next search and read with no stale window",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-revoke-'));
+ try {
+  const contexts=new SharedContexts({cwd:root});
+  const made=contexts.project.create(item('owner'),-1);assert.ok(!('conflict' in made));
+  const empty=new SharedContexts({cwd:join(root,'elsewhere')});
+  const grants=new SharedGrants();const scope=contexts.project.scope;
+  const build=(principal:string)=>new SharedRetrieval({principal,realm:'project',grants,stores:contexts.stores()});
+  grants.grant({principal:'alice',realm:'project',scope,operations:['search','read']});
+  grants.grant({principal:'bob',realm:'project',scope,operations:['search','read']});
+  const access=build('alice');const reference={scope,id:made.entry.id,revision:made.entry.revision};
+  assert.equal(access.search('preserve').hits.length,1);
+  assert.equal(access.read(scope).entries.length,1);
+  assert.equal(access.readReference(reference).text,'preserve API');
+  grants.revoke({principal:'alice',scope});
+  const nowhere=new SharedRetrieval({principal:'alice',realm:'project',grants,stores:empty.stores()});
+  // The very next call, on the accessor that already returned data and on a fresh one.
+  assert.deepEqual(access.search('preserve'),nowhere.search('preserve'));
+  assert.deepEqual(build('alice').search('preserve'),nowhere.search('preserve'));
+  assert.equal(build('alice').search('preserve').hits.length,0);
+  assert.throws(()=>access.read(scope),/not authorized/);
+  assert.throws(()=>build('alice').read(scope),/not authorized/);
+  assert.throws(()=>build('alice').readReference(reference),/not authorized/);
+  assert.throws(()=>build('alice').readReference({scope,id:made.entry.id,revision:99}),/not authorized/);
+  // Revocation names a principal: the other identity on the same scope is untouched.
+  assert.equal(build('bob').search('preserve').hits.length,1);
+  assert.equal(build('bob').read(scope).entries.length,1);
+  // Partial revocation drops only the named operation and leaves the other door as it was.
+  grants.grant({principal:'carol',realm:'team',scope,operations:['search','read']});
+  const carol=new SharedRetrieval({principal:'carol',realm:'team',grants,stores:contexts.stores()});
+  assert.equal(carol.search('preserve').hits.length,1);
+  assert.equal(carol.read(scope).entries.length,1);
+  grants.revoke({principal:'carol',operations:['read'] as SharedOperation[]});
+  assert.equal(carol.search('preserve').hits.length,1,'revoking read alone never closes search');
+  assert.throws(()=>carol.read(scope),/not authorized/);
+  grants.revoke({principal:'carol',operations:['search'] as SharedOperation[]});
+  assert.equal(carol.search('preserve').hits.length,0);
+  assert.throws(()=>grants.revoke({principal:'carol',operations:[]}),/operations/);
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("a revocation arriving during the read is observed before any data is returned",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-inflight-'));
+ try {
+  const company=join(root,'company');mkdirSync(company);
+  const project=join(root,'project');mkdirSync(project);
+  const orgStore=new SharedMemoryStore({root:company,scope:sharedScope('organization',company)});
+  const contexts=new SharedContexts({cwd:project,organizations:[company]});
+  assert.ok(!('conflict' in contexts.project.create(item('project-owner'),-1)));
+  assert.ok(!('conflict' in orgStore.create(item('org-owner'),-1)));
+  const grants=new SharedGrants();const projectScope=contexts.project.scope;const orgScope=orgStore.scope;
+  const grantBoth=()=>{grants.grant({principal:'alice',realm:'enterprise',scope:projectScope,operations:['search','read']});grants.grant({principal:'alice',realm:'enterprise',scope:orgScope,operations:['search','read']});};
+  const refusal=(run:()=>unknown):string=>{let message='';try{run();assert.fail('a refusal was expected');}catch(error){message=String(error);}return message;};
+  // The mount's journal read carries a revocation of the scope read just before it, in the same search.
+  grantBoth();
+  const during=new SharedRetrieval({principal:'alice',realm:'enterprise',grants,stores:[contexts.project,{scope:orgScope,read(){const profile=orgStore.read();grants.revoke({principal:'alice',scope:projectScope});return profile;}}]});
+  const duringMessage=refusal(()=>during.search('preserve'));
+  assert.match(duringMessage,/changed/);
+  assert.doesNotMatch(duringMessage,/preserve API/);
+  // The same for a read: the grant is asked again after the projection, before anything is handed back.
+  grantBoth();
+  const racing=new SharedRetrieval({principal:'alice',realm:'enterprise',grants,stores:[{scope:projectScope,read(){const profile=contexts.project.read();grants.revoke({principal:'alice',scope:projectScope});return profile;}}]});
+  const readMessage=refusal(()=>racing.read(projectScope));
+  assert.match(readMessage,/changed/);
+  assert.doesNotMatch(readMessage,/preserve API/);
+  const referenceMessage=refusal(()=>racing.readReference({scope:projectScope,id:'anything',revision:1}));
+  assert.match(referenceMessage,/not authorized/);
+ } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+test("a scope without a grant is never opened and revocation only touches the grant it names",()=>{
+ const root=mkdtempSync(join(tmpdir(),'cuesheet-shared-denied-'));
+ try {
+  const company=join(root,'company');mkdirSync(company);
+  const broken=join(root,'broken');mkdirSync(broken);writeFileSync(join(broken,'context.jsonl'),'not a journal\n');
+  const project=join(root,'project');mkdirSync(project);
+  const orgStore=new SharedMemoryStore({root:company,scope:sharedScope('organization',company)});
+  const brokenStore=new SharedMemoryStore({root:broken,scope:sharedScope('organization',broken)});
+  const contexts=new SharedContexts({cwd:project,organizations:[company]});
+  assert.ok(!('conflict' in contexts.project.create(item('project-owner'),-1)));
+  assert.ok(!('conflict' in orgStore.create(item('org-owner'),-1)));
+  const grants=new SharedGrants();const projectScope=contexts.project.scope;const orgScope=orgStore.scope;
+  grants.grant({principal:'alice',realm:'enterprise',scope:projectScope,operations:['search','read']});
+  grants.grant({principal:'alice',realm:'enterprise',scope:orgScope,operations:['search','read']});
+  const stores=[contexts.project,orgStore,brokenStore] as const;
+  const access=new SharedRetrieval({principal:'alice',realm:'enterprise',grants,stores});
+  assert.equal(access.search('preserve').hits.length,2);
+  assert.throws(()=>access.read(brokenStore.scope),/not authorized/,'a denied journal is never parsed, so its damage is never revealed');
+  grants.revoke({principal:'alice',scope:projectScope});
+  assert.equal(access.search('preserve').hits.length,1);
+  assert.equal(access.search('preserve').hits[0]!.scope.id,orgScope.id);
+  assert.throws(()=>access.read(projectScope),/not authorized/);
+  assert.equal(access.read(orgScope).entries.length,1);
+  grants.revoke({principal:'alice'});
+  const stranger=new SharedRetrieval({principal:'mallory',realm:'enterprise',grants,stores});
+  assert.deepEqual(access.search('preserve'),stranger.search('preserve'));
+  assert.equal(access.search('preserve').hits.length,0);
+  assert.throws(()=>access.read(orgScope),/not authorized/);
+  assert.throws(()=>access.read(projectScope),/not authorized/);
+  assert.throws(()=>access.readReference({scope:orgScope,id:'anything',revision:1}),/not authorized/);
+ } finally {rmSync(root,{recursive:true,force:true});}
 });

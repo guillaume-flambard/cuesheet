@@ -19,8 +19,15 @@ const CAUSAL:readonly EdgeType[]=Object.freeze(['contains','depends_on','describ
  * that passed validation. It fires on input that skipped validation, which is the case a bound exists for.
  */
 export const DEFAULT_MAX_IMPACTED=10000;
+/**
+ * A ceiling on the change set, matched to the node ceiling for the same reason: a diff is untrusted input
+ * exactly as a manifest is, and refusing is the only honest answer to a set too large to hold. Never a
+ * truncation, because a silently dropped tail is a change that never reached a seed.
+ */
+export const DEFAULT_MAX_CHANGES=10000;
 
 export interface ImpactOptions{readonly maxImpacted?:number;readonly edgeTypes?:readonly EdgeType[]}
+export interface ChangeImpactOptions extends ImpactOptions{readonly maxChanges?:number}
 export interface DependentLink{readonly dependent:string;readonly edge:string;readonly edgeType:EdgeType}
 export interface ReverseIndex{
  readonly nodeIds:readonly string[];
@@ -60,6 +67,27 @@ export interface ImpactPlan{
 
 const EMPTY_LINKS:readonly DependentLink[]=Object.freeze([]);
 
+/**
+ * The same path shape `schema.ts` admits for a declared source, so a diff path and a declared source are
+ * comparable strings. A change list arrives from outside the trust boundary and is matched against the
+ * graph by exact string, which means an unchecked `../` or absolute path is a key that simply never
+ * matches: not a breach, but a change that vanishes from the accounting and leaves the plan looking
+ * complete. Refusing the whole set is the honest response to a malformed one.
+ */
+const pathShape=(value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=240&&
+ Buffer.from(value,'utf8').toString('utf8')===value&&!/[\\:*?\x00-\x1f\x7f]/.test(value)&&
+ !value.split('/').some(part=>!part||part==='.'||part==='..'||part!==part.trim()||part.endsWith('.'));
+const changeShape=(value:unknown):value is PathChange=>{
+ if(!value||typeof value!=='object'||Array.isArray(value))return false;
+ const c=value as {path?:unknown;kind?:unknown;from?:unknown};
+ if(!pathShape(c.path))return false;
+ if(c.kind!=='added'&&c.kind!=='modified'&&c.kind!=='deleted'&&c.kind!=='renamed')return false;
+ // `from` is the vanished side of a rename. Accepting it on any other kind would let a caller smuggle a
+ // second, unchecked path past the validation above under a kind that never looks at it.
+ if(c.kind==='renamed')return pathShape(c.from);
+ return c.from===undefined;
+};
+
 /** The index stays closed over declared nodes, so a hand-built graph object cannot inject ids it never names. Not schema validation: no shape is re-checked. */
 export function buildReverseIndex(graph:StateGraph,options:ImpactOptions={}):ReverseIndex{
  const types=new Set<EdgeType>(options.edgeTypes??CAUSAL);
@@ -82,8 +110,118 @@ export function buildReverseIndex(graph:StateGraph,options:ImpactOptions={}):Rev
  });
 }
 
-/** The mapping seam SG02.2 will drive from a diff. Unmapped paths resolve to empty here, not to a guess. */
-export function nodesForSourcePath(index:ReverseIndex,path:string):readonly string[]{return index.bySourcePath[path]??EMPTY_IDS;}
+/**
+ * The mapping seam a diff is read through. Unmapped paths resolve to empty here, not to a guess.
+ *
+ * The own-property test is the point of this function, not a detail. `bySourcePath` is a plain object
+ * (built by `Object.fromEntries`), so a naive `index.bySourcePath[path] ?? EMPTY_IDS` answers
+ * `Object`, `toString` or `valueOf` for a file named `constructor`, and a real diff is free to contain
+ * such a path. Returning a function where the contract promises an array of node ids is not a crash the
+ * caller can see: it is an unmapped path that stops looking unmapped, which is the exact failure this
+ * whole task exists to remove. An inherited property is never a declaration, so it is never a seed.
+ */
+export function nodesForSourcePath(index:ReverseIndex,path:string):readonly string[]{
+ const bucket=Object.hasOwn(index.bySourcePath,path)?index.bySourcePath[path]:undefined;
+ return Array.isArray(bucket)?bucket:EMPTY_IDS;
+}
+
+/**
+ * What a change set says about one path, in the vocabulary of the diff and not of the graph.
+ *
+ * `deleted` and `renamed.from` are the whole reason this type exists. A deletion leaves no file to read,
+ * so any mapping that resolves paths by looking at what is still there drops exactly the change that
+ * removed a contract or a test. The path is the evidence, and it is the whole of the evidence.
+ */
+export type ChangeKind='added'|'modified'|'deleted'|'renamed';
+export interface PathChange{readonly path:string;readonly kind:ChangeKind;readonly from?:string}
+
+/**
+ * The seed mapping of a change set, and the coverage it failed to reach.
+ *
+ * `unresolved` and `deletions` are the two halves of the same refusal. An unmapped path is a file this
+ * graph says nothing about, and a deletion is a path that no longer exists for the graph to say anything
+ * about. Neither may be summarised away: both travel in the plan, and a non-empty `unresolved` is what
+ * keeps `complete` false.
+ */
+export interface ChangeMapping{
+  /** Declared nodes seeded by the change set, deduplicated and ordinal-sorted. */
+  readonly seeds:readonly string[];
+  /** Changed paths no node declares, plus the vanished side of a rename. Empty means full coverage. */
+  readonly unresolved:readonly string[];
+  /** Paths this change set removed, whether or not the graph still declared them. Never silently dropped. */
+  readonly deletions:readonly string[];
+  /** How many changed paths reached a declaration, and how many did not. */
+  readonly coverage:Readonly<{declared:number;unmapped:number}>;
+}
+
+/**
+ * Map a change set onto graph seeds. Pure: it reads the index and the change list and nothing else, so
+ * the same change set over the same revision gives the same mapping on any machine.
+ *
+ * A path is covered when a node declares it. A rename is covered when either of its two names is, because
+ * a renamed file is one logical file and the graph is free to know it under either name. Everything else
+ * is unresolved, and an unresolved path is never turned into a seed by guessing which node it might have
+ * belonged to: a wrong seed is an impact claim about a file nobody declared.
+ */
+export function mapChanges(index:ReverseIndex,changes:readonly PathChange[]):ChangeMapping{
+ const maxChanges=DEFAULT_MAX_CHANGES;
+ if(changes.length>maxChanges)throw Error(`Change set exceeds maxChanges=${maxChanges}: ${changes.length} changes.`);
+ for(const change of changes)if(!changeShape(change))throw Error('Change set holds a malformed entry.');
+ const seeds=new Set<string>(),unresolved=new Set<string>(),deletions=new Set<string>();
+ let declared=0,unmapped=0;
+ for(const change of changes){
+  const paths=change.kind==='renamed'&&change.from!==undefined?[change.from,change.path]:[change.path];
+  if(change.kind==='deleted')deletions.add(change.path);
+  if(change.kind==='renamed'&&change.from!==undefined)deletions.add(change.from);
+  // A rename is one file under two names, so either name covering it is enough. Every other change is
+  // one path, and one unmapped path is one hole in the coverage.
+  const covered=change.kind==='renamed'?paths.some(path=>nodesForSourcePath(index,path).length>0):nodesForSourcePath(index,change.path).length>0;
+  if(!covered){unmapped++;for(const path of paths)unresolved.add(path);continue;}
+  declared++;
+  for(const path of paths)for(const id of nodesForSourcePath(index,path))seeds.add(id);
+ }
+ return Object.freeze({
+  seeds:Object.freeze([...seeds].sort(compare)),
+  unresolved:Object.freeze([...unresolved].sort(compare)),
+  deletions:Object.freeze([...deletions].sort(compare)),
+  coverage:Object.freeze({declared,unmapped}),
+ });
+}
+
+/**
+ * An impact plan plus the change coverage that produced it.
+ *
+ * `complete` is inherited from the closure and then narrowed by coverage, never widened: a plan may be
+ * incomplete for exactly one reason here, an unmapped path. This is the composition that used to lie.
+ * `nodesForSourcePath` returned `[]` for an unknown file, `computeImpact` read `[]` as "nothing is
+ * affected" and reported `complete: true`, and the caller had no way to tell an untouched system from a
+ * graph that had never heard of the file that changed. Here the same change set yields `complete: false`
+ * and names the path, and `deletions` proves a removal was represented rather than dropped.
+ */
+export interface ChangeImpactPlan extends ImpactPlan{
+  readonly deletions:readonly string[];
+  /** Changed paths, including vanished ones, that no node declared. Mirrors `unresolved` for readers that key on paths. */
+  readonly unmappedPaths:readonly string[];
+  readonly coverage:Readonly<{declared:number;unmapped:number}>;
+}
+
+/**
+ * The diff-to-seed mapping, composed with the closure it feeds, refusing the empty complete plan.
+ *
+ * Unmapped paths are handed to `computeImpact` as requested seeds precisely so the existing unresolved
+ * mechanism does the refusing: one well-tested path to incompleteness beats a second, easier-to-forget one.
+ * They are also reported separately by path, because a path and a node id are different namespaces and a
+ * caller comparing them must not have to know that an unmapped path was laundered through the seed list.
+ */
+export function computeChangeImpact(graph:StateGraph,changes:readonly PathChange[],options:ChangeImpactOptions={}):ChangeImpactPlan{
+ const index=buildReverseIndex(graph,options);
+ const mapping=mapChanges(index,changes);
+ const plan=computeImpact(graph,[...mapping.seeds,...mapping.unresolved],options);
+ return Object.freeze({...plan,
+  // Narrow, never widen. An unmapped path is a hole whatever the closure concluded about the seeds.
+  complete:plan.complete&&mapping.unresolved.length===0,
+  deletions:mapping.deletions,unmappedPaths:mapping.unresolved,coverage:mapping.coverage});
+}
 
 /**
  * Iterative Tarjan over the impact direction. Tarjan is stack-hungry on exactly the deep hostile graph

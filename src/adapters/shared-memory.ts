@@ -1,4 +1,4 @@
-/** Shared scopes are append-only sources; no scope grants tool or completion authority. */
+/** Shared scopes are append-only sources; no scope grants tool or completion authority, and access rights live in a separate controller grant registry. */
 import {existsSync,statSync} from "node:fs";
 import {resolve,join} from "node:path";
 import {createHash} from "node:crypto";
@@ -90,8 +90,125 @@ export class SharedContexts {
     this.mounted=[...new Set((options.organizations??[]).map(path=>resolve(path)))].map(root=>new SharedMemoryStore({root,scope:sharedScope('organization',root)}));
   }
   forProject(cwd:string):SharedContexts {return new SharedContexts({cwd,organizations:this.mounted.map(store=>store.root)});}
+  /** Controller projection for inference. It carries no principal identity and grants nothing. */
   read():SharedSnapshot {
     for(const mounted of this.mounted)if(!existsSync(mounted.root) || !existsSync(join(mounted.root,'context.jsonl')))throw new Error('An explicitly mounted organization context is unavailable.');
     const profiles=[this.project.read(),...this.mounted.map(store=>store.read())];return {profiles,digest:hash(profiles)};
+  }
+  /** The sources a grant registry can govern: project scope first, then the explicit mounts. */
+  stores():readonly SharedMemoryStore[] {return [this.project,...this.mounted];}
+}
+
+// Grants are a separate controller authority. The journal and every record are
+// sources: they never carry a right, and nothing in this module derives one
+// from content. Search and read are the only doors a principal has, and each
+// asks the registry before opening a journal and again after projection, so a
+// revocation lands on the very next call instead of surviving in a cached or
+// in-flight path.
+export type SharedOperation="search"|"read";
+export type SharedRealm="enterprise"|"team"|"project"|"personal";
+export interface SharedGrant {principal:string;realm:SharedRealm;scope:SharedScope;operations:SharedOperation[];}
+export interface SharedReference {scope:SharedScope;id:string;revision:number;}
+export interface SharedScopeStore {readonly scope:SharedScope;read():SharedProfile;}
+export interface SharedSearchHit {scope:SharedScope;entry:SharedMemory;score:number;passage:string;}
+export interface SharedSearchResult {digest:string;hits:SharedSearchHit[];}
+const REALMS:readonly SharedRealm[]=["enterprise","team","project","personal"];
+const OPERATIONS:readonly SharedOperation[]=["search","read"];
+const scopeKey=(scope:SharedScope)=>`${scope.kind}:${scope.id}`;
+const sameScope=(a:SharedScope,b:SharedScope)=>a.kind===b.kind&&a.id===b.id;
+const validScope=(scope:unknown):scope is SharedScope=>!!scope && typeof scope==='object' && ["project","organization"].includes((scope as SharedScope).kind) && text((scope as SharedScope).id,128) && /^[A-Za-z0-9_-]+$/.test((scope as SharedScope).id);
+const grantKey=(principal:string,realm:SharedRealm,scope:SharedScope)=>`${principal}\u0000${realm}\u0000${scopeKey(scope)}`;
+const queryTerms=(query:string)=>[...new Set(query.toLocaleLowerCase('en').match(/[\p{L}\p{N}_]{2,}/gu)??[])];
+
+/** The controller's access registry: grants are issued and revoked here, never inherited and never cached. */
+export class SharedGrants {
+  private readonly live=new Map<string,SharedGrant>();
+  /** Adds operations to the grant of one principal, in one realm, for one scope. */
+  grant(input:{principal:string;realm:SharedRealm;scope:SharedScope;operations:readonly SharedOperation[]}):void {
+    if(!text(input.principal,256))throw new Error('Invalid shared grant principal.');
+    if(!REALMS.includes(input.realm))throw new Error('Invalid shared grant realm.');
+    if(!validScope(input.scope))throw new Error('Invalid shared grant scope.');
+    if(!input.operations.length || !input.operations.every(operation=>OPERATIONS.includes(operation)) || new Set(input.operations).size!==input.operations.length)throw new Error('Invalid shared grant operations.');
+    const key=grantKey(input.principal,input.realm,input.scope);
+    const prior=this.live.get(key);
+    this.live.set(key,{principal:input.principal,realm:input.realm,scope:{...input.scope},operations:[...new Set([...(prior?.operations??[]),...input.operations])]});
+  }
+  /** The explicit revocation path: drop every operation, only the named ones, one scope, or the whole principal. */
+  revoke(input:{principal:string;scope?:SharedScope;operations?:readonly SharedOperation[]}):void {
+    if(!text(input.principal,256))throw new Error('Invalid shared grant principal.');
+    if(input.scope!==undefined && !validScope(input.scope))throw new Error('Invalid shared grant scope.');
+    if(input.operations!==undefined && (!input.operations.length || !input.operations.every(operation=>OPERATIONS.includes(operation))))throw new Error('Invalid shared grant operations.');
+    for(const [key,grant] of [...this.live]) {
+      if(grant.principal!==input.principal || (input.scope!==undefined && !sameScope(grant.scope,input.scope)))continue;
+      if(input.operations===undefined){this.live.delete(key);continue;}
+      const kept=grant.operations.filter(operation=>!input.operations!.includes(operation));
+      if(kept.length)this.live.set(key,{...grant,operations:kept});else this.live.delete(key);
+    }
+  }
+  /** A live lookup on every call. No snapshot, no memo, so a revoked grant answers false immediately. */
+  allows(principal:string,realm:SharedRealm,scope:SharedScope,operation:SharedOperation):boolean {
+    const grant=this.live.get(grantKey(principal,realm,scope));
+    return !!grant && grant.operations.includes(operation);
+  }
+}
+
+/** The only principal-facing door: every search and read asks the registry before IO and again before returning. */
+export class SharedRetrieval {
+  private readonly principal:string;private readonly realm:SharedRealm;private readonly grants:SharedGrants;private readonly stores:readonly SharedScopeStore[];
+  constructor(options:{principal:string;realm:SharedRealm;grants:SharedGrants;stores:readonly SharedScopeStore[]}) {
+    if(!text(options.principal,256))throw new Error('Invalid shared access principal.');
+    if(!REALMS.includes(options.realm))throw new Error('Invalid shared access realm.');
+    if(!options.grants)throw new Error('Shared access requires a grant authority.');
+    const seen=new Set<string>();
+    for(const store of options.stores) {
+      if(!store || !validScope(store.scope) || typeof store.read!=='function')throw new Error('Invalid shared access scope.');
+      if(seen.has(scopeKey(store.scope)))throw new Error('Duplicate shared access scope.');
+      seen.add(scopeKey(store.scope));
+    }
+    this.principal=options.principal;this.realm=options.realm;this.grants=options.grants;this.stores=[...options.stores];
+  }
+  /** A denied scope contributes nothing at all: no hit, no count, and no digest, so its data leaves no trace. */
+  search(query:string,topK=5):SharedSearchResult {
+    if(!text(query,2048) || !Number.isSafeInteger(topK) || topK<1 || topK>20)throw new Error('Invalid shared memory search.');
+    const wanted=queryTerms(query);const hits:SharedSearchHit[]=[];const bases:{scope:string;revision:number;entries:string[]}[]=[];
+    for(const store of this.stores) {
+      if(!this.grants.allows(this.principal,this.realm,store.scope,'search'))continue;
+      const profile=store.read();
+      if(!this.grants.allows(this.principal,this.realm,store.scope,'search'))throw new Error('Shared memory search authorization changed.');
+      bases.push({scope:scopeKey(store.scope),revision:profile.revision,entries:profile.entries.map(entry=>`${entry.id}@${entry.revision}`)});
+      for(const entry of profile.entries) {
+        const body=entry.text.toLocaleLowerCase('en');const rationale=entry.rationale.toLocaleLowerCase('en');
+        const matched=wanted.filter(term=>body.includes(term) || rationale.includes(term));
+        if(!matched.length)continue;
+        const at=Math.max(0,body.indexOf(matched[0]??'')-120);
+        hits.push({scope:store.scope,entry,score:matched.length,passage:entry.text.slice(at,at+240)});
+      }
+    }
+    // A later journal read may carry a revocation for a scope read earlier in this same call.
+    for(const store of this.stores)if(bases.some(base=>base.scope===scopeKey(store.scope)) && !this.grants.allows(this.principal,this.realm,store.scope,'search'))throw new Error('Shared memory search authorization changed.');
+    hits.sort((a,b)=>b.score-a.score || b.entry.revision-a.entry.revision);
+    return {digest:hash(bases),hits:hits.slice(0,topK)};
+  }
+  read(scope:SharedScope):SharedProfile {
+    const store=this.declared(scope);
+    if(!store || !this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read is not authorized.');
+    const profile=store.read();
+    if(!this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read authorization changed.');
+    return profile;
+  }
+  /** An old reference is only a lookup key: revocation refuses it like any other read. */
+  readReference(reference:SharedReference):SharedMemory {
+    const store=this.declared(reference.scope);
+    if(!store || !this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read is not authorized.');
+    const profile=store.read();
+    if(!this.grants.allows(this.principal,this.realm,store.scope,'read'))throw new Error('Shared memory read authorization changed.');
+    const found=profile.entries.find(entry=>entry.id===reference.id && entry.revision===reference.revision);
+    if(!found)throw new Error('Shared memory reference not found.');
+    return found;
+  }
+  /** An undeclared scope is refused with the same message as a denied one, so a scope cannot be probed. */
+  private declared(scope:SharedScope):SharedScopeStore|undefined {
+    if(!validScope(scope))return undefined;
+    return this.stores.find(store=>sameScope(store.scope,scope));
   }
 }

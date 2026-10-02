@@ -555,7 +555,7 @@
         },
         {
           "path": "src/adapters/managed-worktrees.ts",
-          "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
+          "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1490,7 +1490,7 @@
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
         "path": "src/adapters/managed-worktrees.ts",
-        "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
+        "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
       }
     },
     {
@@ -1520,7 +1520,7 @@
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
         "path": "src/adapters/managed-worktrees.ts",
-        "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
+        "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
       }
     },
     {
@@ -1600,7 +1600,7 @@
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
         "path": "src/adapters/managed-worktrees.ts",
-        "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
+        "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
       }
     },
     {
