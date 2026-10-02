@@ -93,3 +93,37 @@ AC-H06.2c1 : effets simultanés attribués séparément, null sans receipt/retry
 outils interdits non exécutés, correction pendant inférence et entre deux outils,
 append échoué avant intent et exécution bornée. Raccordement runtime/journal
 durable effectif et processus fournisseurs encore aux parents.
+
+## H06.2c2 — branchement terminal durable
+
+Le contrôleur expose run_code_workers uniquement quand stockage, factory modèle
+scoppée et factory outils worker sont configurés. Admission et garde des effets
+incertains du parent inchangées : un seul intent parent recouvre le lot. Toute
+contribution parent pending bloque finish et intégration du builder ; workers
+ne ferment jamais goal. Préparation du lot puis création de journaux TerminalSession
+privés sous sessions/workers/session-parent ; routes rebondées au worktree avant
+inférence. Factory Container lit seulement le journal privé correspondant pour
+admettre et tracer ses ressources, et transmet le signal direct. Tous les journaux
+sont ouverts avant la première boucle. Échec partiel conservé, pas de replay.
+
+Le journal commun porte terminal.agent (skills/modèle/phase) et terminal.code-worker
+(provenance/workspace/journal/phase) ; Agents affiche contribution et reprise à
+inspecter. Reopen ne lance pas de worker automatiquement. Frames combinent
+contexte partagé courant, situation worker et observations privées bornées ;
+skills sélectionnés par rôle avant exécution et revalidés à chaque admission.
+Deux boucles Promise.all sur contextes privés, jamais currentTools partagé.
+Critère AC-H06.2c2 : vrai producer/journal et deux processus, outputs utilisés
+à linférence suivante, correction immédiate sans nouvelle session, journaux
+réouverts avec receipts, phase interrupted après reload et finish refusé pour
+contributions non intégrées. Le choix dintégration/récupération demeure parent
+H06.3c2/H06.4a ; aucun résultat complet selfhost revendiqué avant ces critères.
+
+Défaut découvert H06.2c2-D1 : une correction ordinaire persistait bien R+1
+mais les workers en inférence sans réponse pouvaient rester actifs. Un
+AbortController de lot distinct du parent est maintenant annulé après persistance
+de la correction. Le parent reste dans la même exécution et retrouve le contexte
+frais ; aucun message queued. Échec reproduit par wait15s, puis test PASS.
+Frame final worker plafonné avant inférence (48k caractères ou budget owner),
+observations privées bornées ; dépassement refuse sans supprimer une contrainte.
+Publication des résultats via allSettled pour attendre les autres workers avant
+fermeture des journaux, même si une publication échoue.

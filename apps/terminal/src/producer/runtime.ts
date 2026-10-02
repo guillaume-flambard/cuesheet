@@ -99,8 +99,8 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const containers=settings.journal ? new SessionContainers({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
-  const toolsForScope=(scope:string):ToolRunner=>{
+  const toolsForScope=(scope:string,resourceJournal=settings.journal):ToolRunner=>{
+    const containers=resourceJournal ? new SessionContainers({root:resourceJournal.root,sessionId:resourceJournal.metadata.id,assertWritable:()=>resourceJournal.assertWritable()}) : undefined;
     const route=selectRoute();
     if(route.kind==="unavailable")return {names:[],policy:route.reason,async run(request){return {name:request.name,exit:126,output:route.reason};}} as ToolRunner;
     if(route.kind==="local")return Object.assign(new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope}),{policy:route.reason,names:Object.freeze(ALLOWED.slice())});
@@ -108,13 +108,13 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
     const image=route.image;
     return new ContainerToolRunner({allow:route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : ALLOWED,roots:[scope],defaultCwd:scope,image,socket:route.socket,
       onAdmission:(name,request)=>{
-        if(!containers||!settings.journal)throw new Error("Container execution requires a durable terminal session.");
+        if(!containers||!resourceJournal)throw new Error("Container execution requires a durable terminal session.");
         const digest=invocationKey(request.name,request.input);
-        const intent=settings.journal.core.toSession().events.filter(e=>e.kind==="action"&&e.subject==="terminal.intent"&&e.data.tool===request.name&&e.data.scopeCwd===scope&&invocationKey(request.name,e.data.input as Record<string,unknown>)===digest).at(-1);
+        const intent=resourceJournal.core.toSession().events.filter(e=>e.kind==="action"&&e.subject==="terminal.intent"&&e.data.tool===request.name&&e.data.scopeCwd===scope&&invocationKey(request.name,e.data.input as Record<string,unknown>)===digest).at(-1);
         if(!intent)throw new Error("Container execution lacks an admitted intent.");
         containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
       },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
-      protectedPaths:[...(settings.journal?[settings.journal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]});
+      protectedPaths:[...(resourceJournal?[resourceJournal.root]:[]),...(verification?.pinned?[verification.pinned.script]:[])]});
   };
   let tools:ToolRunner;
   try {tools=toolsForScope(cwd);} catch {return {missing:"Tool route is invalid or its resource journal is damaged; verify mode, local Unix socket, immutable image and session resources."};}
@@ -129,7 +129,9 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const vaultPublisherForScope=settings.journal ? (scope:string)=>new ProjectVaultPublisher({root:join(scope,".cuesheet","vault"),scope,sessionId:settings.journal!.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
   const agentCredentials={...process.env};for(const key of ['CUESHEET_PROVIDER','CUESHEET_MODEL','CUESHEET_BASE_URL','CUESHEET_MAX_TOKENS'])delete agentCredentials[key];
   const agentModel=(selection:import('../../../../src/adapters/model-preferences.ts').ModelPreferences,scope:string)=>{const resolved=resolveModel({project:scope,preferences:{},env:agentCredentials,provider:selection.provider,model:selection.model??null,baseUrl:selection.baseUrl,maxTokens:selection.maxTokens,onUsage:usage?.record});if('missing' in resolved)throw Error(resolved.missing);return {adapter:resolved.adapter,label:`${resolved.name} · ${resolved.model??"modèle configuré"}`};};
-  const options: ProducerOptions = {worktreeRoot:settings.journal?join(settings.journal.root,"workspaces",settings.journal.metadata.id):undefined,situation,agentModel,modelLabel:()=>binding.label,vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const toolsForWorker=(scope:string,journal:TerminalSession,signal:AbortSignal):ToolRunner=>{const runner=toolsForScope(scope,journal);return Object.assign({run:(request:Parameters<ToolRunner["run"]>[0])=>(runner as ToolRunner&{run(request:Parameters<ToolRunner["run"]>[0],signal?:AbortSignal):ReturnType<ToolRunner["run"]>}).run(request,signal)},{names:(runner as ToolRunner&{names?:readonly string[]}).names??[]});};
+  const workerModel=(scope:string)=>agentModel(binding.selection,scope);
+  const options: ProducerOptions = {toolsForWorker,workerModel,worktreeRoot:settings.journal?join(settings.journal.root,"workspaces",settings.journal.metadata.id):undefined,situation,agentModel,modelLabel:()=>binding.label,vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */

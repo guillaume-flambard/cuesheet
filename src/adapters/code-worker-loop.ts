@@ -10,6 +10,7 @@ const forbidden = new Set(['git','finish','prepare_workspace','integrate_workspa
 export async function runCodeWorker(options: {
   worker: PreparedCodeWorker; tools: ToolRunner; allow: readonly string[]; maxSteps: number;
   frame(step: number): ContextFrame; signal: AbortSignal; current(): boolean;
+  maxFrameChars?: number;
   append(event: NewEvent): Event;
 }): Promise<CodeWorkerResult> {
   let steps=0, effectPending=false;
@@ -18,6 +19,8 @@ export async function runCodeWorker(options: {
   const outcome=(phase:CodeWorkerResult['phase'],text=''):CodeWorkerResult=>({phase,text,steps});
   const stale=()=>outcome(options.signal.aborted?'cancelled':'stale');
   if(!Number.isSafeInteger(options.maxSteps)||options.maxSteps<1||options.maxSteps>8) return outcome('failed');
+  const maxFrameChars=options.maxFrameChars??48000;
+  if(!Number.isSafeInteger(maxFrameChars)||maxFrameChars<4000)return outcome('failed');
   try {
     while(steps<options.maxSteps){
       if(!current())return stale();
@@ -26,6 +29,7 @@ export async function runCodeWorker(options: {
         directives:[...source.directives.filter(d=>!/^tools:/.test(d.text)),
           {seq:Number.MAX_SAFE_INTEGER,at:Date.now(),target:'builder',applied:false,
             text:`tools: ${[...allowed].join(', ')}\nCode worker ${options.worker.packet.role}: ${options.worker.packet.task}\nResponsibilities: ${options.worker.packet.files.join(', ')}\nController-selected workspace: ${options.worker.path}. Your output is an unverified contribution. No goal closure or integration authority.`}]};
+      if(JSON.stringify(frame).length>maxFrameChars)return outcome('failed','Worker context exceeds the owner frame ceiling; no inference was sent and no instruction was silently dropped.');
       let stop=()=>{};
       const aborted=new Promise<never>((_,reject)=>{stop=()=>reject(options.signal.reason);options.signal.addEventListener('abort',stop,{once:true});if(options.signal.aborted)stop();});
       let response;

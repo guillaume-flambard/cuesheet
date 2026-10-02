@@ -35,3 +35,8 @@ test('persistence failure before intent prevents effects; bounded work never loo
   assert.equal((await runCodeWorker({...f.options,append:()=>{throw Error('disk failed');},tools})).phase,'failed');assert.equal(effects,0);
   assert.equal((await runCodeWorker({...f.options,maxSteps:1,tools})).phase,'exhausted');assert.equal(effects,1);
 });
+test('final worker frame ceiling includes its task and private observations before inference',async()=>{
+  let calls=0;const f=fixture({name:'fixture',async infer(){calls++;return {text:'',toolCalls:[]};}});
+  const result=await runCodeWorker({...f.options,maxFrameChars:4000,frame:()=>({...frame,goal:'x'.repeat(4000)}),tools:{async run(){throw Error('no effect');}}});
+  assert.equal(result.phase,'failed');assert.equal(calls,0);assert.match(result.text,/ceiling/);
+});

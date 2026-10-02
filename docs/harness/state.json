@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "c9d3edb",
+  "referenceCommit": "95db436",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -4351,6 +4351,32 @@
         "EV-CODE-WORKER-FOUNDATIONS"
       ],
       "notes": "Owner durable/scoped callbacks required; runtime connection still pending."
+    },
+    {
+      "id": "H06.2c2",
+      "priority": "P0",
+      "status": "VERIFYING",
+      "requirements": [
+        "REQ-H06.2"
+      ],
+      "dependencies": [
+        "H06.2b1",
+        "H06.2c1"
+      ],
+      "description": "Raccorder workers au producer et exécuteurs/journaux privés durables.",
+      "systems": [
+        "MULTI-WORKER.md",
+        "apps/terminal/src/producer/runtime.ts",
+        "apps/terminal/src/producer/index.ts"
+      ],
+      "acceptance": [
+        "AC-H06.2c2"
+      ],
+      "verification": "Actual producer/journal/scoped effects, correction, reopen, full regression/build",
+      "evidence": [
+        "EV-TERMINAL-CODE-WORKERS"
+      ],
+      "notes": "Producer/Shell/private durable journals verified; dedicated private Container admission proof pending. Integration/recovery/UI PTY remain parents."
     }
   ],
   "acceptance": [
@@ -5473,6 +5499,12 @@
       "result": "PASS_PARTIAL",
       "method": "Real Git/Node concurrency, correction/refusal/uncertainty, full suite/build, solo review",
       "details": "evaluation/code-worker-foundations/evidence.md"
+    },
+    {
+      "id": "EV-TERMINAL-CODE-WORKERS",
+      "result": "PASS_PARTIAL",
+      "method": "Actual producer/private TerminalSession/Shell/direct correction/model change/reopen, full/build, solo adversarial review",
+      "details": "evaluation/terminal-code-workers/evidence.md"
     }
   ],
   "risks": {
@@ -5484,8 +5516,8 @@
     "status": "PENDING",
     "lastPassedCommit": "a806d2e",
     "lastFullSuite": {
-      "tests": 882,
-      "passed": 880,
+      "tests": 886,
+      "passed": 884,
       "failed": 0,
       "skipped": 2
     },
@@ -5528,14 +5560,14 @@
     "workingTreeWorkspaceProvider": "PASS_PARTIAL latest/live/cached workspace UI + secret-safe native provider status;79/40 targeted,859/857/0/2 full. Real free pilot403/source preserved/no quality result, H10.3a open.",
     "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending.",
     "workingTreeOwnerCapsule": "PASS_PARTIAL owner-pinned container oracle on capture/scratch with admitted outputs and anonymous tmp volume;851 Linux PASS/18 explicit skips,869/867/0/2 host,44 targeted/46 portable,build32 baseline. Source/index/capture intact; no real model/parallel worker/full recovery closure.",
-    "workingTreeCodeWorkers": "H06.2b1/c1 bounded PASS,23 targeted,882/880/0/2 full,build32 baseline. Not terminal-connected; runtime/journals/skills/integration/recovery pending."
+    "workingTreeCodeWorkers": "Terminal-connected,35+9 targeted PASS,886/884/0/2 full,build32 baseline. H06.2c2 VERIFYING for private Container proof; composed integration/crash recovery/live model pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 62,
     "acceptanceVerified": 7,
     "acceptancePending": 55,
-    "p0_open": 41,
+    "p0_open": 42,
     "p1_open": 24
   },
   "workstreams": [
@@ -5675,7 +5707,8 @@
         "H06.3c2",
         "H06.5c",
         "H06.2b1",
-        "H06.2c1"
+        "H06.2c1",
+        "H06.2c2"
       ],
       "dependencies": [
         "C1",
