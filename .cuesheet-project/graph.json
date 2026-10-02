@@ -285,7 +285,7 @@
       "sourceRefs": [
         {
           "path": "apps/terminal/src/producer/index.ts",
-          "digest": "1fd5e7ddd8e2bc723be448859ad85d2aa42819a1f7befe185d55cb69fbbf4eff"
+          "digest": "dfd5ccaf567abba1f8eff494d85cdd01620c902ddb795a28225697423be5635e"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -467,7 +467,7 @@
       "sourceRefs": [
         {
           "path": "apps/terminal/src/producer/session-view.ts",
-          "digest": "9ba6d61ab79ed2ea4190cbc6ae35d44133129fe1e5140a4aaa769820d90faa82"
+          "digest": "065f5cb40cfdfc22a19ffa3f7e629c561e434df41a253d2d8e0bc20224766e44"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1300,7 +1300,7 @@
       "dependency": "entity.integration.producer",
       "sourceRef": {
         "path": "apps/terminal/src/producer/index.ts",
-        "digest": "1fd5e7ddd8e2bc723be448859ad85d2aa42819a1f7befe185d55cb69fbbf4eff"
+        "digest": "dfd5ccaf567abba1f8eff494d85cdd01620c902ddb795a28225697423be5635e"
       }
     },
     {
@@ -1430,7 +1430,7 @@
       "dependency": "entity.sessions.view",
       "sourceRef": {
         "path": "apps/terminal/src/producer/session-view.ts",
-        "digest": "9ba6d61ab79ed2ea4190cbc6ae35d44133129fe1e5140a4aaa769820d90faa82"
+        "digest": "065f5cb40cfdfc22a19ffa3f7e629c561e434df41a253d2d8e0bc20224766e44"
       }
     },
     {

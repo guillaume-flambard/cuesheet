@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Portable primitives extracted from a personal agent control plane, once they have proven themselves in real work.",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "bin": {
     "cuesheet": "dist/src/cuesheet.js"
   },
@@ -12,10 +14,22 @@
     "dist"
   ],
   "exports": {
-    "./core/*": { "types": "./dist/src/core/*.d.ts", "default": "./dist/src/core/*.js" },
-    "./core/*.js": { "types": "./dist/src/core/*.d.ts", "default": "./dist/src/core/*.js" },
-    "./adapters/*": { "types": "./dist/src/adapters/*.d.ts", "default": "./dist/src/adapters/*.js" },
-    "./adapters/*.js": { "types": "./dist/src/adapters/*.d.ts", "default": "./dist/src/adapters/*.js" },
+    "./core/*": {
+      "types": "./dist/src/core/*.d.ts",
+      "default": "./dist/src/core/*.js"
+    },
+    "./core/*.js": {
+      "types": "./dist/src/core/*.d.ts",
+      "default": "./dist/src/core/*.js"
+    },
+    "./adapters/*": {
+      "types": "./dist/src/adapters/*.d.ts",
+      "default": "./dist/src/adapters/*.js"
+    },
+    "./adapters/*.js": {
+      "types": "./dist/src/adapters/*.d.ts",
+      "default": "./dist/src/adapters/*.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -24,12 +38,11 @@
     "graph:regen": "node src/adapters/state-graph/regen.ts",
     "build": "bash scripts/build.sh",
     "prepack": "bash scripts/build.sh",
-    "surface:build": "pnpm --filter @cuesheet/surface build",
-    "terminal:build": "pnpm --filter @cuesheet/terminal build",
-    "terminal:dev": "pnpm --filter @cuesheet/terminal dev"
+    "terminal:typecheck": "pnpm --filter @cuesheet/terminal typecheck",
+    "terminal:start": "pnpm --filter @cuesheet/terminal start",
+    "ui:verify": "node scripts/ui-verify.mjs"
   },
   "workspaces": [
-    "packages/*",
     "apps/*"
   ]
 }
