@@ -2110,7 +2110,8 @@
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [
-        "EV-CHECK-PALETTE"
+        "EV-CHECK-PALETTE",
+        "EV-UI-RENDER-PROOF"
       ],
       "notes": " Palette check confirmation tranche specified in 08-TERMINAL-UX.md; actual keyboard verification pending."
     },
@@ -2226,7 +2227,8 @@
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
       "evidence": [
-        "EV-CHECK-PALETTE"
+        "EV-CHECK-PALETTE",
+        "EV-UI-RENDER-PROOF"
       ],
       "notes": " Palette check confirmation tranche specified in 08-TERMINAL-UX.md; actual keyboard verification pending."
     },
@@ -3719,7 +3721,8 @@
       "evidence": [
         "EV-SITUATION",
         "EV-TERMINAL-THEME-AUDIT",
-        "EV-UI-THEME-CONTRACT"
+        "EV-UI-THEME-CONTRACT",
+        "EV-UI-RENDER-PROOF"
       ],
       "notes": "Bounded slice verified;43 targeted,818/816/0/2 full before final test-only guard,build/static PASS; parent criteria pending."
     },
@@ -7826,6 +7829,24 @@
       "summary": "Le terminal reel a ete lance dans un vrai PTY a 120 colonnes sur 40 lignes, a accepte la saisie hello there et a rendu une reponse en cours d arrivee lors de l arret du processus. Cette preuve est partielle et le dit : elle etablit que la surface rend et lit dans un vrai terminal, pas qu un scenario deterministe a ete capture. Un pipe ordinaire ne suffit pas, Ink refuse le raw mode hors TTY, et node-pty est absent de la machine.",
       "verification": "lancement via script -q avec COLUMNS et LINES forces ; capture dans /tmp/cs-ui-real.log ; aucun scenario deterministe, aucun rendu multi-tailles, aucune interaction suivie jusqu au bout",
       "artifacts": []
+    },
+    {
+      "id": "EV-UI-RENDER-PROOF",
+      "kind": "runtime",
+      "summary": "npm run ui:verify monte la vraie App dans un vrai PTY a taille controlee, pilote un scenario deterministe par de vraies frappes et lit la grille de caracteres. Le scenario couvre accueil repondu exactement une fois, world mapping, deux workers, un finding, un Human Delta, une bascule de provider, une direction en direct et PROVEN, a 80x24, 120x30, 160x50 et 240x70. La reponse d accueil est livree deux fois avec une seule identite, donc la projection exactly-once est exercee de bout en bout dans la surface reelle : desactiver la deduplication fait echouer le harnais.",
+      "verification": "4 tailles PASS, marqueurs presents sur la frame qui les emet, aucune corruption horizontale, aucun Unicode casse, input visible sur la frame finale ; non-vacuite mesuree en neutralisant l identite dans observed, 5 assertions tombent, mutant restaure a l octet pres ; tsc terminal 3 et tsconfig.build 32 inchangees",
+      "artifacts": [
+        "docs/harness/evaluation/ui-render-proof/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-PTY-HARNESS-LESSONS",
+      "kind": "inspection",
+      "summary": "Quatre obstacles mesures plutot que supposes : le spawn-helper de node-pty perd son bit executable a la decompression et tout spawn echoue en posix_spawnp failed ; node-pty appartient au workspace terminal car le package.json racine est par test sans aucune dependance ; un pipe n est pas un terminal et un strip ANSI n est pas un ecran car Ink redessine par curseur ; et le texte et Entree doivent etre deux ecritures separees car un pty coalesce un read et Ink le parse comme une seule touche.",
+      "verification": "constate par mesure, chaque obstacle reproduit puis resolu ; le conflit de dependance racine a ete detecte par test/portability.test.ts et PORT-05, corriges",
+      "artifacts": [
+        "docs/harness/evaluation/ui-render-proof/evidence.md"
+      ]
     }
   ],
   "risks": {
