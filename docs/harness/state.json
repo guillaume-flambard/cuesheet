@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "408f218",
+  "referenceCommit": "6890117",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3759,6 +3759,97 @@
         "evaluation/worktree-integration/evidence.md"
       ],
       "notes": "No commit/push/cleanup; partial effect uncertain, hostile host CAS/recovery parent open."
+    },
+    {
+      "id": "H09.3f1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H09.4"
+      ],
+      "dependencies": [
+        "H06.3b3"
+      ],
+      "description": "Capsule Node Linux reproductible et bootstrap automatique sous image owner épinglée",
+      "systems": [
+        "WORKTREE-BUILD.md",
+        "SELFHOST.md",
+        "src/adapters/node-capsule.ts",
+        "src/adapters/container-tools.ts",
+        "scripts/toolchain",
+        "scripts/build-toolchain.sh",
+        "test/node-capsule.test.ts",
+        "test/worktree-build.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H09.4"
+      ],
+      "verification": "Fake Engine metadata/bootstrap/guards, actual Docker capsule, project snapshot build/tests and source integrity; full/build/differential",
+      "evidence": [
+        "evaluation/worktree-build/evidence.md"
+      ],
+      "notes": "Required for selfhost; owner image only, no model network admission or local fallback."
+    },
+    {
+      "id": "H09.3f2",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H09.4"
+      ],
+      "dependencies": [
+        "H09.3f1",
+        "H06.3c1"
+      ],
+      "description": "Dogfood build/tests Cuesheet réel en worktree via capsule isolée",
+      "systems": [
+        "WORKTREE-BUILD.md",
+        "SELFHOST.md",
+        "src/adapters/node-capsule.ts",
+        "src/adapters/container-tools.ts",
+        "scripts/toolchain",
+        "scripts/build-toolchain.sh",
+        "test/node-capsule.test.ts",
+        "test/worktree-build.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H09.4"
+      ],
+      "verification": "Fake Engine metadata/bootstrap/guards, actual Docker capsule, project snapshot build/tests and source integrity; full/build/differential",
+      "evidence": [
+        "evaluation/worktree-build/evidence.md"
+      ],
+      "notes": "Required for selfhost; owner image only, no model network admission or local fallback."
+    },
+    {
+      "id": "H09.4b",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H09.4"
+      ],
+      "dependencies": [
+        "H09.3f2",
+        "H06.3c1",
+        "H09.4a"
+      ],
+      "description": "Parcours terminal installé réel PTY, code isolé/test Linux/intégration/check source/notification sous provider fixture",
+      "systems": [
+        "WORKTREE-BUILD.md",
+        "test/install.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H09.4"
+      ],
+      "verification": "Installed package PTY, actual temp Git/project/check/Engine/journal/file/index, no paid provider",
+      "evidence": [],
+      "notes": "Fixture proves wiring; real model quality, enterprise and parallel code workers remain pending."
     }
   ],
   "acceptance": [
@@ -4884,10 +4975,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "408f218",
+    "lastPassedCommit": "6890117",
     "lastFullSuite": {
-      "tests": 849,
-      "passed": 847,
+      "tests": 853,
+      "passed": 851,
       "failed": 0,
       "skipped": 2
     },
@@ -4924,7 +5015,8 @@
     "workingTreeNotifications": "PASS_PARTIAL local centre/badge/durable read,37 targeted,835/833/0/2 full,build32 baseline. Parent external channels/questions/selfhost pending.",
     "workingTreeGitSnapshot": "PASS_PARTIAL bounded dirty source snapshot and equivalent owned worktree;48 targeted,838/836/0/2 full,build/static32 baseline. Terminal wiring pending.",
     "workingTreeWorkspaceRuntime": "PASS_PARTIAL terminal dirty worktree preparation/scoped effects/explicit resume/no fallback/finish refusal;51 targeted,842/840/0/2 full/build/static32 baseline. Integration/parallel code workers/selfhost pending.",
-    "workingTreeWorkspaceIntegration": "PASS_PARTIAL bounded recoverable owner-checked source integration;43 final targeted,849/847/0/2 full before final wording-only clarification;build/differential32 baseline PASS. Dependencies/parallel workers/recovery/selfhost pending."
+    "workingTreeWorkspaceIntegration": "PASS_PARTIAL bounded recoverable owner-checked source integration;43 final targeted,849/847/0/2 full before final wording-only clarification;build/differential32 baseline PASS. Dependencies/parallel workers/recovery/selfhost pending.",
+    "workingTreeWorkspaceBuild": "PASS_PARTIAL curated owner image capsule + actual Cuesheet Linux worktree build/56 tests/source unchanged;21 final targeted,853/851/0/2 full; sequential shipped build/differential32 baseline PASS. Installed/model quality/parallel worker recovery pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4932,7 +5024,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 22
+    "p1_open": 23
   },
   "workstreams": [
     {
@@ -5018,7 +5110,9 @@
         "H09.3b",
         "H09.3c",
         "H09.3d",
-        "H09.3e"
+        "H09.3e",
+        "H09.3f1",
+        "H09.3f2"
       ],
       "dependencies": [
         "C1",
@@ -5088,7 +5182,8 @@
         "H06.5b",
         "H08.3a",
         "H08.3n",
-        "H08.3n1a"
+        "H08.3n1a",
+        "H09.4b"
       ],
       "dependencies": [
         "C1",

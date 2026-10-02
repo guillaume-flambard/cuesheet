@@ -234,3 +234,7 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 ## H06.3b3 — checkpoint 2026-10-02
 
 [EV-WORKSPACE-RUNTIME](evaluation/workspace-runtime/evidence.md) :51 targeted,842/840/0/2 final full,build/différentiel PASS32 baseline. Terminal prepare_workspace/retarget/sources/reprise et palette Workspaces livrés ; correction directe et source intacte vérifiées. finish refuse contribution non intégrée. Code workers parallèles, intégration/dépendances/selfhost réel restent ouverts. Global IMPLEMENTING.
+
+## Build worktrees — 2026-10-02
+
+[WORKTREE-BUILD.md](WORKTREE-BUILD.md) : H09.3f1→H09.3f2 (C4), capsule Node/Linux owner/image épinglée → metadata cache → prévalidation alias deps root/apps/packages → même conteneur readonly/networknone/receipts → vrai build/tests snapshot Cuesheet → source préservée. Vérification en cours ; aucun AC parent clos.

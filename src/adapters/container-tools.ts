@@ -5,6 +5,8 @@ import {existsSync,mkdtempSync,mkdirSync,realpathSync,rmSync,statSync,writeFileS
 import {tmpdir} from "node:os";
 import {isAbsolute,join,resolve,dirname,basename} from "node:path";
 import type {ToolRequest,ToolResult} from "../core/loop.ts";
+import {DEFAULT_TOOL_IMAGE} from "./tool-route.ts";
+import {nodeCapsule,NODE_CAPSULE_BOOTSTRAP} from "./node-capsule.ts";
 import {ShellToolRunner} from "./shell.ts";
 
 export interface ContainerToolOptions {
@@ -68,6 +70,7 @@ export class ContainerToolRunner {
   readonly names:readonly string[];
   private readonly options:ContainerToolOptions;
   private readonly admission:ShellToolRunner;
+  private capsule: boolean|undefined;
   constructor(options:ContainerToolOptions){
     if(!isAbsolute(options.socket)||/[\0\r\n]/.test(options.socket)||!imageValid(options.image))throw new Error("Container tools require a local Unix socket and immutable image digest.");
     const timeoutMs=options.timeoutMs??120000,outputBytes=options.outputBytes??8000;
@@ -88,6 +91,10 @@ export class ContainerToolRunner {
       const version=json(await engine(this.options.socket,"/version","GET",undefined,abort),200);
       const apiMinor=(value:unknown)=>typeof value==="string"&&/^1\.\d+$/.test(value)?Number(value.split(".")[1]):-1;
       if(version.Os!=="linux"||apiMinor(version.ApiVersion)<51||apiMinor(version.MinAPIVersion)>51)throw new Error("Unsupported Engine platform or API.");
+      if(this.capsule===undefined){
+        if(this.options.image===DEFAULT_TOOL_IMAGE)this.capsule=false;
+        else{const image=json(await engine(this.options.socket,API+"/images/"+encodeURIComponent(this.options.image)+"/json","GET",undefined,abort),200);const config=image.Config;if(!config||typeof config!=="object"||Array.isArray(config))throw Error("Invalid image configuration.");this.capsule=nodeCapsule((config as Record<string,unknown>).Labels);}
+      }
       const roots=[...new Set(this.options.roots.map(root=>realpathSync(resolve(root))))];
       const cwd=realpathSync(prepared.cwd);
       if(!roots.some(root=>under(cwd,root)))throw new Error("Working directory escapes canonical roots.");
@@ -112,7 +119,7 @@ export class ContainerToolRunner {
       inspectContainerRoots(roots,[...masks.keys()]);
       const timeoutSeconds=Math.max(0.001,this.options.timeoutMs!/1000).toString()+"s";
       const uid=process.getuid?.()||1000,gid=process.getgid?.()||1000;
-      const body={Image:this.options.image,Entrypoint:["/usr/bin/timeout","--signal=KILL",timeoutSeconds],Cmd:prepared.argv,WorkingDir:cwd,User:`${uid}:${gid}`,Tty:false,
+      const body={Image:this.options.image,Entrypoint:["/usr/bin/timeout","--signal=KILL",timeoutSeconds],Cmd:this.capsule?["node","-e",NODE_CAPSULE_BOOTSTRAP,...prepared.argv]:prepared.argv,WorkingDir:cwd,User:`${uid}:${gid}`,Tty:false,
         Env:["HOME=/tmp","TMPDIR=/tmp","NO_COLOR=1"],Labels:{"io.cuesheet.tool":"v1"},
         HostConfig:{ReadonlyRootfs:true,NetworkMode:"none",CapDrop:["ALL"],SecurityOpt:["no-new-privileges:true"],Memory:1024*1024*1024,NanoCpus:2000000000,PidsLimit:128,
           Mounts:mounts,Tmpfs:{"/tmp":"rw,nosuid,nodev,size=134217728"},LogConfig:{Type:"json-file",Config:{"max-size":"1m","max-file":"1"}},RestartPolicy:{Name:"no"}}};
