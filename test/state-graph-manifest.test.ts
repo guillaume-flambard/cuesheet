@@ -22,7 +22,7 @@ test('the committed manifest is what the generator produces, and the real loader
  assert.deepEqual(ids,[...ids].sort(ordinal));assert.deepEqual(edgeIds,[...edgeIds].sort(ordinal));
  for(const node of parsed.nodes)for(const list of [node.sourceRefs.map(s=>s.path),[...node.contractRefs],node.invariantRefs,node.checkRefs])assert.deepEqual(list,[...list].sort(ordinal),`${node.id} lists an unsorted reference set`);
  const loaded=await loadStateGraph(ROOT);
- assert.equal(loaded.path,join(realpathSync(ROOT),'.cuesheet','project','graph.json'));
+ assert.equal(loaded.path,join(realpathSync(ROOT),'.cuesheet-project','graph.json'));
  assert.match(loaded.revision,DIGEST);
  assert.equal(loaded.revision,graphRevision(graph));
  assert.deepEqual(loaded.graph,graph);
@@ -67,7 +67,7 @@ test('an absent reference, a duplicate id, an unknown version or an outside path
   [graph=>{graph.nodes[1].checkRefs=['node.that.does.not.exist'];},/missing or mistyped reference/],
   [graph=>{graph.nodes[1].sourceRefs[0].path='../outside-root.ts';},/source path or digest/],
  ];
- const root=mkdtempSync(join(tmpdir(),'cs-manifest-')),dir=join(root,'.cuesheet','project'),path=join(dir,'graph.json');
+ const root=mkdtempSync(join(tmpdir(),'cs-manifest-')),dir=join(root,'.cuesheet-project'),path=join(dir,'graph.json');
  mkdirSync(dir,{recursive:true});
  try{
   // The unmodified copy must load first, otherwise every rejection below could be

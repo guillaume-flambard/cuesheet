@@ -4657,7 +4657,7 @@
     {
       "id": "SG01.3",
       "priority": "P0",
-      "status": "READY",
+      "status": "DONE",
       "requirements": [
         "REQ-SG01"
       ],
@@ -4672,13 +4672,15 @@
         "AC-SG01"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-STATE-GRAPH-MANIFEST"
+      ],
+      "notes": "Manifest delivered, generated and versioned at .cuesheet-project/graph.json: 69 nodes, 77 edges, 41 real source files, four domains. Reserved-name collision with the container runner control mount found at integration and resolved by moving the path, not by loosening the mask. Why AC-SG01 is verified on its criterion text while REQ-SG01 mentions CI jobs is recorded in evaluation/state-graph-manifest/evidence.md."
     },
     {
       "id": "SG02.1",
       "priority": "P0",
-      "status": "READY",
+      "status": "DONE",
       "requirements": [
         "REQ-SG02"
       ],
@@ -4693,8 +4695,10 @@
         "AC-SG02"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-STATE-GRAPH-IMPACT"
+      ],
+      "notes": "Reverse index, iterative closure and SCC delivered; 11 targeted tests cover the seven required cases plus determinism across processes. AC-SG02 stays PENDING because REQ-SG02 also needs the diff-to-seed mapping of SG02.2. Why AC-SG02 stays PENDING is recorded in evaluation/state-graph-impact/evidence.md."
     },
     {
       "id": "SG02.2",
@@ -6490,8 +6494,10 @@
         "runtime",
         "inspection"
       ],
-      "status": "PENDING",
-      "evidence": []
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-STATE-GRAPH-MANIFEST"
+      ]
     },
     {
       "id": "AC-SG02",
@@ -7291,6 +7297,20 @@
       "result": "PASS",
       "method": "canonical reference reconciliation and bidirectional integrity check; no runtime behaviour changed",
       "details": "Ten multi-worker criteria referenced by tasks but absent from acceptance located verbatim in MULTI-WORKER.md (6 in the tranche table lines 34-39, 4 in sections at lines 75/92/115/155), mirrored verbatim, attached to REQ-H06.2 and to its acceptance list. All ten remain PENDING: no PASS invented. Candidate evidence attached for 2b1, 2c1, 2c2, 3c2a. Post-fix dangling references zero in both directions; counts.acceptancePending 83 to 93 measured; 160 insertions 2 deletions, whitespace clean. Second defect found and left open: seven evidence references on DONE tasks do not resolve in the evidence collection (six are file paths, one is EV-WORKER-PACKETS). See evaluation/multi-worker-criteria/evidence.md"
+    },
+    {
+      "id": "EV-STATE-GRAPH-MANIFEST",
+      "commit": "825a15d",
+      "result": "PASS",
+      "method": "generated manifest, real loader, determinism across processes and locales, mutation evidence, full gated suite",
+      "details": "SG01.3: 69 nodes, 77 edges, 41 real source files, four domains, no invented ci node. Determinism proven by two distinct node processes, byte identical, sha256 2ce237cc..., unchanged under TZ=UTC, TZ=Asia/Bangkok and LANG=tr_TR.UTF-8; real loader revision fa08cae7.... Integration exposed a reserved-name collision: ContainerToolRunner bind-mounts an empty directory over <root>/.cuesheet, so a manifest under .cuesheet/project/graph.json was invisible to every container and broke the capsule self-host proof. Resolved by moving the manifest to .cuesheet-project/graph.json across loader, manifest constant, both tests, the artifact and STATE-GRAPH.md lines 13 and 233; the security mask was not touched. Full gated suite 914 tests, 912 pass, 0 fail, 2 documented MB-01 skips. See evaluation/state-graph-manifest/evidence.md"
+    },
+    {
+      "id": "EV-STATE-GRAPH-IMPACT",
+      "commit": "825a15d",
+      "result": "PASS",
+      "method": "targeted tests, mutation evidence, determinism in process and across processes, full gated suite",
+      "details": "SG02.1: reverse index, iterative closure and strongly connected components. 11 targeted tests plus 6 regression; diamond, cycle, removed dependency, rename, unmapped file, bound and determinism all exercised, plus a 20000-deep chain proving no recursion. Determinism proven three ways, including revision equivalence implying plan equivalence, which is the literal AC-SG02 claim. All five edge types participate by default, narrowed only by explicit caller policy. DEFAULT_MAX_IMPACTED=10000 equals the schema ceiling; overflow throws and returns no partial plan. No revision field on the plan and no diff-to-seed mapping, both belong to SG02.3 and SG02.2. Full gated suite 914 tests, 912 pass, 0 fail. See evaluation/state-graph-impact/evidence.md"
     }
   ],
   "risks": {
@@ -7352,9 +7372,9 @@
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 90,
-    "acceptanceVerified": 7,
-    "acceptancePending": 93,
-    "p0_open": 72,
+    "acceptanceVerified": 8,
+    "acceptancePending": 92,
+    "p0_open": 70,
     "p1_open": 37
   },
   "workstreams": [

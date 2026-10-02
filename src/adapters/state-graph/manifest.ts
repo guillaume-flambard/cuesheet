@@ -18,7 +18,7 @@ import {readFileSync} from 'node:fs';
 import {isAbsolute,relative,resolve} from 'node:path';
 import {parseStateGraph,type EdgeType,type GraphEdge,type GraphNode,type NodeKind,type SourceRef,type StateGraph} from './schema.ts';
 /** The only path the loader will read, kept beside the declaration that fills it. */
-export const MANIFEST_PATH='.cuesheet/project/graph.json';
+export const MANIFEST_PATH='.cuesheet-project/graph.json';
 /** An identifier naming who declared the node, never a capability or a right. */
 const OWNER='owner.cuesheet';
 interface Declaration{readonly id:string;readonly kind:NodeKind;readonly domainId:string;readonly sources:readonly string[];readonly contractRefs:readonly string[];readonly invariantRefs:readonly string[];readonly checkRefs:readonly string[]}

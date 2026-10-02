@@ -10,7 +10,7 @@ Réutiliser `work-plans.ts` (identités/DAG), `objectives.ts` (contrat/révision
 
 ## Contrat v1 du graphe
 
-- Source initiale : `.cuesheet/project/graph.json` versionnée dans Git ; moteur TypeScript, aucune nouvelle base ni dépendance YAML obligatoire. Les données runtime sont des records hors Git, avec références vers ce manifeste.
+- Source initiale : `.cuesheet-project/graph.json` versionnée dans Git ; moteur TypeScript, aucune nouvelle base ni dépendance YAML obligatoire. Les données runtime sont des records hors Git, avec références vers ce manifeste. Le répertoire `.cuesheet` est réservé au montage de contrôle du runner conteneur, qui y monte un répertoire vide pour qu'un outil piloté par un modèle ne puisse lire l'état de contrôle ; l'état de projet ne peut donc pas y vivre.
 - Node : `id`, `kind`, `domainId`, `revision`, `sourceRefs`, `ownerRef`, `contractRefs`, `invariantRefs`, `checkRefs`. Kinds : domain/entity/contract/source/invariant/test/ci. IDs indépendants des chemins, références de contenu avec digest et provenance.
 - Edge : `id`, `type`, `dependent`, `dependency`, `sourceRef`. Types affectant la validité : depends_on/implements/validates. contains et describes sont descriptifs : ils ne propagent pas implicitement une invalidation. Les règles par type sont versionnées.
 - Sens : si A dépend de B, un changement de B invalide A et tous ses dépendants transitifs. Un domaine est agrégé via les dépendances de ses invariants, pas par un edge de containment inventé.
@@ -230,7 +230,7 @@ compatibilité build ; moteur impact, hash et loader restent SG01.2/SG02.
 
 ## SG01.2 — loader et empreinte v1
 
-loadStateGraph(rootOwner) lit uniquement .cuesheet/project/graph.json sous une
+loadStateGraph(rootOwner) lit uniquement .cuesheet-project/graph.json sous une
 racine owner canonique ; parents/sources symlink, fichier spécial/hardlink,
 manifest >2MiB et lecture modifiée refusés. Le loader ne charge ni tous les
 fichiers sources ni un document distant. Digest brut du manifeste + empreinte

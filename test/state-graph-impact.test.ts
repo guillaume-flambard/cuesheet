@@ -147,7 +147,11 @@ test('the same revision gives the same plan and the same reasons byte for byte, 
  try{
   writeFileSync(fixture,JSON.stringify(ordered));
   const source='const{computeImpact}=await import(process.env.I);const{readFileSync}=await import("node:fs");process.stdout.write(JSON.stringify(computeImpact(JSON.parse(readFileSync(process.env.G,"utf8")),JSON.parse(process.env.S))));';
-  const run=()=>execFileSync(process.execPath,['--input-type=module','-e',source],{env:{...process.env,I:module,G:fixture,S:JSON.stringify(seeds)},encoding:'utf8'});
+  // Hermetic by naming, the shape test/hermeticity.test.ts requires: an env built
+   // from spread hands the child every developer variable, and deleting only the
+   // keys we thought of is how a provider key once reached the network from a test.
+   const childEnv={I:module,G:fixture,S:JSON.stringify(seeds)};
+   const run=()=>execFileSync(process.execPath,['--input-type=module','-e',source],{env:childEnv,encoding:'utf8'});
   const first=run(),second=run();
   assert.equal(first,JSON.stringify(plan));assert.equal(second,first);
  }finally{rmSync(tmp,{recursive:true,force:true});}

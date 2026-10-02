@@ -17,7 +17,10 @@ export function graphRevision(graph:StateGraph):string{
 }
 export async function loadStateGraph(ownerRoot:string):Promise<{graph:StateGraph;revision:string;manifestDigest:string;path:string;root:string}>{
  const root=await realpath(ownerRoot);let path=root;
- for(const part of ['.cuesheet','project']){path=join(path,part);const stat=await lstat(path);if(!stat.isDirectory()||stat.isSymbolicLink()||await realpath(path)!==path)throw Error('State graph manifest parent is redirected.');}
+ // `.cuesheet` is the container runner's reserved control mount: it bind-mounts an
+  // empty directory over it so a model-driven tool cannot read runner control state.
+  // Project state cannot live there or every capsule check would see no manifest.
+  for(const part of ['.cuesheet-project']){path=join(path,part);const stat=await lstat(path);if(!stat.isDirectory()||stat.isSymbolicLink()||await realpath(path)!==path)throw Error('State graph manifest parent is redirected.');}
  path=join(path,'graph.json');const stat=await lstat(path);
  if(!stat.isFile()||stat.isSymbolicLink()||stat.nlink!==1||stat.size>2*1024*1024)throw Error('State graph requires a bounded regular owner manifest.');
  const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);

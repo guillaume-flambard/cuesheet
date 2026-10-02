@@ -11,7 +11,7 @@ test('graph revision is independent of JSON formatting and set order, sensitive 
  b.nodes[0]!.revision=1;b.edges[0]!.type='describes';assert.notEqual(before,graphRevision(parseStateGraph(JSON.stringify(b))));
 });
 test('owner manifest reads with provenance, rejects symlink/hardlink/corruption and absent definitions',async()=>{
- const root=mkdtempSync(join(tmpdir(),'cs-state-graph-')),dir=join(root,'.cuesheet','project'),path=join(dir,'graph.json');mkdirSync(dir,{recursive:true});
+ const root=mkdtempSync(join(tmpdir(),'cs-state-graph-')),dir=join(root,'.cuesheet-project'),path=join(dir,'graph.json');mkdirSync(dir,{recursive:true});
  try{
   await assert.rejects(loadStateGraph(root));writeFileSync(path,JSON.stringify(graph()));const loaded=await loadStateGraph(root);assert.match(loaded.revision,/^[a-f0-9]{64}$/);assert.equal(loaded.graph.nodes.length,3);
   const other=join(root,'other');writeFileSync(other,JSON.stringify(graph()));unlinkSync(path);symlinkSync(other,path);await assert.rejects(loadStateGraph(root));
