@@ -150,10 +150,10 @@ try {
   log("4. launch the candidate UI under a real PTY and read the screen");
   const renderOf = async (rootDir, label) => {
     // The PTY step runs on the HOST, not in the capsule, so the candidate needs
-    // node_modules pointing at the repository. The capsule build has already run
-    // and replaced those links with ones aimed at /opt/cuesheet-deps/node_modules,
-    // which exists only inside the image, so they are repointed rather than
-    // checked: existsSync follows symlinks and would call a dangling link absent.
+    // node_modules pointing at the repository. The capsule now removes the links
+    // it makes, so nothing is left here to clash with; these are created for the
+    // host-side launch. Repointed rather than checked because existsSync follows
+    // symlinks and would call a link into the image absent.
     const { symlinkSync, rmSync: rm } = await import("node:fs");
     for (const rel of ["node_modules", "apps/terminal/node_modules"]) {
       const link = join(rootDir, rel);
