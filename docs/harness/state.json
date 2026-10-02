@@ -3459,6 +3459,106 @@
         "EV-SITUATION"
       ],
       "notes": "Bounded slice verified;43 targeted,818/816/0/2 full before final test-only guard,build/static PASS; parent criteria pending."
+    },
+    {
+      "id": "H06.3a",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H06.4",
+        "REQ-H06.5"
+      ],
+      "dependencies": [
+        "H06.1c"
+      ],
+      "description": "Inventaire Git et décision automatique d’isolation",
+      "systems": [
+        "AGENT-GIT.md"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H06.4",
+        "AC-H06.5"
+      ],
+      "verification": "Local temporary Git repositories, actual processes/crash/conflict/dirty-state, Ink/performance, full/build/differential",
+      "evidence": [],
+      "notes": "Specification only; no runtime implementation claimed."
+    },
+    {
+      "id": "H06.3b",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H06.4",
+        "REQ-H06.5"
+      ],
+      "dependencies": [
+        "H06.3a"
+      ],
+      "description": "Worktrees gérés durables, réutilisation et reprise après crash",
+      "systems": [
+        "AGENT-GIT.md"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H06.4",
+        "AC-H06.5"
+      ],
+      "verification": "Local temporary Git repositories, actual processes/crash/conflict/dirty-state, Ink/performance, full/build/differential",
+      "evidence": [],
+      "notes": "Specification only; no runtime implementation claimed."
+    },
+    {
+      "id": "H06.3c",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H06.4",
+        "REQ-H06.5"
+      ],
+      "dependencies": [
+        "H06.3b"
+      ],
+      "description": "Receipts code et intégration sérialisée vérifiée",
+      "systems": [
+        "AGENT-GIT.md"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H06.4",
+        "AC-H06.5"
+      ],
+      "verification": "Local temporary Git repositories, actual processes/crash/conflict/dirty-state, Ink/performance, full/build/differential",
+      "evidence": [],
+      "notes": "Specification only; no runtime implementation claimed."
+    },
+    {
+      "id": "H06.3d",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H06.4",
+        "REQ-H06.5"
+      ],
+      "dependencies": [
+        "H06.3c"
+      ],
+      "description": "Vue Git agents et nettoyage récupérable mesuré",
+      "systems": [
+        "AGENT-GIT.md"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H06.4",
+        "AC-H06.5"
+      ],
+      "verification": "Local temporary Git repositories, actual processes/crash/conflict/dirty-state, Ink/performance, full/build/differential",
+      "evidence": [],
+      "notes": "Specification only; no runtime implementation claimed."
     }
   ],
   "acceptance": [
@@ -4596,7 +4696,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 18
+    "p1_open": 22
   },
   "workstreams": [
     {
@@ -4709,7 +4809,11 @@
         "H07.2b",
         "H06.1a",
         "H06.1b",
-        "H06.1c"
+        "H06.1c",
+        "H06.3a",
+        "H06.3b",
+        "H06.3c",
+        "H06.3d"
       ],
       "dependencies": [
         "C1",

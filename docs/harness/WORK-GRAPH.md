@@ -50,3 +50,5 @@ H09.3d/e : refresh de route au start/reprise et protection des contrôleurs sous
 ## Situation — checkpoint 2026-10-02
 
 H03.4a/H08.3a : tranche vérifiée, voir [spec](SITUATION-CONTEXT.md) et [EV-SITUATION](evaluation/situation/evidence.md). Snapshot renouvelé par inférence coordinateur/consultant ; palette Situation en lecture avec horloge live. 818/816/0/2 full ; 43 tests ciblés finaux et build/différentiel PASS (32 diagnostics hérités). Parents H03.3/H03.4/H06.4/H08.3 et harness global restent IMPLEMENTING ; aucun critère parent promu.
+
+Gestion Git affinée : [AGENT-GIT.md](AGENT-GIT.md), H06.3a → b → c → d, TODO. Aucun worktree pour consultation ; isolation des écritures, intégration vérifiée, récupération et coût mesuré. Runtime encore à implémenter.

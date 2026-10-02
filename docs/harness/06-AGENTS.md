@@ -64,3 +64,5 @@ dans un processus ne valide pas la concurrence réelle.
 Dépendances : H01, H03, H05, H09. Lire `docs/SW-01-shared-work-state.md` pour
 les garanties existantes et leurs limites ; ne pas annoncer qu'elles prouvent déjà
 le runtime multi-processus terminal.
+
+Gestion Git affinée : [AGENT-GIT.md](AGENT-GIT.md), H06.3a → b → c → d, TODO. Aucun worktree pour consultation ; isolation des écritures, intégration vérifiée, récupération et coût mesuré. Runtime encore à implémenter.
