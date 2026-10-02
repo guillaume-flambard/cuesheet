@@ -262,3 +262,7 @@ H09.3f3 P0 IN_PROGRESS : oracle capsule depuis capture/scratch/source guards, vo
 H09.3f4 P1 DEFECT IN_PROGRESS : portable imports/fixtures/CWD ; requis avant oracle complet selfhost, voir WORKTREE-BUILD.md.
 
 2026-10-02 H09.3f3/f3a/f4/f3b DONE bornés : [EV-OWNER-CAPSULE](evaluation/owner-capsule/evidence.md), oracle image épinglé/capture/scratch/source guards, tmp Linux privé, portabilité et cache dérivé.869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 ciblés/46 portable,build32 baseline. Modèle réel/agents code parallèles/recovery complet restent ouverts, global IMPLEMENTING.
+
+2026-10-02 [MULTI-WORKER.md](MULTI-WORKER.md) : H06.2a IN_PROGRESS → H06.2b → H06.2c → H06.4a → H06.3c2 → H06.5c. Deux workers code isolés, journaux privés, correction directe, intégration vérifiée et UI ; tous les critères runtime restent ouverts.
+
+2026-10-02 H06.2a DONE borné : [EV-WORKER-PACKETS](evaluation/worker-packets/evidence.md),14 ciblés PASS/build32 baseline. Validation pure des responsabilités ; admission/exécution/récupération et UI code workers encore pending. Global IMPLEMENTING.
