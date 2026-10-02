@@ -17,6 +17,7 @@
  * No database is written. Every query opens sqlite3 in -readonly.
  */
 
+import {isEntryPoint} from "./is-entry-point.ts";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
@@ -56,6 +57,7 @@ function requirementsFrom(text: string, names: string[]): Requirement[] {
 const LIMIT = Number(process.env.LIMIT ?? "400");
 const SINCE = Number(process.env.SINCE ?? "0"); // epoch ms, 0 = all time
 
+export function main():void {
 const names = registryNames();
 if (names.length === 0) {
   console.error("no skills found in the live registry; nothing to replay against");
@@ -152,3 +154,6 @@ const report = {
 };
 
 process.stdout.write(JSON.stringify(report, null, 2) + "\n");
+
+}
+if(isEntryPoint(import.meta.url))main();

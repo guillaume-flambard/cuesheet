@@ -53,7 +53,7 @@ import { join, relative } from "node:path";
 export const CAPTURE_SCOPE = "declared_workspace" as const;
 
 /** Directories that are not the work's output, and are not snapshotted. */
-const IGNORED = new Set(["node_modules", ".git", ".DS_Store", ".npmrc", ".pypirc"]);
+const IGNORED = new Set(["node_modules", ".npm", ".git", ".DS_Store", ".npmrc", ".pypirc"]);
 const excluded = (name: string): boolean => IGNORED.has(name) || name === ".env" || name.startsWith(".env.");
 
 export interface CapturedArtifact {
@@ -114,9 +114,9 @@ function filesUnder(dir: string, base = dir): string[] {
  * Two workspaces with the same files have the same digest whatever order the
  * filesystem listed them, and a workspace with one changed byte does not.
  */
-export function digestDirectory(dir: string): { digest: string; fileCount: number } {
+export function digestDirectory(dir: string, ignoredPaths: readonly string[] = []): { digest: string; fileCount: number } {
   const parts: string[] = [];
-  const files = filesUnder(dir);
+  const files = filesUnder(dir).filter(rel=>!ignoredPaths.some(path=>rel===path||rel.startsWith(path+"/")));
   for (const rel of files) {
     const bytes = readFileSync(join(dir, rel));
     parts.push(`${rel}\x00${bytes.length}\x00${digestBytes(bytes)}`);
@@ -197,6 +197,7 @@ export function capture(options: CaptureOptions): CapturedArtifact {
  * lives in prose is a limit nothing checks.
  */
 export const COVERAGE_LIMITS: readonly string[] = [
+  "ignored dependency directories, npm cache, Git metadata and environment/credential files",
   "files the worker touched outside the declared workspace",
   "effects on processes, the network, or any other machine state",
   "anything the worker did not declare, in a workspace it was not given",

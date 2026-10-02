@@ -34,10 +34,11 @@ import { readModelPreferences, preferencesPath, validBaseUrl, type ModelPreferen
 export const OPENROUTER_PROVIDER = "openrouter";
 
 /** Where the binary is looked for when nothing says otherwise. */
-const CANDIDATE_BINARIES = [
-  join(homedir(), ".opencode", "bin", "opencode"),
-  join(homedir(), ".local", "bin", "opencode"),
-];
+function candidateBinaries(env:NodeJS.ProcessEnv):string[]{
+  let home=env.HOME;
+  if(!home&&env===process.env)try{home=homedir();}catch{}
+  return home?[join(home,".opencode","bin","opencode"),join(home,".local","bin","opencode")]:[];
+}
 
 /**
  * A resolved provider, and the sentence a surface can print about it.
@@ -89,7 +90,7 @@ export function findBinary(env: NodeJS.ProcessEnv = process.env): string | null 
     const candidate = join(dir, "opencode");
     if (binaryAvailable(candidate)) return candidate;
   }
-  for (const candidate of CANDIDATE_BINARIES) {
+  for (const candidate of candidateBinaries(env)) {
     if (binaryAvailable(candidate)) return candidate;
   }
   return null;
@@ -167,7 +168,7 @@ export function resolveModel(options: ResolveOptions = {}): ResolvedModel | { mi
     return {
       missing:
         "no model transport on this machine. Looked for the opencode binary on PATH and in " +
-        `${CANDIDATE_BINARIES.join(" and ")}. Set CUESHEET_OPENCODE_BIN to its path, install it, ` +
+        `${candidateBinaries(env).join(" and ")||"no available home directory"}. Set CUESHEET_OPENCODE_BIN to its path, install it, ` +
         "or set CUESHEET_PROVIDER=openrouter with OPENROUTER_API_KEY.",
     };
   }

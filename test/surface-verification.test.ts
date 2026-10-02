@@ -9,6 +9,7 @@ import { createStore } from "../apps/terminal/src/app/store.ts";
 import { ShellToolRunner } from "../src/adapters/shell.ts";
 import { ResearchTools } from "../src/adapters/research-tools.ts";
 import { SkillTools } from "../src/adapters/skill-tools.ts";
+import {checkableIntegrationPath} from "../src/adapters/worktree-integration.ts";
 import { capture } from "../src/adapters/artifact-capture.ts";
 import type { ModelAdapter } from "../src/core/loop.ts";
 
@@ -104,10 +105,13 @@ it("capture excludes environment files and ignored directories from both stored 
   try {
     writeFileSync(join(w.workspace, '.env'), 'synthetic fixture');
     mkdirSync(join(w.workspace, 'node_modules')); writeFileSync(join(w.workspace,'node_modules','ignored'), 'fixture');
+    mkdirSync(join(w.workspace,'.npm'));writeFileSync(join(w.workspace,'.npm','cache'), 'SYNTHETIC_CACHE_CANARY');
     const artifact = capture({ sessionId: 'test', effectId: 'E-one', workspace: w.workspace, root: w.storage });
     assert.equal(existsSync(join(artifact.location, '.env')), false);
     assert.equal(existsSync(join(artifact.location, 'node_modules')), false);
     assert.equal(artifact.covers.includes('.env'), false);
+    assert.equal(existsSync(join(artifact.location,'.npm')),false);assert.equal(artifact.covers.some(p=>p.startsWith('.npm/')),false);
+    assert.equal(checkableIntegrationPath('.npm/cache'),false);assert.equal(checkableIntegrationPath('apps/x/.npm/cache'),false);
   } finally { w.clean(); }
 });
 

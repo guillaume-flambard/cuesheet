@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "924f628",
+  "referenceCommit": "acef2f5",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -4069,6 +4069,114 @@
         "evaluation/automatic-isolation/evidence.md"
       ],
       "notes": "Bounded spec AGENT-GIT; parent parallel workers and recovery pending. 55 targeted and866/864/0/2 full,build32 baseline PASS; no parent closure."
+    },
+    {
+      "id": "H09.3f3",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3"
+      ],
+      "dependencies": [
+        "H09.3f2",
+        "H06.3c1"
+      ],
+      "description": "Owner-pinned capsule oracle checks scratch copy of captured input, declared outputs and independent source guards",
+      "systems": [
+        "src/adapters/surface-verification.ts",
+        "src/adapters/capsule-verification.ts",
+        "apps/terminal/src/producer/runtime.ts",
+        "test/capsule-verification.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3"
+      ],
+      "verification": "Profile schema + real Docker oracle/deps/mutation/refusal + actual Cuesheet capture/build/Linux suite/source preservation/full/build",
+      "evidence": [
+        "evaluation/owner-capsule/evidence.md"
+      ],
+      "notes": "Bounded delivered proof:869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 targeted and46 portable,build32 inherited diagnostics. Full parent/model/parallel/recovery remain open."
+    },
+    {
+      "id": "H09.3f3a",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3"
+      ],
+      "dependencies": [
+        "H09.3f3"
+      ],
+      "description": "Run independent Cuesheet suite within fixed container tmp/memory budget after observed ENOSPC",
+      "systems": [
+        "test/capsule-verification.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3"
+      ],
+      "verification": "Actual full serial Linux suite and /tmp bounded/source preserved",
+      "evidence": [
+        "evaluation/owner-capsule/evidence.md"
+      ],
+      "notes": "Bounded delivered proof:869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 targeted and46 portable,build32 inherited diagnostics. Full parent/model/parallel/recovery remain open."
+    },
+    {
+      "id": "H09.3f4",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3"
+      ],
+      "dependencies": [
+        "H09.3f3"
+      ],
+      "description": "Eliminate personal registry/import HOME side effects and incorrect E2E cwd exposed by full Linux oracle",
+      "systems": [
+        "src/adapters/default-model.ts",
+        "src/adapters/frontier.ts",
+        "src/replay.ts",
+        "test/fixtures/portfolio-env.ts",
+        "test/binding-cost.test.ts",
+        "test/chat.test.ts",
+        "test/observation-cost.test.ts",
+        "test/e2e-real-path.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3"
+      ],
+      "verification": "19 Linux failures reproduced; private portfolio + import no HOME + declared cwd; full Linux/host/build",
+      "evidence": [
+        "evaluation/owner-capsule/evidence.md"
+      ],
+      "notes": "Bounded delivered proof:869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 targeted and46 portable,build32 inherited diagnostics. Full parent/model/parallel/recovery remain open."
+    },
+    {
+      "id": "H09.3f3b",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H09.3",
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H09.3f3"
+      ],
+      "description": "Exclude derived npm cache from captured acceptance input and refuse its unverified integration",
+      "systems": [
+        "src/adapters/artifact-capture.ts",
+        "src/adapters/capsule-verification.ts",
+        "src/adapters/worktree-integration.ts",
+        "test/surface-verification.test.ts"
+      ],
+      "acceptance": [
+        "AC-H09.3",
+        "AC-H06.3"
+      ],
+      "verification": "Synthetic cache absent capture/digest + integration path refusal; full Linux selfhost source/capture intact; host/full/build",
+      "evidence": [
+        "evaluation/owner-capsule/evidence.md"
+      ],
+      "notes": "Bounded delivered proof:869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 targeted and46 portable,build32 inherited diagnostics. Full parent/model/parallel/recovery remain open."
     }
   ],
   "acceptance": [
@@ -5194,10 +5302,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "924f628",
+    "lastPassedCommit": "acef2f5",
     "lastFullSuite": {
-      "tests": 866,
-      "passed": 864,
+      "tests": 869,
+      "passed": 867,
       "failed": 0,
       "skipped": 2
     },
@@ -5238,7 +5346,8 @@
     "workingTreeWorkspaceBuild": "PASS_PARTIAL curated owner image capsule + actual Cuesheet Linux worktree build/56 tests/source unchanged;21 final targeted,853/851/0/2 full; sequential shipped build/differential32 baseline PASS. Installed/model quality/parallel worker recovery pending.",
     "workingTreeInstalledSelfhost": "PASS_PARTIAL installed actual PTY/fixture transport/Linux tools/source integration/independent captured source check/reopened journal;5 installed,56 targeted,857/855/0/2 full;build32 inherited diagnostics PASS. Real model/full dependency owner check/parallel workers/UX recovery pending.",
     "workingTreeWorkspaceProvider": "PASS_PARTIAL latest/live/cached workspace UI + secret-safe native provider status;79/40 targeted,859/857/0/2 full. Real free pilot403/source preserved/no quality result, H10.3a open.",
-    "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending."
+    "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending.",
+    "workingTreeOwnerCapsule": "PASS_PARTIAL owner-pinned container oracle on capture/scratch with admitted outputs and anonymous tmp volume;851 Linux PASS/18 explicit skips,869/867/0/2 host,44 targeted/46 portable,build32 baseline. Source/index/capture intact; no real model/parallel worker/full recovery closure."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -5335,7 +5444,11 @@
         "H09.3e",
         "H09.3f1",
         "H09.3f2",
-        "H05.2b"
+        "H05.2b",
+        "H09.3f3",
+        "H09.3f3a",
+        "H09.3f4",
+        "H09.3f3b"
       ],
       "dependencies": [
         "C1",

@@ -91,14 +91,14 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const usage=settings.journal ? new SessionUsage({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
   const binding = settings.binding ?? createModelBinding({ project: cwd,onUsage:usage?.record });
   const model: ModelAdapter = binding.adapter;
+  const selectRoute=createToolRouteSelector({home:homedir(),enterprise:!!process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean).length,mode:process.env.CUESHEET_TOOL_MODE,image:process.env.CUESHEET_TOOL_IMAGE,socket:process.env.CUESHEET_TOOL_SOCKET});
   let verification;
   try {
     const script = process.env.CUESHEET_VERIFY_SCRIPT;
-    verification = settings.verification ?? (script ? createCompletionCheck({ script, root: join(homedir(), ".local", "state", "cuesheet", "verification") }) : undefined);
+    verification = settings.verification ?? (script ? createCompletionCheck({ script, root: join(homedir(), ".local", "state", "cuesheet", "verification"),containerSocket:(()=>{const route=selectRoute();return route.kind==="container"?route.socket:undefined;})() }) : undefined);
   } catch (error) {
     return { missing: `The declared check could not be loaded: ${error instanceof Error ? error.message : String(error)}` };
   }
-  const selectRoute=createToolRouteSelector({home:homedir(),enterprise:!!process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean).length,mode:process.env.CUESHEET_TOOL_MODE,image:process.env.CUESHEET_TOOL_IMAGE,socket:process.env.CUESHEET_TOOL_SOCKET});
   const containers=settings.journal ? new SessionContainers({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
   const toolsForScope=(scope:string):ToolRunner=>{
     const route=selectRoute();
@@ -139,12 +139,14 @@ export function createTerminalRuntime(cwd: string, id?: string): { store: Store;
     const root = terminalSessionRoot();
     const proofRoot = join(homedir(), ".local", "state", "cuesheet", "verification");
     const declared = process.env.CUESHEET_VERIFY_SCRIPT;
-    let verification = declared ? createCompletionCheck({script:declared,root:proofRoot}) : undefined;
+    const checkRoute=createToolRouteSelector({home:homedir(),enterprise:!!process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean).length,mode:process.env.CUESHEET_TOOL_MODE,image:process.env.CUESHEET_TOOL_IMAGE,socket:process.env.CUESHEET_TOOL_SOCKET})();
+    const containerSocket=checkRoute.kind==="container"?checkRoute.socket:undefined;
+    let verification = declared ? createCompletionCheck({script:declared,root:proofRoot,containerSocket}) : undefined;
     session = new TerminalSession({root,cwd,id,check:verification?.pinned});
     if (session.metadata.check) {
       const check = session.metadata.check;
       if(createHash("sha256").update(readFileSync(check.script)).digest("hex")!==check.digest) throw new Error("Le critère sauvegardé ne correspond plus à son empreinte. Reprise refusée.");
-      verification = createCompletionCheck({script:check.script,root:proofRoot});
+      verification = createCompletionCheck({script:check.script,root:proofRoot,containerSocket});
     }
     const store = persistentView(session);
     const usage=new SessionUsage({root:session.root,sessionId:session.metadata.id,assertWritable:()=>session!.assertWritable()});

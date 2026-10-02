@@ -21,3 +21,25 @@ Le premier essai avec CUESHEET_SESSIONS sous alias macOS /var→/private/var ref
 H09.4b2 : une demande prepare_workspace persistée mais non sélectionnée bloque les mutations externes et finish sur source pour ce goal. Lecture/recherche/organisation/prepare/reconcile restent possibles ; retry réussi sélectionne workspace, intégration réussie libère source ; nouveau goal indépendant reste possible. Gate dérivé du journal et même objectif, survit reprise et correction directe ; aucune queue. Pas de fallback source après refus, préparation historique, interruption ou effet uncertain. Tests provider ignorant refus, source/goal conservés, lecture possible et reload gate.
 
 H09.4b3 : Git ignore `node_modules/` ne couvre pas le symlink image-local ; la capture refusait donc la contribution après un bootstrap réussi. Classer comme ressource dérivée uniquement les symlinks non suivis node_modules à la racine ou apps/<package>/packages/<package>, dont readlink égale exactement /opt/cuesheet-deps/node_modules. Ne pas copier/snapshoter leurs octets ; recréation par capsule à la prochaine exécution. Lien étranger reste refusé, lien suivi par Git reste changement réel et intégration non couverte refusée. Aucun changement gitignore humain ni généralisation à tous les symlinks. Test digest inchangé pour alias exact/non suivi, lien étranger refusé, PTY toujours vérifie intégration.
+
+## H09.3f3 — oracle toolchain indépendant, livré 2026-10-02
+
+REQ-H09.3/AC-H09.3, dépend H09.3f2/H06.3c1. Un oracle propriétaire .mjs peut déclarer en première ligne :
+
+```js
+// cuesheet-check-v1: {"executor":"container","image":"sha256:REPLACE_WITH_64_HEX_IMAGE_ID","outputs":["dist",".typecheck.log"],"temporaryStorage":"volume"}
+```
+
+Utiliser l’ID immuable retourné par scripts/build-toolchain.sh. Le profil appartient aux bytes épinglés et au digest lié au contrat ; modèle/spec/plugin ne l’admettent pas. Sans profil, check Node host existant. Le socket vient de la configuration propriétaire locale ; aucun pull/réseau/fallback. La reprise recharge le même profil depuis l’oracle sauvegardé, après vérification du digest raw.
+
+Flux : admission oracle/profil → capture canonique → scratch privé copié depuis capture → bytes oracle admis exécutés par node --input-type=module -e en image → empreintes source scratch hors outputs propriétaire → capture/oracle intacts → verdict/record. L’oracle travaille depuis process.cwd(), ne dépend pas du chemin import.meta.url de son fichier. Outputs relatifs simples, uniques≤16, longueur≤120, jamais racine/.. /credentials/node_modules/.git/.cuesheet. Profil invalide/versions futures refusés ; aucun output choisi par modèle. L’allowlist propriétaire peut exclure des fichiers importants : limite explicite du critère, pas preuve de son adéquation.
+
+Exit0 seul avec inputs intacts/cleanup confirmé → VERIFIED. Nonzero ordinaire → REJECTED. Null/refus126/arrêt137/timeout/cancel/daemon absent/digest changé/cleanup incertain → INCONCLUSIVE, goal ouvert. Reçus privés attribués effect/artifact/check/container, avant création et après nettoyage ; source modifiée donne chemins/décompte bornés. Log oracle privé≤1MiB, jamais script/credentials recopiés dans les reçus. Scratch/capture conservés pour diagnostic ; quota disque et rétention globale restent parents ouverts. Aucun schéma journal/autorité core changé.
+
+H09.3f3a : temporaire par défaut tmpfs128MiB ; option propriétaire `temporaryStorage:"volume"` donne /tmp Linux anonyme privé pour gros tests. Mémoire1GiB, CPU2, PIDs128, réseau/caps inchangés. DELETE force=1&v=1 retire les seuls volumes anonymes associés au conteneur attribué ; aucun volume nommé/prune global. Cleanup non confirmé bloque verdict. Quota disque dur non garanti. Oracle complet Cuesheet séquentiel, plafond300s ; fixture utilise son propre worktree snapshot dirty pour éviter outputs dist partagés avec install oracle host. Source Git/index original/capture mesurés intacts.
+
+H09.3f4 : portfolio tests privé avec12 vrais repos, pas de lecture du portfolio propriétaire ; E2E utilise cwd déclaré ; candidat modèle HOME paresseux, absence HOME n’empêche plus imports UI ; import replay n’exécute pas la CLI. ROOT inconnu refuse une lecture, ne devient pas cwd inventé. Les19 échecs Linux initiaux sont corrigés.
+
+H09.3f3b : `.npm` cache/logs dérivés exclus capture/digest/guard comme node_modules ; chemin refusé en intégration. Aucun byte de code couvert n’est toléré. Canary cache absent artifact/covers ; modifications source restent INCONCLUSIVE.
+
+Vérification : [EV-OWNER-CAPSULE](evaluation/owner-capsule/evidence.md).44 ciblés PASS avant fixture finale ; full host869/867/0/2, incluant fixture finale et851 checks Linux PASS/18 skips explicites. Shipped build/différentiel PASS32 diagnostics hérités. Cas source/oracle tamper, dépendance readonly, budget/refus/timeout/daemon absent, conservation capture/source et suppression réelle volume testés. Vérification/reprise complète de toute ressource abandonnée, workers code parallèles et modèle réel admis restent ouverts ; aucun AC parent clos.

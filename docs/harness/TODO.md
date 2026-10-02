@@ -256,3 +256,9 @@ Critères bornés : null ne lève pas et n’append pas ; résultat réel partie
 H06.3b4 P0 IN_PROGRESS : admission premier effet code automatique, specs/AC bornés [AGENT-GIT.md](AGENT-GIT.md) ; pas de clôture selfhost/global.
 
 2026-10-02 H05.2b/H06.3b4 DONE bornés : [EV-AUTOMATIC-ISOLATION](evaluation/automatic-isolation/evidence.md),55 ciblés,866/864/0/2 full,build/différentiel32 baseline PASS. Première commande code Git isolée par contrôleur, anciens appels rejetés ; null reste incertain/replay gated. Global IMPLEMENTING, parents ouverts.
+
+H09.3f3 P0 IN_PROGRESS : oracle capsule depuis capture/scratch/source guards, voir WORKTREE-BUILD.md ; parent selfhost ouvert.
+
+H09.3f4 P1 DEFECT IN_PROGRESS : portable imports/fixtures/CWD ; requis avant oracle complet selfhost, voir WORKTREE-BUILD.md.
+
+2026-10-02 H09.3f3/f3a/f4/f3b DONE bornés : [EV-OWNER-CAPSULE](evaluation/owner-capsule/evidence.md), oracle image épinglé/capture/scratch/source guards, tmp Linux privé, portabilité et cache dérivé.869/867/0/2 host,851 Linux/0fail/18 explicit skips,44 ciblés/46 portable,build32 baseline. Modèle réel/agents code parallèles/recovery complet restent ouverts, global IMPLEMENTING.

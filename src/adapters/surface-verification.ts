@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, renameSync, realpa
 import { join, resolve } from "node:path";
 import { capture, type CapturedArtifact } from "./artifact-capture.ts";
 import { runAgainstArtifactAsync } from "./artifact-verifier.ts";
+import {capsuleCheckProfile,runCapsuleCheck} from "./capsule-verification.ts";
 import type { Verification } from "../verify.ts";
 
 export interface CompletionResult {
@@ -17,9 +18,11 @@ export interface CompletionCheck {
   verify(workspace: string, effectId: string, signal?: AbortSignal): Promise<CompletionResult>;
 }
 
-export function createCompletionCheck(options: { script: string; root: string; timeoutMs?: number }): CompletionCheck {
+export function createCompletionCheck(options: { script: string; root: string; timeoutMs?: number; containerSocket?:string }): CompletionCheck {
   if (!realpathSync(options.script).endsWith(".mjs")) throw new Error("the declared check must be a self-contained .mjs script");
   const script = readFileSync(options.script);
+  const profile=capsuleCheckProfile(script);
+  if(profile&&!options.containerSocket)throw Error("Owner capsule check requires a declared local container socket.");
   const checkDigest = createHash("sha256").update(script).digest("hex");
   mkdirSync(options.root, { recursive: true });
   const root = mkdtempSync(join(options.root, "check-"));
@@ -42,7 +45,7 @@ export function createCompletionCheck(options: { script: string; root: string; t
     if (!intact()) {
       verification = { target, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: "the declared check changed after admission" }] };
     } else {
-      verification = await runAgainstArtifactAsync({ artifact, command: process.execPath, args: [pinned], verificationId: `V-${effectId}`, timeoutMs: options.timeoutMs, signal });
+      verification = profile ? await runCapsuleCheck({artifact,script,profile,socket:options.containerSocket!,root,checkDigest,timeoutMs:options.timeoutMs,signal}) : await runAgainstArtifactAsync({ artifact, command: process.execPath, args: [pinned], verificationId: `V-${effectId}`, timeoutMs: options.timeoutMs, signal });
       if (!intact()) verification = { target, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: "the declared check changed during verification" }] };
     }
     const record = join(root, `${sessionId}-${effectId}-${artifact.artifactId}.json`);

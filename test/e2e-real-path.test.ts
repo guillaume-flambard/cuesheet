@@ -73,7 +73,7 @@ function runNode(script: string, args: string[], env: ReturnType<typeof CLEAN_EN
   const r = spawnSync(process.execPath, [script, ...args], {
     encoding: "utf8",
     input,
-    cwd: env.HOME,
+    cwd: env.PWD ?? env.HOME,
     env,
   });
   return { out: r.stdout + r.stderr, code: r.status ?? 1 };

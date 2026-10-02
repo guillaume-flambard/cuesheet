@@ -16,7 +16,7 @@ export interface ContainerToolOptions {
   /** Immutable local image identifier. The runner never pulls or logs in. */
   image:string;
   protectedPaths?:string[];
-  timeoutMs?:number;outputBytes?:number;
+  timeoutMs?:number;outputBytes?:number;temporaryStorage?:"volume"|"tmpfs";
   onAdmission?:(name:string,request:ToolRequest)=>void;
   onCleanup?:(name:string,removed:boolean)=>void;
 }
@@ -75,6 +75,7 @@ export class ContainerToolRunner {
     if(!isAbsolute(options.socket)||/[\0\r\n]/.test(options.socket)||!imageValid(options.image))throw new Error("Container tools require a local Unix socket and immutable image digest.");
     const timeoutMs=options.timeoutMs??120000,outputBytes=options.outputBytes??8000;
     if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>3600000||!Number.isSafeInteger(outputBytes)||outputBytes<1||outputBytes>1024*1024)throw new Error("Invalid container tool limits.");
+    if(options.temporaryStorage!==undefined&&!["volume","tmpfs"].includes(options.temporaryStorage))throw new Error("Invalid container temporary storage.");
     this.names=Object.freeze(options.allow.slice());
     this.options={...options,roots:options.roots.slice(),allow:options.allow.slice(),protectedPaths:options.protectedPaths?.slice(),timeoutMs,outputBytes};
     this.admission=new ShellToolRunner({allow:this.options.allow,roots:this.options.roots,defaultCwd:options.defaultCwd});
@@ -119,10 +120,10 @@ export class ContainerToolRunner {
       inspectContainerRoots(roots,[...masks.keys()]);
       const timeoutSeconds=Math.max(0.001,this.options.timeoutMs!/1000).toString()+"s";
       const uid=process.getuid?.()||1000,gid=process.getgid?.()||1000;
-      const body={Image:this.options.image,Entrypoint:["/usr/bin/timeout","--signal=KILL",timeoutSeconds],Cmd:this.capsule?["node","-e",NODE_CAPSULE_BOOTSTRAP,...prepared.argv]:prepared.argv,WorkingDir:cwd,User:`${uid}:${gid}`,Tty:false,
+      const body={Image:this.options.image,Entrypoint:["/usr/bin/timeout","--signal=KILL",timeoutSeconds],Cmd:this.capsule?["node","-e",NODE_CAPSULE_BOOTSTRAP,...prepared.argv]:prepared.argv,WorkingDir:cwd,User:`${uid}:${gid}`,Tty:false,...(this.options.temporaryStorage==="volume"?{Volumes:{"/tmp":{}}}:{}),
         Env:["HOME=/tmp","TMPDIR=/tmp","NO_COLOR=1"],Labels:{"io.cuesheet.tool":"v1"},
         HostConfig:{ReadonlyRootfs:true,NetworkMode:"none",CapDrop:["ALL"],SecurityOpt:["no-new-privileges:true"],Memory:1024*1024*1024,NanoCpus:2000000000,PidsLimit:128,
-          Mounts:mounts,Tmpfs:{"/tmp":"rw,nosuid,nodev,size=134217728"},LogConfig:{Type:"json-file",Config:{"max-size":"1m","max-file":"1"}},RestartPolicy:{Name:"no"}}};
+          Mounts:mounts,...(this.options.temporaryStorage==="volume"?{}:{Tmpfs:{"/tmp":"rw,nosuid,nodev,size=134217728"}}),LogConfig:{Type:"json-file",Config:{"max-size":"1m","max-file":"1"}},RestartPolicy:{Name:"no"}}};
       this.options.onAdmission?.(name,request);admitted=true;
       attemptedCreate=true;
       const created=json(await engine(this.options.socket,API+"/containers/create?name="+encodeURIComponent(name),"POST",body,abort),201);
@@ -140,7 +141,7 @@ export class ContainerToolRunner {
       result={name:request.name,exit:null,output:abort.aborted?"Container tool interrupted before confirmed completion.":"Container tool not confirmed: verify the local Engine, pinned image, mounts and required binaries."};
     }finally{
       let cleaned=!attemptedCreate;
-      if(attemptedCreate)try{const removal=await engine(this.options.socket,API+"/containers/"+encodeURIComponent(name)+"?force=1","DELETE");cleaned=createConfirmed&&(removal.status===204||removal.status===404);}catch{}
+      if(attemptedCreate)try{const removal=await engine(this.options.socket,API+"/containers/"+encodeURIComponent(name)+(this.options.temporaryStorage==="volume"?"?force=1&v=1":"?force=1"),"DELETE");cleaned=createConfirmed&&(removal.status===204||removal.status===404);}catch{}
       if(admitted)try{this.options.onCleanup?.(name,cleaned);}catch{result={name:request.name,exit:null,output:"Container cleanup receipt not persisted for "+name};}
       if(cleaned){if(maskRoot)try{rmSync(maskRoot,{recursive:true,force:true});}catch{result={name:request.name,exit:null,output:"Container mask cleanup not confirmed for "+name};}}
       else result={name:request.name,exit:null,output:result.output+"\nCleanup not confirmed for owned container "+name+"; inspect it before further effects."};

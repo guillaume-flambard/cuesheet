@@ -15,6 +15,7 @@
  * rest of the surface is asserted without a counter in test/chat.test.ts.
  */
 
+import "./fixtures/portfolio-env.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";

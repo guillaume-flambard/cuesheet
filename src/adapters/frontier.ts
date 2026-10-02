@@ -29,7 +29,7 @@ import { buildFrontier, wakeable } from "../core/memory.ts";
  * is now a default that every entry point can override, so a second person can
  * read their own portfolio without editing this file. See test/portability.test.ts.
  */
-export const DEFAULT_PROJECTS_ROOT = join(homedir(), "projects");
+export const DEFAULT_PROJECTS_ROOT = (()=>{try{return join(homedir(),"projects");}catch{return "";}})();
 
 /** The five categories the registry groups projects into. */
 const CATEGORIES = ["products", "tools", "infrastructure", "experiments", "clients"];
@@ -60,6 +60,7 @@ export interface RepoReality {
 }
 
 export function parseRegistry(projectsRoot: string): RegistryEntry[] {
+  if(!projectsRoot)throw new Error("Projects root unavailable: configure a project directory; no home directory could be resolved.");
   const registry = join(projectsRoot, "PROJECTS.md");
   if (!existsSync(registry)) {
     return [];
