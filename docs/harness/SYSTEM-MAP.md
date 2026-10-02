@@ -113,3 +113,7 @@ Plan/spec modèle courant → ProjectVaultPublisher avant prochaine infer → jo
 ## Situation — checkpoint 2026-10-02
 
 H03.4a/H08.3a : tranche vérifiée, voir [spec](SITUATION-CONTEXT.md) et [EV-SITUATION](evaluation/situation/evidence.md). Snapshot renouvelé par inférence coordinateur/consultant ; palette Situation en lecture avec horloge live. 818/816/0/2 full ; 43 tests ciblés finaux et build/différentiel PASS (32 diagnostics hérités). Parents H03.3/H03.4/H06.4/H08.3 et harness global restent IMPLEMENTING ; aucun critère parent promu.
+
+## H06.3a — checkpoint 2026-10-02
+
+Inventaire Git read-only et décision controller-owned implémentés dans agent-git.ts, sans création ni branche ni integration runtime. [EV-AGENT-GIT-INVENTORY](evaluation/agent-git/evidence.md) : 4 nouveaux tests Git réel,37 ciblés,823/821/0/2 full final ; build/différentiel PASS32 diagnostics hérités. H06.3a DONE borné ; H06.3b/c/d TODO, parent H06.3 et global IMPLEMENTING. Création/reprise/admission/intégration/cleanup restent à livrer.

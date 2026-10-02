@@ -1,0 +1,13 @@
+# EV-AGENT-GIT-INVENTORY — 2026-10-02
+
+Base01018e2. AGENT-GIT.md specified H06.3a before code. Bounded adapter inventory/decision only; manager and runtime integration H06.3b/c/d pending, global IMPLEMENTING.
+
+No dependencies, no core changes. Async argv-only Git read commands, cleaned environment removes ambient GIT_DIR/WORK_TREE and provider credentials; optional Git locks disabled and global/system config not loaded. Canonical cwd/repository/common directory, exact HEAD or no commit, branch/detached, dirty flag, local duration/observation and five-command count. No diff or filenames in returned context. Per-command5s technical timeout/262144byte output bound and abort; unavailable/nonrepo/error/cancel distinct. HEAD re-read rejects changed base. This does not provide filesystem atomicity or confinement.
+
+Pure controller decision: read -> no creation even without Git; dirty -> needs attributed snapshot rather than ignoring local changes; no HEAD/nonrepo/inspection failure -> no write admission. Clean write recommends isolated workspace, optionally unique inactive clean candidate matching repository/base/unit. No mutation, allocation, lock, branch, commit or false managed-workspace admission. Existing model proposals cannot supply capabilities or trusted registry ownership.
+
+Evidence:4 new tests with actual owned temporary Git repositories: exact clean HEAD, human dirty file and untracked preservation, detached HEAD, unborn repository, no worktree for reads, compatible reuse and active/dirty/other unit/base/repo/ambiguous refusal, missing Git/nonrepo/abort.37 targeted with differential guard PASS. Initial full detected2 TS2322 defects, fixed tuple typing, final build32 inherited diagnostics PASS. Final full823 tests821 PASS0 FAIL2 existing explicit skips. git diff --check PASS. No external or paid calls. Solo review confirms read-only command set/env/paths/bounds, race limitations and no runtime mutation path.
+
+Limits: new API not yet called by terminal worker admission. Future manager must physically verify registered candidates and revalidate mutable inventory under its reservation; metadata observation is not a locking guarantee. No disk/time savings benchmark claimed; local operation count and duration are available for measurement. No Git status cache can substitute pre-mutation verification. Lifecycle/integration/conflict/cleanup, authenticated ownership and OS sandbox parent work remains open.
+
+Manual review: inspect fixtures and inventory/decision API. No new terminal action claimed for this slice. Broader user acceptance awaits end-to-end H06.3b/c/d delivery.
