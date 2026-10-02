@@ -1489,8 +1489,8 @@
       "dependent": "domain.workers",
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
-        "path": "src/adapters/code-worker-workspaces.ts",
-        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+        "path": "src/adapters/managed-worktrees.ts",
+        "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
       }
     },
     {
@@ -1519,8 +1519,8 @@
       "dependent": "entity.integration.composition",
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
-        "path": "src/adapters/code-worker-workspaces.ts",
-        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+        "path": "src/adapters/managed-worktrees.ts",
+        "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
       }
     },
     {
@@ -1551,16 +1551,6 @@
       "sourceRef": {
         "path": "src/adapters/project-binding.ts",
         "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
-      }
-    },
-    {
-      "id": "edge:depends_on:entity.objectives.plan--entity.objectives.objective",
-      "type": "depends_on",
-      "dependent": "entity.objectives.plan",
-      "dependency": "entity.objectives.objective",
-      "sourceRef": {
-        "path": "src/adapters/objectives.ts",
-        "digest": "0591a23b188f7b330fd3ff6e205d63e8be87c565d5683f080625fc9cee8a95b3"
       }
     },
     {
@@ -1609,8 +1599,8 @@
       "dependent": "entity.workers.loop",
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
-        "path": "src/adapters/code-worker-workspaces.ts",
-        "digest": "cf739d006efac2b2150bc518dcc9e9fbb7d418430bcb7d24d246d91ba68cab90"
+        "path": "src/adapters/managed-worktrees.ts",
+        "digest": "9c025ddd10732779bbf747ffeb745dbb728c9e0e077c253e66fb5ee144eb75e4"
       }
     },
     {

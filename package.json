@@ -21,6 +21,7 @@
   "scripts": {
     "test": "node --test \"test/**/*.test.ts\"",
     "ownership": "node src/cli.ts",
+    "graph:regen": "node src/adapters/state-graph/regen.ts",
     "build": "bash scripts/build.sh",
     "prepack": "bash scripts/build.sh",
     "surface:build": "pnpm --filter @cuesheet/surface build",

@@ -121,13 +121,18 @@ export function strongComponents(index:ReverseIndex):readonly (readonly string[]
  return Object.freeze([...out].sort((a,b)=>compare(a[0]!,b[0]!)));
 }
 
-interface Witness{id:string;hops:number;seed:string;via:string;edge:string|null;edgeType:EdgeType|null;rank:number}
-/** Witness order equals lexicographic edge-sequence order, because equal-hop parents already rank in key order. Returns a sign, not a boolean: a truthy test would accept a worse witness. */
-const less=(a:Witness,b:Witness)=>(a.rank<b.rank?-1:a.rank>b.rank?1:0)||compare(a.edge??'',b.edge??'')||compare(a.seed,b.seed);
+interface Witness{id:string;hops:number;seed:string;via:string;edge:string|null;edgeType:EdgeType|null}
+/**
+ * Candidates for one node inside one breadth-first round always share a hop count, so
+ * there is no hop term to compare here. The tie-break is the last hop's edge id, then the
+ * seed id, and it is total because edge ids are unique and each edge has one dependent.
+ * Returns a sign, not a boolean: a truthy test would accept a worse witness.
+ */
+const less=(a:Witness,b:Witness)=>compare(a.edge??'',b.edge??'')||compare(a.seed,b.seed);
 
 /**
  * Transitive closure of the dependents of each seed, one explicit witness per impacted node: the
- * shortest path from any seed, ties broken by the smallest edge-id sequence and then the smallest seed
+ * shortest path from any seed, ties broken by the last hop's edge id and then by the smallest seed
  * id. All witnesses are therefore a function of the graph alone. Enumerating every path is not an
  * option here, it is exponential in a diamond and there is no bounded way to store it.
  *
@@ -148,20 +153,19 @@ export function computeImpact(graph:StateGraph,seeds:readonly string[],options:I
  const requested=Object.freeze([...new Set(resolved)].sort(compare)),absent=Object.freeze([...new Set(unresolved)].sort(compare));
  if(requested.length>max)throw Error(`Impact seeds exceed maxImpacted=${max}: ${requested.length} requested.`);
  const best=new Map<string,Witness>(),reached=new Set<string>();let frontier:Witness[]=[];
- let rank=0;
- for(const seed of requested){const witness:Witness={id:seed,hops:0,seed,via:seed,edge:null,edgeType:null,rank:rank++};best.set(seed,witness);reached.add(seed);frontier.push(witness);}
+ for(const seed of requested){const witness:Witness={id:seed,hops:0,seed,via:seed,edge:null,edgeType:null};best.set(seed,witness);reached.add(seed);frontier.push(witness);}
  while(frontier.length>0){
   const candidates=new Map<string,Witness>();
   for(const frame of frontier){
    for(const link of index.dependents[frame.id]??EMPTY_LINKS){
     // A node already reached sits at a strictly shorter hop count, so a later witness cannot win.
     if(reached.has(link.dependent))continue;
-    const existing=candidates.get(link.dependent),candidate:Witness={id:link.dependent,hops:frame.hops+1,seed:frame.seed,via:frame.id,edge:link.edge,edgeType:link.edgeType,rank:0};
+    const existing=candidates.get(link.dependent),candidate:Witness={id:link.dependent,hops:frame.hops+1,seed:frame.seed,via:frame.id,edge:link.edge,edgeType:link.edgeType};
     if(!existing||less(candidate,existing)<0)candidates.set(link.dependent,candidate);
    }
   }
   const winners=[...candidates.values()].sort(less);
-  for(const witness of winners){witness.rank=rank++;best.set(witness.id,witness);reached.add(witness.id);}
+  for(const witness of winners){best.set(witness.id,witness);reached.add(witness.id);}
   // Refuse rather than truncate: a truncated closure reports coverage it does not have.
   if(reached.size>max)throw Error(`Impact closure exceeded maxImpacted=${max}: refusing to truncate at ${reached.size} impacted nodes.`);
   frontier=winners;

@@ -1,6 +1,6 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';import {mkdirSync,mkdtempSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';import {isAbsolute,join,relative,resolve} from 'node:path';import {fileURLToPath} from 'node:url';
+import {tmpdir} from 'node:os';import {basename,isAbsolute,join,relative,resolve} from 'node:path';import {fileURLToPath} from 'node:url';
 import {MANIFEST_PATH,buildStateGraph,stateGraphJson} from '../src/adapters/state-graph/manifest.ts';
 import {graphRevision,loadStateGraph} from '../src/adapters/state-graph/loader.ts';
 import {parseStateGraph} from '../src/adapters/state-graph/schema.ts';
@@ -16,7 +16,7 @@ test('the committed manifest is what the generator produces, and the real loader
  // by an earlier process, so a build that reproduced them reproduced them from the
  // tree alone. Asking the generator twice inside one process would prove nothing,
  // because both answers would share the same module state.
- assert.equal(committed,stateGraphJson(ROOT),'the committed artifact drifted from the generator; regenerate it');
+ assert.equal(committed,stateGraphJson(ROOT),'the committed artifact drifted from the generator; run `npm run graph:regen`');
  const parsed=parseStateGraph(committed),ordinal=(a:string,b:string)=>a<b?-1:a>b?1:0;
  const ids=[...parsed.nodes].map(n=>n.id),edgeIds=[...parsed.edges].map(e=>e.id);
  assert.deepEqual(ids,[...ids].sort(ordinal));assert.deepEqual(edgeIds,[...edgeIds].sort(ordinal));
@@ -41,6 +41,23 @@ test('every declared source is a real file under the owner root, and every diges
   assert.ok(endpoints.includes(edge.sourceRef.path),`edge ${edge.id} cites a file neither endpoint declares`);
  }
  assert.ok(!artifact().includes(ROOT),'the manifest carries an absolute path from the machine that wrote it');
+});
+test('every depends_on edge is proven by a real import in a file the dependent declares',()=>{
+ const graph=buildStateGraph(ROOT),sources=new Map(graph.nodes.map(n=>[n.id,n.sourceRefs.map(s=>s.path)]));
+ const proved=graph.edges.filter(e=>e.type==='depends_on');
+ assert.ok(proved.length>0,'no depends_on edge to check; the policy would be vacuous');
+ for(const edge of proved){
+  const dependent=sources.get(edge.dependent)!,dependency=sources.get(edge.dependency)!;
+  // The import can only appear in the dependent's own sources, so that is the only
+  // place worth looking. An edge asserted without one is a claim nothing can check.
+  // Sources import each other with relative specifiers, so the match is on the
+  // module basename rather than on the repository-relative path.
+  const witnesses=dependent.filter(file=>{
+   const text=readFileSync(resolve(ROOT,file),'utf8');
+   return dependency.some(target=>text.includes(basename(target)));
+  });
+  assert.ok(witnesses.length>0,`depends_on ${edge.dependent} -> ${edge.dependency} has no import in any of ${dependent.join(', ')}`);
+ }
 });
 test('the four named areas are present, populated and bounded',()=>{
  const graph=buildStateGraph(ROOT),domains=graph.nodes.filter(n=>n.kind==='domain').map(n=>n.id).sort();

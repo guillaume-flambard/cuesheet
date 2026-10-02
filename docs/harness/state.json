@@ -72,7 +72,8 @@
       "id": "REQ-H09.1",
       "description": "Payloads versionnés sont validés avant écriture et replay ; migration préserve original, incompatibilités et provenance inconnue.",
       "acceptance": [
-        "AC-H09.1"
+        "AC-H09.1",
+        "AC-H09.1-capsule-teardown"
       ]
     },
     {
@@ -453,14 +454,16 @@
       "id": "REQ-SG01",
       "description": "Un manifeste JSON validé décrit domaines, entités, contrats, sources, invariants, tests et jobs CI avec IDs stables et références résolues.",
       "acceptance": [
-        "AC-SG01"
+        "AC-SG01",
+        "AC-SG01-containment"
       ]
     },
     {
       "id": "REQ-SG02",
       "description": "Chaque changement produit la fermeture transitive des dépendants et ses raisons ; ajout, suppression, renommage, cycles et fichiers inconnus sont traités sans impact vide trompeur.",
       "acceptance": [
-        "AC-SG02"
+        "AC-SG02",
+        "AC-SG02-bound"
       ]
     },
     {
@@ -4720,7 +4723,7 @@
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
       "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "notes": "Specification only; no implementation claimed. An unmapped path must reach unresolved with complete:false through this mapping; a composition of nodesForSourcePath plus computeImpact today yields a silently empty complete:true plan. Found by adversarial review, not invented."
     },
     {
       "id": "SG02.3",
@@ -5608,6 +5611,61 @@
       "verification": "Fixtures événements/delivery/revision ; tests clavier/PTY et runtime installé ; preuves pending",
       "evidence": [],
       "notes": "Specification only; reuse projections and notifications. No implementation claimed."
+    },
+    {
+      "id": "SG02.1b",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG02"
+      ],
+      "dependencies": [
+        "SG02.1"
+      ],
+      "description": "Borne d'expansion consultee avant la construction de l'index, ou borne honnetement declaree non protectrice.",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Revue adversariale : l'index et la carte des noeuds sont construits avant tout controle de borne, donc le cas hostile que la borne pretend couvrir est deja paye. Trouve par revue, non invente."
+    },
+    {
+      "id": "SG01.3b",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-SG01"
+      ],
+      "dependencies": [
+        "SG01.3"
+      ],
+      "description": "Containment des sources declarees verifiee sur le chemin reel, lien symbolique sortant refuse.",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Revue adversariale : contained() et ownerFile n'inspectent que la chaine, donc un lien symbolique sortant de la racine owner passerait en hachant des octets hors arbre. Non exploite a ce jour, trouve par revue."
+    },
+    {
+      "id": "H09.1c",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H09.1"
+      ],
+      "dependencies": [],
+      "description": "Teardown du test capsule fiable sous charge, sans ENOTEMPTY intermittente.",
+      "systems": [
+        "STATE-GRAPH.md"
+      ],
+      "acceptance": [],
+      "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
+      "evidence": [],
+      "notes": "Observation directe : test/node-capsule.test.ts echoue en rmSync du teardown sous charge de suite complete, et passe 3/3 en isolation. Fragilite preexistante, non causee par SG01.3 ni SG02.1, mais elle rend chaque futur releve de suite complete non deterministe."
     }
   ],
   "acceptance": [
@@ -7024,6 +7082,45 @@
       ],
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-SG02-bound",
+      "requirement": "REQ-SG02",
+      "given": "A graph handed to computeImpact without passing parseStateGraph",
+      "when": "The node count is far beyond the documented bound",
+      "then": "La borne est consultée avant toute allocation proportionnelle à l'entree, ou le moteur declare explicitement qu'elle ne protege pas ce cas ; aucune expansion ni allocation non bornee avant le refus.",
+      "verification": [
+        "automated",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-SG01-containment",
+      "requirement": "REQ-SG01",
+      "given": "A declared source path that resolves through a symbolic link",
+      "when": "Le manifeste valide les sources declarees",
+      "then": "Un lien symbolique sortant de la racine owner est refuse, et non suivi puis hache ; la containment est verifiee sur le chemin reel, pas sur la chaine declaree.",
+      "verification": [
+        "automated",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-H09.1-capsule-teardown",
+      "requirement": "REQ-H09.1",
+      "given": "A real capsule test whose temporary tree is bind-mounted while Docker is still releasing it",
+      "when": "La suite complete s'execute sous charge",
+      "then": "Le teardown du test capsule echoue jamais de facon intermittente : dix executions consecutives de la suite complete donnent le meme compte de tests, sans ENOTEMPTY.",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -7373,9 +7470,9 @@
   "counts": {
     "requirements": 90,
     "acceptanceVerified": 8,
-    "acceptancePending": 92,
+    "acceptancePending": 95,
     "p0_open": 70,
-    "p1_open": 37
+    "p1_open": 40
   },
   "workstreams": [
     {
