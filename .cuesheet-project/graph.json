@@ -467,7 +467,7 @@
       "sourceRefs": [
         {
           "path": "apps/terminal/src/producer/session-view.ts",
-          "digest": "065f5cb40cfdfc22a19ffa3f7e629c561e434df41a253d2d8e0bc20224766e44"
+          "digest": "6b69f059235c62ec8e5add55e8cb74e965617b856aa1fe9fd6fbaaf859a96c70"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1430,7 +1430,7 @@
       "dependency": "entity.sessions.view",
       "sourceRef": {
         "path": "apps/terminal/src/producer/session-view.ts",
-        "digest": "065f5cb40cfdfc22a19ffa3f7e629c561e434df41a253d2d8e0bc20224766e44"
+        "digest": "6b69f059235c62ec8e5add55e8cb74e965617b856aa1fe9fd6fbaaf859a96c70"
       }
     },
     {

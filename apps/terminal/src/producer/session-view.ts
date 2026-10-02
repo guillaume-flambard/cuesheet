@@ -6,6 +6,22 @@ import { derive, emptySurface, type Control, type Entry, type EntryBody, type Su
 import type { TerminalSession } from '../../../../src/adapters/terminal-session.ts';
 const controls=new Set(['submit','compose','open','close','choose','quit','began','ended','interrupted','observed','settled','noted','logged','scoped','offered']);
 const certainty=new Set(['confirmed','active','unknown','failed']);
+
+/**
+ * How much a person can conclude from the phase a saved execution ended in.
+ *
+ * These are not interchangeable, and painting them all the same is a lie of a
+ * specific and quiet kind. `unknown` means "not established", so a technical
+ * failure reported as unknown tells the reader to keep waiting for a fact that
+ * will never arrive, while a run that merely spent its budget is exactly as
+ * unestablished as unknown says. Only `failed` is a failure. `blocked` waits on
+ * a capability, `cancelled` was the person's own decision, and `limit` and
+ * `stagnation` ended without a result. None of those is an error, and calling
+ * any of them one would be the opposite error.
+ */
+export function certaintyOfExecutionPhase(phase:string):'confirmed'|'active'|'unknown'|'failed' {
+  return phase==='failed' ? 'failed' : 'unknown';
+}
 function body(value:unknown):value is Omit<Entry,'id'> {
   if(!value || typeof value!=='object') return false;
   const e=value as Record<string,unknown>;
@@ -69,7 +85,7 @@ export function restoreView(journal:TerminalSession):SurfaceState {
   if(execution){
     const reasons:Record<string,string>={interrupted:"Exécution interrompue sans résultat final enregistré",cancelled:"Exécution arrêtée par la personne",failed:"Exécution arrêtée sur une erreur technique",limit:"Limite d’exécution atteinte",stagnation:"Exécution arrêtée sans nouvelle observation",blocked:"Exécution en attente de capacité"};
     const reason=reasons[execution.phase];
-    if(reason) state=derive(state,{type:'noted',entry:{kind:'status',label:'exécution sauvegardée',value:`${reason} · ${execution.steps} inférences terminées · tranche ${execution.slice}/${execution.maxSlices}. Le but reste à poursuivre ; aucune action n’a été relancée.`,certainty:'unknown'}});
+    if(reason) state=derive(state,{type:'noted',entry:{kind:'status',label:'exécution sauvegardée',value:`${reason} · ${execution.steps} inférences terminées · tranche ${execution.slice}/${execution.maxSlices}. Le but reste à poursuivre ; aucune action n’a été relancée.`,certainty:certaintyOfExecutionPhase(execution.phase)}});
   }
   if(interrupted) state=derive(state,{type:'noted',entry:{kind:'status',label:'reprise',value:'Le processus précédent s’est arrêté. Les effets en cours restent inconnus ; aucune action n’a été relancée.',certainty:'unknown'}});
   return state;
