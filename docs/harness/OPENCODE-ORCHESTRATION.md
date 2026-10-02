@@ -1,8 +1,8 @@
 # Chantiers restants et délégation OpenCode
 
-Photographie du 2026-10-02, référence `b8d86cf` : **90 tâches ouvertes**, 57 P0 et 33 P1, dans sept chantiers. Le produit reste IMPLEMENTING. Aucun P2/P3 n’est présent dans state.json ; cela ne signifie pas que toutes les idées futures sont obligatoires.
+Photographie du 2026-10-02, extension après `e5e5371` : **109 tâches ouvertes**, 72 P0 et 37 P1, dans onze chantiers. Le produit reste IMPLEMENTING. Aucun P2/P3 n’est présent dans state.json ; cela ne signifie pas que toutes les idées futures sont obligatoires.
 
-Copier le [prompt maître](prompts/ORCHESTRATOR.md) dans l’orchestrateur OpenCode. Il délègue ensuite les paquets aux prompts C1–C7 ci-dessous. La livraison de ce dossier ne ferme aucune tâche d’implémentation.
+Copier le [prompt maître](prompts/ORCHESTRATOR.md) dans l’orchestrateur OpenCode. Il délègue ensuite les paquets aux prompts C1–C11 ci-dessous. La livraison de ce dossier ne ferme aucune tâche d’implémentation.
 
 ## Existant à préserver
 
@@ -258,4 +258,62 @@ Les dépendances ci-dessous sont celles de state.json, y compris les parents enc
 
 Le pilote gratuit réel a rencontré un HTTP 403 de la route OpenCode ; ne pas considérer ce test comme une comparaison qualité réussie. Les preuves déterministes existantes ne remplacent ni ce pilote ni les parcours installés, crash/reprise et multi-modèle.
 
-Aucune tâche d’implémentation n’est clôturée par ce handoff. Le test de cette livraison vérifie la couverture exacte des IDs ouverts et la présence des sept prompts/master. L’orchestrateur recalcule les compteurs à son lancement. Il produit les preuves de chaque critère et un rapport de remplacement, avec limites, avant READY_FOR_MANUAL_ACCEPTANCE.
+Aucune tâche d’implémentation n’est clôturée par ce handoff. Le test de cette livraison vérifie la couverture exacte des IDs ouverts et la présence des onze prompts/master. L’orchestrateur recalcule les compteurs à son lancement. Il produit les preuves de chaque critère et un rapport de remplacement, avec limites, avant READY_FOR_MANUAL_ACCEPTANCE.
+
+### C8 — Intention et réalité (5)
+
+[Prompt du sous-agent](prompts/C8.md). Spec : [Intent/Map/Adaptive](INTENT-MAP-ADAPTIVE.md).
+
+- **IR01** — P0, TODO : Intention structurée et provenance
+  Exigence : REQ-IR01 ; critère : AC-IR01 ; dépendances : H01.1.
+- **IR02** — P0, TODO : Relations intention → décision → réalité → preuve
+  Exigence : REQ-IR02 ; critère : AC-IR02 ; dépendances : SG01.2.
+- **IR03** — P0, TODO : Conflits et faisabilité sourcés
+  Exigence : REQ-IR03 ; critère : AC-IR03 ; dépendances : IR02.
+- **IR04** — P0, TODO : Réconciliation continue et intent drift
+  Exigence : REQ-IR04 ; critère : AC-IR04 ; dépendances : IR03, SG02.3, SG06.2.
+- **IR05** — P1, TODO : Projection bidirectionnelle et acceptation
+  Exigence : REQ-IR05 ; critère : AC-IR05 ; dépendances : IR04.
+
+### C9 — Project Map et découverte progressive (5)
+
+[Prompt du sous-agent](prompts/C9.md). Spec : [Intent/Map/Adaptive](INTENT-MAP-ADAPTIVE.md).
+
+- **PM01** — P0, TODO : Probe locale déterministe bornée
+  Exigence : REQ-PM01 ; critère : AC-PM01 ; dépendances : SG01.2.
+- **PM02** — P0, TODO : Modèle universel et adapters de découverte
+  Exigence : REQ-PM02 ; critère : AC-PM02 ; dépendances : PM01.
+- **PM03** — P0, TODO : cuesheet map et exploration progressive
+  Exigence : REQ-PM03 ; critère : AC-PM03 ; dépendances : PM02.
+- **PM04** — P0, TODO : Raccord carte → impact → paquet
+  Exigence : REQ-PM04 ; critère : AC-PM04 ; dépendances : PM03, SG02.3, IR01.
+- **PM05** — P1, TODO : Parcours dépôt inconnu installé
+  Exigence : REQ-PM05 ; critère : AC-PM05 ; dépendances : PM04, IR04, SG09.2.
+
+### C10 — Exécution et budgets adaptatifs (5)
+
+[Prompt du sous-agent](prompts/C10.md). Spec : [Intent/Map/Adaptive](INTENT-MAP-ADAPTIVE.md).
+
+- **AE01** — P0, TODO : ExecutionState et budget cumulatif
+  Exigence : REQ-AE01 ; critère : AC-AE01 ; dépendances : H05.5.
+- **AE02** — P0, TODO : Budget temps et réserve de vérification
+  Exigence : REQ-AE02 ; critère : AC-AE02 ; dépendances : AE01.
+- **AE03** — P0, TODO : Routage adaptatif autorisé
+  Exigence : REQ-AE03 ; critère : AC-AE03 ; dépendances : AE01.
+- **AE04** — P0, TODO : Contexte et agents élastiques
+  Exigence : REQ-AE04 ; critère : AC-AE04 ; dépendances : AE03, SG06.1, H06.2c1.
+- **AE05** — P1, TODO : Boucle adaptative et benchmark
+  Exigence : REQ-AE05 ; critère : AC-AE05 ; dépendances : AE04, AE02, PM05.
+
+### C11 — Human Legibility (4)
+
+[Prompt du sous-agent](prompts/C11.md). [Spécification](HUMAN-LEGIBILITY.md).
+
+- **HL01** — P0, TODO : Projection Human Model depuis événements
+  Exigence : REQ-HL01 ; critère : AC-HL01 ; dépendances : IR05.
+- **HL02** — P0, TODO : Checkpoints et hypothèses non bloquantes
+  Exigence : REQ-HL02 ; critère : AC-HL02 ; dépendances : HL01.
+- **HL03** — P0, TODO : Human Deltas et frontières conceptuelles
+  Exigence : REQ-HL03 ; critère : AC-HL03 ; dépendances : HL02, IR04, AE01.
+- **HL04** — P1, TODO : Status équipe et correction directe
+  Exigence : REQ-HL04 ; critère : AC-HL04 ; dépendances : HL03.

@@ -24,3 +24,9 @@ R11 | Partage d’entreprise entre machines : permissions/auth/offline non livr�
 R12 : mauvais cwd après binding — RESOLVED par EV-SCOPED-RUNTIME : reproduction réelle puis factories scoped, refus et choix absolus vérifiés. Le sandbox OS R06 reste un risque distinct.
 
 State graph : R-SG1/2/3 HIGH OPEN et R-SG4/5 MEDIUM OPEN, détails et mitigations dans [STATE-GRAPH.md](STATE-GRAPH.md). Aucune implémentation ni couverture exhaustive démontrée.
+
+## Extension Intent / Project Map / budgets adaptatifs — 2026-10-02
+
+Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
+
+Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.

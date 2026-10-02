@@ -791,3 +791,9 @@ REQ-E01.6 : entreprise/équipe/projet/personnel, autorité distincte du document
 REQ-E01.7 : corpus pertinent, mesures qualité/latence/coût, tests de reconstruction ; vectorisation seulement si gains démontrés.
 
 2026-10-02 REQ-SG01–SG09 et AC-SG01–SG09 : critères et méthodes dans STATE-GRAPH.md et state.json, tous PENDING. La validation du plan ne valide aucune fonctionnalité runtime.
+
+## Extension Intent / Project Map / budgets adaptatifs — 2026-10-02
+
+Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
+
+Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.

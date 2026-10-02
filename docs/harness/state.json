@@ -501,6 +501,139 @@
       "acceptance": [
         "AC-SG09"
       ]
+    },
+    {
+      "id": "REQ-IR01",
+      "description": "Une intention conserve ID, acteur/owner, outcome, rationale, contraintes, critères, priorité, hypothèses et révision ; reformulation conserve ID, correction produit une révision et migration préserve les originaux.",
+      "acceptance": [
+        "AC-IR01"
+      ]
+    },
+    {
+      "id": "REQ-IR02",
+      "description": "Chaque lien intent/decision/domain/contract/implementation/data/proof/outcome est typé, sourcé et adressable ; pourquoi/qui/quoi/prouve remontent dans les deux sens avec permissions. Les goals existants ne sont pas dupliqués.",
+      "acceptance": [
+        "AC-IR02"
+      ]
+    },
+    {
+      "id": "REQ-IR03",
+      "description": "Les statuts FEASIBLE, FEASIBLE_WITH_CONSTRAINTS, UNKNOWN, CONFLICT, BLOCKED renvoient contraintes, sources et inconnues ; une hypothèse LLM ne devient ni fait ni autorisation ; conflits/compatibilité/migration/ownership/capacités/rollback sont évalués sans score magique.",
+      "acceptance": [
+        "AC-IR03"
+      ]
+    },
+    {
+      "id": "REQ-IR04",
+      "description": "Impact attendu et diff réel sont comparés avant effet/intégration/clôture ; domaines hors scope sont expliqués par sources ou refusés. Une correction R+1 invalide plan/preuves/sorties R et rafraîchit directement les agents.",
+      "acceptance": [
+        "AC-IR04"
+      ]
+    },
+    {
+      "id": "REQ-IR05",
+      "description": "Humain et agents retrouvent intentions, décisions, découvertes, inconnues et résultats dans un état commun adressable ; permissions respectées et preuves courantes exigées pour annoncer satisfaction.",
+      "acceptance": [
+        "AC-IR05"
+      ]
+    },
+    {
+      "id": "REQ-PM01",
+      "description": "Un dépôt inconnu produit manifests/langages/structure/diff Git/checks/docs avec provenance, couverture et inconnues ; aucune exécution de scripts du dépôt pendant discovery, aucune lecture de secrets ou traversée symlink hors scope.",
+      "acceptance": [
+        "AC-PM01"
+      ]
+    },
+    {
+      "id": "REQ-PM02",
+      "description": "Une interface adapter versionnée collecte relations code/données/contrats/CI avec sources/digests et certitude explicite ; première tranche Node/TypeScript et imports, adapter non supporté déclaré, aucune inférence de domaine affirmée comme fait.",
+      "acceptance": [
+        "AC-PM02"
+      ]
+    },
+    {
+      "id": "REQ-PM03",
+      "description": "CLI et intention naturelle exposent carte sourcée et why ; cache invalidé par captures, frontière/relations dynamiques inconnues explicites ; extension ciblée bornée, annulation et reprise préservent état.",
+      "acceptance": [
+        "AC-PM03"
+      ]
+    },
+    {
+      "id": "REQ-PM04",
+      "description": "Carte observée alimente le graphe validé sans déclarer couverture complète ; intention normalisée sélectionne voisinage, contraintes, questions essentielles, fichiers attendus et checks owner. Génération de carte ne confère aucun droit.",
+      "acceptance": [
+        "AC-PM04"
+      ]
+    },
+    {
+      "id": "REQ-PM05",
+      "description": "Sur fixtures inconnues Node/TypeScript dont un cas framework et une feature status-transition : carte, clarification utile, impact, exécution, correction, preuve, réconciliation et reprise sont vérifiés avec sources ; temps/tokens mesurés, pas de chiffres de démo inventés.",
+      "acceptance": [
+        "AC-PM05"
+      ]
+    },
+    {
+      "id": "REQ-AE01",
+      "description": "État versionné lie intention/révision, compréhension, risques, frontières, stratégie, routes, agents, evidence et ressources ; compteurs mesurés/estimés/inconnus distincts, allocations atomiques empêchent dépassement concurrent et replay double comptage.",
+      "acceptance": [
+        "AC-AE01"
+      ]
+    },
+    {
+      "id": "REQ-AE02",
+      "description": "--budget et intention naturelle définissent une enveloppe optionnelle ; durée monotone pour mesure, UTC/timezone pour affichage ; réserve vérification/buffer configurable, pression réduit travail optionnel, expiration suspend effets et laisse objectif reprenable.",
+      "acceptance": [
+        "AC-AE02"
+      ]
+    },
+    {
+      "id": "REQ-AE03",
+      "description": "Unité de travail choisit outil déterministe ou route autorisée selon capacités et observations ; escalation/downgrade sourcés à frontière sûre, override humain persiste, aucun fallback payant ou capacité/prix inventé.",
+      "acceptance": [
+        "AC-AE03"
+      ]
+    },
+    {
+      "id": "REQ-AE04",
+      "description": "Frontière de contexte progresse sur besoin sourcé ; parallélisme seulement pour unités indépendantes avec budgets atomiques et scopes disjoints ; résultats structurés claim/evidence/implications/unknowns remplacent copie de conversations, relais reprend la question non résolue sans perdre contraintes.",
+      "acceptance": [
+        "AC-AE04"
+      ]
+    },
+    {
+      "id": "REQ-AE05",
+      "description": "OBSERVE/MAP/ASSESS/BUDGET/ROUTE/ACT/MEASURE/RECONCILE est raccordé au runtime ; changement risque/temps/révision replanifie sans queue ; cas MICRO/STANDARD/SYSTEM, stop/crash/provider indisponible et modèles réels vérifient qualité/coût/latence sans optimiser au détriment des preuves.",
+      "acceptance": [
+        "AC-AE05"
+      ]
+    },
+    {
+      "id": "REQ-HL01",
+      "description": "Communicated facts/decisions, assumptions surfaced, unresolved questions et dernière synchronisation sont des références révisionnées aux événements canoniques, scoped par destinataire ; présenté/livré/acknowledged sont distincts, aucune compréhension supposée ni seconde vérité.",
+      "acceptance": [
+        "AC-HL01"
+      ]
+    },
+    {
+      "id": "REQ-HL02",
+      "description": "Politique owner classe invisible/surfaced/interruptible/blocking selon effets, réversibilité, autorité et ambiguïté ; assume-act-surface dans le scope autorisé, aucune élévation implicite de droits, question bloquante seulement nécessaire et branches indépendantes poursuivies.",
+      "acceptance": [
+        "AC-HL02"
+      ]
+    },
+    {
+      "id": "REQ-HL03",
+      "description": "Écart entre état courant et informations effectivement présentées produit deltas sourcés sur changement de contrat/données/scope/risque/preuves ; dedup borné, priorité et réglages sans spam, absence de delta ne cache pas une erreur ou un blocage.",
+      "acceptance": [
+        "AC-HL03"
+      ]
+    },
+    {
+      "id": "REQ-HL04",
+      "description": "Vue clavier et cuesheet status affichent goal/changes/current/important/open/proof depuis mêmes projections avec permissions ; reprise/resize/offline/delivery failure ne fabrique pas acknowledgement ; correction humaine R+1 invalide immédiatement sorties et deltas obsolètes sans queue.",
+      "acceptance": [
+        "AC-HL04"
+      ]
     }
   ],
   "tasks": [
@@ -5050,6 +5183,417 @@
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
       "evidence": [],
       "notes": "Specification only; no implementation claimed."
+    },
+    {
+      "id": "IR01",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-IR01"
+      ],
+      "dependencies": [
+        "H01.1"
+      ],
+      "description": "Intention structurée et provenance",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-IR01"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "IR02",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-IR02"
+      ],
+      "dependencies": [
+        "SG01.2"
+      ],
+      "description": "Relations intention → décision → réalité → preuve",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-IR02"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "IR03",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-IR03"
+      ],
+      "dependencies": [
+        "IR02"
+      ],
+      "description": "Conflits et faisabilité sourcés",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-IR03"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "IR04",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-IR04"
+      ],
+      "dependencies": [
+        "IR03",
+        "SG02.3",
+        "SG06.2"
+      ],
+      "description": "Réconciliation continue et intent drift",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-IR04"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "IR05",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-IR05"
+      ],
+      "dependencies": [
+        "IR04"
+      ],
+      "description": "Projection bidirectionnelle et acceptation",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-IR05"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "PM01",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-PM01"
+      ],
+      "dependencies": [
+        "SG01.2"
+      ],
+      "description": "Probe locale déterministe bornée",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-PM01"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "PM02",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-PM02"
+      ],
+      "dependencies": [
+        "PM01"
+      ],
+      "description": "Modèle universel et adapters de découverte",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-PM02"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "PM03",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-PM03"
+      ],
+      "dependencies": [
+        "PM02"
+      ],
+      "description": "cuesheet map et exploration progressive",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-PM03"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "PM04",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-PM04"
+      ],
+      "dependencies": [
+        "PM03",
+        "SG02.3",
+        "IR01"
+      ],
+      "description": "Raccord carte → impact → paquet",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-PM04"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "PM05",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-PM05"
+      ],
+      "dependencies": [
+        "PM04",
+        "IR04",
+        "SG09.2"
+      ],
+      "description": "Parcours dépôt inconnu installé",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-PM05"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "AE01",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-AE01"
+      ],
+      "dependencies": [
+        "H05.5"
+      ],
+      "description": "ExecutionState et budget cumulatif",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-AE01"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "AE02",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-AE02"
+      ],
+      "dependencies": [
+        "AE01"
+      ],
+      "description": "Budget temps et réserve de vérification",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-AE02"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "AE03",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-AE03"
+      ],
+      "dependencies": [
+        "AE01"
+      ],
+      "description": "Routage adaptatif autorisé",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-AE03"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "AE04",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-AE04"
+      ],
+      "dependencies": [
+        "AE03",
+        "SG06.1",
+        "H06.2c1"
+      ],
+      "description": "Contexte et agents élastiques",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-AE04"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "AE05",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-AE05"
+      ],
+      "dependencies": [
+        "AE04",
+        "AE02",
+        "PM05"
+      ],
+      "description": "Boucle adaptative et benchmark",
+      "systems": [
+        "INTENT-MAP-ADAPTIVE.md"
+      ],
+      "acceptance": [
+        "AC-AE05"
+      ],
+      "verification": "Scénarios et gates INTENT-MAP-ADAPTIVE.md ; preuves ciblées, puis intégration installée et provider réel quand requis",
+      "evidence": [],
+      "notes": "Specification only; reuse existing goals, sessions, workers and graph foundations. No implementation claimed."
+    },
+    {
+      "id": "HL01",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-HL01"
+      ],
+      "dependencies": [
+        "IR05"
+      ],
+      "description": "Projection Human Model depuis événements",
+      "systems": [
+        "HUMAN-LEGIBILITY.md"
+      ],
+      "acceptance": [
+        "AC-HL01"
+      ],
+      "verification": "Fixtures événements/delivery/revision ; tests clavier/PTY et runtime installé ; preuves pending",
+      "evidence": [],
+      "notes": "Specification only; reuse projections and notifications. No implementation claimed."
+    },
+    {
+      "id": "HL02",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-HL02"
+      ],
+      "dependencies": [
+        "HL01"
+      ],
+      "description": "Checkpoints et hypothèses non bloquantes",
+      "systems": [
+        "HUMAN-LEGIBILITY.md"
+      ],
+      "acceptance": [
+        "AC-HL02"
+      ],
+      "verification": "Fixtures événements/delivery/revision ; tests clavier/PTY et runtime installé ; preuves pending",
+      "evidence": [],
+      "notes": "Specification only; reuse projections and notifications. No implementation claimed."
+    },
+    {
+      "id": "HL03",
+      "priority": "P0",
+      "status": "TODO",
+      "requirements": [
+        "REQ-HL03"
+      ],
+      "dependencies": [
+        "HL02",
+        "IR04",
+        "AE01"
+      ],
+      "description": "Human Deltas et frontières conceptuelles",
+      "systems": [
+        "HUMAN-LEGIBILITY.md"
+      ],
+      "acceptance": [
+        "AC-HL03"
+      ],
+      "verification": "Fixtures événements/delivery/revision ; tests clavier/PTY et runtime installé ; preuves pending",
+      "evidence": [],
+      "notes": "Specification only; reuse projections and notifications. No implementation claimed."
+    },
+    {
+      "id": "HL04",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-HL04"
+      ],
+      "dependencies": [
+        "HL03"
+      ],
+      "description": "Status équipe et correction directe",
+      "systems": [
+        "HUMAN-LEGIBILITY.md"
+      ],
+      "acceptance": [
+        "AC-HL04"
+      ],
+      "verification": "Fixtures événements/delivery/revision ; tests clavier/PTY et runtime installé ; preuves pending",
+      "evidence": [],
+      "notes": "Specification only; reuse projections and notifications. No implementation claimed."
     }
   ],
   "acceptance": [
@@ -6050,6 +6594,272 @@
       ],
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-IR01",
+      "requirement": "REQ-IR01",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Intention structurée et provenance",
+      "then": "Une intention conserve ID, acteur/owner, outcome, rationale, contraintes, critères, priorité, hypothèses et révision ; reformulation conserve ID, correction produit une révision et migration préserve les originaux.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-IR02",
+      "requirement": "REQ-IR02",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Relations intention → décision → réalité → preuve",
+      "then": "Chaque lien intent/decision/domain/contract/implementation/data/proof/outcome est typé, sourcé et adressable ; pourquoi/qui/quoi/prouve remontent dans les deux sens avec permissions. Les goals existants ne sont pas dupliqués.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-IR03",
+      "requirement": "REQ-IR03",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Conflits et faisabilité sourcés",
+      "then": "Les statuts FEASIBLE, FEASIBLE_WITH_CONSTRAINTS, UNKNOWN, CONFLICT, BLOCKED renvoient contraintes, sources et inconnues ; une hypothèse LLM ne devient ni fait ni autorisation ; conflits/compatibilité/migration/ownership/capacités/rollback sont évalués sans score magique.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-IR04",
+      "requirement": "REQ-IR04",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Réconciliation continue et intent drift",
+      "then": "Impact attendu et diff réel sont comparés avant effet/intégration/clôture ; domaines hors scope sont expliqués par sources ou refusés. Une correction R+1 invalide plan/preuves/sorties R et rafraîchit directement les agents.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-IR05",
+      "requirement": "REQ-IR05",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Projection bidirectionnelle et acceptation",
+      "then": "Humain et agents retrouvent intentions, décisions, découvertes, inconnues et résultats dans un état commun adressable ; permissions respectées et preuves courantes exigées pour annoncer satisfaction.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-PM01",
+      "requirement": "REQ-PM01",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Probe locale déterministe bornée",
+      "then": "Un dépôt inconnu produit manifests/langages/structure/diff Git/checks/docs avec provenance, couverture et inconnues ; aucune exécution de scripts du dépôt pendant discovery, aucune lecture de secrets ou traversée symlink hors scope.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-PM02",
+      "requirement": "REQ-PM02",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Modèle universel et adapters de découverte",
+      "then": "Une interface adapter versionnée collecte relations code/données/contrats/CI avec sources/digests et certitude explicite ; première tranche Node/TypeScript et imports, adapter non supporté déclaré, aucune inférence de domaine affirmée comme fait.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-PM03",
+      "requirement": "REQ-PM03",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "cuesheet map et exploration progressive",
+      "then": "CLI et intention naturelle exposent carte sourcée et why ; cache invalidé par captures, frontière/relations dynamiques inconnues explicites ; extension ciblée bornée, annulation et reprise préservent état.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-PM04",
+      "requirement": "REQ-PM04",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Raccord carte → impact → paquet",
+      "then": "Carte observée alimente le graphe validé sans déclarer couverture complète ; intention normalisée sélectionne voisinage, contraintes, questions essentielles, fichiers attendus et checks owner. Génération de carte ne confère aucun droit.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-PM05",
+      "requirement": "REQ-PM05",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Parcours dépôt inconnu installé",
+      "then": "Sur fixtures inconnues Node/TypeScript dont un cas framework et une feature status-transition : carte, clarification utile, impact, exécution, correction, preuve, réconciliation et reprise sont vérifiés avec sources ; temps/tokens mesurés, pas de chiffres de démo inventés.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-AE01",
+      "requirement": "REQ-AE01",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "ExecutionState et budget cumulatif",
+      "then": "État versionné lie intention/révision, compréhension, risques, frontières, stratégie, routes, agents, evidence et ressources ; compteurs mesurés/estimés/inconnus distincts, allocations atomiques empêchent dépassement concurrent et replay double comptage.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-AE02",
+      "requirement": "REQ-AE02",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Budget temps et réserve de vérification",
+      "then": "--budget et intention naturelle définissent une enveloppe optionnelle ; durée monotone pour mesure, UTC/timezone pour affichage ; réserve vérification/buffer configurable, pression réduit travail optionnel, expiration suspend effets et laisse objectif reprenable.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-AE03",
+      "requirement": "REQ-AE03",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Routage adaptatif autorisé",
+      "then": "Unité de travail choisit outil déterministe ou route autorisée selon capacités et observations ; escalation/downgrade sourcés à frontière sûre, override humain persiste, aucun fallback payant ou capacité/prix inventé.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-AE04",
+      "requirement": "REQ-AE04",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Contexte et agents élastiques",
+      "then": "Frontière de contexte progresse sur besoin sourcé ; parallélisme seulement pour unités indépendantes avec budgets atomiques et scopes disjoints ; résultats structurés claim/evidence/implications/unknowns remplacent copie de conversations, relais reprend la question non résolue sans perdre contraintes.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-AE05",
+      "requirement": "REQ-AE05",
+      "given": "Contrats courants, fixtures avec sources et routes owner autorisées ; spécification INTENT-MAP-ADAPTIVE.md",
+      "when": "Boucle adaptative et benchmark",
+      "then": "OBSERVE/MAP/ASSESS/BUDGET/ROUTE/ACT/MEASURE/RECONCILE est raccordé au runtime ; changement risque/temps/révision replanifie sans queue ; cas MICRO/STANDARD/SYSTEM, stop/crash/provider indisponible et modèles réels vérifient qualité/coût/latence sans optimiser au détriment des preuves.",
+      "verification": [
+        "automated",
+        "inspection",
+        "runtime"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-HL01",
+      "requirement": "REQ-HL01",
+      "given": "Événements canoniques et scopes owner ; HUMAN-LEGIBILITY.md",
+      "when": "Projection Human Model depuis événements",
+      "then": "Communicated facts/decisions, assumptions surfaced, unresolved questions et dernière synchronisation sont des références révisionnées aux événements canoniques, scoped par destinataire ; présenté/livré/acknowledged sont distincts, aucune compréhension supposée ni seconde vérité.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-HL02",
+      "requirement": "REQ-HL02",
+      "given": "Événements canoniques et scopes owner ; HUMAN-LEGIBILITY.md",
+      "when": "Checkpoints et hypothèses non bloquantes",
+      "then": "Politique owner classe invisible/surfaced/interruptible/blocking selon effets, réversibilité, autorité et ambiguïté ; assume-act-surface dans le scope autorisé, aucune élévation implicite de droits, question bloquante seulement nécessaire et branches indépendantes poursuivies.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-HL03",
+      "requirement": "REQ-HL03",
+      "given": "Événements canoniques et scopes owner ; HUMAN-LEGIBILITY.md",
+      "when": "Human Deltas et frontières conceptuelles",
+      "then": "Écart entre état courant et informations effectivement présentées produit deltas sourcés sur changement de contrat/données/scope/risque/preuves ; dedup borné, priorité et réglages sans spam, absence de delta ne cache pas une erreur ou un blocage.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
+    },
+    {
+      "id": "AC-HL04",
+      "requirement": "REQ-HL04",
+      "given": "Événements canoniques et scopes owner ; HUMAN-LEGIBILITY.md",
+      "when": "Status équipe et correction directe",
+      "then": "Vue clavier et cuesheet status affichent goal/changes/current/important/open/proof depuis mêmes projections avec permissions ; reprise/resize/offline/delivery failure ne fabrique pas acknowledgement ; correction humaine R+1 invalide immédiatement sorties et deltas obsolètes sans queue.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "PENDING",
+      "evidence": []
     }
   ],
   "evidence": [
@@ -6376,11 +7186,11 @@
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 71,
+    "requirements": 90,
     "acceptanceVerified": 7,
-    "acceptancePending": 64,
-    "p0_open": 57,
-    "p1_open": 33
+    "acceptancePending": 83,
+    "p0_open": 72,
+    "p1_open": 37
   },
   "workstreams": [
     {
@@ -6611,6 +7421,71 @@
         "C5"
       ],
       "status": "IN_PROGRESS"
+    },
+    {
+      "id": "C8",
+      "name": "Intention et réalité",
+      "tasks": [
+        "IR01",
+        "IR02",
+        "IR03",
+        "IR04",
+        "IR05"
+      ],
+      "dependencies": [
+        "C1",
+        "C7"
+      ],
+      "status": "TODO"
+    },
+    {
+      "id": "C9",
+      "name": "Project Map et découverte progressive",
+      "tasks": [
+        "PM01",
+        "PM02",
+        "PM03",
+        "PM04",
+        "PM05"
+      ],
+      "dependencies": [
+        "C1",
+        "C7"
+      ],
+      "status": "TODO"
+    },
+    {
+      "id": "C10",
+      "name": "Exécution et budgets adaptatifs",
+      "tasks": [
+        "AE01",
+        "AE02",
+        "AE03",
+        "AE04",
+        "AE05"
+      ],
+      "dependencies": [
+        "C4",
+        "C5",
+        "C7"
+      ],
+      "status": "TODO"
+    },
+    {
+      "id": "C11",
+      "name": "Human Legibility et synchronisation humaine",
+      "tasks": [
+        "HL01",
+        "HL02",
+        "HL03",
+        "HL04"
+      ],
+      "dependencies": [
+        "C6",
+        "C8",
+        "C10"
+      ],
+      "status": "TODO"
     }
   ]
 }

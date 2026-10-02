@@ -82,3 +82,9 @@ Chantier State graph : [STATE-GRAPH.md](STATE-GRAPH.md), epics SG01–SG09 et 27
 ## Orchestration OpenCode
 
 L’[inventaire complet et les prompts de délégation](OPENCODE-ORCHESTRATION.md) fournissent le backlog ouvert et un prompt maître pour exécuter les chantiers avec des sous-agents. L’état canonique reste `state.json`.
+
+## Extension Intent / Project Map / budgets adaptatifs — 2026-10-02
+
+Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
+
+Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.

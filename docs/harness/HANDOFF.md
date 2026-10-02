@@ -77,3 +77,9 @@ Les notes historiques `AUTONOMOUS-WORK.md`, `WORK-MEMORY.md`,
 `SHARED-CONTEXT-SPEC.md`, `TERMINAL-SESSIONS*.md` et `PROVIDER-UX*.md` décrivent
 les briques déjà livrées. Le dossier `harness/` décrit le contrat complet restant.
 Les lire pour éviter de confondre un exemple scripté et une capacité produit prouvée.
+
+## Extension Intent / Project Map / budgets adaptatifs — 2026-10-02
+
+Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
+
+Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.

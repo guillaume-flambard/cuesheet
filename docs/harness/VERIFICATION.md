@@ -137,3 +137,9 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 2026-10-02 State graph : plan documentaire contrôlé (27 tâches liées,9 critères, DAG sans cycle, JSON et diff PASS). Vérification future schéma→impact→replay→contrats→MCP→CI vs full→PTY, détaillée dans STATE-GRAPH.md ; aucune suite runtime exécutée pour ce lot sans code.
 
 2026-10-02 SG01.1/2 DONE bornés : [EV-STATE-GRAPH-FOUNDATION](evaluation/state-graph-foundation/evidence.md), validateur JSON et loader/hash local,6 ciblés/build32 baseline PASS. Pas raccordés au runtime ; AC-SG01 PENDING, SG01.3/SG02.1 READY. Global IMPLEMENTING.
+
+## Extension Intent / Project Map / budgets adaptatifs — 2026-10-02
+
+Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
+
+Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.

@@ -276,3 +276,9 @@ H09.3f4 P1 DEFECT IN_PROGRESS : portable imports/fixtures/CWD ; requis avant ora
 2026-10-02 C7 : [STATE-GRAPH.md](STATE-GRAPH.md),9 epics/27 tâches, SG01.1 READY et suite TODO. Graphe versionné/impact/invariants/état événementiel/contrats-mocks/contexte/MCP/CI/UX. Spécification uniquement ; preuves pending, global IMPLEMENTING.
 
 2026-10-02 SG01.1/2 DONE bornés : [EV-STATE-GRAPH-FOUNDATION](evaluation/state-graph-foundation/evidence.md), validateur JSON et loader/hash local,6 ciblés/build32 baseline PASS. Pas raccordés au runtime ; AC-SG01 PENDING, SG01.3/SG02.1 READY. Global IMPLEMENTING.
+
+## Extension Intent / Project Map / budgets adaptatifs — 2026-10-02
+
+Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
+
+Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.
