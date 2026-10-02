@@ -12,7 +12,8 @@ const EMPTY_IDS:readonly string[]=Object.freeze([]);
  * or a document, which is exactly the misleadingly empty impact the requirement forbids. Narrowing is a
  * caller policy (SG02.3 decides what to re-run), so it is a parameter here and never a silent default.
  */
-const CAUSAL:readonly EdgeType[]=Object.freeze(['contains','depends_on','describes','implements','validates']);
+/** Exported so the plan digest reads this set rather than a copy of it: a policy that names itself twice cannot drift apart silently. */
+export const CAUSAL:readonly EdgeType[]=Object.freeze(['contains','depends_on','describes','implements','validates']);
 /**
  * Deliberately the schema ceiling, not an arbitrary round number: parseStateGraph admits at most 10000
  * nodes, so a closure over admitted input can never reach this and the refusal never fires on a graph
