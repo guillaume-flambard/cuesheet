@@ -33,7 +33,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "node --test \"test/**/*.test.ts\"",
+    "test": "node --test --test-concurrency=4 \"test/**/*.test.ts\"",
     "ownership": "node src/cli.ts",
     "graph:regen": "node src/adapters/state-graph/regen.ts",
     "build": "bash scripts/build.sh",

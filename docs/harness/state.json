@@ -8297,7 +8297,7 @@
   "concepts": [
     {
       "id": "elastic-workforce",
-      "summary": "Équipe élastique : les workers réclament des unités par capacité au lieu de recevoir une file. Le parallélisme est borné par le travail utile, jamais par un compte statique. Implémenté comme H06.6 à H06.9.",
+      "summary": "Équipe élastique : les workers réclament des unités par capacité au lieu de recevoir une file. Le scheduler de répartition compose adéquation des capacités, contexte tiède déjà payé, priorité, chemin critique, latence, risque de conflit et coût du modèle. Le parallélisme est borné par le travail utile, jamais par un compte statique. Implémenté comme H06.6 à H06.9.",
       "status": "FROZEN",
       "note": "Capturé sur demande du propriétaire, gelé hors du chemin critique. Une idée n'est pas un travail."
     },
@@ -8400,6 +8400,18 @@
     {
       "id": "team-computer",
       "summary": "L equipe entiere vue comme un ordinateur unique : coeurs, RAM, GPU et capabilities agreges, sur lesquels l Elastic Workforce se deploie. Reste une direction tant que l Elastic Workforce locale ne fonctionne pas ; rendre l emplacement d execution interchangeable entre local et peer est le chemin naturel, pas un prerequis.",
+      "status": "FROZEN",
+      "note": "Capture sur demande du proprietaire, gele hors du chemin critique. Une idee n est pas un travail."
+    },
+    {
+      "id": "adaptive-budget",
+      "summary": "Un budget de temps et un budget de tokens sont des entrées de la décision d ordonnancement, pas des conséquences. Le nombre de workers, leur modèle et leur contexte sont choisis sous ces budgets, et la topologie se réduit quand le budget restant ne couvre plus le rendement marginal. Non commencé.",
+      "status": "FROZEN",
+      "note": "Capture sur demande du proprietaire, gele hors du chemin critique. Une idee n est pas un travail."
+    },
+    {
+      "id": "machine-awareness",
+      "summary": "Le runtime connaît l état de la machine locale, RAM, CPU, GPU et activité de la personne, et sait qu une ressource peut disparaître en cours de session. Un plan est compilé contre les capacités réelles, et la dégradation est dite plutôt que silencieuse. La moitié locale de ce concept est couverte par probeRuntimeCapabilities ; la moitié machine reste à faire.",
       "status": "FROZEN",
       "note": "Capture sur demande du proprietaire, gele hors du chemin critique. Une idee n est pas un travail."
     }
