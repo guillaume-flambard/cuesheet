@@ -17,6 +17,15 @@
  * Every list is ordinal-sorted, every key order is fixed by construction order, and no clock, absolute path
  * or machine identity is read. Nothing here touches the filesystem: paths come from declarations, and whether
  * a declared path still exists on disk is the change set's business, not the planner's.
+ *
+ * One rule is stronger than the rest and is stated once, in the interface: `complete` is a claim about
+ * executable proof, so a plan that names no `test` and no `ci` node cannot claim it. This closes the last way
+ * this engine could answer "nothing to run" with `complete: true`. Coverage was already reported, and a plan
+ * could already name no witness; the two facts were simply not joined, and a reader of the first saw
+ * assurance the second contradicted. Declaring a path is not verifying it: `src/adapters/managed-worktrees.ts`
+ * is declared by `entity.workers.workspaces`, no edge joins that entity to `test.workers.worktrees`, and the
+ * plan therefore reports a reached node with nothing executable behind it, which is now named rather than
+ * certified.
  */
 import {createHash} from 'node:crypto';
 import {graphRevision} from './loader.ts';
@@ -120,24 +129,41 @@ export interface PlannedInvariant{
  * revalidates the graph before anything is planned, and `schema.ts` admits one to thirty-two source
  * references per node, so a check that resolved to no path cannot be reached. Unreachable reason codes are
  * worse than no reason code, because they read as coverage nobody is checking.
+ *
+ * `coverage-no-executable-proof` is the fourth, and it is the mirror of `coverage-unmapped-paths` rather than
+ * a second name for it. `coverage-unmapped-paths` says no node declared the path: the repair is to grow the
+ * manifest. `coverage-no-executable-proof` says the path was declared, the closure reached real nodes, and
+ * nothing a runner can execute covers any of them: the repair is to add the edge that joins those nodes to a
+ * check. Both are true at once on a change set that mixes them, and a caller told only one of them would fix
+ * the wrong half, so they carry different codes and can be counted apart.
  */
-export type IncompleteReason='coverage-unmapped-paths'|'invariant-check-unresolved'|'invariant-unregistered';
+export type IncompleteReason='coverage-unmapped-paths'|'coverage-no-executable-proof'|'invariant-check-unresolved'|'invariant-unregistered';
 
 /**
  * The plan of record for a change set: immutable, ordinal-sorted throughout, and content-addressed.
  *
- * `complete` is narrowed, never widened, and every narrowing is named in `incompleteReasons`. That is the
+* `complete` is narrowed, never widened, and every narrowing is named in `incompleteReasons`. That is the
  * governing rule of the whole system: an unknown impact widens verification, so a plan that cannot prove it
  * reached everything must say so out loud rather than return a smaller plan that looks finished.
+ *
+ * Narrowing has two halves, and the second is the one this engine must never lose. A plan that reached every
+ * node it named can still have reached none of them through a check, and `complete: true` on an empty
+ * `tests` and `jobs` is a claim of proof that names no proof: a runner reading it has nothing to run and a
+ * reviewer reading it sees nothing to doubt. So completeness is a statement about executable proof, not only
+ * about graph coverage, and the group that satisfies it is `tests` or `jobs` together. `invariants` does not:
+ * a named invariant is a claim, and a claim with no command behind it is the same silent hole under another
+ * hat. A plan whose whole content is invariants is incomplete for want of a witness, which is the honest
+ * reading, since the only repair available is to connect something to something that can run.
  */
 export interface VerificationPlan{
- /** Content address of this plan's exact inputs. Two runs of one input share it; see STATE-GRAPH `get_required_tests`. */
- readonly digest:string;
- /** The revision of the graph this plan was computed against. */
- readonly graphRevision:string;
- readonly complete:boolean;
- /** Every reason `complete` is false. Empty iff complete. A caller that widens verification reads this. */
- readonly incompleteReasons:readonly IncompleteReason[];
+  /** Content address of this plan's exact inputs. Two runs of one input share it; see STATE-GRAPH `get_required_tests`. */
+  readonly digest:string;
+  /** The revision of the graph this plan was computed against. */
+  readonly graphRevision:string;
+  /** True only when the plan names at least one executable proof and names no reason against itself. */
+  readonly complete:boolean;
+  /** Why a plan may not claim `complete`. Empty iff complete. A caller that widens verification reads this. */
+  readonly incompleteReasons:readonly IncompleteReason[];
  /** Changed paths, including vanished ones, that no node declared. Carried from SG02.2 so the refusal names what it refused on. */
  readonly unmappedPaths:readonly string[];
  /** Paths this change set removed, whether or not the graph still declared them. */
@@ -235,18 +261,33 @@ export function planVerification(graph:StateGraph,changes:readonly PathChange[],
    sources:frozen(entry?.sources??EMPTY),checks:bound,requiredChecks:frozen(bound.filter(check=>requiredById.has(check))),
    enforced:entry?.checkExists??false,unresolvedChecks:frozen(entry?.unresolved??[])});
  });
- // Two causes, kept apart so neither reads as the other. An invariant the registry does not carry has no
- // verdict to report, so it is the registration gap and not the binding gap; an invariant it does carry but
- // binds to no declared check is the binding gap. Folding them into one reason would name a cause that a
- // reader cannot act on.
- const unreached=invariants.some(entry=>evaluated.has(entry.id)&&!entry.enforced);
- const orphaned=invariants.some(entry=>unregistered.has(entry.id));
- const incompleteReasons:readonly IncompleteReason[]=Object.freeze([
-  ...(impact.unmappedPaths.length>0?['coverage-unmapped-paths' as const]:[]),
-  ...(unreached?['invariant-check-unresolved' as const]:[]),
-  ...(orphaned?['invariant-unregistered' as const]:[]),
- ].sort(compare));
- const tests=Object.freeze(checks.filter(check=>check.kind==='test')),jobs=Object.freeze(checks.filter(check=>check.kind==='ci'));
+  // Two causes, kept apart so neither reads as the other. An invariant the registry does not carry has no
+  // verdict to report, so it is the registration gap and not the binding gap; an invariant it does carry but
+  // binds to no declared check is the binding gap. Folding them into one reason would name a cause that a
+  // reader cannot act on.
+  const unreached=invariants.some(entry=>evaluated.has(entry.id)&&!entry.enforced);
+  const orphaned=invariants.some(entry=>unregistered.has(entry.id));
+  const tests=Object.freeze(checks.filter(check=>check.kind==='test')),jobs=Object.freeze(checks.filter(check=>check.kind==='ci'));
+  /**
+   * A witness is a required `test` or `ci` node, because that is the only thing in this plan a runner can
+   * execute. Neither an impacted node nor a selected invariant stands in for one: a graph can declare a path,
+   * the closure can reach seven nodes through it, and the plan can name a claim in doubt, while nothing
+   * anywhere names a file to run. That plan is complete in the graph sense and silent in the sense that
+   * matters, which is why the two are separate questions and only one of them is `complete`.
+   *
+   * The gate is `coverage.declared`, not `impacted.length`, and that is not a detail. The closure is seeded
+   * with unmapped paths as well as with real declarations, so `impacted.length > 0` is also true of a path
+   * that reached a node only because its string collided with a node id. Calling that "declared and
+   * uncovered" would name a repair nobody can make: there is no edge to add for a file the graph never
+   * declared. `coverage-unmapped-paths` is already the refusal there, and it is the whole of it.
+   */
+  const unwitnessed=impact.coverage.declared>0&&tests.length===0&&jobs.length===0;
+  const incompleteReasons:readonly IncompleteReason[]=Object.freeze([
+   ...(impact.unmappedPaths.length>0?['coverage-unmapped-paths' as const]:[]),
+   ...(unwitnessed?['coverage-no-executable-proof' as const]:[]),
+   ...(unreached?['invariant-check-unresolved' as const]:[]),
+   ...(orphaned?['invariant-unregistered' as const]:[]),
+  ].sort(compare));
  // `graphRevision` is read twice, once inside the digest and once for the field. Duplicating its body to
  // save one rehash would give the plan a second source of truth for its own address, which is the failure
  // this whole module is about, so the cost is paid instead.

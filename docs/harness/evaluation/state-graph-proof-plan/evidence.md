@@ -241,3 +241,165 @@ y reste TODO jusqu'à l'intégration par l'orchestrateur.
 
 SG02.3 porté à READY_FOR_MANUAL_ACCEPTANCE du point de vue de l'agent. L'état `DONE`
 vient après l'acceptation humaine.
+---
+
+# Réparation : un plan complet doit nommer une preuve exécutable
+
+Branche `sg02-3-no-witness`, ajoutée au lot SG02.3 par copie des mêmes quatre chemins,
+puis réparée. Ce qui suit est le constat indépendant et la réparation ; la section
+`Limites` plus haut reste en place et est **corrigée** par la première phrase de cette
+section : ce qu'elle appelle « honnêtement qu'il n'a rien sélectionné » était en réalité
+le défaut, parce qu'un plan qui ne nomme aucune preuve ne peut pas se déclarer complet.
+
+Ce fichier est donc la seule surface de preuve touchée : un ajout au fichier déjà copié,
+pas un fichier nouveau.
+
+## Le défaut, reproduit avant toute modification
+
+Sur le manifeste réel, `planVerification(graph,[{path:"src/adapters/managed-worktrees.ts",kind:"modified"}])`,
+avant la réparation :
+
+```
+complete         : true
+incompleteReasons: []
+tests            : []
+jobs             : []
+testPaths        : []
+impactedNodes    : 7     coverage {declared:1, unmapped:0}
+```
+
+Les trois chemins nommés se comportaient de même, et la cause est celle décrite : la
+déclaration existe (`entity.workers.workspaces`), la fermeture atteint 7 nœuds réels,
+et aucune arête ne relie cette entité à un nœud `test`. Le plan disait donc « j'ai
+atteint des nœuds, voici ma couverture » sans jamais nommer une chose à exécuter.
+
+La contradiction est visible dans le manifeste lui-même : `entity.workers.workspaces`
+déclare **deux** fichiers. `src/adapters/code-worker-workspaces.ts` atteint
+`test/code-worker-workspaces.test.ts` et `test/managed-worktrees.test.ts`, donc il est
+couvert ; `src/adapters/managed-worktrees.ts` n'atteint rien. Même entité, même nœud
+déclarant, une arête d'écart. C'est la preuve que la lacune est dans les arêtes.
+
+## La règle, et le code qui la nomme
+
+Un plan ne peut déclarer `complete: true` que s'il nomme au moins une preuve
+exécutable, c'est-à-dire un groupe `tests` ou `jobs` non vide. Sinon la raison
+s'ajoute :
+
+| cause | code | réparation |
+| --- | --- | --- |
+| aucun nœud ne déclare le chemin | `coverage-unmapped-paths` | déclarer le chemin (grandir le manifeste) |
+| le chemin est déclaré, rien ne le couvre | `coverage-no-executable-proof` | ajouter l'arête vers un nœud `test` |
+
+Les deux codes sont distincts par construction, jamais un alias : la première porte sur
+la **déclaration**, la seconde sur la **connexion**. Un changement qui contient les deux
+les rend toutes les deux, donc un appelant ne peut pas les confondre en comptant les
+raisons.
+
+La porte est `impact.coverage.declared`, et c'est le point qui mérite l'attention : la
+fermeture est amorcée aussi par les chemins non mappés, donc `impacted.length > 0` est
+vrai également d'un chemin qui a atteint un nœud par simple collision de chaîne avec un
+id. Écrire « déclaré et non couvert » pour ce cas nommerait une réparation que personne
+ne peut faire : il n'y a pas d'arête à ajouter pour un fichier que le graphe n'a jamais
+déclaré. `coverage-unmapped-paths` y est déjà le refus, et il est le seul. Le mutant
+M11 le prouve.
+
+## La décision sur les plans à invariants seuls : non acceptables
+
+Un plan qui porte des invariants et aucun check n'est **pas** acceptable, et la décision
+est dans le code (`tests.length===0&&jobs.length===0`, aucune clause sur `invariants`),
+dans le commentaire de `VerificationPlan.complete`, et dans un test qui l'assert.
+
+Un invariant est une **affirmation**, pas une commande. Le plan dit « cette affirmation
+est en doute » et ne nomme rien qui puisse la mettre en doute. Compter l'invariant comme
+témoin rendrait le plan complet, et le champ `invariants` non vide se lit comme une
+couverture à qui parcourt la liste des champs : c'est le même trou silencieux avec un
+chapeau différent. Le test construit exactement ce cas sur un graphe synthétique où
+l'invariant est enregistré, lié et sélectionné, `enforced` vaut `true`, et où seul le
+témoin exécutable manque : la seule raison qui reste est bien
+`coverage-no-executable-proof`. Le même graphe, avec l'arête vers le check, devient
+complet. La décision est donc visible des deux côtés.
+
+Ce cas est **inatteignable sur le manifeste réel** : aucun des 41 chemins déclarés ne
+produit d'invariant sans check. Il est donc exercé synthétiquement, comme `jobs`, et le
+dossier le dit.
+
+## Preuves
+
+52 tests PASS, 0 fail sur les cinq fichiers de vérification, dont 47 avant la
+réparation, et 15 dans `test/state-graph-plan.test.ts` dont 10 :
+
+```
+node --test --test-reporter=spec test/state-graph-plan.test.ts \
+  test/state-graph-impact.test.ts test/state-graph-invariants.test.ts \
+  test/state-graph-manifest.test.ts test/state-graph-schema.test.ts
+```
+
+`tsc -p tsconfig.build.json` : 32 diagnostics `error TS` avant et après, inchangé, et
+aucun situé dans `state-graph`.
+
+### Non-vacuité, dans les deux sens
+
+Quatre mutants de la seule ligne de dérivation, mesurés sur les cinq fichiers :
+
+| Mutant | pass | fail | ce qui casse |
+| --- | --- | --- | --- |
+| M10 règle retirée | 46 | 6 | le plan sans check redevient complet |
+| M11 porte sur `impacted.length` | 51 | 1 | une collision non mappée est dite déclarée |
+| M12 `jobs` oublié | 51 | 1 | un plan dont le seul témoin est un job devient incomplet |
+| M13 règle toujours vraie | 45 | 7 | plus aucun plan n'est complet |
+
+M10 et M13 sont les deux directions exigées : la règle n'est pas vacuë, et elle ne rend
+pas tout incomplet. Les six tests qui tombent sous M10 sont la preuve qu'elle est
+portée par des états réels et pas par une seule assertion.
+
+### Les trois chemins, et un chemin couvert
+
+`src/adapters/managed-worktrees.ts`, `src/adapters/code-worker-integration.ts` et
+`src/adapters/code-worker-loop.ts` rendent désormais `complete: false` avec
+`incompleteReasons: ["coverage-no-executable-proof"]` et `coverage {declared:1,
+unmapped:0}`, donc la cause nommée est bien la seconde et pas la première.
+`src/adapters/session-store.ts` reste `complete: true`, `incompleteReasons: []`, avec
+`test/adapters.test.ts` et `test/terminal-sessions.test.ts` en `testPaths`.
+
+## Limites, mesurées
+
+**La règle touche neuf chemins déclarés, pas trois.** Sur les 41 sources déclarées du
+manifeste réel, neuf n'atteignent aucun check et sont donc maintenant incomplètes :
+
+```
+apps/terminal/src/producer/index.ts
+apps/terminal/src/producer/session-view.ts
+docs/ARCHITECTURE.md
+docs/harness/01-OBJECTIVES.md
+docs/harness/05-CONTINUITY.md
+docs/harness/MULTI-WORKER.md
+src/adapters/code-worker-integration.ts
+src/adapters/code-worker-loop.ts
+src/adapters/managed-worktrees.ts
+```
+
+Les trois de `src/` sont ceux que la sonde nommait. Les six autres étaient déjà
+silencieux et le sont maintenant à voix haute. Aucun n'est un faux positif de la règle :
+chacun est déclaré par un nœud, et aucun n'atteint de nœud `test` ou `ci`. Les
+corriger reste la décision de couverture du manifeste, ici SG01.3, et le test épingle
+la liste pour que cette fermeture soit une édition visible.
+
+**La granularité est le plan, pas le chemin.** Un changement qui contient à la fois un
+fichier déclaré sans témoin et un fichier déclaré couvert reste `complete: true` : le
+second fournit la preuve. C'est épinglé par un test et non caché. La granularité par
+chemin demanderait un champ nouveau sur le plan et une fermeture par chemin que la
+forme actuelle ne porte pas ; c'est une décision de forme, pas un oubli, et elle n'est
+pas prise ici.
+
+**Aucun champ par chemin n'a été ajouté.** `VerificationPlan` garde exactement ses
+quatorze clés, ce que le test de forme continue d'assert. Un appelant qui veut savoir
+quel chemin manque de témoin doit le dériver lui-même en interrogeant le graphe, ce qui
+est possible sans changer la forme mais n'est pas confortable.
+
+**Le manifeste n'a pas été étendu.** `manifest.ts` et `.cuesheet-project/graph.json`
+sont intacts, le blob reste `cfdd935ce3264b152571ae61bdc30e18b94287db`, et `plan.ts`
+n'est pas une source déclarée donc aucun digest n'a bougé. `src/core/**` n'a pas été
+touché. `docs/harness/state.json` n'a pas été édité, SG02.3 y reste TODO jusqu'à
+l'intégration par l'orchestrateur, et `AC-SG02` reste PENDING.
+
+Réparation portée à READY_FOR_MANUAL_ACCEPTANCE du point de vue de l'agent.

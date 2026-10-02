@@ -67,14 +67,17 @@ test('every path the real manifest yields is a file this repository has, and the
  // The declared sources that reach no test at all, and why that is a manifest gap rather than a planner one.
  // `src/adapters/managed-worktrees.ts` is the case the verification-selection probe named: only
  // `entity.workers.workspaces` declares it, no edge joins that entity to `test.workers.worktrees`, so the
- // graph selects nothing and honestly says it selected nothing. Widening it would mean guessing that a test
- // file belongs to a source file, which is the guessed seed SG02.2 forbids. Left for SG01.3 and pinned here
- // so closing it is a deliberate, visible edit rather than a silent drift.
+ // graph selects nothing to execute. Widening it would mean guessing that a test file belongs to a source
+ // file, which is the guessed seed SG02.2 forbids, so the manifest is left alone and pinned here: closing the
+ // gap is a deliberate, visible edit for SG01.3 rather than a silent drift.
  assert.deepEqual(silent,['src/adapters/code-worker-integration.ts','src/adapters/code-worker-loop.ts','src/adapters/managed-worktrees.ts']);
  const gap=planVerification(real,[change('src/adapters/managed-worktrees.ts')]);
  assert.deepEqual(gap.tests,[]);assert.deepEqual(gap.testPaths,[]);
- assert.equal(gap.complete,true,'the path is declared, so coverage is complete: the gap is in the edges, not the paths');
- assert.deepEqual(gap.incompleteReasons,[]);
+ // The repair this branch makes: a declared path with no check behind it is not coverage, so the plan refuses
+ // to call itself complete. It said the opposite before, which is the silent hole: reachable nodes, no proof.
+ assert.equal(gap.complete,false,'a plan naming no executable proof may never claim completeness');
+ assert.deepEqual(gap.incompleteReasons,['coverage-no-executable-proof']);
+ assert.deepEqual(gap.coverage,{declared:1,unmapped:0},'the path is declared: this is not the unmapped reason');
  assert.deepEqual(gap.impactedNodes.map(node_=>node_.id),['domain.integration','domain.workers',
   'entity.integration.composition','entity.integration.producer','entity.workers.loop','entity.workers.workspaces','source.workers.multi']);
  assert.ok(gap.impactedNodes.some(node_=>node_.id==='entity.workers.workspaces'),'the entity that declares the file is named');
@@ -364,6 +367,7 @@ test('an unknown path widens the plan, is named, and never removes what was alre
  // Every reason is a real state, reachable on its own, and each one alone forbids a complete plan.
  const cases:[string,VerificationPlan][]=[
   ['coverage-unmapped-paths',widened],
+  ['coverage-no-executable-proof',planVerification(real,[change('src/adapters/managed-worktrees.ts')])],
   ['invariant-check-unresolved',planVerification(real,declared,{registry:withCheck('invariant.sessions.durable',['check.absent'])})],
   ['invariant-unregistered',planVerification(registryGap(),[change('test/unit.test.ts')])],
  ];
@@ -420,3 +424,161 @@ function registryGap():StateGraph{
   edge('e-unit-inv','test.unit','invariant.unregistered.one','validates'),
  ]) as unknown as StateGraph;
 }
+
+// --- SG02.3 repair: a complete plan must name an executable proof ---
+
+/** The three declared sources the probe named, and the entity each one is declared by. */
+const UNWITNESSED=['src/adapters/code-worker-integration.ts','src/adapters/code-worker-loop.ts','src/adapters/managed-worktrees.ts'];
+
+test('a plan that reaches nodes and names no check refuses to call itself complete',()=>{
+ for(const path of UNWITNESSED){
+  const plan=planVerification(real,[change(path)]);
+  // The state that is the whole defect: real impacted nodes behind a declared path, and nothing to run.
+  assert.deepEqual(plan.coverage,{declared:1,unmapped:0},`${path} is declared, so this is not the unmapped reason`);
+  assert.ok(plan.impactedNodes.length>0,`${path} reaches nodes, so the plan has content to be silent about`);
+  assert.deepEqual(plan.tests,[],`${path} selects no test`);
+  assert.deepEqual(plan.jobs,[],`${path} selects no job`);
+  assert.deepEqual(plan.testPaths,[]);assert.deepEqual(plan.jobPaths,[]);
+  // The refusal, named. `complete: true` here is what let a plan claim proof it carried.
+  assert.equal(plan.complete,false,`${path} has no executable proof, so it cannot be complete`);
+  assert.deepEqual(plan.incompleteReasons,['coverage-no-executable-proof'],`${path} names the missing proof`);
+ }
+});
+
+test('the no-witness reason is a different repair from the unmapped one, and the two codes say so',()=>{
+ const unwitnessed=planVerification(real,[change('src/adapters/managed-worktrees.ts')]);
+ const unmapped=planVerification(real,[change('src/adapters/never-declared.ts')]);
+ // Same empty `tests`, same empty `testPaths`, two different causes and two different codes. A caller told
+ // only the first would go looking for an edge; told only the second, for a declaration. Neither is a guess.
+ assert.deepEqual(unwitnessed.tests,[]);assert.deepEqual(unmapped.tests,[]);
+ assert.deepEqual(unwitnessed.coverage,{declared:1,unmapped:0});assert.deepEqual(unmapped.coverage,{declared:0,unmapped:1});
+ assert.deepEqual(unwitnessed.unmappedPaths,[]);assert.deepEqual(unmapped.unmappedPaths,['src/adapters/never-declared.ts']);
+ assert.deepEqual(unwitnessed.incompleteReasons,['coverage-no-executable-proof']);
+ assert.deepEqual(unmapped.incompleteReasons,['coverage-unmapped-paths']);
+ assert.ok(!unwitnessed.incompleteReasons.some(reason=>reason==='coverage-unmapped-paths'));
+ assert.ok(!unmapped.incompleteReasons.some(reason=>reason==='coverage-no-executable-proof'));
+ // A change set holding both is both, and says so in one list, so neither cause hides behind the other.
+ const both=planVerification(real,[change('src/adapters/managed-worktrees.ts'),change('src/adapters/never-declared.ts')]);
+ assert.deepEqual(both.coverage,{declared:1,unmapped:1});
+ assert.deepEqual(both.incompleteReasons,['coverage-no-executable-proof','coverage-unmapped-paths']);
+ assert.equal(both.complete,false);
+ // The gate is the declaration, not the reach. An unmapped path whose string collides with a node id reaches
+ // a node with no declared path behind it, and that is the unmapped reason alone: there is no edge to add.
+ const collided=planVerification(real,[change('domain.sessions')]);
+ assert.ok(collided.impactedNodes.length>0,'the collision reaches a node, so impacted.length cannot be the gate');
+ assert.deepEqual(collided.coverage,{declared:0,unmapped:1});
+ assert.deepEqual(collided.incompleteReasons,['coverage-unmapped-paths']);
+ assert.equal(collided.complete,false);
+ // Same entity, two declared files, one edge apart: the gap is in the edges, and the rule reads it as such.
+ const covered=planVerification(real,[change('src/adapters/code-worker-workspaces.ts')]);
+ assert.ok(covered.impactedNodes.some(entry=>entry.id==='entity.workers.workspaces'),'the very entity that declares the gap');
+ assert.deepEqual(covered.testPaths,['test/code-worker-workspaces.test.ts','test/managed-worktrees.test.ts']);
+ assert.equal(covered.complete,true);
+ assert.deepEqual(covered.incompleteReasons,[]);
+});
+
+test('one executable proof is enough, and the rule does not make every plan incomplete',()=>{
+ // A genuinely covered change on the real manifest stays complete, with the files it would run.
+ const plan=planVerification(real,[change('src/adapters/session-store.ts')]);
+ assert.equal(plan.complete,true);
+ assert.deepEqual(plan.incompleteReasons,[]);
+ assert.deepEqual(plan.testPaths,['test/adapters.test.ts','test/terminal-sessions.test.ts']);
+ assert.deepEqual(plan.tests.map(entry=>entry.id),['test.sessions.durability','test.sessions.journal']);
+ assert.deepEqual(plan.coverage,{declared:1,unmapped:0});
+ // The witness is `tests` or `jobs` together, so a plan with only a job is not the empty plan this rule
+ // refuses. Forgetting `jobs` here would make every job-only plan incomplete, which is the same mistake in
+ // the other direction: a plan that names an executable file and calls itself incomplete is also a lie.
+ // `test.unit` is present in this graph and is NOT reached by the change, so the job is the only witness.
+ const shaped=[
+  node('domain.x','domain',['src/a.ts']),
+  node('src.a','entity',['src/a.ts']),
+  node('ci.build','ci',['ci/build.sh']),
+  node('test.unit','test',['test/unit.test.ts']),
+  node('invariant.claimed','invariant',['src/a.ts']),
+  node('contract.c','contract',['src/a.ts']),
+ ];
+ const withJob=graph(shaped,[
+  edge('e-ci-a','ci.build','src.a'),
+  edge('e-inv-a','invariant.claimed','src.a','validates'),
+ ]);
+ const withoutJob=graph(shaped,[
+  edge('e-inv-a','invariant.claimed','src.a','validates'),
+ ]);
+ // A registry that carries the graph's invariant and binds it to the graph's own check, so neither plan in
+ // this pair is refused for a registration or binding gap and the only variable left is the witness.
+ const registry:readonly InvariantDeclaration[]=[{id:'invariant.claimed',statement:'The claim under doubt.',
+  domainId:'domain.x',ownerRef:'owner.project',sources:['src/a.ts'],checks:['test.unit']}];
+ const ciOnly=planVerification(withJob,[change('src/a.ts')],{registry});
+ assert.deepEqual(ciOnly.tests,[]);
+ assert.deepEqual(ciOnly.jobs.map(entry=>entry.id),['ci.build']);
+ assert.deepEqual(ciOnly.jobPaths,['ci/build.sh']);
+ assert.deepEqual(ciOnly.testPaths,[]);
+ assert.equal(ciOnly.complete,true,'a named job is an executable proof');
+ assert.deepEqual(ciOnly.incompleteReasons,[]);
+ // And the same graph with the single job edge removed is the silent plan this rule refuses: the path is
+ // still declared, the invariant is still selected, and only the executable proof is gone.
+ const unwitnessed=planVerification(withoutJob,[change('src/a.ts')],{registry});
+ assert.deepEqual(unwitnessed.coverage,{declared:1,unmapped:0});
+ assert.deepEqual(unwitnessed.invariants.map(entry=>entry.id),['invariant.claimed']);
+ assert.deepEqual(unwitnessed.tests,[]);assert.deepEqual(unwitnessed.jobs,[]);
+ assert.equal(unwitnessed.complete,false);
+ assert.deepEqual(unwitnessed.incompleteReasons,['coverage-no-executable-proof']);
+});
+
+test('an invariant is not an executable proof, so a plan of invariants alone is incomplete',()=>{
+ // The decision, made once and pinned here: an invariants-only plan is NOT acceptable. An invariant is a
+ // claim, and this plan names that the claim is in doubt while naming nothing that could doubt it. Counting
+ // it as a witness would be the same silent hole wearing a different hat, and the caller has no way to tell
+ // which hat a plan is wearing: `invariants` non-empty reads like coverage to anyone who skims the field list.
+ // The registry below carries the claim and its binding, so `coverage-no-executable-proof` is the ONLY reason:
+ // the invariant is registered and enforced, and no check was impacted all the same.
+ const registry:readonly InvariantDeclaration[]=[{id:'invariant.claimed',statement:'The claim under doubt.',
+  domainId:'domain.x',ownerRef:'owner.project',sources:['src/a.ts'],checks:['test.unit']}];
+ const selected=planVerification(graph([
+  node('domain.x','domain',['src/a.ts']),
+  node('entity.impl','entity',['src/a.ts']),
+  node('invariant.claimed','invariant',['src/a.ts'],[],['test.unit']),
+  node('test.unit','test',['test/unit.test.ts'],['invariant.claimed']),
+ ],[
+  edge('e-impl-inv','invariant.claimed','entity.impl','validates'),
+ ]),[change('src/a.ts')],{registry});
+ // The plan is not empty and not unregistered: it carries the claim, the binding, and the file to check.
+ assert.deepEqual(selected.invariants.map(entry=>entry.id),['invariant.claimed']);
+ assert.equal(selected.invariants[0]!.statement,'The claim under doubt.');
+ assert.deepEqual(selected.invariants[0]!.checks,['test.unit']);
+ assert.equal(selected.invariants[0]!.enforced,true,'the registry and the graph agree on the binding');
+ assert.deepEqual(selected.invariants[0]!.requiredChecks,[],'and no check was impacted to carry it');
+ assert.ok(selected.impactedNodes.length>0);
+ assert.deepEqual(selected.tests,[]);assert.deepEqual(selected.jobs,[]);
+ assert.equal(selected.complete,false,'an invariant is a claim, not a command');
+ assert.deepEqual(selected.incompleteReasons,['coverage-no-executable-proof']);
+ // The edge that turns the claim into a command, and the plan that becomes complete with it.
+ const routed=planVerification(graph([
+  node('domain.x','domain',['src/a.ts']),
+  node('entity.impl','entity',['src/a.ts']),
+  node('invariant.claimed','invariant',['src/a.ts'],[],['test.unit']),
+  node('test.unit','test',['test/unit.test.ts'],['invariant.claimed']),
+ ],[
+  edge('e-impl-inv','invariant.claimed','entity.impl','validates'),
+  edge('e-unit-inv','test.unit','invariant.claimed','validates'),
+ ]),[change('src/a.ts')],{registry});
+ assert.deepEqual(routed.invariants.map(entry=>entry.id),['invariant.claimed']);
+ assert.deepEqual(routed.invariants[0]!.requiredChecks,['test.unit']);
+ assert.deepEqual(routed.testPaths,['test/unit.test.ts']);
+ assert.equal(routed.complete,true,'the same claim with an edge to a check is complete');
+ assert.deepEqual(routed.incompleteReasons,[]);
+});
+
+test('the no-witness reason is judged per plan, and that granularity is a known limit',()=>{
+ // Pinned on purpose. Completeness is a property of the plan, so a change set that holds both an unwitnessed
+ // declared file and a covered one names a witness and stays complete: the covered file supplies the proof.
+ // The alternative, per path, is a new field on the plan and a per path closure the current shape does not
+ // carry; the limit is recorded here and in the evidence rather than left to be discovered as a surprise.
+ const mixed=planVerification(real,[change('src/adapters/managed-worktrees.ts'),change('src/adapters/session-store.ts')]);
+ assert.deepEqual(mixed.coverage,{declared:2,unmapped:0});
+ assert.deepEqual(mixed.testPaths,['test/adapters.test.ts','test/terminal-sessions.test.ts']);
+ assert.equal(mixed.complete,true);
+ assert.deepEqual(mixed.incompleteReasons,[]);
+ // Read the truth underneath, which the plan does not claim: the covered half came from the covered path.
+ assert.deepEqual(planVerification(real,[change('src/adapters/managed-worktrees.ts')]).tests,[]);
+});
