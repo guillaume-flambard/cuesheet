@@ -78,3 +78,7 @@ Les seuils de performance et qualité doivent être mesurés, avec les limites q
 restent. Aucun gain sur OpenCode n'est acquis par la seule présence de ces fonctions.
 
 Chantier State graph : [STATE-GRAPH.md](STATE-GRAPH.md), epics SG01–SG09 et 27 tâches dans state.json ; définitions versionnées et moteur TypeScript, indexation/vectoriel/base graphe différés.
+
+## Orchestration OpenCode
+
+L’[inventaire complet et les prompts de délégation](OPENCODE-ORCHESTRATION.md) fournissent le backlog ouvert et un prompt maître pour exécuter les chantiers avec des sous-agents. L’état canonique reste `state.json`.
