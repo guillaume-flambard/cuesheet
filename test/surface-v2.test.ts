@@ -718,19 +718,19 @@ describe("the loop's own stop decides what the surface says", () => {
   it("closed, spent and blocked are three different claims", () => {
     // Built as real `LoopStop` values, because the parameter is typed as one and
     // a hand-rolled object literal would let a fourth shape through unnoticed.
-    const closed = entryForStop({ reason: "goal-closed", steps: 3, evidence: 1 });
+    const closed = entryForStop({ reason: "goal-closed", steps: 3, evidence: 1 }, "run-a");
     assert.equal(closed[0]?.kind, "status");
     assert.equal(closed[0]?.certainty, "confirmed");
 
-    const spent = entryForStop({ reason: "budget-exhausted", steps: 8, evidence: 0 });
+    const spent = entryForStop({ reason: "budget-exhausted", steps: 8, evidence: 0 }, "run-b");
     assert.equal(spent[0]?.kind, "status");
     assert.equal(spent[0]?.certainty, "unknown", "a spent budget is not a settled goal");
 
-    const blocked = entryForStop({ reason: "blocked", missing: ["git"] });
+    const blocked = entryForStop({ reason: "blocked", missing: ["git"] }, "run-c");
     assert.equal(blocked[0]?.kind, "failure", "a run that could not start is a failure, not a status");
     assert.match(JSON.stringify(blocked), /git/, "and it names what was missing");
 
-    const bare = entryForStop({ reason: "blocked", missing: [] });
+    const bare = entryForStop({ reason: "blocked", missing: [] }, "run-d");
     assert.match(JSON.stringify(bare), /could not start/, "and it still says what happened");
   });
 

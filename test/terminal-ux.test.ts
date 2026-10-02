@@ -47,7 +47,7 @@ it("a pending action settles the correct row when bounded history trims during e
   const root = mkdtempSync(join(tmpdir(), "cuesheet-history-trim-"));
   try {
     const store = createStore();
-    store.send({type:"observed",entries:Array.from({length:400},()=>({kind:"status" as const,label:"old",value:"old",certainty:"unknown" as const}))});
+    store.send({type:"observed",entries:Array.from({length:400},(_,i)=>({id:`old:${i}`,kind:"status" as const,label:"old",value:"old",certainty:"unknown" as const}))});
     let release: () => void = () => {}; let ready: () => void = () => {};
     const started = new Promise<void>(resolve => { ready = resolve; });
     const producer = createProducer({store,cwd:root,identities:[],projectsRoot:root,
@@ -148,7 +148,7 @@ import {render} from ${JSON.stringify(join(terminal,"node_modules/ink/build/inde
 import {App} from ${JSON.stringify(join(terminal,"src/app/App.tsx"))};
 import {createStore} from ${JSON.stringify(join(terminal,"src/app/store.ts"))};
 import {PassThrough} from 'node:stream';
-const store=createStore();store.send({type:'observed',entries:[{kind:'you',text:'alpha'},{kind:'you',text:'beta'},{kind:'cuesheet',text:'OLD_MARKER '+('old words '.repeat(100))},{kind:'cuesheet',text:('recent words '.repeat(100))+' NEWEST_MARKER'}]});
+const store=createStore();store.send({type:'observed',entries:[{id:'x:1',kind:'you',text:'alpha'},{id:'x:2',kind:'you',text:'beta'},{id:'x:3',kind:'cuesheet',text:'OLD_MARKER '+('old words '.repeat(100))},{id:'x:4',kind:'cuesheet',text:('recent words '.repeat(100))+' NEWEST_MARKER'}]});
 const out=new PassThrough();Object.assign(out,{columns:50,rows:18,isTTY:false});let last='';out.on('data',b=>last=b.toString());
 const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});
 const app=render(<App store={store} producer={{say(t){store.send({type:'submit',text:t});},choose(){}} as any}/>,{stdout:out as any,stderr:out as any,stdin:input as any,debug:true,exitOnCtrlC:false});

@@ -114,10 +114,10 @@ export function App(props: AppProps): JSX.Element {
 
   const sessionChoices=useCallback(()=>listTerminalSessions(),[]);
   const loadSession=(id?:string)=>{
-    if(store.get().busy) {store.send({type:"observed",entries:[{kind:"failure",text:"Un travail est en cours. Interromps-le avant de changer de session."}]});store.send({type:"close"});return;}
+    if(store.get().busy) {store.send({type:"noted",entry:{kind:"failure",text:"Un travail est en cours. Interromps-le avant de changer de session."}});store.send({type:"close"});return;}
     if(id===wired.session?.metadata.id) {store.send({type:"close"});return;}
     const next=wire({...props,cwd:wired.session?.metadata.cwd ?? props.cwd,store:undefined,producer:undefined},id ?? null);
-    if(next.missing && !next.producer) {store.send({type:"observed",entries:[{kind:"failure",text:next.missing}]});store.send({type:"close"});return;}
+    if(next.missing && !next.producer) {store.send({type:"noted",entry:{kind:"failure",text:next.missing}});store.send({type:"close"});return;}
     setReplacement(next);
   };
 
@@ -154,8 +154,8 @@ export function App(props: AppProps): JSX.Element {
               const result = binding.select(choice, { save, busy: store.get().busy, beforeCommit:selection=>producer?.modelSelected?.(selection) });
               if ("ok" in result) {
                 changedModel(value => value + 1);
-                store.send({ type: "observed", entries: [{ kind: "status", label: "modèle", value: `${binding.label}${store.get().busy ? " · sélectionné pour la suite" : ""}${save && !result.warning ? " · préférence sauvegardée" : " · cette session"}`, certainty: "confirmed" }] });
-                if(result.warning)store.send({type:"observed",entries:[{kind:"status",label:"préférence",value:result.warning,certainty:"unknown"}]});
+                store.send({ type: "noted", entry: { kind: "status", label: "modèle", value: `${binding.label}${store.get().busy ? " · sélectionné pour la suite" : ""}${save && !result.warning ? " · préférence sauvegardée" : " · cette session"}`, certainty: "confirmed" } });
+                if(result.warning)store.send({type:"noted",entry:{kind:"status",label:"préférence",value:result.warning,certainty:"unknown"}});
                 store.send({ type: "logged", line: `[model-selected] ${JSON.stringify(binding.selection)} saved=${save}` });
               }
               return result;
