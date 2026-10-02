@@ -68,3 +68,7 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 ## H06.3b2 — checkpoint 2026-10-02
 
 [EV-GIT-SNAPSHOT](evaluation/git-snapshot/evidence.md) :48 targeted,838/836/0/2 final full,build/différentiel PASS32 baseline. Snapshot dirty humain/cible équivalente/source index conservé API livrée, tâche bornée DONE. Admission terminal, dépendances ignorées et intégration parent restent ouverts. Global IMPLEMENTING.
+
+## H06.3b3 — checkpoint 2026-10-02
+
+[EV-WORKSPACE-RUNTIME](evaluation/workspace-runtime/evidence.md) :51 targeted,842/840/0/2 final full,build/différentiel PASS32 baseline. Terminal prepare_workspace/retarget/sources/reprise et palette Workspaces livrés ; correction directe et source intacte vérifiées. finish refuse contribution non intégrée. Code workers parallèles, intégration/dépendances/selfhost réel restent ouverts. Global IMPLEMENTING.

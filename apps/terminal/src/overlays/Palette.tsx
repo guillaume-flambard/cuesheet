@@ -17,12 +17,14 @@ const commands = [
   { label: "Modèles des agents", overlay: "agent-models" },
   { label: "Situation", overlay: "situation" },
   { label: "Notifications", overlay: "notifications" },
+  { label: "Workspaces", overlay: "workspaces" },
 ] as const;
 
-export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onNotifications?():SharedContextPage; onReadNotifications?(digest:string):SharedContextPage; onSituation?():SharedContextPage; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
+export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onWorkspaces?():SharedContextPage; onNotifications?():SharedContextPage; onReadNotifications?(digest:string):SharedContextPage; onSituation?():SharedContextPage; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
   const [at, setAt] = useState(0);
   const [approval,setApproval]=useState<CheckConfirmation|null>(null);
   const [contextPage,setContextPage]=useState<SharedContextPage|null>(null);
+  const [workspacesMode,setWorkspacesMode]=useState(false);
   const [notificationsMode,setNotificationsMode]=useState(false);
   const [situationMode,setSituationMode]=useState(false);
   const [agentsMode,setAgentsMode]=useState(false);
@@ -55,6 +57,7 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
       if(selected==="new") props.onNew?.();
       else if(selected==="resume") props.onResume?.();
       else if(selected==="check") {const snapshot=props.onCheck?.() ?? null;setApproval(snapshot);setOffset(0);setNotice(snapshot ? "" : "Aucun check épinglé à renouveler pour le contrat courant.");}
+      else if(selected==="workspaces") {setWorkspacesMode(true);setContextPage(props.onWorkspaces?.()??{digest:"",offset:0,nextOffset:null,lines:["Workspaces indisponibles."]});setOffset(0);}
       else if(selected==="notifications") {setNotificationsMode(true);setContextPage(props.onNotifications?.()??{digest:"",offset:0,nextOffset:null,lines:["Notifications indisponibles."]});setOffset(0);}
       else if(selected==="situation") {setSituationMode(true);setContextPage(props.onSituation?.()??{digest:"",offset:0,nextOffset:null,lines:["Situation indisponible."]});setOffset(0);}
       else if(selected==="agent-models")props.onAgentModels?.();
@@ -64,13 +67,13 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
     }
   });
   if(contextPage)return <Box width={props.width} flexDirection="column">
-    <Text color={inkColor(theme.brand)}>{notificationsMode?"Notifications":situationMode?"Situation":agentsMode ? "Agents" : "Contexte partagé"}</Text>
+    <Text color={inkColor(theme.brand)}>{workspacesMode?"Workspaces":notificationsMode?"Notifications":situationMode?"Situation":agentsMode ? "Agents" : "Contexte partagé"}</Text>
     <Box height={viewport} overflow="hidden" flexDirection="column" flexShrink={0}>
       <Box ref={content} flexDirection="column" flexShrink={0} marginTop={-offset}>
         {contextPage.lines.map((line,i)=><Text key={i}>{line.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,"")}</Text>)}
       </Box>
     </Box>
-    <Text wrap="truncate-end" color={inkColor(theme.faint)}>{notificationsMode?"↑↓ lire · M marquer lues · Esc fermer":situationMode?"↑↓ lire · Esc fermer":"↑↓ lire · N/P pages · Esc fermer"}</Text>
+    <Text wrap="truncate-end" color={inkColor(theme.faint)}>{workspacesMode?"↑↓ lire · Esc fermer":notificationsMode?"↑↓ lire · M marquer lues · Esc fermer":situationMode?"↑↓ lire · Esc fermer":"↑↓ lire · N/P pages · Esc fermer"}</Text>
   </Box>;
   if(approval)return <Box width={props.width} flexDirection="column">
     <Text color={inkColor(theme.brand)}>Confirmer le critère épinglé</Text>

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "8c04a51",
+  "referenceCommit": "f8a2980",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3696,6 +3696,37 @@
         "EV-GIT-SNAPSHOT"
       ],
       "notes": "Bounded content transfer API verified;48 targeted,838/836/0/2 full/build/static PASS. Runtime admission/index-intent/dependencies/integration remain parent work."
+    },
+    {
+      "id": "H06.3b3",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.3",
+        "REQ-H06.4",
+        "REQ-H06.5"
+      ],
+      "dependencies": [
+        "H06.3b2"
+      ],
+      "description": "Préparation workspace terminal, outils retargetés, reprise sourcée et inspection sans I/O",
+      "systems": [
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/producer/runtime.ts",
+        "apps/terminal/src/overlays/Palette.tsx",
+        "test/workspace-runtime.test.ts",
+        "test/workspace-ui.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.3",
+        "AC-H06.4",
+        "AC-H06.5"
+      ],
+      "verification": "Actual producer/shell/temp Git dirty transfer/write isolation, same-response stale guards, resume/source drift/finish refusal, Ink/full/build/differential",
+      "evidence": [
+        "EV-WORKSPACE-RUNTIME"
+      ],
+      "notes": "Bounded coordinator terminal preparation/retarget/resume verified,51 targeted/842-840-0-2 full/build/static PASS. Parallel code agents/integration/dependencies parent open."
     }
   ],
   "acceptance": [
@@ -4806,6 +4837,12 @@
       "result": "PASS_PARTIAL",
       "method": "Actual Git dirty staged/new/deleted/binary/untracked, stale/fabricated/size/symlink, target digest/source index preserved, full/build/differential/solo review",
       "details": "evaluation/git-snapshot/evidence.md; runtime/integration/selfhost pending."
+    },
+    {
+      "id": "EV-WORKSPACE-RUNTIME",
+      "result": "PASS_PARTIAL",
+      "method": "Actual TerminalSession/Shell/Git/correction/resume/stale tools/source drift, real Ink, full/build/differential/solo review",
+      "details": "evaluation/workspace-runtime/evidence.md. Source integration not delivered."
     }
   ],
   "risks": {
@@ -4815,10 +4852,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "8c04a51",
+    "lastPassedCommit": "f8a2980",
     "lastFullSuite": {
-      "tests": 838,
-      "passed": 836,
+      "tests": 842,
+      "passed": 840,
       "failed": 0,
       "skipped": 2
     },
@@ -4853,7 +4890,8 @@
     "workingTreeAgentGit": "PASS_PARTIAL H06.3a read-only inventory/pure decision;4 actual Git tests,37 targeted,823/821/0/2 final full;build PASS32 inherited diagnostics. No runtime worktree lifecycle/integration yet.",
     "workingTreeWorktrees": "PASS_PARTIAL allocation manager and implicit Git effect refusal;831/829/0/2 full before final descendant-name root guard;45 final targeted/build PASS32 baseline after. No terminal code-agent admission yet; notifications specified only.",
     "workingTreeNotifications": "PASS_PARTIAL local centre/badge/durable read,37 targeted,835/833/0/2 full,build32 baseline. Parent external channels/questions/selfhost pending.",
-    "workingTreeGitSnapshot": "PASS_PARTIAL bounded dirty source snapshot and equivalent owned worktree;48 targeted,838/836/0/2 full,build/static32 baseline. Terminal wiring pending."
+    "workingTreeGitSnapshot": "PASS_PARTIAL bounded dirty source snapshot and equivalent owned worktree;48 targeted,838/836/0/2 full,build/static32 baseline. Terminal wiring pending.",
+    "workingTreeWorkspaceRuntime": "PASS_PARTIAL terminal dirty worktree preparation/scoped effects/explicit resume/no fallback/finish refusal;51 targeted,842/840/0/2 full/build/static32 baseline. Integration/parallel code workers/selfhost pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4981,7 +5019,8 @@
         "H06.3d",
         "H06.3b1",
         "H06.3a1",
-        "H06.3b2"
+        "H06.3b2",
+        "H06.3b3"
       ],
       "dependencies": [
         "C1",

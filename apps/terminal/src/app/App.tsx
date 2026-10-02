@@ -162,6 +162,7 @@ export function App(props: AppProps): JSX.Element {
             }} onClose={() => send({ type: "close" })} />
         ) : state.overlay === "palette" ? (
           <Palette width={column} rows={contentRows} onOpen={(overlay) => {setAgentModelsMode(false);send({ type: "open", overlay });}}
+            onWorkspaces={()=>producer?.workspacePage?.()??{digest:"",offset:0,nextOffset:null,lines:["Workspaces indisponibles."]}}
             onNotifications={()=>producer?.notificationPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Notifications indisponibles."]}}
             onReadNotifications={digest=>producer?.readNotifications?.(digest)??{digest:"",offset:0,nextOffset:null,lines:["Notifications indisponibles."]}}
             onSituation={()=>producer?.situationPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Situation indisponible."]}}
