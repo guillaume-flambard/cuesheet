@@ -4230,7 +4230,9 @@
         "AC-H10.4"
       ],
       "verification": "Actual native binary + Linux tools + temp Git natural feature, immutable owner oracle, preserve failed trace and metrics; no superiority claim",
-      "evidence": [],
+      "evidence": [
+        "EV-JOURNEY-002"
+      ],
       "notes": "Bounded pilot, free-listed provider/current official pricing; parent comparative/repeated real quality not closed. Three attempted runs stop before tool effects with actual HTTP403 free-tier policy; traces retained. Real semantic model result not obtained, task remains open; other work continues."
     },
     {
@@ -4486,7 +4488,9 @@
         "AC-H06.2b"
       ],
       "verification": "Scenarios in MULTI-WORKER.md; meaningful tests, runtime/full regression/build for integrated changes",
-      "evidence": [],
+      "evidence": [
+        "EV-RUNTIME-CAPABILITIES"
+      ],
       "notes": "Parent acceptance remains pending."
     },
     {
@@ -7856,6 +7860,55 @@
       "verification": "test/worktree-build.test.ts passe 1/1 avec les variables capsule, capsule interne 57/57 ; le snapshot original est preserve",
       "artifacts": [
         "test/worktree-build.test.ts"
+      ]
+    },
+    {
+      "id": "EV-JOURNEY-002",
+      "kind": "runtime",
+      "summary": "Un modele reel (Claude Sonnet 5.5 via OpenRouter) recoit un objectif borne et un contexte de depot reel, choisit lui-meme son edition dans un seul fichier autorise, et un verificateur independant qu il n a jamais vu juge le resultat. Le harnais fixe le depot, l objectif, le fichier, la build et le verificateur ; il ne fixe pas l edition. Le modele a repondu une edition valide et dans le perimetre en environ onze secondes, le candidat a compile en capsule, le verificateur a passe. Deux executions, deux passes.",
+      "verification": "npm run journey:model PASS deux fois ; le verificateur est copie dans le candidat APRES la fin du modele donc il n a pas pu le lire ; il rend la vraie StatusBar et lit ce qu une personne lirait ; il est lui-meme non vacueux et a trouve independamment que le code actuel rend 1 notification(s) avec un placeholder",
+      "artifacts": [
+        "scripts/ui/journey002.mjs",
+        "apps/terminal/ui/journey002-verifier.test.ts"
+      ]
+    },
+    {
+      "id": "EV-RUNTIME-CAPABILITIES",
+      "kind": "automated",
+      "summary": "Le runtime declare ses capacites avec une raison et jamais un blanc, pour qu un lecteur distingue absent de present-mais-inutilisable. La capsule n est revendiquee que si une image epinglee et un socket sont reellement configures. Les sous-agents sont rapportes indisponibles avec la degradation DITE, parce qu un plan qui tourne en sequentiel pendant que son graphe revendique des branches est le mauvais etiquetage interdit. Le registre consomme par le resolveur du noyau ne porte que l available, donc le resolveur existant fait le refus sans changement.",
+      "verification": "6 tests, mutant subagents-toujours-available en fait tomber 3 ; un plan exigeant les sous-agents revient bloque avec motifs plutot que servi par plus faible",
+      "artifacts": [
+        "apps/terminal/src/producer/capabilities.ts",
+        "test/runtime-capabilities.test.ts"
+      ]
+    },
+    {
+      "id": "EV-CAPSULE-ALIAS-LIFECYCLE",
+      "kind": "runtime",
+      "summary": "Le bootstrap capsule enregistre exactement les alias node_modules qu il cree et les retire quand la commande se termine. Un alias fourni par le proprietaire n est jamais touche ; un alias fabrique par la capsule ne lui survit pas. Cela RENVERSE une decision documentee dans WORKTREE-BUILD.md selon laquelle l alias restait dangling sur l hote jusqu a la prochaine execution, et l assertion du test capsule correspondant.",
+      "verification": "CAP-ALIAS-01 les deux directions, gate sur la capsule ; retirer le nettoyage fait echouer la premiere",
+      "artifacts": [
+        "src/adapters/node-capsule.ts",
+        "test/capsule-alias-cleanup.test.ts"
+      ]
+    },
+    {
+      "id": "EV-RUNTIME-TRUTHFULNESS",
+      "kind": "runtime",
+      "summary": "La ligne de route des outils imprimait le digest d image et un libelle interne sur la surface ; la politique complete va desormais au journal et la surface porte une phrase courte et honnete, certitude unknown conservee car une route declaree n est pas une preuve de resultat. La barre de statut imprimait 0 read sur toute session tranquille, soit l absence d un fait plutot qu un fait ; modified etait deja conditionnel et read ne l etait pas.",
+      "verification": "mesure sur la surface reelle : digest sha256 absent, 0 read absent, ligne outils courte ; STATUS et UI conservent leurs sorts",
+      "artifacts": [
+        "apps/terminal/src/producer/index.ts",
+        "apps/terminal/src/components/StatusBar.tsx"
+      ]
+    },
+    {
+      "id": "EV-COMMAND-TRUTHFULNESS",
+      "kind": "automated",
+      "summary": "Le defaut npm run ui:verify a enseigne qu un chemin interne qui marche n est pas une preuve que la commande publiee marche. CMD-01 verifie mecaniquement que toute commande nommant un fichier nomme un fichier existant, que tout filtre de workspace nomme un script que ce workspace declare, que les commandes canoniques documentees existent, et qu aucun glob de workspace ne pointe sur rien.",
+      "verification": "4 tests ; reintroduire le defaut ui:verify en fait echouer un",
+      "artifacts": [
+        "test/command-truthfulness.test.ts"
       ]
     }
   ],

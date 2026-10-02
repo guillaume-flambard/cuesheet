@@ -160,3 +160,19 @@ Limite dite : c'est une preuve de présentation, pas de runtime. Le scénario es
 [EV-SELFHOST-CAPSULE](evaluation/state-graph/../worktree-build) : la Self-Hosting Capsule existe et passe. `test/worktree-build.test.ts` capture un snapshot git réel de CUESHEET, alloue un vrai worktree du dépôt, lance le vrai `npm run build` dans une capsule Linux, vérifie `build: ok`, `dist/apps/terminal/main.mjs` présent et tsc à 32, exécute des tests cibles dans le worktree, puis affirme que la source originale est inchangée. Le lien contrôleur-seul-écrivain est une isolation réelle, pas une intention.
 
 Trois liens sur quatre de la chaîne Dogfood Gate 0 sont donc déjà prouvés : Render Proof (`ui:verify`), World resolution depuis `~` (nouveau test dans `scope-runtime.test.ts`), Self-Hosting Capsule (ce test existant). Le lien manquant est le Global UI Journey / Bootstrap Journey 001 : l'intention floue sur sa propre interface, édition d'un candidat, lancement, Render Proof, Human Delta.
+
+## Dogfood Gate 0 : tranches 6, 8, 13, 16, 17 — 2026-10-02
+
+Cycle piloté par la spec d'autonomie. Ordre décidé par dépendance et non par question au propriétaire : d'abord les défauts qui compromettent l'observabilité, puis l'expérience modèle réel.
+
+[EV-RUNTIME-TRUTHFULNESS] : la route d'outils exposait le digest d'image et un libellé interne ; la politique complète va au journal, la surface dit une phrase courte et garde `unknown`, car une route déclarée n'est pas une preuve de résultat. La barre imprimait `0 read` sur toute session tranquille.
+
+[EV-COMMAND-TRUTHFULNESS] : `npm run ui:verify` pointait vers un chemin inexistant et n'avait jamais été testé, parce que le travail était vérifié en lançant le chemin direct. CMD-01 empêche désormais mécaniquement toute commande publiée de nommer un fichier ou un script absent.
+
+[EV-CAPSULE-ALIAS-LIFECYCLE] : le bootstrap capsule retire les alias `node_modules` qu'il crée, donc une build ne laisse plus le candidat invalide sur l'hôte. Cela renverse une décision documentée, mise à jour avec son assertion et sa spec dans le même commit.
+
+[EV-RUNTIME-CAPABILITIES] : le runtime déclare ses capacités avec une raison, jamais un blanc, et les sous-agents absents sont dits séquentiels. Le registre ne porte que l'available, donc le résolveur du noyau refuse inchangé.
+
+[EV-JOURNEY-002] : étape 2 de la trajectoire d'auto-hébergement atteinte. Un modèle réel reçoit un objectif borné et un contexte de dépôt réel, choisit son édition dans un seul fichier, et un vérificateur qu'il n'a jamais vu juge le résultat. Le harnais fixe le dépôt, l'objectif, le fichier, la build et le vérificateur ; pas l'édition. Deux exécutions, deux passes. Le vérificateur est copié après la fin du modèle et rend la vraie surface plutôt que de lire le diff.
+
+Distinction maintenue partout : Journey 001 prouve l'orchestration sous édition scriptée ; Journey 002 prouve la décision du modèle. Ne jamais présenter l'un comme l'autre.
