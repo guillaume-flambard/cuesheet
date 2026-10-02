@@ -218,3 +218,7 @@ Gestion Git affinée : [AGENT-GIT.md](AGENT-GIT.md), H06.3a → b → c → d, T
 ## H06.3a — checkpoint 2026-10-02
 
 Inventaire Git read-only et décision controller-owned implémentés dans agent-git.ts, sans création ni branche ni integration runtime. [EV-AGENT-GIT-INVENTORY](evaluation/agent-git/evidence.md) : 4 nouveaux tests Git réel,37 ciblés,823/821/0/2 full final ; build/différentiel PASS32 diagnostics hérités. H06.3a DONE borné ; H06.3b/c/d TODO, parent H06.3 et global IMPLEMENTING. Création/reprise/admission/intégration/cleanup restent à livrer.
+
+## Allocation worktrees et notifications — 2026-10-02
+
+H06.3b1/H06.3a1 tranche adapter vérifiée : [EV-WORKTREE-ALLOCATION](evaluation/worktree-allocation/evidence.md), attribution/receipts/création detached/reuse physique/récupération conservative et refus Git filters ;45 ciblés finaux,831/829/0/2 full avant correction finale predicate racine, build PASS32 diagnostics hérités après. H06.3b/c/d et runtime admission restent ouverts. [NOTIFICATIONS.md](NOTIFICATIONS.md), H08.3n TODO, notifications significatives/dédup/références/source/canaux sobres, aucune notification livrée. Global IMPLEMENTING.

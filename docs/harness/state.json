@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "01018e2",
+  "referenceCommit": "df75782",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -3563,6 +3563,81 @@
       "verification": "Local temporary Git repositories, actual processes/crash/conflict/dirty-state, Ink/performance, full/build/differential",
       "evidence": [],
       "notes": "Specification only; no runtime implementation claimed."
+    },
+    {
+      "id": "H06.3b1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H06.3a"
+      ],
+      "description": "Allocation worktree locale attribuée et récupération conservative",
+      "systems": [
+        "src/adapters/managed-worktrees.ts",
+        "src/adapters/agent-git.ts",
+        "test/managed-worktrees.test.ts",
+        "test/agent-git.test.ts",
+        "AGENT-GIT.md"
+      ],
+      "acceptance": [
+        "AC-H06.3"
+      ],
+      "verification": "Actual temporary Git/crash/concurrency or notifications replay/Ink, full/build/differential",
+      "evidence": [
+        "EV-WORKTREE-ALLOCATION"
+      ],
+      "notes": "Bounded API verified;45 final targeted,831/829/0/2 full before final path guard,build/static PASS. Parent/runtime/recovery gaps explicit in evidence."
+    },
+    {
+      "id": "H08.3n",
+      "priority": "P1",
+      "status": "TODO",
+      "requirements": [
+        "REQ-H08.3"
+      ],
+      "dependencies": [
+        "H08.3a"
+      ],
+      "description": "Notifications utiles sourcées, sobres et dédupliquées",
+      "systems": [
+        "NOTIFICATIONS.md"
+      ],
+      "acceptance": [
+        "AC-H08.3"
+      ],
+      "verification": "Actual temporary Git/crash/concurrency or notifications replay/Ink, full/build/differential",
+      "evidence": [],
+      "notes": "Bounded slices; no parent completion claim."
+    },
+    {
+      "id": "H06.3a1",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H06.3a"
+      ],
+      "description": "Refuser filtres Git implicites et désactiver fsmonitor avant inspection/checkout",
+      "systems": [
+        "src/adapters/managed-worktrees.ts",
+        "src/adapters/agent-git.ts",
+        "test/managed-worktrees.test.ts",
+        "test/agent-git.test.ts",
+        "AGENT-GIT.md"
+      ],
+      "acceptance": [
+        "AC-H06.3"
+      ],
+      "verification": "Actual local Git hook/filter/fsmonitor canaries plus full/build/differential",
+      "evidence": [
+        "EV-WORKTREE-ALLOCATION"
+      ],
+      "notes": "Bounded API verified;45 final targeted,831/829/0/2 full before final path guard,build/static PASS. Parent/runtime/recovery gaps explicit in evidence."
     }
   ],
   "acceptance": [
@@ -4655,6 +4730,12 @@
       "result": "PASS_PARTIAL",
       "method": "Actual temporary Git repositories/dirty state/HEAD/abort/reuse, full/build/differential and solo review",
       "details": "evaluation/agent-git/evidence.md;823/821/0/2 final full. Lifecycle/runtime pending."
+    },
+    {
+      "id": "EV-WORKTREE-ALLOCATION",
+      "result": "PASS_PARTIAL",
+      "method": "Actual local Git worktrees/two controllers/durable receipts/preserved changes and synthetic recovery, implicit effect canaries; full/build/differential/solo review",
+      "details": "evaluation/worktree-allocation/evidence.md. Lifecycle/integration/runtime/notifications remain open."
     }
   ],
   "risks": {
@@ -4664,10 +4745,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "01018e2",
+    "lastPassedCommit": "df75782",
     "lastFullSuite": {
-      "tests": 823,
-      "passed": 821,
+      "tests": 831,
+      "passed": 829,
       "failed": 0,
       "skipped": 2
     },
@@ -4699,7 +4780,8 @@
     "workingTreeAgentModels": "PASS_PARTIAL owner routes and session UI;808/806/0/2 full,44 targeted,7 added binary ID/UX tests. Global IMPLEMENTING.",
     "workingTreeAgentSkills": "PASS_PARTIAL sourced installed/session skill routing, version guards and UI;814/812/0/2 full,49 initial/44 final targeted,build/static PASS. Global IMPLEMENTING.",
     "workingTreeSituation": "PASS_PARTIAL fresh clock/zone/locale/language/identity/scope/session/role per inference and live readonly palette;818/816/0/2 full before added test-only launcher guard;43 final targeted/build/static PASS. Global IMPLEMENTING.",
-    "workingTreeAgentGit": "PASS_PARTIAL H06.3a read-only inventory/pure decision;4 actual Git tests,37 targeted,823/821/0/2 final full;build PASS32 inherited diagnostics. No runtime worktree lifecycle/integration yet."
+    "workingTreeAgentGit": "PASS_PARTIAL H06.3a read-only inventory/pure decision;4 actual Git tests,37 targeted,823/821/0/2 final full;build PASS32 inherited diagnostics. No runtime worktree lifecycle/integration yet.",
+    "workingTreeWorktrees": "PASS_PARTIAL allocation manager and implicit Git effect refusal;831/829/0/2 full before final descendant-name root guard;45 final targeted/build PASS32 baseline after. No terminal code-agent admission yet; notifications specified only."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -4707,7 +4789,7 @@
     "acceptanceVerified": 7,
     "acceptancePending": 55,
     "p0_open": 37,
-    "p1_open": 21
+    "p1_open": 22
   },
   "workstreams": [
     {
@@ -4824,7 +4906,9 @@
         "H06.3a",
         "H06.3b",
         "H06.3c",
-        "H06.3d"
+        "H06.3d",
+        "H06.3b1",
+        "H06.3a1"
       ],
       "dependencies": [
         "C1",
@@ -4856,7 +4940,8 @@
         "E01.4b",
         "H06.5a",
         "H06.5b",
-        "H08.3a"
+        "H08.3a",
+        "H08.3n"
       ],
       "dependencies": [
         "C1",
