@@ -126,3 +126,11 @@ H09.1c DONE borné : la cause n était ni une écriture tardive ni un enfant act
 SG02.2, SG03.1 et H08.3n IN_PROGRESS : preuve livrée et vérifiée, mais les critères parents couvrent des moitiés qui appartiennent à SG02.3, SG03.2/3 et H08.3n4. Aucun AC promu pour ces trois. E01.6 : tranche livrée, SharedRetrieval non raccordée au runtime, AC-E01.6 reste PENDING. H06.3b : tranche récupération livrée, réservation durable, quotas, integration et cleanup récupérable restent ouverts.
 
 Défaut d intégrité corrigé : EV-WORKER-PACKETS était cité sur une tâche DONE mais absent du registre ; l entrée a été créée en lisant le fichier réel. Les références par chemin de fichier restent la convention de la maison.
+
+## Forge de références et spécification du graphe — 2026-10-02
+
+[EV-SHARED-GRANTS-FORGERY](evaluation/shared-grants-forgery/evidence.md) : une SharedReference est une entrée non fiable qu'un principal peut réécrire. Avant, une racine étrangère était acceptée outright. Les racines sont comparées lexicalement avec resolve(), qui replie la traversée sans toucher au système de fichiers : rien n'est staté du côté non fiable, donc une orthographe étrangère, traversante ou symlinkée ne peut ouvrir un journal ni signaler que le chemin existe. Un store sans racine déclarée refuse toute référence qui en porte une. 22/22 cibles, 4 tests de forgery chacun tué par au moins une des 5 mutations. AC-E01.6 reste PENDING : SharedRetrieval n'est pas raccordé, la distribution et la persistance des grants restent ouvertes sur E01.3 et le parent.
+
+[EV-STATE-GRAPH-SPEC](SPEC-STATE-GRAPH-SLICES.md) : SG04.1 et SG05.1 étaient « Specification only » avec des critères runtime, donc aucun worker ne pouvait les construire sans inventer des scénarios. Le document nomme la forme d'enveloppe, l'ordre des contrôles, les trois refus, 18 scénarios, les six règles de rupture, FAIL contre UNKNOWN, et les questions ouvertes qu'il refuse de trancher en silence. Aucun critère clos, mais les deux tâches sont désormais implémentables et vérifiables.
+
+956 tests, 954 pass, 0 fail, 2 skipped (MB-01) ; capsule Linux 0 fail ; tsc 32 baseline ; artefact inchangé, shared-memory.ts n'étant pas source déclarée.

@@ -3299,8 +3299,11 @@
         "AC-E01.6"
       ],
       "verification": "Scénarios version/CAS/replay/corruption/permissions/reconstruction puis régression",
-      "evidence": [],
-      "notes": "Directive explicite Vault canonique2026-10-01, auth réseau parent reste ouverte"
+      "evidence": [
+        "EV-SHARED-GRANTS",
+        "EV-SHARED-GRANTS-FORGERY"
+      ],
+      "notes": "Directive explicite Vault canonique2026-10-01, auth réseau parent reste ouverte Reference forgee fermee sur EV-SHARED-GRANTS-FORGERY : racine comparee lexicalement, refus avant ouverture, store sans racine refusee. SharedRetrieval reste non raccorde a un runtime, la distribution des grants et leur persistance restent ouvertes sur E01.3 et le parent E01.6, donc AC-E01.6 reste PENDING."
     },
     {
       "id": "E01.7",
@@ -4884,8 +4887,10 @@
         "AC-SG04"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-STATE-GRAPH-SPEC"
+      ],
+      "notes": "Specification only; no implementation claimed. Specification d execution ecrite sur EV-STATE-GRAPH-SPEC : 18 scenarios nommes, 3 refus, ordre des controles. Implementable par un worker ; AC-SG04 reste PENDING."
     },
     {
       "id": "SG04.2",
@@ -4947,8 +4952,10 @@
         "AC-SG05"
       ],
       "verification": "Epic criteria and layered verification in STATE-GRAPH.md; evidence pending",
-      "evidence": [],
-      "notes": "Specification only; no implementation claimed."
+      "evidence": [
+        "EV-STATE-GRAPH-SPEC"
+      ],
+      "notes": "Specification only; no implementation claimed. Specification d execution ecrite sur EV-STATE-GRAPH-SPEC : 14 scenarios nommes, 6 regles de rupture, FAIL contre UNKNOWN explicite. Implementable par un worker ; AC-SG05 reste PENDING."
     },
     {
       "id": "SG05.2",
@@ -7754,6 +7761,24 @@
         "docs/harness/evaluation/worker-packets/evidence.md"
       ],
       "note": "Enregistre dans le registre le 2026-10-02 : la reference existait sur une tache DONE mais l entree manquait dans la collection evidence."
+    },
+    {
+      "id": "EV-SHARED-GRANTS-FORGERY",
+      "kind": "automated",
+      "summary": "Une SharedReference est une entree non fiable qu un principal peut reecrire : sa racine est une orthographe d un repertoire declare par le controleur, jamais un moyen d en choisir un. Avant, une racine etrangere etait acceptee. Les racines sont comparees lexicalement avec resolve(), qui replie la traversee sans toucher le systeme de fichiers, donc rien n est stat du cote non fiable et une orthographe etrangere, traversante ou symlinkee ne peut ouvrir un journal ni signaler que le chemin existe. Un store sans racine declaree refuse toute reference qui en porte une.",
+      "verification": "22 tests sur shared-memory et shared-memory-edit, 0 echec ; 4 tests de forgery, chacun tue par au moins une des 5 mutations ; le cas scope invente est refuse independamment de la racine et dit comme tel",
+      "artifacts": [
+        "docs/harness/evaluation/shared-grants-forgery/evidence.md"
+      ]
+    },
+    {
+      "id": "EV-STATE-GRAPH-SPEC",
+      "kind": "inspection",
+      "summary": "SPEC-STATE-GRAPH-SLICES.md rend SG04.1 et SG05.1 implementables : forme d enveloppe retenue, ordre des controles, les trois refus, 18 scenarios, les six regles de rupture, ce qui donne FAIL plutot que UNKNOWN, et les questions ouvertes refusees de trancher en silence, dont taskId non resolvable contre le manifeste actuel.",
+      "verification": "604 lignes, 0 tiret cadratin ni demi-cadratin ; conformite aux slices livrees et a l epic ; aucun critere clos",
+      "artifacts": [
+        "docs/harness/SPEC-STATE-GRAPH-SLICES.md"
+      ]
     }
   ],
   "risks": {
