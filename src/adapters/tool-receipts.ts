@@ -54,6 +54,8 @@ export function appendReceipt(store:EventStore,data:Record<string,unknown>):Even
   projectEffectAttempts([...store.toSession().events,event]);return store.append({kind:event.kind,subject:event.subject,data});
 }
 export function completeAttempt(store:EventStore,intent:Event,result:ToolResult):void {
+  // No confirmed process status means the intent remains uncertain for inspection.
+  if(result.exit===null)return;
   appendReceipt(store,{version:1,operation:"completed",intentSeq:intent.seq,tool:intent.data.tool,exit:result.exit,digest:createHash("sha256").update(result.output).digest("hex")});
 }
 export function reconcileEffect(store:EventStore,request:ToolRequest,executionId:string):ToolResult {

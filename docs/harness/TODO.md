@@ -246,3 +246,13 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 ## Workspaces et refus provider — 2026-10-02
 
 [EV-WORKSPACE-PROVIDER](evaluation/workspace-provider/evidence.md) : H06.3d1/H07.1d DONE bornés, live projection unique/cache/next action et erreurs provider sûres.79/40 ciblés,859/857/0/2 full,build/différentiel32 baseline PASS. H10.3a reste ouvert :3 essais gratuits natifs reçus403 avant code, traces/goal/source préservés. Pas de contournement ni fallback payant, aucun résultat qualité modèle. Global IMPLEMENTING.
+
+## H05.2b — résultat outil incertain, 2026-10-02
+
+Défaut découvert : `completeAttempt` exige un exit entier alors que les intégrations partiellement appliquées peuvent retourner `null`. Le contrôleur doit conserver l’intent durable sans reçu de completion ni preuve. Un résultat null reste une observation, bloque les mutations suivantes et finish, autorise cat/ls puis une réconciliation sourcée. Après close/reopen, même intent incertain, aucune répétition automatique. Les reçus complets invalides restent refusés. Aucun changement de schéma/core/autorité ; coût constant, aucune donnée ajoutée au journal.
+
+Critères bornés : null ne lève pas et n’append pas ; résultat réel partiellement effectué puis null ne relance pas le second outil ; redémarrage conserve l’incertitude ; inspection/réconciliation existantes continuent à passer. Vérification ciblée receipts/recovery/intégration, suite complète et build séquentiel ; preuve à consigner. Risque : fausse completion/duplication après effet partiel ; mitigation laisser intent ouvert, pas de rollback aveugle. Parent AC-H05.2 reste ouvert.
+
+H06.3b4 P0 IN_PROGRESS : admission premier effet code automatique, specs/AC bornés [AGENT-GIT.md](AGENT-GIT.md) ; pas de clôture selfhost/global.
+
+2026-10-02 H05.2b/H06.3b4 DONE bornés : [EV-AUTOMATIC-ISOLATION](evaluation/automatic-isolation/evidence.md),55 ciblés,866/864/0/2 full,build/différentiel32 baseline PASS. Première commande code Git isolée par contrôleur, anciens appels rejetés ; null reste incertain/replay gated. Global IMPLEMENTING, parents ouverts.

@@ -202,3 +202,5 @@ H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :
 ## Workspaces et refus provider — 2026-10-02
 
 [EV-WORKSPACE-PROVIDER](evaluation/workspace-provider/evidence.md) : H06.3d1/H07.1d DONE bornés, live projection unique/cache/next action et erreurs provider sûres.79/40 ciblés,859/857/0/2 full,build/différentiel32 baseline PASS. H10.3a reste ouvert :3 essais gratuits natifs reçus403 avant code, traces/goal/source préservés. Pas de contournement ni fallback payant, aucun résultat qualité modèle. Global IMPLEMENTING.
+
+2026-10-02 H05.2b/H06.3b4 DONE bornés : [EV-AUTOMATIC-ISOLATION](evaluation/automatic-isolation/evidence.md),55 ciblés,866/864/0/2 full,build/différentiel32 baseline PASS. Première commande code Git isolée par contrôleur, anciens appels rejetés ; null reste incertain/replay gated. Global IMPLEMENTING, parents ouverts.

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "IMPLEMENTING",
   "canonicalRoot": "docs/harness",
-  "referenceCommit": "a603332",
+  "referenceCommit": "924f628",
   "protocolAdopted": "2026-10-01 during execution, before further coding",
   "requirements": [
     {
@@ -4020,6 +4020,55 @@
         "evaluation/workspace-provider/evidence.md"
       ],
       "notes": "DEFECT uncovered actual free provider policy refusal; not a model quality result. No circumvention."
+    },
+    {
+      "id": "H05.2b",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H05.2"
+      ],
+      "dependencies": [
+        "H09.1a"
+      ],
+      "description": "Preserve uncertain null-exit effects without invalid completion receipt or blind replay",
+      "systems": [
+        "src/adapters/tool-receipts.ts",
+        "test/tool-receipts.test.ts"
+      ],
+      "acceptance": [
+        "AC-H05.2"
+      ],
+      "verification": "Null unit + actual partial effect/reopen/gate + receipt recovery integration/full/build",
+      "evidence": [
+        "evaluation/automatic-isolation/evidence.md"
+      ],
+      "notes": "DEFECT discovered in integration uncertain branch; parent remains open. 55 targeted and866/864/0/2 full,build32 baseline PASS; no parent closure."
+    },
+    {
+      "id": "H06.3b4",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REQ-H06.3"
+      ],
+      "dependencies": [
+        "H06.3b3",
+        "H05.2b"
+      ],
+      "description": "Controller prepares isolated Git workspace before first external code effect, no model decision required",
+      "systems": [
+        "apps/terminal/src/producer/index.ts",
+        "test/workspace-runtime.test.ts"
+      ],
+      "acceptance": [
+        "AC-H06.3"
+      ],
+      "verification": "Actual dirty Git automatic preparation/stale batch/read/nonGit/unborn/recovery/full/build",
+      "evidence": [
+        "evaluation/automatic-isolation/evidence.md"
+      ],
+      "notes": "Bounded spec AGENT-GIT; parent parallel workers and recovery pending. 55 targeted and866/864/0/2 full,build32 baseline PASS; no parent closure."
     }
   ],
   "acceptance": [
@@ -5145,10 +5194,10 @@
   },
   "verification": {
     "status": "PENDING",
-    "lastPassedCommit": "a603332",
+    "lastPassedCommit": "924f628",
     "lastFullSuite": {
-      "tests": 859,
-      "passed": 857,
+      "tests": 866,
+      "passed": 864,
       "failed": 0,
       "skipped": 2
     },
@@ -5188,7 +5237,8 @@
     "workingTreeWorkspaceIntegration": "PASS_PARTIAL bounded recoverable owner-checked source integration;43 final targeted,849/847/0/2 full before final wording-only clarification;build/differential32 baseline PASS. Dependencies/parallel workers/recovery/selfhost pending.",
     "workingTreeWorkspaceBuild": "PASS_PARTIAL curated owner image capsule + actual Cuesheet Linux worktree build/56 tests/source unchanged;21 final targeted,853/851/0/2 full; sequential shipped build/differential32 baseline PASS. Installed/model quality/parallel worker recovery pending.",
     "workingTreeInstalledSelfhost": "PASS_PARTIAL installed actual PTY/fixture transport/Linux tools/source integration/independent captured source check/reopened journal;5 installed,56 targeted,857/855/0/2 full;build32 inherited diagnostics PASS. Real model/full dependency owner check/parallel workers/UX recovery pending.",
-    "workingTreeWorkspaceProvider": "PASS_PARTIAL latest/live/cached workspace UI + secret-safe native provider status;79/40 targeted,859/857/0/2 full. Real free pilot403/source preserved/no quality result, H10.3a open."
+    "workingTreeWorkspaceProvider": "PASS_PARTIAL latest/live/cached workspace UI + secret-safe native provider status;79/40 targeted,859/857/0/2 full. Real free pilot403/source preserved/no quality result, H10.3a open.",
+    "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending."
   },
   "ready_for_manual_acceptance": false,
   "counts": {
@@ -5284,7 +5334,8 @@
         "H09.3d",
         "H09.3e",
         "H09.3f1",
-        "H09.3f2"
+        "H09.3f2",
+        "H05.2b"
       ],
       "dependencies": [
         "C1",
@@ -5321,7 +5372,8 @@
         "H06.3b2",
         "H06.3b3",
         "H06.3c1",
-        "H07.1d"
+        "H07.1d",
+        "H06.3b4"
       ],
       "dependencies": [
         "C1",

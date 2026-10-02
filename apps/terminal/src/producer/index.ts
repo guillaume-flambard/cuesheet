@@ -354,6 +354,16 @@ export function createProducer(options: ProducerOptions): Producer {
         const uncertain=attempts.filter(attempt=>attempt.phase==="uncertain" && mutationTool(attempt.tool));
         if(mutationTool(request.name) && uncertain.length)return {name:request.name,exit:126,output:JSON.stringify({reason:"A previous effect may already have run. Inspect the workspace with cat/ls, then use reconcile_effect with the successful observation sequence before proposing mutations or finish.",intentSequences:uncertain.map(a=>a.intentSeq)})};
         if(mutationTool(request.name) && attempts.some(a=>a.phase==="performed" && a.executionId===activeEffect && invocationKey(a.tool,a.input)===invocationKey(request.name,request.input)))return {name:request.name,exit:126,output:"Inspection concluded this invocation already happened; repeating it in this resumed execution is refused."};
+        const externalNames=(activeTools as ToolRunner&{names?:readonly string[]}).names??options.toolNames??[];
+        if(workspaceEnabled&&activeWorkspace===activeSource&&mutationTool(request.name)&&!["git","prepare_workspace","integrate_workspace","finish"].includes(request.name)&&externalNames.includes(request.name)){
+          const inventory=await inspectAgentGit(activeSource,{signal});
+          signal.throwIfAborted();
+          if(directiveRevision()!==proposalDirective||!contextCurrent())return {name:request.name,exit:126,output:"The instructions changed; this proposal was discarded."};
+          if(inventory.kind!=="unavailable"||inventory.reason!=="not-repository"){
+            const prepared=await currentTools.run({name:"prepare_workspace",input:{unit:"implementation"}});
+            return {name:request.name,exit:126,output:prepared.exit===0?"The controller prepared an isolated workspace. This source command was not executed; propose it again from the refreshed workspace context.":"Automatic isolated preparation was refused or unconfirmed. This source command was not executed; inspect the workspace and preparation receipts before retry."};
+          }
+        }
         const intent=shared.append({kind:"action",subject:"terminal.intent",data:{version:1,tool:request.name,input:request.input,effectId:activeEffect,phase:"requested",scopeCwd:activeWorkspace}});
         const result=await executeTool(request);signal.throwIfAborted();completeAttempt(shared,intent,result);return result;
       }
@@ -623,7 +633,7 @@ export function createProducer(options: ProducerOptions): Producer {
     } else changeObjectiveStatus(shared,"active","Explicit user resume");
     if(resume)await resumeWorkspace();
     shared.append({kind:"directive",subject,data:{text:AUTONOMOUS_POLICY}});
-    if(workspaceEnabled)shared.append({kind:"directive",subject,data:{text:"For meaningful code changes, prepare an isolated workspace with prepare_workspace {unit:short description}. The controller preserves current tracked/untracked work and selects the tool cwd; do not provide paths or Git branches. No workspace is needed for simple reading/consultation. After preparation, derive the next actions from the refreshed context. Isolated changes remain pending integration. If integrate_workspace is declared, propose it after validation/review; the controller requires a current pinned owner check and an unchanged source before applying a recoverable file plan. After integration, finish independently checks the source. Without integration, no finish can close the source goal."}});
+    if(workspaceEnabled)shared.append({kind:"directive",subject,data:{text:"The controller automatically prepares an isolated Git workspace before external code effects. You may also request prepare_workspace {unit:short description}. The controller preserves current tracked/untracked work and selects the tool cwd; do not provide paths or Git branches. No workspace is needed for simple reading/consultation. After preparation, derive the next actions from the refreshed context. Isolated changes remain pending integration. If integrate_workspace is declared, propose it after validation/review; the controller requires a current pinned owner check and an unchanged source before applying a recoverable file plan. After integration, finish independently checks the source. Without integration, no finish can close the source goal."}});
 
     // The request is committed conditionally before the world is asked, so two
     // surfaces that both find a run allowed cannot both be right by the time it

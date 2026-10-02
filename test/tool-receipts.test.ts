@@ -96,3 +96,28 @@ test("failure to persist a receipt after the effect stops subsequent tools and l
     assert.equal(projectEffectAttempts(journal.core.toSession().events).filter(a=>a.tool==="node"&&a.phase==="uncertain").length,1);
   }finally{journal?.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test("null exit preserves the durable intent without claiming completion",()=>{
+  const store=new EventStore("null-exit",()=>0);const requested=intent(store,1);const before=store.revision;
+  assert.doesNotThrow(()=>completeAttempt(store,requested,{name:"node",exit:null,output:"effect may have happened"}));
+  assert.equal(store.revision,before);assert.equal(projectEffectAttempts(store.toSession().events)[0]!.phase,"uncertain");
+  assert.equal(store.toSession().evidence.length,0);
+});
+
+test("returned uncertain partial effect gates the next mutation and survives reopen",async()=>{
+  const root=mkdtempSync(join(tmpdir(),"cuesheet-null-receipt-"));let journal:TerminalSession|undefined;
+  try{
+    const cwd=join(root,"work");mkdirSync(cwd);const storage=join(root,"sessions");
+    journal=new TerminalSession({root:storage,cwd});const id=journal.metadata.id;const view=persistentView(journal);let dispatched=0;let inferred=0;
+    const producer=createProducer({store:view,journal,cwd,projectsRoot:root,identities:[],maxSteps:2,maxSlices:1,
+      model:{name:"uncertain",async infer(){inferred++;return {text:"",toolCalls:[{name:"node",input:{argv:["node","-e","first"]}},{name:"node",input:{argv:["node","-e","second"]}}]};}},
+      tools:{async run(request){dispatched++;appendFileSync(join(cwd,"effect.txt"),"partial\n");return {name:request.name,exit:null,output:"execution unconfirmed"};}}});
+    producer.say("preserve the partial effect");const until=Date.now()+5000;while(view.get().busy&&Date.now()<until)await new Promise(r=>setTimeout(r,5));
+    assert.equal(view.get().busy,false);assert.equal(dispatched,1);assert.ok(inferred>=1);assert.equal(journal.failure,null);
+    assert.equal(readFileSync(join(cwd,"effect.txt"),"utf8"),"partial\n");
+    assert.ok(journal.core.toSession().events.some(e=>e.kind==="observation"&&e.data.tool==="node"&&e.data.exit===null));
+    assert.equal(projectEffectAttempts(journal.core.toSession().events).filter(a=>a.tool==="node"&&a.phase==="uncertain").length,1);
+    journal.close();journal=new TerminalSession({root:storage,cwd,id});
+    assert.equal(projectEffectAttempts(journal.core.toSession().events).filter(a=>a.tool==="node"&&a.phase==="uncertain").length,1);assert.equal(journal.core.toSession().goal!.open,true);
+  }finally{journal?.close();rmSync(root,{recursive:true,force:true});}
+});
