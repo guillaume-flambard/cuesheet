@@ -9,7 +9,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/project-binding.ts",
-          "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+          "digest": "ff73e4b80723a93f7880a3cefb15753fd3feae90f6f8c6d5cbdc0433490e5d5b"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -25,7 +25,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/shared-context.ts",
-          "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+          "digest": "438b51f3d438d6446fe4709f05091c504f44c5255cc414530975dd6f5c4377dd"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -41,7 +41,7 @@
       "sourceRefs": [
         {
           "path": "src/cuesheet.ts",
-          "digest": "50d323d5b5b757bab49525c826bc5094f1fc0267ecc3dcdce1becfd2e841f384"
+          "digest": "ab1f94c731af6d3ed9d518faba6b5c1984dd7126616ee0b5716ba510ddeccee6"
         },
         {
           "path": "src/index.ts",
@@ -61,7 +61,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/worktree-integration.ts",
-          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+          "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -77,7 +77,7 @@
       "sourceRefs": [
         {
           "path": "src/core/intent.ts",
-          "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+          "digest": "fd7f06795c0edd1ac265aaa457c31ba6711a83efb18df02d6a1c23a7e1b7797a"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -141,7 +141,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/terminal-session.ts",
-          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+          "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -233,7 +233,7 @@
         },
         {
           "path": "src/adapters/terminal-session.ts",
-          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+          "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -249,7 +249,7 @@
       "sourceRefs": [
         {
           "path": "docs/harness/MULTI-WORKER.md",
-          "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+          "digest": "f7c5b9c0db32cf69caa49f54b922f1a1934b8e759e80dd7b4537a5f092633ee0"
         },
         {
           "path": "src/core/delegation.ts",
@@ -285,7 +285,7 @@
       "sourceRefs": [
         {
           "path": "apps/terminal/src/producer/index.ts",
-          "digest": "9669dd06c8d5ea4b8093208d4df5e14ad6c68f82f5cfe0dc81bd0453fd252683"
+          "digest": "b5cdfbecf8b4496b9f2f849e994577aa54ce7bf0753f1f54e1f8f4d73a1b46cc"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -301,7 +301,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/project-binding.ts",
-          "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+          "digest": "ff73e4b80723a93f7880a3cefb15753fd3feae90f6f8c6d5cbdc0433490e5d5b"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -319,7 +319,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/shared-context.ts",
-          "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+          "digest": "438b51f3d438d6446fe4709f05091c504f44c5255cc414530975dd6f5c4377dd"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -337,7 +337,7 @@
       "sourceRefs": [
         {
           "path": "src/cuesheet.ts",
-          "digest": "50d323d5b5b757bab49525c826bc5094f1fc0267ecc3dcdce1becfd2e841f384"
+          "digest": "ab1f94c731af6d3ed9d518faba6b5c1984dd7126616ee0b5716ba510ddeccee6"
         },
         {
           "path": "src/index.ts",
@@ -359,7 +359,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/worktree-integration.ts",
-          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+          "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -377,7 +377,7 @@
       "sourceRefs": [
         {
           "path": "src/core/intent.ts",
-          "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+          "digest": "fd7f06795c0edd1ac265aaa457c31ba6711a83efb18df02d6a1c23a7e1b7797a"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -449,7 +449,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/terminal-session.ts",
-          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+          "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -467,7 +467,7 @@
       "sourceRefs": [
         {
           "path": "apps/terminal/src/producer/session-view.ts",
-          "digest": "6b69f059235c62ec8e5add55e8cb74e965617b856aa1fe9fd6fbaaf859a96c70"
+          "digest": "383d67001b88af30ffffcc4a3b696203d99f7e9e7d61fc634ca560802662a508"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -501,7 +501,7 @@
       "sourceRefs": [
         {
           "path": "src/adapters/code-worker-loop.ts",
-          "digest": "ed3281a941338c613f9f3ba9f0a16bd60779c0143b7a739067ac71c456c8412d"
+          "digest": "7e15953505c34aab3a016d0c7f13ffd8f6b93d911f7ab7c0624b4a272dc22e94"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -571,11 +571,11 @@
       "sourceRefs": [
         {
           "path": "src/adapters/project-binding.ts",
-          "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+          "digest": "ff73e4b80723a93f7880a3cefb15753fd3feae90f6f8c6d5cbdc0433490e5d5b"
         },
         {
           "path": "test/project-binding.test.ts",
-          "digest": "b9602dcadb26ed105a5685962a2e632ec283131184cdb7d3dc08a6b04acce753"
+          "digest": "3eff5e74efeab042dfe2bcad432f934e0f0d91fb8a0812f882326a0bce6a7b8c"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -593,11 +593,11 @@
       "sourceRefs": [
         {
           "path": "src/adapters/worktree-integration.ts",
-          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+          "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
         },
         {
           "path": "test/worktree-integration.test.ts",
-          "digest": "16890cf4f3219669346a4d620484e938cca8419dd3c85a456ae878ee6c907f10"
+          "digest": "13d4f4d1f4813f6d614d4e75c35c5098d4174e64f68604eee3cf0b50c53d5f5b"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -615,11 +615,11 @@
       "sourceRefs": [
         {
           "path": "src/adapters/worktree-integration.ts",
-          "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+          "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
         },
         {
           "path": "test/worktree-integration.test.ts",
-          "digest": "16890cf4f3219669346a4d620484e938cca8419dd3c85a456ae878ee6c907f10"
+          "digest": "13d4f4d1f4813f6d614d4e75c35c5098d4174e64f68604eee3cf0b50c53d5f5b"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -769,7 +769,7 @@
       "sourceRefs": [
         {
           "path": "src/core/intent.ts",
-          "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+          "digest": "fd7f06795c0edd1ac265aaa457c31ba6711a83efb18df02d6a1c23a7e1b7797a"
         },
         {
           "path": "test/intent.test.ts",
@@ -791,11 +791,11 @@
       "sourceRefs": [
         {
           "path": "src/adapters/terminal-session.ts",
-          "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+          "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
         },
         {
           "path": "test/terminal-sessions.test.ts",
-          "digest": "852719ebe06f986e97c334cb44d3d7a28c641de1ab24028a8265bc2b85248029"
+          "digest": "dbc3ffdc1333eb7a690e6d542e523cd9f95907554f6096c03fdc0d83aa274ee1"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -817,7 +817,7 @@
         },
         {
           "path": "test/terminal-sessions.test.ts",
-          "digest": "852719ebe06f986e97c334cb44d3d7a28c641de1ab24028a8265bc2b85248029"
+          "digest": "dbc3ffdc1333eb7a690e6d542e523cd9f95907554f6096c03fdc0d83aa274ee1"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -988,7 +988,7 @@
       "sourceRefs": [
         {
           "path": "docs/harness/MULTI-WORKER.md",
-          "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+          "digest": "f7c5b9c0db32cf69caa49f54b922f1a1934b8e759e80dd7b4537a5f092633ee0"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1004,7 +1004,7 @@
       "sourceRefs": [
         {
           "path": "test/project-binding.test.ts",
-          "digest": "b9602dcadb26ed105a5685962a2e632ec283131184cdb7d3dc08a6b04acce753"
+          "digest": "3eff5e74efeab042dfe2bcad432f934e0f0d91fb8a0812f882326a0bce6a7b8c"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1022,7 +1022,7 @@
       "sourceRefs": [
         {
           "path": "test/shared-context.test.ts",
-          "digest": "866870c4da2a3618b9b16734db51a44f2e4a5180749cac8e1d357ec8f4c2d96b"
+          "digest": "cf1d1a219f1e21fc63842a4119fb153398d8ad80cbfdc72dee403803d3e94153"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1090,7 +1090,7 @@
       "sourceRefs": [
         {
           "path": "test/worktree-integration.test.ts",
-          "digest": "16890cf4f3219669346a4d620484e938cca8419dd3c85a456ae878ee6c907f10"
+          "digest": "13d4f4d1f4813f6d614d4e75c35c5098d4174e64f68604eee3cf0b50c53d5f5b"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1165,7 +1165,7 @@
       "sourceRefs": [
         {
           "path": "test/terminal-sessions.test.ts",
-          "digest": "852719ebe06f986e97c334cb44d3d7a28c641de1ab24028a8265bc2b85248029"
+          "digest": "dbc3ffdc1333eb7a690e6d542e523cd9f95907554f6096c03fdc0d83aa274ee1"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1300,7 +1300,7 @@
       "dependency": "entity.integration.producer",
       "sourceRef": {
         "path": "apps/terminal/src/producer/index.ts",
-        "digest": "9669dd06c8d5ea4b8093208d4df5e14ad6c68f82f5cfe0dc81bd0453fd252683"
+        "digest": "b5cdfbecf8b4496b9f2f849e994577aa54ce7bf0753f1f54e1f8f4d73a1b46cc"
       }
     },
     {
@@ -1310,7 +1310,7 @@
       "dependency": "entity.integration.project_binding",
       "sourceRef": {
         "path": "src/adapters/project-binding.ts",
-        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+        "digest": "ff73e4b80723a93f7880a3cefb15753fd3feae90f6f8c6d5cbdc0433490e5d5b"
       }
     },
     {
@@ -1320,7 +1320,7 @@
       "dependency": "entity.integration.shared_context",
       "sourceRef": {
         "path": "src/adapters/shared-context.ts",
-        "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+        "digest": "438b51f3d438d6446fe4709f05091c504f44c5255cc414530975dd6f5c4377dd"
       }
     },
     {
@@ -1340,7 +1340,7 @@
       "dependency": "entity.integration.worktree_merge",
       "sourceRef": {
         "path": "src/adapters/worktree-integration.ts",
-        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
       }
     },
     {
@@ -1370,7 +1370,7 @@
       "dependency": "entity.objectives.intent",
       "sourceRef": {
         "path": "src/core/intent.ts",
-        "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+        "digest": "fd7f06795c0edd1ac265aaa457c31ba6711a83efb18df02d6a1c23a7e1b7797a"
       }
     },
     {
@@ -1420,7 +1420,7 @@
       "dependency": "entity.sessions.terminal",
       "sourceRef": {
         "path": "src/adapters/terminal-session.ts",
-        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
       }
     },
     {
@@ -1430,7 +1430,7 @@
       "dependency": "entity.sessions.view",
       "sourceRef": {
         "path": "apps/terminal/src/producer/session-view.ts",
-        "digest": "6b69f059235c62ec8e5add55e8cb74e965617b856aa1fe9fd6fbaaf859a96c70"
+        "digest": "383d67001b88af30ffffcc4a3b696203d99f7e9e7d61fc634ca560802662a508"
       }
     },
     {
@@ -1460,7 +1460,7 @@
       "dependency": "entity.workers.loop",
       "sourceRef": {
         "path": "src/adapters/code-worker-loop.ts",
-        "digest": "ed3281a941338c613f9f3ba9f0a16bd60779c0143b7a739067ac71c456c8412d"
+        "digest": "7e15953505c34aab3a016d0c7f13ffd8f6b93d911f7ab7c0624b4a272dc22e94"
       }
     },
     {
@@ -1500,7 +1500,7 @@
       "dependency": "source.workers.multi",
       "sourceRef": {
         "path": "docs/harness/MULTI-WORKER.md",
-        "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+        "digest": "f7c5b9c0db32cf69caa49f54b922f1a1934b8e759e80dd7b4537a5f092633ee0"
       }
     },
     {
@@ -1510,7 +1510,7 @@
       "dependency": "entity.integration.worktree_merge",
       "sourceRef": {
         "path": "src/adapters/worktree-integration.ts",
-        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
       }
     },
     {
@@ -1540,7 +1540,7 @@
       "dependency": "entity.integration.shared_context",
       "sourceRef": {
         "path": "src/adapters/shared-context.ts",
-        "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+        "digest": "438b51f3d438d6446fe4709f05091c504f44c5255cc414530975dd6f5c4377dd"
       }
     },
     {
@@ -1550,7 +1550,7 @@
       "dependency": "entity.integration.project_binding",
       "sourceRef": {
         "path": "src/adapters/project-binding.ts",
-        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+        "digest": "ff73e4b80723a93f7880a3cefb15753fd3feae90f6f8c6d5cbdc0433490e5d5b"
       }
     },
     {
@@ -1590,7 +1590,7 @@
       "dependency": "entity.sessions.terminal",
       "sourceRef": {
         "path": "src/adapters/terminal-session.ts",
-        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
       }
     },
     {
@@ -1710,7 +1710,7 @@
       "dependency": "entity.workers.process",
       "sourceRef": {
         "path": "docs/harness/MULTI-WORKER.md",
-        "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+        "digest": "f7c5b9c0db32cf69caa49f54b922f1a1934b8e759e80dd7b4537a5f092633ee0"
       }
     },
     {
@@ -1720,7 +1720,7 @@
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
         "path": "docs/harness/MULTI-WORKER.md",
-        "digest": "13b5055c10c58ee67694eecb9c992b1855e5b84b3776014459e3a70be55c8ae4"
+        "digest": "f7c5b9c0db32cf69caa49f54b922f1a1934b8e759e80dd7b4537a5f092633ee0"
       }
     },
     {
@@ -1730,7 +1730,7 @@
       "dependency": "contract.integration.binding",
       "sourceRef": {
         "path": "src/adapters/project-binding.ts",
-        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+        "digest": "ff73e4b80723a93f7880a3cefb15753fd3feae90f6f8c6d5cbdc0433490e5d5b"
       }
     },
     {
@@ -1750,7 +1750,7 @@
       "dependency": "contract.integration.plan",
       "sourceRef": {
         "path": "src/adapters/worktree-integration.ts",
-        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
       }
     },
     {
@@ -1760,7 +1760,7 @@
       "dependency": "contract.objectives.intent",
       "sourceRef": {
         "path": "src/core/intent.ts",
-        "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+        "digest": "fd7f06795c0edd1ac265aaa457c31ba6711a83efb18df02d6a1c23a7e1b7797a"
       }
     },
     {
@@ -1800,7 +1800,7 @@
       "dependency": "contract.sessions.terminal",
       "sourceRef": {
         "path": "src/adapters/terminal-session.ts",
-        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
       }
     },
     {
@@ -1830,7 +1830,7 @@
       "dependency": "invariant.integration.ambiguity",
       "sourceRef": {
         "path": "src/adapters/project-binding.ts",
-        "digest": "b78c133049853a4c3dbf759895ecf4d6d4d21425e84cf822226c520f74ffba47"
+        "digest": "ff73e4b80723a93f7880a3cefb15753fd3feae90f6f8c6d5cbdc0433490e5d5b"
       }
     },
     {
@@ -1840,7 +1840,7 @@
       "dependency": "contract.integration.context",
       "sourceRef": {
         "path": "src/adapters/shared-context.ts",
-        "digest": "820b51f7f7370e983aa6e45ccc12f5b38830a6b20d751cb8a74a3d6f2c8a018f"
+        "digest": "438b51f3d438d6446fe4709f05091c504f44c5255cc414530975dd6f5c4377dd"
       }
     },
     {
@@ -1880,7 +1880,7 @@
       "dependency": "invariant.integration.checkable_path",
       "sourceRef": {
         "path": "src/adapters/worktree-integration.ts",
-        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
       }
     },
     {
@@ -1890,7 +1890,7 @@
       "dependency": "invariant.integration.drift",
       "sourceRef": {
         "path": "src/adapters/worktree-integration.ts",
-        "digest": "6123c0b8fed754bd0305f2be837c47b5a09dc411760b588796ae7ee2c3b39481"
+        "digest": "93f1b57c25fab9c16bd921a9e2def860cefd08037626d46b8a783eb645463cd4"
       }
     },
     {
@@ -1900,7 +1900,7 @@
       "dependency": "invariant.objectives.routing",
       "sourceRef": {
         "path": "src/core/intent.ts",
-        "digest": "48e23b0b3a4f09f9bf81c2f09ca7b2efd73f69ac1b9bcb413d14f8aa74949b2c"
+        "digest": "fd7f06795c0edd1ac265aaa457c31ba6711a83efb18df02d6a1c23a7e1b7797a"
       }
     },
     {
@@ -1950,7 +1950,7 @@
       "dependency": "invariant.sessions.durable",
       "sourceRef": {
         "path": "src/adapters/terminal-session.ts",
-        "digest": "62fc1cc017dbf00d549760c596407c1c84ec2a87049632e1038795c9ccf51f28"
+        "digest": "1ca88fd8aa5161471c690880576f038f9bc2b4f0b8c4b2601c281be2b6112a33"
       }
     },
     {

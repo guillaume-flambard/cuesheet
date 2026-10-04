@@ -1,5 +1,9 @@
 # Passation à l'agent exécutant
 
+Toute reprise commence par `MASTER-PRODUCT-DIRECTION.md` et
+`DESIGN-DIRECTION.md`. Ne pas reconstruire la direction depuis l'interface
+existante. Le master exprime la vision ; state.json décrit le travail réel.
+
 Copier le bloc suivant comme message de départ. Aucun autre chat n'a été créé
 ou contacté pour cette passation.
 

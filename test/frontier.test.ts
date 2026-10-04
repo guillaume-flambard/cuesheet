@@ -93,9 +93,9 @@ describe("snapshotPortfolio", () => {
         s.projects.length,
         "every repository is either free or held, never neither",
       );
-      assert.ok(s.held.includes("dirty-repo"), "a dirty repository is held");
-      assert.ok(!s.free.includes("dirty-repo"));
-      assert.ok(s.free.includes("clean-repo"), "a clean, pushed repository is free");
+      assert.ok(s.held.some((h) => h.startsWith("dirty-repo")), "a dirty repository is held");
+      assert.ok(!s.free.some((f) => f.startsWith("dirty-repo")));
+      assert.ok(s.free.some((f) => f.startsWith("clean-repo")), "a clean, pushed repository is free");
     } finally {
       p.dispose();
     }
@@ -115,7 +115,7 @@ describe("snapshotPortfolio", () => {
       const s = snapshotPortfolio({ projectsRoot: p.projectsRoot });
       const repo = s.projects.find((r) => r.entry.name === "unpushed-repo");
       assert.equal(repo?.ahead, 1, "one commit is ahead of the upstream");
-      assert.ok(s.held.includes("unpushed-repo"), "unpushed work holds the repository");
+      assert.ok(s.held.some((h) => h.startsWith("unpushed-repo")), "unpushed work holds the repository");
     } finally {
       p.dispose();
     }

@@ -1,0 +1,89 @@
+{
+  "phase": "IMPLEMENTING",
+  "requirements": [
+    "MC01",
+    "MC02",
+    "MC03",
+    "MC04",
+    "MC05",
+    "MC06"
+  ],
+  "verified": [
+    "MC01",
+    "MC02",
+    "MC05"
+  ],
+  "pending": [
+    "MC03",
+    "MC04",
+    "MC06"
+  ],
+  "tasks": [
+    {
+      "id": "MC-RUNTIME",
+      "priority": "P1",
+      "status": "DONE",
+      "dependencies": [],
+      "proof": "VERIFICATION.md: producer identity/restart/admission and MCP integration tests"
+    },
+    {
+      "id": "MC-PROJECTION",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "dependencies": [
+        "MC-RUNTIME"
+      ]
+    },
+    {
+      "id": "MC-SERVER",
+      "priority": "P1",
+      "status": "DONE",
+      "dependencies": [
+        "MC-PROJECTION"
+      ],
+      "proof": "VERIFICATION.md: producer identity/restart/admission and MCP integration tests"
+    },
+    {
+      "id": "MC-UI",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "dependencies": [
+        "MC-SERVER"
+      ]
+    },
+    {
+      "id": "MC-PROOF",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "dependencies": [
+        "MC-UI"
+      ]
+    },
+    {
+      "id": "MC-CLOSE",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "dependencies": [
+        "MC-PROOF"
+      ]
+    }
+  ],
+  "risksHighOpen": [
+    "host approval/resume and production integration",
+    "real secondary-agent execution and successful independent acceptance",
+    "uncertain tool recovery",
+    "strict compilation remains blocked by existing errors"
+  ],
+  "ready_for_manual_acceptance": false,
+  "journey005Closed": false,
+  "evidence": [
+    "VERIFICATION.md",
+    "/Users/memo/projects/_reports/cuesheet-mission-control-2026-10-03/real-1/audit.json"
+  ],
+  "remaining": [
+    "Host confirmation and resume through shared authority contract",
+    "Real successful agent and acceptance proof",
+    "Production host rendering proof",
+    "Recovery of uncertain effects without replay"
+  ]
+}

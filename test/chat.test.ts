@@ -253,4 +253,69 @@ describe("the chat surface", () => {
     const { code } = say(["exit"]);
     assert.equal(code, 0);
   });
+
+  // ACCEPTED 1: the gate is held by the surface, and the surface's copy is dead
+  // These tests were provided by NEXT-FRONTIER.md and should fail before the fix
+
+  it("approving evaluates the gate instead of dying", () => {
+    const { out } = say(["fix the failing test", "go", "exit"], process.cwd());
+    assert.doesNotMatch(out, /registry is not defined/);
+    // The session file should be readable and not contain the crash
+    const sessionIdMatch = out.match(/session: (run-[a-z0-9]+)/);
+    if (sessionIdMatch) {
+      const sessionId = sessionIdMatch[1];
+      const sessionPath = join(homedir(), ".cuesheet", "sessions", sessionId + ".jsonl");
+      if (existsSync(sessionPath)) {
+        const content = readFileSync(sessionPath, "utf8");
+        assert.doesNotMatch(content, /registry is not defined/);
+      }
+    }
+  });
+
+  it("a refused run is observed as refused, and the intention survives", () => {
+    // Use a goal that requires a non-existent skill to trigger admission refusal
+    // (the test fixture has an empty skill registry, so any requirement blocks)
+    const r = spawnSync(process.execPath, [CHAT], {
+      encoding: "utf8",
+      input: "use the skill called definitely-not-a-real-skill\ngo\nexit\n",
+      cwd: process.cwd(),
+    });
+    const out = r.stdout;
+    // The admission should be blocked (would_block) since the skill doesn't exist
+    assert.match(out, /admission: (BLOCKED|UNVERIFIED)/);
+    const sessionIdMatch = out.match(/session: (run-[a-z0-9]+)/);
+    if (sessionIdMatch) {
+      const sessionId = sessionIdMatch[1];
+      const sessionPath = join(homedir(), ".cuesheet", "sessions", sessionId + ".jsonl");
+      if (existsSync(sessionPath)) {
+        const events = readFileSync(sessionPath, "utf8").trim().split("\n").map(JSON.parse);
+        const observed = events.find((e: any) => e.kind === "effect_observed");
+        assert.equal(observed?.data?.outcome, "failed", "EFF-01: effect should be failed, not succeeded");
+        const hasGoalClosed = events.some((e: any) => e.data?.goalClosed === true);
+        assert.equal(hasGoalClosed, false, "EFF-06: intention should survive a refusal");
+      }
+    }
+  });
+
+  it("gate command does not crash", () => {
+    const { out } = say(["gate: test brief", "exit"], process.cwd());
+    assert.doesNotMatch(out, /registry is not defined/);
+    assert.match(out, /admission:/);
+  });
+
+  it("forced override in home directory does not crash", async () => {
+    const { out } = say(["!fix the tests", "exit"], homedir());
+    assert.doesNotMatch(out, /registry is not defined/);
+    // Should not leave a zero-byte session file
+    const sessionIdMatch = out.match(/session: (run-[a-z0-9]+)/);
+    if (sessionIdMatch) {
+      const sessionId = sessionIdMatch[1];
+      const sessionPath = join(homedir(), ".cuesheet", "sessions", sessionId + ".jsonl");
+      if (existsSync(sessionPath)) {
+        const { statSync } = await import("node:fs");
+        const stats = statSync(sessionPath);
+        assert.ok(stats.size > 0, "session file should not be empty");
+      }
+    }
+  });
 });

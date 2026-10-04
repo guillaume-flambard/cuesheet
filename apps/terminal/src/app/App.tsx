@@ -1,3 +1,7 @@
+import {Work} from '../overlays/Work.tsx';
+import {Changes} from '../overlays/Changes.tsx';
+import {MotionContext} from "../theme/motion.tsx";
+import {findCommand} from "./commands.ts";
 import {AgentModels} from '../overlays/AgentModels.tsx';
 /**
  * The shell: header, timeline, composer, status bar.
@@ -44,13 +48,15 @@ import {AgentModels} from '../overlays/AgentModels.tsx';
  */
 
 import React, { useCallback, useMemo, useEffect, useState } from "react";
-import { Box, Text, useApp, useInput, useStdout } from "ink";
+import { Box, Text, useApp, useInput, useStdout, useStdin } from "ink";
 import { useSurface } from "./store.ts";
-import type { Control, SurfaceState } from "./state.ts";
+import type { Control, SurfaceState, WorkReference } from "./state.ts";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
 import { Header } from "../components/Header.tsx";
 import { Timeline } from "../components/Timeline.tsx";
 import { Composer } from "../components/Composer.tsx";
+import { Activity } from "../components/Activity.tsx";
+import {contextLines} from '../components/WorkContext.tsx';
 import { StatusBar } from "../components/StatusBar.tsx";
 import { Projects } from "../overlays/Projects.tsx";
 import { Inspect } from "../overlays/Inspect.tsx";
@@ -83,6 +89,7 @@ export interface AppProps {
 export function App(props: AppProps): JSX.Element {
   const { exit } = useApp();
   const { stdout } = useStdout();
+  const {stdin}=useStdin();
   const [, resized] = useState(0);
   useEffect(() => {
     const resize = () => resized((n) => n + 1);
@@ -98,26 +105,68 @@ export function App(props: AppProps): JSX.Element {
   const wired=replacement ?? initial;
   useEffect(()=>()=>wired.session?.close(),[wired]);
   const { store, producer, binding } = wired;
+  const [motion,setMotion]=useState(process.env.CUESHEET_REDUCE_MOTION!=="1");
+  const [paletteAction,setPaletteAction]=useState<string|undefined>();
   const [agentModelsMode,setAgentModelsMode]=useState(false);
+  const [returnToWork,setReturnToWork]=useState(false);
+  const [reference,setReference]=useState<{value:WorkReference;title:string}|null>(null);
   const [, changedModel] = useState(0);
   const missing = binding ? binding.missing : wired.missing;
   const modelName = binding ? binding.label : wired.modelName;
   const state = useSurface(store);
 
   /** The only path from a component to a decision. */
-  const send = useCallback((control: Control) => store.send(control), [store]);
+  const send = useCallback((control: Control) => {
+    if(control.type==='close'&&returnToWork){setReturnToWork(false);store.send({type:'open',overlay:'work'});return;}
+    store.send(control);
+  }, [store,returnToWork]);
   const submit = useCallback((text: string) => {
+    const said=text.trim();
+    if(reference){
+      const result=producer?.steerAt?.(reference.value,said)??{error:'Targeted correction unavailable. Esc detaches the target; your draft is preserved.'};
+      if('error' in result){store.send({type:'noted',entry:{kind:'failure',text:result.error}});return;}
+      setReference(null);store.send({type:'compose',text:''});return;
+    }
+    if(said.startsWith('/')&&!said.split(/\s/)[0]!.slice(1).includes('/')){
+      const [token,...parts]=said.slice(1).split(/\s+/);const command=findCommand(token??'');const args=parts.join(' ');
+      const refuse=(message:string)=>store.send({type:'noted',entry:{kind:'failure',text:message}});
+      if(!command){refuse(`Unknown command /${token}. Use /help or /commands.`);return;}
+      if(command.action==='native'||(command.name==='context'&&args)||(command.name==='check'&&args)){
+        if(!producer){refuse('Runtime unavailable. Choose a model first.');return;}store.send({type:'compose',text:''});producer.say(said);return;
+      }
+      if(command.action==='steer'){
+        if(!args){refuse('Usage: /steer TEXT');return;}
+        if(!producer?.steer?.(args)){refuse('No current objective could be corrected. Your instruction is preserved.');return;}store.send({type:'compose',text:''});return;
+      }
+      if(command.action==='motion'){
+        if(args&&!['on','off'].includes(args)){refuse('Usage: /motion on|off');return;}
+        if(args)setMotion(args==='on');store.send({type:'compose',text:''});store.send({type:'noted',entry:{kind:'status',label:'motion',value:args|| (motion?'on':'off'),certainty:'confirmed'}});return;
+      }
+      if(args){refuse(`/${command.name} does not accept arguments. Use /help.`);return;}
+      const action=command.action;
+      if(action==='quit'){if(store.get().busy){refuse('Work is running. Use /stop before /quit.');return;}exit();return;}
+      store.send({type:'compose',text:''});
+      if(action==='stop'){producer?.cancel?.();return;}
+      if(action==='resume'){producer?.resume?.();return;}
+      if(action==='new'){loadSession();return;}
+      if(action==='agent-models'){setAgentModelsMode(true);send({type:'open',overlay:'models'});return;}
+      setAgentModelsMode(false);
+      if(['help','models','sessions','inspect','changes','work'].includes(action)){send({type:'open',overlay:action as 'help'|'models'|'sessions'|'inspect'|'changes'|'work'});return;}
+      setPaletteAction(action==='palette'?undefined:action);send({type:'open',overlay:'palette'});return;
+    }
     if (missing) { store.send({ type: "submit", text }); return; }
     producer?.say(text);
-  }, [producer, missing, store]);
+  }, [producer, missing, store,motion,reference]);
   const catalog = useCallback((choice: Parameters<typeof listModels>[0], signal: AbortSignal) => listModels(choice, { signal }), []);
 
   const sessionChoices=useCallback(()=>listTerminalSessions(),[]);
   const loadSession=(id?:string)=>{
-    if(store.get().busy) {store.send({type:"noted",entry:{kind:"failure",text:"Un travail est en cours. Interromps-le avant de changer de session."}});store.send({type:"close"});return;}
+    setReturnToWork(false);
+    if(store.get().busy) {store.send({type:"noted",entry:{kind:"failure",text:"Work is running. Stop it before loading another history."}});store.send({type:"close"});return;}
     if(id===wired.session?.metadata.id) {store.send({type:"close"});return;}
     const next=wire({...props,cwd:wired.session?.metadata.cwd ?? props.cwd,store:undefined,producer:undefined},id ?? null);
     if(next.missing && !next.producer) {store.send({type:"noted",entry:{kind:"failure",text:next.missing}});store.send({type:"close"});return;}
+    setReference(null);
     setReplacement(next);
   };
 
@@ -125,6 +174,8 @@ export function App(props: AppProps): JSX.Element {
   // it is here rather than in a component so that a component never sees a turn
   // at all.
   useInput((input, key) => {
+    if((stdin as {pasteText?:string|null}).pasteText!=null)return;
+    if(key.escape&&state.overlay==='none'&&reference){setReference(null);return;}
     if (key.escape) return send({ type: "close" });
     if (input === "?" && state.composer === "" && state.overlay === "none") return send({ type: "open", overlay: "help" });
   });
@@ -132,11 +183,18 @@ export function App(props: AppProps): JSX.Element {
   // One width, computed once and passed down. Three components each deciding
   // their own rule width is how a header ends up wider than the status bar, which
   // is the most visible way a terminal layout looks unfinished.
-  const column = SHELL_RULE_WIDTH(stdout.columns);
-  const rows = Math.max(8, stdout.rows ?? 24);
-  const contentRows = Math.max(1, rows - 9);
+  const terminalWidth = SHELL_RULE_WIDTH(stdout.columns);
+  const gutter = terminalWidth >= 100 ? 4 : terminalWidth >= 40 ? 2 : 0;
+  const column = Math.max(1, Math.min(96, terminalWidth - gutter * 2));
+  const terminalRows = Math.max(8, stdout.rows ?? 24);
+  const rows = terminalRows;
+  const contentRows = Math.max(1, rows - 8);
+  const workSurface=producer?.workSurface?.();
+  const context=contextLines(workSurface,Math.min(8,Math.max(2,Math.floor(contentRows/3))));
 
   return (
+    <MotionContext.Provider value={motion}>
+    <Box width={terminalWidth} height={rows - 1} paddingX={gutter} alignItems="center" flexDirection="column" overflow="hidden">
     <Box flexDirection="column" width={column} height={rows - 1} overflow="hidden">
       <Header
         width={column}
@@ -145,67 +203,89 @@ export function App(props: AppProps): JSX.Element {
         model={producer ? modelName : "no model"}
       />
 
-      <Box flexDirection="column" flexGrow={1} flexShrink={0} height={contentRows + 2} overflow="hidden" paddingTop={1} paddingBottom={1}>
-        {state.overlay === "models" && agentModelsMode && producer ? (
-          <AgentModels rows={contentRows} busy={state.busy} targets={()=>producer.agentModelTargets?.()??[]} apply={(role,choice)=>producer.selectAgentModel?.(role,choice)??{error:"Sélection indisponible."}} list={catalog} onClose={()=>send({type:"close"})}/>
+      <Box flexDirection="column" flexGrow={1} flexShrink={0} height={contentRows + 1} overflow="hidden" paddingTop={1}>
+        {state.overlay === "changes" ? (
+          <Changes width={column} rows={contentRows} busy={state.busy} load={()=>producer?.changes?.()??Promise.resolve(null)} decide={(token,digest,decision)=>producer?.decideChanges?.(token,digest,decision)??Promise.reject(Error("Review decision unavailable."))}/>
+        ) : state.overlay === "models" && agentModelsMode && producer ? (
+          <AgentModels width={column} rows={contentRows} busy={state.busy} targets={()=>producer.agentModelTargets?.()??[]} apply={(role,choice)=>producer.selectAgentModel?.(role,choice)??{error:"Selection unavailable."}} list={catalog} onClose={()=>send({type:"close"})}/>
         ) : state.overlay === "models" && binding ? (
-          <Models selection={binding.selection} rows={contentRows} busy={state.busy} list={catalog}
+          <Models width={column} selection={binding.selection} rows={contentRows} busy={state.busy} list={catalog}
             apply={(choice, save) => {
               const result = binding.select(choice, { save, busy: store.get().busy, beforeCommit:selection=>producer?.modelSelected?.(selection) });
               if ("ok" in result) {
                 changedModel(value => value + 1);
-                store.send({ type: "noted", entry: { kind: "status", label: "modèle", value: `${binding.label}${store.get().busy ? " · sélectionné pour la suite" : ""}${save && !result.warning ? " · préférence sauvegardée" : " · cette session"}`, certainty: "confirmed" } });
-                if(result.warning)store.send({type:"noted",entry:{kind:"status",label:"préférence",value:result.warning,certainty:"unknown"}});
+                store.send({ type: "noted", entry: { kind: "status", label: "model", value: `${binding.label}${store.get().busy ? " · next request" : ""}${save && !result.warning ? " · default saved" : " · this session"}`, certainty: "confirmed" } });
+                if(result.warning)store.send({type:"noted",entry:{kind:"status",label:"preference",value:result.warning,certainty:"unknown"}});
                 store.send({ type: "logged", line: `[model-selected] ${JSON.stringify(binding.selection)} saved=${save}` });
               }
               return result;
             }} onClose={() => send({ type: "close" })} />
         ) : state.overlay === "palette" ? (
-          <Palette width={column} rows={contentRows} onOpen={(overlay) => {setAgentModelsMode(false);send({ type: "open", overlay });}}
-            onWorkspaces={()=>producer?.workspacePage?.()??{digest:"",offset:0,nextOffset:null,lines:["Workspaces indisponibles."]}}
-            onNotifications={()=>producer?.notificationPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Notifications indisponibles."]}}
-            onReadNotifications={digest=>producer?.readNotifications?.(digest)??{digest:"",offset:0,nextOffset:null,lines:["Notifications indisponibles."]}}
-            onSituation={()=>producer?.situationPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Situation indisponible."]}}
+          <Palette onAction={action=>{
+            if(action==='stop')producer?.cancel?.();
+            if(action==='motion')setMotion(value=>!value);
+            if(action==='steer')store.send({type:'compose',text:'/steer '+store.get().composer});
+            if(action==='native')producer?.say('/memory');
+            if(action==='quit'){if(store.get().busy){store.send({type:'noted',entry:{kind:'failure',text:'Work is running. Use /stop before /quit.'}});}else exit();}
+            send({type:'close'});
+          }} initialAction={paletteAction} width={column} rows={contentRows} onOpen={(overlay) => {setAgentModelsMode(false);send({ type: "open", overlay });}}
+            onSkills={()=>producer?.skillPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Skills unavailable."]}}
+            onWorkspaces={()=>producer?.workspacePage?.()??{digest:"",offset:0,nextOffset:null,lines:["Workspace inspection unavailable."]}}
+            onNotifications={()=>producer?.notificationPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Notifications unavailable."]}}
+            onReadNotifications={digest=>producer?.readNotifications?.(digest)??{digest:"",offset:0,nextOffset:null,lines:["Notifications unavailable."]}}
+            onSituation={()=>producer?.situationPage?.()??{digest:"",offset:0,nextOffset:null,lines:["Situation unavailable."]}}
             onAgentModels={()=>{setAgentModelsMode(true);send({type:"open",overlay:"models"});}}
-            onAgents={offset=>producer?.agentPage?.(offset) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun agent disponible."]}}
-            onContext={(offset,digest)=>producer?.sharedContextPage?.(offset,digest) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]}}
+            onAgents={offset=>producer?.agentPage?.(offset) ?? {digest:"",offset:0,nextOffset:null,lines:["No agents available."]}}
+            onContext={(offset,digest)=>producer?.sharedContextPage?.(offset,digest) ?? {digest:"",offset:0,nextOffset:null,lines:["No shared context configured."]}}
             onCheck={()=>producer?.checkConfirmation?.() ?? null} onConfirmCheck={approval=>{send({type:"close"});producer?.say(`/check confirm ${approval.id} ${approval.revision} ${approval.digest}`);}}
             onNew={()=>loadSession()} onResume={()=>{send({type:"close"});if(!missing) producer?.resume?.();}} />
         ) : state.overlay === "sessions" ? (
-          <Sessions rows={contentRows} current={wired.session?.metadata.id} list={sessionChoices} onChoose={loadSession} />
+          <Sessions width={column} rows={contentRows} current={wired.session?.metadata.id} list={sessionChoices} onChoose={loadSession} />
         ) : missing ? (
           <Notice text={missing} />
         ) : state.overlay === "projects" ? (
-          <Projects
+          <Projects rows={contentRows} width={column}
             choices={state.choices}
             onChoose={(option) => producer?.choose(option)}
             onDismiss={() => send({ type: "close" })}
           />
         ) : state.overlay === "inspect" ? (
-          <Inspect lines={state.log} width={column} maxLines={Math.max(1, contentRows - 2)} />
+          <Inspect lines={state.log} width={column} maxLines={Math.max(1, contentRows - 4)} />
         ) : state.overlay === "help" ? (
-          <Help onClose={() => send({ type: "close" })} />
-        ) : (
-          <Timeline width={column} entries={state.entries} visible={contentRows} rows={contentRows} />
-        )}
+          <Help rows={contentRows} onClose={() => send({ type: "close" })} />
+        ) : null}
+        <Box display={state.overlay === "work" ? "flex" : "none"}>
+          <Work key={wired.session?.metadata.id??'session'} active={state.overlay==='work'} entries={state.entries} surface={workSurface} width={column} rows={contentRows}
+            onReference={(value,title)=>{setReference({value,title});setReturnToWork(false);store.send({type:'close'});}}
+            onRedirect={()=>{setReturnToWork(false);store.send({type:'close'});}}
+            onOpen={target=>{setReturnToWork(true);setAgentModelsMode(false);if(target==='context'){setPaletteAction('context');store.send({type:'open',overlay:'palette'});}else store.send({type:'open',overlay:target});}}/>
+        </Box>
+        <Box display={state.overlay === "none" && !missing ? "flex" : "none"}>
+          <Timeline intent={workSurface?.intent??undefined} active={state.overlay === "none" && !missing} busy={state.busy} progressKind={state.progressKind} reasoning={state.progressKind === "text" ? state.reasoning : ""} width={column} entries={state.entries} context={context.slice(1)} visible={contentRows} rows={contentRows} />
+        </Box>
       </Box>
 
+      {reference?<Box width={column} height={1} flexShrink={0}><Text wrap="truncate-end" color={inkColor(theme.active)}>↳ Target: {reference.title} · Esc detach</Text></Box>:<Activity progressKind={state.reasoning?state.progressKind:undefined} busy={state.busy} entries={state.entries} width={column} />}
       <Composer
         width={column}
         placeholder={state.entries.length === 0 ? undefined : " "}
         value={state.composer}
         onChange={(text) => send({ type: "compose", text })}
         onSubmit={submit}
+        preserveOnEscape={!!reference}
         onQuit={() => state.busy ? producer?.cancel?.() : exit()}
-        onPalette={() => send({ type: "open", overlay: "palette" })}
+        onModels={() => {setAgentModelsMode(false);send({type:"open",overlay:"models"});}}
+        onPalette={() => {setPaletteAction(undefined);send({ type: "open", overlay: "palette" });}}
         onHelp={() => send({ type: "open", overlay: "help" })}
-        onInspect={() => send({ type: "open", overlay: "inspect" })}
+        onInspect={() => send({ type: "open", overlay: "work" })}
         active={state.overlay === "none"}
         disabled={!producer || !!missing}
         history={state.entries.flatMap((entry) => entry.kind === "you" ? [entry.text] : [])}
       />
 
       <StatusBar
+        overlay={state.overlay}
+        targeted={!!reference}
         notifications={producer?.notificationCount?.()??0}
         width={column}
         entries={state.entries}
@@ -213,6 +293,8 @@ export function App(props: AppProps): JSX.Element {
         onHelp={() => send({ type: "open", overlay: "help" })}
       />
     </Box>
+    </Box>
+    </MotionContext.Provider>
   );
 }
 
@@ -274,6 +356,6 @@ function Notice({ text }: { text: string }): JSX.Element {
 
 /** Exported so a test can check the shell without a terminal. */
 export const SHELL_RULE_WIDTH = (columns: number | undefined): number =>
-  Math.max(1, Math.min(columns ?? 100, 120));
+  Math.max(1, columns ?? 100);
 
 export type { SurfaceState, Option };

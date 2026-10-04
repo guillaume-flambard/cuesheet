@@ -28,6 +28,14 @@ export function withSharedContext(frame: ContextFrame, session: Session, options
     corrections:(entry.corrections ?? []).map(correction=>({operation:correction.operation,source:correction.source,revision:correction.revision})),
     history:"Full extraction and correction texts: read_shared_context",
   }))}))} : null, revision: last?.seq ?? -1, goal: frame.goal,
+      recentConversation: session.events.filter(event=>typeof event.data.text==="string" &&
+        (event.subject==="terminal.user" && event.kind==="note" || event.subject==="builder" && event.kind==="observation" && !event.data.tool)).slice(-4).map(event=>({
+          sourceSeq:event.seq,role:event.subject==="terminal.user"?"user":"assistant",text:String(event.data.text).slice(0,1000),truncated:String(event.data.text).length>1000,
+          note:event.subject==="terminal.user"?"Human conversational context; current directives determine authority.":"Model proposal, not execution or verification."})),
+      latestToolResults: frame.history.filter(event=>event.kind==="observation" && typeof event.data.tool==="string").slice(-3).map(event=>{
+        const output=String(event.data.output??""),clipped=output.length>1600;
+        return {sourceSeq:event.seq,tool:event.data.tool,exit:event.data.exit,output:clipped?output.slice(0,800)+"\n[excerpt omitted; retrieve this source sequence with read_history]\n"+output.slice(-800):output,truncated:clipped};
+      }),
       constraints: work.constraints.slice(), decisions: work.decisions.slice(),
       openQuestions: work.openQuestions.slice(), tasks: work.tasks.slice(),
       artifacts: work.artifacts.slice(), claims: work.claims.slice(), evidence: frame.evidence,

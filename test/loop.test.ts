@@ -258,3 +258,13 @@ describe("runAgentLoop", () => {
     );
   });
 });
+
+it('interactive tool-free answer yields once without closing the goal',async()=>{
+ const store=newStore();let calls=0;
+ const outcome=await runAgentLoop(store,{name:'answer',async infer(){calls++;return {text:'salut',toolCalls:[]};}},runner({}),{subject:'builder',goal:'bonjour',maxSteps:4,yieldOnResponse:true});
+ assert.equal(calls,1);assert.equal(outcome.stop.reason,'response-delivered');assert.equal(outcome.session.goal?.open,true);assert.deepEqual(outcome.claims,['salut']);
+});
+it('interactive yielding still executes requested tools and does not yield empty responses',async()=>{
+ const outcome=await runAgentLoop(newStore(),scripted({text:'',toolCalls:[]},{text:'reading',toolCalls:[{name:'cat',input:{path:'file'}}]},{text:'answer',toolCalls:[]}),runner({}),{subject:'builder',goal:'question',maxSteps:4,yieldOnResponse:true});
+ assert.equal(outcome.stop.reason,'response-delivered');assert.equal('steps' in outcome.stop && outcome.stop.steps,3);assert.equal(outcome.session.goal?.open,true);assert.ok(outcome.session.events.some(e=>e.kind==='action'&&e.data.tool==='cat'));
+});

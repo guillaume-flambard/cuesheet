@@ -44,13 +44,14 @@ if (target !== expected) throw new Error(`refusing to remove ${target}: expected
 rmSync(target, { recursive: true, force: true });
 '
 
-# tsc exits 1 on type errors. It still emits, and the source has type errors
-# that predate this build (docs/installability-proof.md, "The type check that
-# was never run"), so the exit code is recorded rather than obeyed. The count is
-# asserted by test/install.test.ts, which is where a regression in it is caught.
-TS_VERSION="$TS" DIST="$DIST" node_modules/.bin/tsc -p tsconfig.build.json > "$ROOT/.typecheck.log" 2>&1 || true
-TYPE_ERRORS=$(grep -c "error TS" "$ROOT/.typecheck.log" || true)
-echo "build: tsc emitted dist/, $TYPE_ERRORS type errors (see .typecheck.log)" >&2
+# Compiler failures stop the shipped build. The private test guard checks both
+# production and terminal configurations independently.
+if ! TS_VERSION="$TS" DIST="$DIST" node_modules/.bin/tsc -p tsconfig.build.json > "$ROOT/.typecheck.log" 2>&1; then
+  cat "$ROOT/.typecheck.log" >&2
+  echo "build: type check failed" >&2
+  exit 1
+fi
+echo "build: tsc emitted dist/, 0 type errors (see .typecheck.log)" >&2
 
 # --- fixup 1: the shebang bin needs -----------------------------------------
 JS="$DIST/src/cuesheet.js"

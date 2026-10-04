@@ -37,7 +37,7 @@ function engine(socket:string,path:string,method="GET",body?:unknown,signal?:Abo
   });
 }
 function json(reply:Reply,expected:number):Record<string,unknown>{
-  if(reply.status!==expected)throw new Error("Engine operation refused.");
+  if(reply.status!==expected)throw new Error("Engine operation refused (HTTP "+reply.status+").");
   const value:unknown=JSON.parse(reply.body.toString("utf8"));
   if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Invalid Engine response.");
   return value as Record<string,unknown>;
@@ -88,6 +88,7 @@ export class ContainerToolRunner {
     const abort=signal?AbortSignal.any([signal,deadline]):deadline;
     let maskRoot:string|undefined,attemptedCreate=false,admitted=false,createConfirmed=false;
     let result:ToolResult={name:request.name,exit:null,output:"Container tool not confirmed."};
+    let stage="Engine preflight";
     try{
       const version=json(await engine(this.options.socket,"/version","GET",undefined,abort),200);
       const apiMinor=(value:unknown)=>typeof value==="string"&&/^1\.\d+$/.test(value)?Number(value.split(".")[1]):-1;
@@ -117,28 +118,31 @@ export class ContainerToolRunner {
       }
       // Parent masks already hide their descendants; avoid mounting host data.
       for(const [path,directory] of masks)if(![...masks.keys()].some(parent=>parent!==path&&under(path,parent)))mounts.push(mount(directory?empty:blank,path,true));
-      inspectContainerRoots(roots,[...masks.keys()]);
+      stage="Workspace inspection";inspectContainerRoots(roots,[...masks.keys()]);
       const timeoutSeconds=Math.max(0.001,this.options.timeoutMs!/1000).toString()+"s";
       const uid=process.getuid?.()||1000,gid=process.getgid?.()||1000;
       const body={Image:this.options.image,Entrypoint:["/usr/bin/timeout","--signal=KILL",timeoutSeconds],Cmd:this.capsule?["node","-e",NODE_CAPSULE_BOOTSTRAP,...prepared.argv]:prepared.argv,WorkingDir:cwd,User:`${uid}:${gid}`,Tty:false,...(this.options.temporaryStorage==="volume"?{Volumes:{"/tmp":{}}}:{}),
-        Env:["HOME=/tmp","TMPDIR=/tmp","NO_COLOR=1"],Labels:{"io.cuesheet.tool":"v1"},
+        Env:["HOME=/tmp","TMPDIR=/tmp","NO_COLOR=1","NPM_CONFIG_OFFLINE=true","NPM_CONFIG_YES=false"],Labels:{"io.cuesheet.tool":"v1"},
         HostConfig:{ReadonlyRootfs:true,NetworkMode:"none",CapDrop:["ALL"],SecurityOpt:["no-new-privileges:true"],Memory:1024*1024*1024,NanoCpus:2000000000,PidsLimit:128,
           Mounts:mounts,...(this.options.temporaryStorage==="volume"?{}:{Tmpfs:{"/tmp":"rw,nosuid,nodev,size=134217728"}}),LogConfig:{Type:"json-file",Config:{"max-size":"1m","max-file":"1"}},RestartPolicy:{Name:"no"}}};
       this.options.onAdmission?.(name,request);admitted=true;
-      attemptedCreate=true;
+      stage="Container creation";attemptedCreate=true;
       const created=json(await engine(this.options.socket,API+"/containers/create?name="+encodeURIComponent(name),"POST",body,abort),201);
       if(typeof created.Id!=="string"||!/^[a-f0-9]{64}$/.test(created.Id))throw new Error("Invalid container identity.");
       createConfirmed=true;
       const path=API+"/containers/"+encodeURIComponent(name);
-      const start=await engine(this.options.socket,path+"/start","POST",undefined,abort);if(start.status!==204)throw new Error("Container start refused.");
-      const wait=json(await engine(this.options.socket,path+"/wait?condition=not-running","POST",undefined,abort,this.options.timeoutMs!),200);
+      stage="Container start";const start=await engine(this.options.socket,path+"/start","POST",undefined,abort);if(start.status!==204)throw new Error("Container start refused.");
+      stage="Container completion";const wait=json(await engine(this.options.socket,path+"/wait?condition=not-running","POST",undefined,abort,this.options.timeoutMs!),200);
       if(!Number.isSafeInteger(wait.StatusCode)||Number(wait.StatusCode)<0||Number(wait.StatusCode)>255||wait.Error)throw new Error("Container completion not confirmed.");
-      const logs=await engine(this.options.socket,path+"/logs?stdout=1&stderr=1","GET",undefined,abort);
+      stage="Container output";const logs=await engine(this.options.socket,path+"/logs?stdout=1&stderr=1","GET",undefined,abort);
       if(logs.status!==200)throw new Error("Container logs unavailable.");
       const output=containerOutput(logs.body,this.options.outputBytes!);
       result={name:request.name,exit:[124,137].includes(Number(wait.StatusCode))?null:Number(wait.StatusCode),output};
-    }catch{
-      result={name:request.name,exit:null,output:abort.aborted?"Container tool interrupted before confirmed completion.":"Container tool not confirmed: verify the local Engine, pinned image, mounts and required binaries."};
+    }catch(error){
+      const message=error instanceof Error&&/^(Workspace exposes|Workspace inspection exceeds|Engine operation refused|Unsupported Engine|Container start refused|Container completion not confirmed|Container logs unavailable)/.test(error.message)?error.message:"Execution was not confirmed; inspect the owned receipts.";
+      result={name:request.name,exit:attemptedCreate?null:126,output:attemptedCreate
+        ? abort.aborted?"Container tool interrupted before confirmed completion.":stage+": "+message
+        : stage+": "+message+" No command was executed."};
     }finally{
       let cleaned=!attemptedCreate;
       if(attemptedCreate)try{const removal=await engine(this.options.socket,API+"/containers/"+encodeURIComponent(name)+(this.options.temporaryStorage==="volume"?"?force=1&v=1":"?force=1"),"DELETE");cleaned=createConfirmed&&(removal.status===204||removal.status===404);}catch{}

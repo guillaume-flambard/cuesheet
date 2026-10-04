@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { Event,EventStore } from "../core/store.ts";
 import type { ToolRequest,ToolResult } from "../core/loop.ts";
 export const RECEIPT_SUBJECT="terminal.receipt";
-const internal=new Set(["consult_agents","read_history","read_shared_context","search_vault","read_vault_reference","read_document","search_web","list_skills","read_skill","organize_work","remember","create_skill","describe_objective","reconcile_effect"]);
+const internal=new Set(["check_types","consult_agents","read_history","read_shared_context","search_vault","read_vault_reference","read_document","search_web","list_skills","read_skill","organize_work","remember","create_skill","describe_objective","reconcile_effect"]);
 export function inspectionTool(name:string):boolean{return name==="cat" || name==="ls";}
 export function mutationTool(name:string):boolean{return !internal.has(name) && !inspectionTool(name);}
 export interface EffectAttempt {intentSeq:number;tool:string;input:Record<string,unknown>;phase:"uncertain"|"completed"|"performed"|"not-performed";executionId:string|null;sourceSeq:number|null;scopeCwd:string|null;}

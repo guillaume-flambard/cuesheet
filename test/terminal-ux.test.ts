@@ -1,6 +1,6 @@
 import { it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -21,7 +21,7 @@ async function settled(store: ReturnType<typeof createStore>) {
 it("editing the middle of a sentence preserves Unicode graphemes and its suffix", () => {
   assert.deepEqual(edit("a👩‍💻b", 2, "backspace"), { text: "ab", cursor: 1 });
   assert.deepEqual(edit("aéz", 1, "delete"), { text: "az", cursor: 1 });
-  assert.deepEqual(edit("abcd", 2, { insert: "X\nY" }), { text: "abX Ycd", cursor: 5 });
+  assert.deepEqual(edit("abcd", 2, { insert: "X\nY" }), { text: "abX\nYcd", cursor: 5 });
   assert.deepEqual(edit("abcd", 0, "left"), { text: "abcd", cursor: 0 });
 });
 
@@ -100,11 +100,19 @@ if {![file exists {${ready}}]} {catch {close};exit 10}
 send "\\003"
 seen {Interrompu}
 waitms 300
-send "deuxieme travail"
+send "deuxieme travaiX"
+waitms 200
+send "\\177"
+waitms 200
+send "lZ"
+waitms 200
+send "\\033\\[D"
+waitms 200
+send "\\033\\[3~"
 waitms 500
-send "\\r"
+send "\\n"
 seen {REPRISE_OK}
-seen {still open after 8 steps}
+waitms 500
 waitms 300
 send "\\003"
 after 200
@@ -114,7 +122,7 @@ exit 0
     const env=childEnv({home:root,sessions:join(root,"sessions")});env.PATH=`${bin}:${env.PATH}`;env.TERM="xterm-256color";
     const run=spawnSync("/usr/bin/expect",[driver],{cwd:root,env,encoding:"utf8",timeout:30000});
     assert.equal(run.status,0,`${run.error??""}\n${run.stdout}\n${run.stderr}`);
-    assert.match(run.stdout,/REPRISE_OK/);assert.equal(existsSync(join(root,"forbidden")),false);
+    assert.match(run.stdout,/REPRISE_OK/);assert.equal(Number(readFileSync(counter,"utf8")),2,"answer yields instead of repeating inferences");const messages=readdirSync(join(root,"sessions")).filter(n=>n.endsWith('.jsonl')&&!n.includes('.view.')).flatMap(n=>readFileSync(join(root,"sessions",n),'utf8').trim().split('\n').map(JSON.parse)).filter(e=>e.subject==='terminal.user').map(e=>e.data.text);assert.ok(messages.includes('deuxieme travail'),JSON.stringify(messages));assert.equal(existsSync(join(root,"forbidden")),false);
   } finally {rmSync(root,{recursive:true,force:true});}
 });
 
@@ -153,16 +161,16 @@ const out=new PassThrough();Object.assign(out,{columns:50,rows:18,isTTY:false});
 const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});
 const app=render(<App store={store} producer={{say(t){store.send({type:'submit',text:t});},choose(){}} as any}/>,{stdout:out as any,stderr:out as any,stdin:input as any,debug:true,exitOnCtrlC:false});
 const tick=()=>new Promise(r=>setTimeout(r,40));await tick();
-const newest=last;for(let i=0;i<20;i++){input.write('\\x1b[5~');await tick();}const oldest=last;
+const newest=last;const historyFrames=[];for(let i=0;i<20;i++){input.write('\\x1b[5~');await tick();historyFrames.push(last);}const oldest=last;
 for(let i=0;i<20;i++){input.write('\\x1b[6~');await tick();}const live=last;
 input.write('draft');await tick();input.write('\\x1b[A');await tick();const recalled=store.get().composer;
 input.write('\\x1b[B');await tick();const draft=store.get().composer;
 input.write('\\x1b[D');await tick();input.write('X');await tick();const edited=store.get().composer;
-app.unmount();console.log(JSON.stringify({newest,oldest,live,recalled,draft,edited}));`);
+app.unmount();console.log(JSON.stringify({newest,oldest,historyFrames,live,recalled,draft,edited}));`);
     const run = spawnSync(process.execPath, [join(terminal,"node_modules/tsx/dist/cli.mjs"),script], {encoding:"utf8",timeout:20000});
     assert.equal(run.status, 0, run.stderr);
     const result = JSON.parse(run.stdout.trim());
-    assert.match(result.newest, /NEWEST_MARKER/); assert.match(result.oldest, /OLD_MARKER/); assert.match(result.live, /NEWEST_MARKER/);
+    assert.match(result.newest, /NEWEST_MARKER/); assert.match(result.oldest, /alpha/); assert.match(result.oldest, /beta/); assert.ok(result.historyFrames.some((frame:string)=>/OLD_MARKER/.test(frame)), 'older response remains reachable while scrolling'); assert.match(result.live, /NEWEST_MARKER/);
     assert.equal(result.recalled, "beta"); assert.equal(result.draft, "draft"); assert.equal(result.edited, "drafXt");
   } finally { rmSync(root,{recursive:true,force:true}); }
 });
@@ -194,6 +202,6 @@ await open();const correction=journal.core.append({kind:'directive',subject:'bui
 await open();const finalBefore=journal.core.revision;input.write('c');await tick();const now=projectObjectives(journal.core.toSession().events).current;const confirmed=now.check.boundRevision===now.revision&&now.id===id&&journal.core.revision>finalBefore;
 release();const end=Date.now()+5000;while(store.get().busy&&Date.now()<end)await tick();app.unmount();journal.close();console.log(JSON.stringify({reviewed,cancelled,refused,refusal,confirmed,sizes}));`);
   const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:20000});assert.equal(run.status,0,run.stderr);const result=JSON.parse(run.stdout.trim());
-  assert.match(result.reviewed,/Confirmer le critère épinglé/);assert.match(result.reviewed,/first correction/);assert.match(result.reviewed,/C confirmer/);assert.equal(result.cancelled,true);assert.equal(result.refused,true);assert.match(result.refusal,/Confirmation refusée/);assert.equal(result.confirmed,true);for(const size of result.sizes){assert.match(size.frame,/C confirmer/);assert.ok(size.frame.split('\n').length<=size.rows,size.frame);}
+  assert.match(result.reviewed,/Confirm the pinned check/);assert.match(result.reviewed,/first correction/);assert.match(result.reviewed,/C confirm/);assert.equal(result.cancelled,true);assert.equal(result.refused,true);assert.match(result.refusal,/Confirmation refusée/);assert.equal(result.confirmed,true);for(const size of result.sizes){assert.match(size.frame,/C confirm/);assert.ok(size.frame.split('\n').length<=size.rows,size.frame);}
  }finally{rmSync(root,{recursive:true,force:true});}
 });

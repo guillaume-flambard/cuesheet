@@ -1,3 +1,4 @@
+import type {Requirement} from "./core/capability.ts";
 /**
  * CLI: two reports, one per mode.
  *
@@ -33,7 +34,6 @@ import {
   parseRequirements,
   preflightDelegation,
   RequirementsFormatError,
-  type Requirement,
 } from "./core/delegation.ts";
 
 interface ParsedArgs {
@@ -294,7 +294,7 @@ function main(): void {
   console.log("");
   for (const o of ownership) {
     if (o.reasons.length > 0) {
-      console.log(`held  ${o.project.path.replace(process.env.HOME, "~")}: ${o.reasons.join(", ")}`);
+      console.log(`held  ${(process.env.HOME?o.project.path.replace(process.env.HOME, "~"):o.project.path)}: ${o.reasons.join(", ")}`);
     }
   }
   const free = ownership.filter((o) => o.availability === "available");

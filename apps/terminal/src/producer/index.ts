@@ -1,3 +1,9 @@
+import {resolveWorkReference} from './work-objects.ts';
+import {homedir} from 'node:os';
+import {staticTypecheck,withStaticTypecheck} from '../../../../src/adapters/typecheck.ts';
+import {CodeWorkerReview} from '../../../../src/adapters/code-worker-review.ts';
+import {ProviderProposalRefused} from '../../../../src/adapters/opencode-stream.ts';
+import {WorktreeReview,type ChangeReview} from '../../../../src/adapters/worktree-review.ts';
 import {planWorktreeIntegration,applyWorktreeIntegration} from '../../../../src/adapters/worktree-integration.ts';
 import {snapshotMatches} from '../../../../src/adapters/git-snapshot.ts';
 import {randomUUID} from 'node:crypto';
@@ -11,8 +17,10 @@ import {selectAgentSkills} from '../../../../src/adapters/agent-skills.ts';
 import {projectAgentModels,agentSelection,validAgentRole,AGENT_MODEL_SUBJECT} from '../../../../src/adapters/agent-models.ts';
 import {validatePreferences} from '../../../../src/adapters/model-preferences.ts';
 import { consultAgents,projectAgents } from '../../../../src/adapters/agent-consultation.ts';
+import {projectWorkSurface} from './work-surface.ts';
 import {integrateCodeWorkers} from '../../../../src/adapters/code-worker-integration.ts';
 import {runTerminalCodeWorkers,pendingCodeWorkers} from '../../../../src/adapters/terminal-code-workers.ts';
+import {inspectCodeWorkerRecovery,reconcileCodeWorkerRecovery,codeWorkerRecoverySummary,validCodeWorkerRecoveryInput,boundedCodeWorkerRecoveryOutput} from '../../../../src/adapters/code-worker-recovery.ts';
 /**
  * The producer. The thing that makes the surface able to act.
  *
@@ -163,11 +171,15 @@ export interface CheckConfirmation {id:string;revision:number;digest:string;text
 export interface SharedContextPage {digest:string;offset:number;nextOffset:number|null;lines:string[];}
 
 export interface Producer {
+  workSurface?(): import('./work-surface.ts').WorkSurface;
   agentModelTargets?():Array<{role:string;selection:ModelPreferences|null;label:string}>;
   selectAgentModel?(role:string,selection:ModelPreferences|null):{ok:true}|{error:string};
   agentPage?(offset?:number):SharedContextPage;
   situationPage?():SharedContextPage;
   workspacePage?():SharedContextPage;
+  skillPage?():SharedContextPage;
+  changes?():Promise<ChangeReview|null>;
+  decideChanges?(token:string,digest:string,decision:"apply"|"reject"):Promise<{kind:string;files:number;reason?:string}>;
   notificationCount?():number;
   notificationPage?():SharedContextPage;
   readNotifications?(digest:string):SharedContextPage;
@@ -180,6 +192,9 @@ export interface Producer {
   resume?(): void;
   /** Hand a sentence to the surface. Any sentence. */
   say(text: string): void;
+  /** Correct the existing objective, including while idle; never create another. */
+  steer?(text: string,reference?:import('../app/state.ts').WorkReference): boolean;
+  steerAt?(reference:import('../app/state.ts').WorkReference,text:string):{ok:true}|{error:string};
   /** Accept a choice from an offer the producer made. */
   choose(option: Option): void;
   /** The current state, for a caller that is not React. */
@@ -229,6 +244,7 @@ export function createProducer(options: ProducerOptions): Producer {
    * has a log it can join. See the header for the measurement that forced it.
    */
   const shared = options.journal?.core ?? new EventStore(mint(), now);
+  let surfaceCache: {revision:number;live:boolean|string;value:ReturnType<typeof projectWorkSurface>}|undefined;
 
   /**
    * Whether a run is in flight, which decides what a sentence means.
@@ -353,22 +369,48 @@ export function createProducer(options: ProducerOptions): Producer {
   const currentSituation=(role="coordinateur",selectedModel=options.modelLabel?.()??model.name,workspace=activeWorkspace,sessionId=options.journal?.metadata.id??shared.id)=>{const last=shared.toSession().events.filter(e=>e.kind==="note"&&e.subject==="terminal.user"&&e.data.operation===undefined&&typeof e.data.text==="string").at(-1);const objective=projectObjectives(shared.toSession().events).current;return situation({sessionId,executionId:activeEffect||null,workspace,launchDirectory:cwd,objective:objective?{id:objective.id,revision:objective.revision}:null,role,model:selectedModel,lastHuman:last?{sourceSeq:last.seq,text:String(last.data.text)}:null,peers:projectAgents(shared.toSession().events,inFlight?activeEffect:false).slice(0,6).map(a=>({role:a.role,model:a.model,phase:a.phase}))});};
   const notifications=new NotificationProjection();let notificationRevision=-2;let notificationSnapshot:ReturnType<NotificationProjection["update"]>;
   const notificationState=()=>{if(shared.revision!==notificationRevision){const session=shared.toSession();notificationSnapshot=notifications.update(session.events,projectObjectives(session.events).current);notificationRevision=shared.revision;}return notificationSnapshot;};
-  const notificationPage=():SharedContextPage=>{const n=notificationState();return {digest:n.digest,offset:0,nextOffset:null,lines:[`${n.unread} non lue(s) · ${n.items.length} dernières`,...n.items.flatMap(i=>[`${i.unread?"●":"·"} ${i.title}${i.historical?" · historique":""}`,`Exécution : ${i.execution} · source #${i.sourceSeq}`,`Objectif : ${i.objective?`${i.objective}@${i.revision}`:"provenance inconnue"}`,i.phase==="goal-closed"?"Validation enregistrée par le contrôleur.":"Objectif ouvert : inspecter puis reprendre si approprié."]),...(n.items.length?[]:["Aucune notification de travail."])]};};
+  const notificationPage=():SharedContextPage=>{const n=notificationState();return {digest:n.digest,offset:0,nextOffset:null,lines:[`${n.unread} unread · ${n.items.length} latest`,...n.items.flatMap(i=>[`${i.unread?"●":"·"} ${i.title}${i.historical?" · historical":""}`,`Execution: ${i.execution} · source #${i.sourceSeq}`,`Objective: ${i.objective?`${i.objective}@${i.revision}`:"unknown provenance"}`,i.phase==="goal-closed"?"Verification recorded by the controller.":"Objective open: inspect, then resume if appropriate."]),...(n.items.length?[]:["No work notifications."])]};};
   const workspaceEnabled=!!(options.worktreeRoot&&options.journal&&options.toolsForScope);
   const codeWorkersEnabled=!!(workspaceEnabled&&options.toolsForWorker&&options.workerModel);
-  const declaredNames=()=>[...((activeTools as ToolRunner&{names?:readonly string[]}).names??options.toolNames??[]),...AUTONOMOUS_TOOLS,"consult_agents",...(codeWorkersEnabled?["run_code_workers",...(options.verification?["integrate_code_workers"]:[])]:[]),...(workspaceEnabled?["prepare_workspace",...(options.verification?["integrate_workspace"]:[])]:[]),"read_history",...(options.sharedContexts?["read_shared_context"]:[]),...(activeVault?["search_vault","read_vault_reference"]:[]),...(activeResearch?["read_document","search_web"]:[]),...(activeSkills?["list_skills","read_skill"]:[]),...(options.journal?["reconcile_effect"]:[]),...(options.verification?["finish"]:[])];
+   const declaredNames=()=>[...((activeTools as ToolRunner&{names?:readonly string[]}).names??options.toolNames??[]),...AUTONOMOUS_TOOLS,"check_types","consult_agents",...(codeWorkersEnabled?["run_code_workers","inspect_code_workers","reconcile_code_workers",...(options.verification?["integrate_code_workers"]:[])]:[]),...(workspaceEnabled?["prepare_workspace",...(options.verification?["integrate_workspace"]:[])]:[]),"read_history",...(options.sharedContexts?["read_shared_context"]:[]),...(activeVault?["search_vault","read_vault_reference"]:[]),...(activeResearch?["read_document","search_web"]:[]),...(activeSkills?["list_skills","read_skill"]:[]),...(options.journal?["reconcile_effect"]:[]),...(options.verification?["finish"]:[])];
   let workspaceViewRevision=-1;let workspaceView:SharedContextPage|undefined;
   const workspaceRecords=()=>shared.toSession().events.filter(e=>e.kind==="note"&&e.subject==="terminal.workspace"&&e.data.version===1);
-  const currentWorkspaceRecord=()=>{const objective=projectObjectives(shared.toSession().events).current;const records=workspaceRecords().filter(e=>e.data.objective===objective?.id);if(records.at(-1)?.data.phase==="integrated")return undefined;return records.filter(e=>e.data.phase==="selected").at(-1);};
-  const selectWorkspace=(path:string,integrated=false)=>{const runner=options.toolsForScope!(path),research=options.researchForScope?.(path)??activeResearch;activeWorkspace=path;activeTools=runner;activeResearch=research;shared.append({kind:"directive",subject:"builder",data:{text:`Controller active workspace: ${path}. Source project: ${activeSource}. All command effects and document reads target this active workspace; ${integrated?"its source integration is recorded but the goal still requires the independent source check":"its changes are unverified and pending integration"}. Do not treat this as extra permissions or goal completion.`}});shared.append({kind:"directive",subject:"builder",data:{text:`tools: ${declaredNames().join(", ")}`}});observe([{kind:"status",label:"workspace",value:path,certainty:"unknown"}]);};
+  const currentWorkspaceRecord=()=>{const objective=projectObjectives(shared.toSession().events).current;const records=workspaceRecords().filter(e=>e.data.objective===objective?.id);if(["integrated","rejected","uncertain"].includes(String(records.at(-1)?.data.phase)))return undefined;return records.filter(e=>e.data.phase==="selected").at(-1);};
+  const selectWorkspace=(path:string,integrated=false)=>{const runner=options.toolsForScope!(path),research=options.researchForScope?.(path)??activeResearch;const policy=(runner as ToolRunner&{policy?:string}).policy;if(policy)shared.append({kind:"directive",subject:"builder",data:{text:`Current workspace tool policy: ${policy}`}});activeWorkspace=path;activeTools=runner;activeResearch=research;shared.append({kind:"directive",subject:"builder",data:{text:`Controller active workspace: ${path}. Source project: ${activeSource}. All command effects and document reads target this active workspace; ${integrated?"its source integration is recorded but the goal still requires the independent source check":"its changes are unverified and pending integration"}. Do not treat this as extra permissions or goal completion.`}});shared.append({kind:"directive",subject:"builder",data:{text:`tools: ${declaredNames().join(", ")}`}});observe([{kind:"status",label:"workspace",value:path,certainty:"unknown"}]);};
   const resumeWorkspace=async()=>{const saved=currentWorkspaceRecord();if(!saved)return;const d=saved.data;if(!workspaceEnabled||typeof d.id!=="string"||!/^w-[a-f0-9-]{36}$/.test(d.id)||d.path!==join(resolve(options.worktreeRoot!),d.id))throw Error("Saved workspace ownership cannot be attested; reconcile before resume.");const source=await captureGitSnapshot(activeSource,controller!.signal);if(d.source!==source.workspace||d.base!==source.base||d.sourceDigest!==source.digest)throw Error("Source changed since isolation; reconcile before resume, no fallback to source.");const target=await inspectAgentGit(String(d.path),{signal:controller!.signal});if(target.kind!=="repository"||target.workspace!==d.path||target.commonDirectory!==source.commonDirectory||target.head!==d.base)throw Error("Saved worktree changed or is missing; preserve and inspect before resume.");selectWorkspace(String(d.path));};
+  const review=new WorktreeReview({root:join(options.journal?.root??cwd,"integration-receipts"),busy:()=>inFlight,basis:()=>{
+    const selected=currentWorkspaceRecord(),objective=projectObjectives(shared.toSession().events).current;
+    if(!workspaceEnabled||!selected||!objective)return null;const d=selected.data;
+    if(typeof d.id!=="string"||!/^w-[a-f0-9-]{36}$/.test(d.id)||d.path!==join(resolve(options.worktreeRoot!),d.id)||d.source!==objective.scope||typeof d.sourceDigest!=="string")throw Error("Workspace ownership cannot be established.");
+    return {source:String(d.source),workspace:String(d.path),sourceDigest:d.sourceDigest,objective:objective.id,revision:objective.revision,workspaceId:d.id};
+  },record:data=>{options.journal?.assertWritable();shared.append({kind:"note",subject:"terminal.change-review",data});}});
+  const agentReview=codeWorkersEnabled&&options.journal?new CodeWorkerReview({shared,parent:options.journal,root:options.worktreeRoot!,source:()=>activeWorkspace,objective:()=>{const o=projectObjectives(shared.toSession().events).current;return o?{id:o.id,revision:o.revision}:undefined;},busy:()=>inFlight}):undefined;
+  let reviewingAgents=false;
   const currentTools: ToolRunner = {
     async run(request) {
       const signal=controller!.signal;
       signal.throwIfAborted();options.journal?.assertWritable();
+      if(resolve(activeSource)===resolve(homedir())&&(mutationTool(request.name)||request.name==="check_types"))return {name:request.name,exit:126,output:"The home directory is not a project write scope. Choose a specific project before code execution."};
       if(directiveRevision()!==proposalDirective || !contextCurrent())return {name:request.name,exit:126,output:"The instructions changed; this proposal was discarded."};
       if(options.journal){
-        if(request.name==="reconcile_effect")return reconcileEffect(shared,request,activeEffect);
+       if(request.name==="reconcile_effect")return reconcileEffect(shared,request,activeEffect);
+        if(request.name==="inspect_code_workers"||request.name==="reconcile_code_workers"){
+          if(!validCodeWorkerRecoveryInput(request.input)||!codeWorkersEnabled||!options.journal)return {name:request.name,exit:126,output:"Code-worker recovery accepts only {} and requires the durable controller journal and scoped worker factories."};
+          const objective=projectObjectives(shared.toSession().events).current;
+          if(!objective)return {name:request.name,exit:126,output:"No current objective; worker recovery remains inspect-only and cannot be reconciled."};
+          const basis=proposalDirective,id=objective.id,revision=objective.revision;
+          const current=()=>{const o=projectObjectives(shared.toSession().events).current;return !signal.aborted&&directiveRevision()===basis&&contextCurrent()&&o?.id===id&&o.revision===revision;};
+          const recoveryOptions={events:shared.toSession().events,parentRoot:options.journal.root,parentId:options.journal.metadata.id,
+            worktreeRoot:options.worktreeRoot!,source:activeSource,objective:{id,revision},signal};
+          if(request.name==="inspect_code_workers"){
+            try{const inspected=await inspectCodeWorkerRecovery({...recoveryOptions,signal}),output=boundedCodeWorkerRecoveryOutput(codeWorkerRecoverySummary(inspected));return output===null?{name:request.name,exit:126,output:"Worker recovery report exceeded its output limit. Preserve the admissions, worktrees and private journals; inspect offline."}:{name:request.name,exit:0,output};}
+            catch{return {name:request.name,exit:126,output:"Worker recovery inspection was unavailable. Preserve the admissions, worktrees and private journals; no recovery action was taken."};}
+          }
+          const reconciled=await reconcileCodeWorkerRecovery({events:()=>shared.toSession().events,parentRoot:options.journal.root,parentId:options.journal.metadata.id,
+            worktreeRoot:options.worktreeRoot!,source:activeSource,objective:{id,revision},signal,current,append:event=>shared.append(event)});
+          const output=boundedCodeWorkerRecoveryOutput(reconciled);
+          return output===null?{name:request.name,exit:126,output:"Worker recovery report exceeded its output limit. Preserve the admissions, worktrees and private journals; inspect offline."}:{name:request.name,exit:reconciled.kind==="reconciled"||reconciled.kind==="unchanged"?0:126,output};
+        }
         const objective=projectObjectives(shared.toSession().events).current;
         const admission=workspaceEnabled&&activeWorkspace===activeSource&&objective ? shared.toSession().events.filter(e=>e.subject==="terminal.workspace"&&e.data.objective===objective.id).at(-1) : undefined;
         if(admission&&admission.data.phase!=="integrated"&&request.name!=="prepare_workspace"&&mutationTool(request.name))return {name:request.name,exit:126,output:"Isolated preparation was not selected. Source mutations and finish are refused; inspect the workspace and retry prepare_workspace. No source fallback."};
@@ -377,7 +419,7 @@ export function createProducer(options: ProducerOptions): Producer {
         if(mutationTool(request.name) && uncertain.length)return {name:request.name,exit:126,output:JSON.stringify({reason:"A previous effect may already have run. Inspect the workspace with cat/ls, then use reconcile_effect with the successful observation sequence before proposing mutations or finish.",intentSequences:uncertain.map(a=>a.intentSeq)})};
         if(mutationTool(request.name) && attempts.some(a=>a.phase==="performed" && a.executionId===activeEffect && invocationKey(a.tool,a.input)===invocationKey(request.name,request.input)))return {name:request.name,exit:126,output:"Inspection concluded this invocation already happened; repeating it in this resumed execution is refused."};
         const externalNames=(activeTools as ToolRunner&{names?:readonly string[]}).names??options.toolNames??[];
-        if(workspaceEnabled&&activeWorkspace===activeSource&&mutationTool(request.name)&&!["git","prepare_workspace","integrate_workspace","finish"].includes(request.name)&&externalNames.includes(request.name)){
+        if(workspaceEnabled&&activeWorkspace===activeSource&&(mutationTool(request.name)||(activeTools as ToolRunner&{requiresIsolatedWorkspace?:boolean}).requiresIsolatedWorkspace)&&!["git","prepare_workspace","integrate_workspace","finish"].includes(request.name)&&externalNames.includes(request.name)){
           const inventory=await inspectAgentGit(activeSource,{signal});
           signal.throwIfAborted();
           if(directiveRevision()!==proposalDirective||!contextCurrent())return {name:request.name,exit:126,output:"The instructions changed; this proposal was discarded."};
@@ -387,12 +429,19 @@ export function createProducer(options: ProducerOptions): Producer {
           }
         }
         const intent=shared.append({kind:"action",subject:"terminal.intent",data:{version:1,tool:request.name,input:request.input,effectId:activeEffect,phase:"requested",scopeCwd:activeWorkspace}});
-        const result=await executeTool(request);signal.throwIfAborted();completeAttempt(shared,intent,result);return result;
+        let recorded=false;
+        const recordResult=(result:Awaited<ReturnType<ToolRunner['run']>>)=>{
+          if(recorded)return;
+          options.journal!.assertWritable();completeAttempt(shared,intent,result);recorded=true;
+        };
+        const result=await executeTool(request,recordResult);
+        // Cancellation revokes future authority, not evidence of a completed call.
+        recordResult(result);signal.throwIfAborted();return result;
       }
       return executeTool(request);
     },
   };
-  async function executeTool(request:Parameters<ToolRunner["run"]>[0]):Promise<Awaited<ReturnType<ToolRunner["run"]>>> {
+  async function executeTool(request:Parameters<ToolRunner["run"]>[0],recordResult?:(result:Awaited<ReturnType<ToolRunner['run']>>)=>void):Promise<Awaited<ReturnType<ToolRunner["run"]>>> {
       const signal = controller!.signal;
       signal.throwIfAborted();
       options.journal?.assertWritable();
@@ -403,6 +452,7 @@ export function createProducer(options: ProducerOptions): Producer {
         return { name: request.name, exit: 126, output: "The declared check already settled this run; no further calls were executed." };
       }
       if(["finish","integrate_workspace"].includes(request.name)&&pendingCodeWorkers(shared.toSession().events))return {name:request.name,exit:126,output:"Code-worker contributions are pending. Inspect their workspaces and private journals; controller integration and composed verification are required before goal closure."};
+      if(request.name==="check_types")return staticTypecheck(request,{workspace:activeWorkspace,source:activeSource,signal});
       if(request.name==="integrate_code_workers"){
         const objective=projectObjectives(shared.toSession().events).current;
         if(Object.keys(request.input).length||!codeWorkersEnabled||!options.verification?.pinned||!objective?.check||objective.check.boundRevision!==objective.revision||objective.check.digest!==options.verification.pinned.digest)return {name:request.name,exit:126,output:"Integration requires empty input and a current pinned owner check; paths and scopes are controller-owned."};
@@ -416,10 +466,11 @@ export function createProducer(options: ProducerOptions): Producer {
         const routes=projectAgentModels(shared.toSession().events);
         const current=()=>{const o=projectObjectives(shared.toSession().events).current;return !signal.aborted&&directiveRevision()===basis&&contextCurrent()&&o?.id===id&&o.revision===revision;};
         codeWorkerController=new AbortController();const workerSignal=AbortSignal.any([signal,codeWorkerController.signal]);
-        try{return await runTerminalCodeWorkers({input:request.input,source:activeWorkspace,root:options.worktreeRoot!,parent:options.journal!,shared,execution:activeEffect,objective:{id,revision},signal:workerSignal,current,
+        try{return await runTerminalCodeWorkers({input:request.input,source:activeWorkspace,root:options.worktreeRoot!,parent:options.journal!,shared,execution:activeEffect,objective:{id,revision},signal:workerSignal,current,check:options.verification,
           route:(role,scope)=>{const selection=agentSelection(routes,role);if(selection){if(!options.agentModel)throw Error("Agent route unavailable.");return options.agentModel(selection,scope);}return options.workerModel!(scope);},
-          tools:options.toolsForWorker!,maxFrameChars:options.contextBudgetChars,skills:(role,task,names)=>selectAgentSkills({store:shared,tools:activeSkills,role,task,names:[...names]}),
-          frame:(role,selected,workspace,journalId)=>withSharedContext(rawFrame!,shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:activeContexts?.read(),vault:proposalVault,situation:currentSituation(role,selected,workspace,journalId)}),
+          tools:(workspace,journal,signal)=>withStaticTypecheck(options.toolsForWorker!(workspace,journal,signal),{workspace,source:activeSource,signal}),maxFrameChars:options.contextBudgetChars,skills:(role,task,names)=>selectAgentSkills({store:shared,tools:activeSkills,role,task,names:[...names]}),
+          frame:()=>rawFrame!,
+          finalizeFrame:(frame,role,selected,workspace,journalId)=>withSharedContext(frame,shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:activeContexts?.read(),vault:proposalVault,situation:currentSituation(role,selected,workspace,journalId)}),
           notice:text=>observe([{kind:"status",label:"agents",value:text,certainty:"unknown"}])});}finally{codeWorkerController=undefined;}
       }
       if(request.name==="integrate_workspace"){
@@ -470,7 +521,7 @@ export function createProducer(options: ProducerOptions): Producer {
         const directive=proposalDirective;
         let routes:ReturnType<typeof projectAgentModels>;
         try{routes=projectAgentModels(shared.toSession().events);}catch{return {name:request.name,exit:126,output:"Agent model route journal is invalid; inspect before retry."};}
-        return consultAgents({input:request.input,model,freshFrame:(role,selected)=>withSharedContext(rawFrame!,shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:activeContexts?.read(),vault:proposalVault,situation:currentSituation(role,selected)}),skills:(role,task,names)=>selectAgentSkills({store:shared,tools:activeSkills,role,task,names}),route:role=>{const selection=agentSelection(routes,role);if(!selection)return {adapter:model,label:options.modelLabel?.()??model.name};if(!options.agentModel)throw Error("Agent route resolver is unavailable.");return options.agentModel(selection,activeWorkspace);},frame:consultationFrame,signal,basis:directive,objective:projectObjectives(shared.toSession().events).current ?? undefined,current:()=>directiveRevision()===directive&&contextCurrent(),append:event=>shared.append(event),execution:activeEffect,modelLabel:options.modelLabel?.() ?? model.name,
+        return consultAgents({input:request.input,model,freshFrame:(role,selected)=>withSharedContext(rawFrame!,shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:activeContexts?.read(),vault:proposalVault,situation:currentSituation(role,selected)}),skills:(role,task,names)=>selectAgentSkills({store:shared,tools:activeSkills,role,task,names}),route:role=>{const selection=agentSelection(routes,role);if(!selection)return {adapter:model,label:options.modelLabel?.()??model.name,reason:'Inherited session model'};if(!options.agentModel)throw Error("Agent route resolver is unavailable.");return {...options.agentModel(selection,activeWorkspace),reason:'Human-configured role route'};},frame:consultationFrame,signal,basis:directive,objective:projectObjectives(shared.toSession().events).current ?? undefined,current:()=>directiveRevision()===directive&&contextCurrent(),append:event=>shared.append(event),execution:activeEffect,modelLabel:options.modelLabel?.() ?? model.name,
           notice:text=>observe([{kind:"status",label:"agents",value:text,certainty:"unknown"}])});
       }
       const history = readHistory(shared,request);
@@ -531,7 +582,12 @@ export function createProducer(options: ProducerOptions): Producer {
         }
         return { name: "finish", exit: verdict === "VERIFIED" && stillCurrent ? 0 : 1, output: JSON.stringify({ verdict, record: result.record, artifactDigest: result.artifact.digest, current: stillCurrent }) };
       }
-      return interruptible((activeTools as ToolRunner & { run(request: Parameters<ToolRunner["run"]>[0], signal?: AbortSignal): ReturnType<ToolRunner["run"]> }).run(request, signal), signal);
+      const inspected=await activeResearch?.readLocalCommand(shared,request,signal);
+      if(inspected)return inspected;
+      const execution=(activeTools as ToolRunner & { run(request: Parameters<ToolRunner["run"]>[0], signal?: AbortSignal): ReturnType<ToolRunner["run"]> }).run(request, signal);
+      // Keep a confirmed executor receipt even when cancellation wins the wait.
+      // It attests this invocation only; no late result can authorize another call.
+      return interruptible(execution.then(result=>{recordResult?.(result);return result;}), signal);
   }
 
   function wrapAtBoundary(inner: ModelAdapter): ModelAdapter {
@@ -541,7 +597,9 @@ export function createProducer(options: ProducerOptions): Producer {
         const signal = controller!.signal;
         signal.throwIfAborted();
         options.journal?.assertWritable();
-        const publication=activeVaultPublisher?.sync(shared.toSession().events);
+        // Planning remains durable in the journal while the source snapshot is held.
+        // Publishing into the source during isolation would invalidate resume and integration.
+        const publication=activeWorkspace===activeSource ? activeVaultPublisher?.sync(shared.toSession().events) : undefined;
         if(publication && ["published","protected","conflict","refused"].includes(publication.status)){
           const notice=publication.status+("document" in publication ? ` ${publication.document.id}@${publication.document.revision}` : "");
           if(notice!==publicationNotice){publicationNotice=notice;observe([{kind:"status",label:"Vault",value:notice,certainty:"unknown"}]);}
@@ -555,7 +613,10 @@ export function createProducer(options: ProducerOptions): Producer {
         try {
           rawFrame=frame;
           consultationFrame=withSharedContext(frame, shared.toSession(),{maxChars:options.contextBudgetChars,sharedContexts:proposalContext,vault:proposalVault,situation:currentSituation()});
-          const response = await interruptible((inner as ModelAdapter & { infer(frame: Parameters<ModelAdapter["infer"]>[0], signal?: AbortSignal): ReturnType<ModelAdapter["infer"]> }).infer(consultationFrame, signal), signal);
+          send({type:"reasoning",text:""});
+          const response = await interruptible(inner.infer(consultationFrame, signal,progress=>{
+            if(!signal.aborted && shared.revision===read && contextCurrent())send({type:"reasoning",text:progress.text,kind:progress.kind});
+          }), signal);
           // The response was derived from the old frame. Re-recording a step
           // cannot make its proposed actions current: discard them instead.
           return shared.revision === read && contextCurrent() ? response : { text: "", toolCalls: [] };
@@ -563,6 +624,7 @@ export function createProducer(options: ProducerOptions): Producer {
           if(cause instanceof ModelSelectionChanged && !signal.aborted)return {text:"",toolCalls:[]};
           throw cause;
         } finally {
+          send({type:"reasoning",text:""});
           basis = null;
           if (!signal.aborted) commitStep(read, frame);
         }
@@ -652,6 +714,9 @@ export function createProducer(options: ProducerOptions): Producer {
   /** Start the real loop. Everything here is the part V1 could not do. */
   const start = async (scope: { path: string; name: string }, goal: string, resume = false): Promise<void> => {
     options.journal?.assertWritable();
+    const previousObjective=projectObjectives(shared.toSession().events).current;
+    if(workspaceRecords().some(e=>e.data.source===scope.path&&e.data.phase==="uncertain"))throw Error("A partial application needs receipt inspection before further execution. Files have been preserved.");
+    const previousWorkspace=!resume && previousObjective?.scope===scope.path?currentWorkspaceRecord():undefined;
     controller = new AbortController();
     const signal = controller.signal;
     const subject = "builder";
@@ -673,10 +738,15 @@ export function createProducer(options: ProducerOptions): Producer {
         ?? shared.append({kind:"note",subject:"terminal.user",data:{text:goal}});
       createObjective(shared,goal,scope.path,source.seq,options.verification?.pinned?.digest,resume ? "unknown" : "human");
     } else changeObjectiveStatus(shared,"active","Explicit user resume");
-    if(resume)await resumeWorkspace();
+    if(previousWorkspace){
+      const objective=projectObjectives(shared.toSession().events).current!;
+      shared.append({kind:"note",subject:"terminal.workspace",data:{...previousWorkspace.data,objective:objective.id,revision:objective.revision,phase:"selected",continuedFrom:previousObjective!.id}});
+      await resumeWorkspace();
+    }else if(resume)await resumeWorkspace();
     shared.append({kind:"directive",subject,data:{text:AUTONOMOUS_POLICY}});
-    if(codeWorkersEnabled)shared.append({kind:"directive",subject,data:{text:"Use run_code_workers {tasks:[{role,task,files:[relative paths],skills?:[names]}]} for 1–2 useful independent code units. The controller prepares distinct worktrees, configured model routes and private durable effect journals. No paths, branches or permissions may be chosen by the proposal. Contributions remain unverified and pending controller integration; inspect Agents. If integrate_code_workers is declared, propose it with empty input after the workers finish; it composes actual disjoint scoped deltas and runs the owner check before applying to the source. No worker can close the goal. Do not delegate trivial work or overlapping files."}});
-    if(workspaceEnabled)shared.append({kind:"directive",subject,data:{text:"The controller automatically prepares an isolated Git workspace before external code effects. You may also request prepare_workspace {unit:short description}. The controller preserves current tracked/untracked work and selects the tool cwd; do not provide paths or Git branches. No workspace is needed for simple reading/consultation. After preparation, derive the next actions from the refreshed context. Isolated changes remain pending integration. If integrate_workspace is declared, propose it after validation/review; the controller requires a current pinned owner check and an unchanged source before applying a recoverable file plan. After integration, finish independently checks the source. Without integration, no finish can close the source goal."}});
+    if(!options.verification)shared.append({kind:"directive",subject,data:{text:"This is an interactive turn. Informational requests may end with a concise answer. Action requests require actual admitted tool execution: do not substitute a plan or repeat a permission question after the user already authorized a bounded step. Interpret continuations against the preceding intention and proposals; never invent a target when several remain unresolved. Once the requested action has been performed, or an observed blocker prevents it, return your concise answer with toolCalls:[] so control returns to the user. An open goal does not require more tools after answering. Do not propose finish just to deliver an informational answer; do not keep researching or repeat the conclusion after it is answered."}});
+    if(codeWorkersEnabled)shared.append({kind:"directive",subject,data:{text:"Use run_code_workers {tasks:[{role:lowercase slug such as builder,task:nonempty text,files:[relative paths],skills?:[names]}]} for 1–2 useful independent code units. The controller prepares distinct worktrees, configured model routes and private durable effect journals. No paths, branches or permissions may be chosen by the proposal. Contributions remain unverified. Human /changes reviews a completed batch and can apply the exact composed diff or set it aside while preserving copies; inspect Agents for private journals. Human application does not verify goal completion. If integrate_code_workers is declared, propose it with empty input after the workers finish; it composes actual disjoint scoped deltas and runs the owner check before applying to the source. No worker can close the goal. Do not delegate trivial work or overlapping files."}});
+    if(workspaceEnabled)shared.append({kind:"directive",subject,data:{text:"The controller automatically prepares an isolated Git workspace before external code effects and container command inspection. Portfolio held/dirty/ahead means preserve the original checkout, not a prohibition on isolated work. Do not report it as an owner write ban. A missing or failed command is one observed invocation, not proof that every shell tool is unavailable. You may also request prepare_workspace {unit:short description}. The controller preserves current tracked/untracked work and selects the tool cwd; do not provide paths or Git branches. Document retrieval does not require a workspace. For static TypeScript verification request check_types {project:relative tsconfig path}; this read-only compiler uses installed owner dependencies against the selected isolated sources, with no install or project script execution. Avoid npx network installation: package tools are offline. Container command tools, including ls and cat, require an isolated Git snapshot because source dependencies can contain hardlinks or unsupported host files. After preparation, derive the next actions from the refreshed context. Isolated changes remain pending integration. If integrate_workspace is declared, propose it after validation/review; the controller requires a current pinned owner check and an unchanged source before applying a recoverable file plan. After integration, finish independently checks the source. Without integration, no finish can close the source goal."}});
 
     // The request is committed conditionally before the world is asked, so two
     // surfaces that both find a run allowed cannot both be right by the time it
@@ -735,6 +805,7 @@ export function createProducer(options: ProducerOptions): Producer {
       subject,
       goal,
       maxSteps: MAX_STEPS,
+      yieldOnResponse: !options.verification,
       onEvent: (event: Event) => {
         // Every event goes to the log. Only some become entries. The log is the
         // evidence and the entries are the sentence a person reads, and
@@ -807,7 +878,8 @@ export function createProducer(options: ProducerOptions): Producer {
         return;
       }
       const why = cause instanceof Error ? cause.message : String(cause);
-      observe([{ kind: "failure", text: `the run stopped: ${why}` }]);
+      const explanation=cause instanceof ProviderProposalRefused&&why.startsWith('Quota exhausted')?'Le quota du fournisseur est épuisé. Le travail est conservé ; choisis un modèle disponible ou attends le renouvellement du quota.':`Appel au modèle arrêté : ${why.replace(/[.\s]+$/,'')}.`;
+      observe([{ kind: "failure", text: `${explanation} Ctrl+P pour choisir un autre modèle.` }]);
       recordObserved(`failed: ${why}`);
     } finally {
       inFlight = false;
@@ -824,57 +896,80 @@ export function createProducer(options: ProducerOptions): Producer {
   };
 
   return {
+    async changes(){reviewingAgents=!!agentReview&&pendingCodeWorkers(shared.toSession().events);return reviewingAgents?agentReview!.open():review.open();},
+    async decideChanges(token,digest,decision){
+      if(reviewingAgents){const result=await agentReview!.decide(token,digest,decision);if(result.kind==="uncertain")shared.append({kind:"note",subject:"terminal.workspace",data:{version:1,phase:"uncertain",source:activeSource,objective:projectObjectives(shared.toSession().events).current?.id,human:true,reviewDigest:digest}});observe([{kind:"status",label:"changes",value:result.kind==="applied"?`${result.files} agent files applied · completion not verified`:result.kind==="rejected"?"Agents set aside · copies preserved":"Application refused or uncertain · inspect receipts",certainty:result.kind==="uncertain"?"failed":"unknown"}]);return result;}
+      const selected=currentWorkspaceRecord();const result=await review.decide(token,digest,decision);
+      if(selected&&["applied","rejected","uncertain"].includes(result.kind)){
+        shared.append({kind:"note",subject:"terminal.workspace",data:{...selected.data,phase:result.kind==="applied"?"integrated":result.kind,reviewDigest:digest,human:true}});
+        if(result.kind==="applied"){activeSource=String(selected.data.source);selectWorkspace(activeSource,true);}
+        observe([{kind:"status",label:"changes",value:result.kind==="applied"?`${result.files} files applied · completion not verified`:result.kind==="rejected"?"Set aside · workspace preserved":"Application uncertain · inspect receipts before retry",certainty:result.kind==="uncertain"?"failed":"unknown"}]);
+      }
+      return result;
+    },
+    workSurface(){
+      const live=inFlight?activeEffect:false;
+      if(!surfaceCache || surfaceCache.revision!==shared.revision || surfaceCache.live!==live)
+        surfaceCache={revision:shared.revision,live,value:projectWorkSurface(shared.toSession().events,live)};
+      return surfaceCache.value;
+    },
     workspacePage(){
       if(workspaceViewRevision===shared.revision&&workspaceView)return workspaceView;
       const objective=projectObjectives(shared.toSession().events).current;const latest=new Map<string,Event>();for(const e of workspaceRecords())latest.set(typeof e.data.id==="string"?e.data.id:`legacy-${e.seq}`,e);const records=[...latest.values()].sort((a,b)=>b.seq-a.seq).slice(0,20);
-      const labels:Record<string,string>={preparing:"◇ Préparation de l’isolation",requested:"◇ Création du workspace",prepared:"◇ Workspace préparé",selected:"◇ Code isolé en cours",refused:"× Isolation refusée",busy:"? Allocation occupée",uncertain:"? Effet à inspecter",historical:"? Contrat changé",integrated:"✓ Contribution intégrée"};
-      const next:Record<string,string>={preparing:"Le projet source reste protégé.",requested:"Le projet source reste protégé.",prepared:"Sélection des outils en cours.",selected:"Validation et intégration requises avant la clôture du goal.",refused:"Inspecter le refus puis reprendre la préparation ; aucun repli source.",busy:"Inspecter l’allocation existante avant de reprendre.",uncertain:"Conserver les reçus et inspecter avant tout nouvel effet.",historical:"Travail conservé ; instructions actuelles à réévaluer.",integrated:"Check final indépendant dans la source requis pour vérifier le goal."};
-      workspaceViewRevision=shared.revision;workspaceView={digest:String(shared.revision),offset:0,nextOffset:null,lines:[`Projet source : ${activeSource}`,`Outils dans : ${activeWorkspace===activeSource?"projet source":activeWorkspace}`,`${records.length} contribution(s) récente(s)`,...records.flatMap(e=>["",`${labels[String(e.data.phase)]??"? État inconnu"} : ${e.data.unit}`,`${e.data.objective===objective?.id&&e.data.revision===objective?.revision?"Contrat courant":"Historique"} · ${e.data.objective}@${e.data.revision}`,String(next[String(e.data.phase)]??"Inspecter le journal avant de reprendre."),`Workspace : ${e.data.path}`,`Base Git : ${typeof e.data.base==="string"?e.data.base.slice(0,12):"à établir"} · source #${e.seq}`]),...(records.length?[]:["Le harness prépare un espace isolé lorsque la contribution en a besoin."])]};return workspaceView;
+      const labels:Record<string,string>={preparing:"◇ Preparing isolation",requested:"◇ Creating workspace",prepared:"◇ Workspace prepared",selected:"◇ Isolated work running",refused:"× Isolation refused",busy:"? Allocation busy",uncertain:"? Effect needs inspection",historical:"? Objective changed",integrated:"✓ Contribution integrated"};
+      const next:Record<string,string>={preparing:"The source project remains protected.",requested:"The source project remains protected.",prepared:"Selecting tools.",selected:"Verification and integration required before closing the goal.",refused:"Inspect the refusal before retrying; no fallback to the source.",busy:"Inspect the existing allocation before resuming.",uncertain:"Keep receipts and inspect before any further effect.",historical:"Work preserved; reassess current instructions.",integrated:"An independent final source check is required."};
+      workspaceViewRevision=shared.revision;workspaceView={digest:String(shared.revision),offset:0,nextOffset:null,lines:[`Source project: ${activeSource}`,`Tools in: ${activeWorkspace===activeSource?"source project":activeWorkspace}`,`${records.length} recent contributions`,...records.flatMap(e=>["",`${labels[String(e.data.phase)]??"? Unknown state"} : ${e.data.unit}`,`${e.data.objective===objective?.id&&e.data.revision===objective?.revision?"Current objective":"Historical"} · ${e.data.objective}@${e.data.revision}`,String(next[String(e.data.phase)]??"Inspect the journal before resuming."),`Workspace : ${e.data.path}`,`Base Git : ${typeof e.data.base==="string"?e.data.base.slice(0,12):"not established"} · source #${e.seq}`]),...(records.length?[]:["The harness prepares an isolated workspace when needed."])]};return workspaceView;
     },
     notificationCount(){return notificationState().unread;},
     notificationPage,
     readNotifications(digest){const n=notificationState();if(n.digest===digest&&n.unread>0){options.journal?.assertWritable();shared.append({kind:"note",subject:"terminal.notification_read",data:{version:1,author:"human",throughSeq:n.throughSeq}});}return notificationPage();},
     situationPage() {
-      const s=currentSituation();return {digest:s.time.utc,offset:0,nextOffset:null,lines:[`${s.time.local} · ${s.time.timeZone} · ${s.time.offset}`,`UTC : ${s.time.utc}`,`Langue : ${s.responseLanguage.preference??"automatique · conversation"} · locale OS ${s.locale}`,`Interlocuteur : ${s.human.label??"identité non configurée"}`,`Machine : ${s.host.label??s.host.platform}`,`Projet : ${s.workspace}`,`Session : ${s.sessionId}`,`Exécution : ${s.executionId??"aucune active"}`,`Rôle : ${s.role} · ${s.model}`,`Objectif : ${s.objective?`${s.objective.id}@${s.objective.revision}`:"aucun"}`,...s.peers.map(p=>`${p.role} · ${p.model} · ${p.phase}`)]};
+      const s=currentSituation();return {digest:s.time.utc,offset:0,nextOffset:null,lines:[`${s.time.local} · ${s.time.timeZone} · ${s.time.offset}`,`UTC : ${s.time.utc}`,`Language: ${s.responseLanguage.preference??"automatic · conversation"} · OS locale ${s.locale}`,`User: ${s.human.label??"identity not configured"}`,`Machine : ${s.host.label??s.host.platform}`,`Project: ${s.workspace}`,`Session : ${s.sessionId}`,`Execution: ${s.executionId??"none active"}`,`Role: ${s.role} · ${s.model}`,`Objective: ${s.objective?`${s.objective.id}@${s.objective.revision}`:"none"}`,...s.peers.map(p=>`${p.role} · ${p.model} · ${p.phase}`)]};
     },
     agentModelTargets() {
       const routes=projectAgentModels(shared.toSession().events);const roles=[...new Set(["*",...routes.keys(),...projectAgents(shared.toSession().events).map(a=>a.role)])].slice(0,30);
-      return roles.map(role=>{const selection=agentSelection(routes,role);return {role,selection,label:selection?`${selection.provider} · ${selection.model??"modèle configuré"}`:`Automatique · ${options.modelLabel?.()??model.name}`};});
+      return roles.map(role=>{const selection=agentSelection(routes,role);return {role,selection,label:selection?`${selection.provider} · ${selection.model??"configured model"}`:`Automatic · ${options.modelLabel?.()??model.name}`};});
     },
     selectAgentModel(role,selection) {
       try{
-        if(!validAgentRole(role))return {error:"Rôle invalide."};options.journal?.assertWritable();
-        const routes=projectAgentModels(shared.toSession().events);if(!routes.has(role)&&routes.size>=30)return {error:"Limite de rôles atteinte."};
+        if(!validAgentRole(role))return {error:"Invalid role."};options.journal?.assertWritable();
+        const routes=projectAgentModels(shared.toSession().events);if(!routes.has(role)&&routes.size>=30)return {error:"Role limit reached."};
         const clean=selection===null?null:validatePreferences(selection);
-        if(clean){if(!clean.provider||!options.agentModel)return {error:"Route explicite indisponible."};options.agentModel(clean,activeWorkspace);}
+        if(clean){if(!clean.provider||!options.agentModel)return {error:"Explicit route unavailable."};options.agentModel(clean,activeWorkspace);}
         shared.append({kind:"note",subject:AGENT_MODEL_SUBJECT,data:{version:1,author:"human",role,selection:clean}});
         codeWorkerController?.abort(new Error("Agent model selection changed."));
-        observe([{kind:"status",label:"agents",value:`${role==="*"?"Tous les consultants":role} · ${clean?`${clean.provider} · ${clean.model??"modèle configuré"}`:"automatique"}`,certainty:"confirmed"}]);return {ok:true};
-      }catch{return {error:"Choix refusé : vérifier provider, modèle, limite et stockage de session."};}
+        observe([{kind:"status",label:"agents",value:`${role==="*"?"All consultants":role} · ${clean?`${clean.provider} · ${clean.model??"configured model"}`:"automatic"}`,certainty:"confirmed"}]);return {ok:true};
+      }catch{return {error:"Selection refused: check provider, model, limit and session storage."};}
+    },
+    skillPage(){
+      const installed=activeSkills?.catalog();
+      const local=shared.toSession().events.filter(e=>e.kind==="note"&&e.subject==="terminal.work"&&e.data.operation==="skill");
+      const latest=new Map(local.map(e=>[String(e.data.name),e]));
+      return {digest:String(shared.revision),offset:0,nextOffset:null,lines:["Skills provide instructions, not additional permissions.","Ask to create a reusable skill or assign it to an agent in ordinary language.",...((installed?.capabilities??[]).flatMap(s=>[`${s.name} · installed · ${s.version}`,s.source])),...(installed?.unreadable??[]).map(s=>`Unreadable: ${s.folder} · ${s.reason}`),...(installed?.anyRootUnreadable?["A configured skill root could not be read; absence is not established."]:[]),...Array.from(latest.values()).flatMap(e=>[`${e.data.name} · session · source #${e.seq}`,String(e.data.instructions)]),...(!(installed?.capabilities.length||latest.size)?["No skills found in this project or session."]:[])]};
     },
     agentPage(offset=0) {
       const agents=projectAgents(shared.toSession().events,inFlight?activeEffect:false);const start=Number.isSafeInteger(offset)&&offset>=0 ? Math.min(offset,Math.max(0,agents.length-1)):0;
-      const labels:Record<string,string>={active:"en cours",result:"proposition reçue · non vérifiée",failed:"échec",stale:"contexte périmé",cancelled:"arrêté",interrupted:"interrompu"};
-      return {digest:String(shared.revision),offset:start,nextOffset:start+20<agents.length?start+20:null,lines:agents.length?agents.slice(start,start+20).flatMap(a=>[`${a.role} · ${labels[a.phase]}`,`Modèle : ${a.model}`,a.task,...shared.toSession().events.filter(e=>e.subject==="terminal.code-worker"&&e.data.id===a.id).slice(-1).flatMap(e=>[`Workspace : ${e.data.workspace}`,`Contribution : ${e.data.phase==="integrated"?"intégrée · check final source":`${e.data.phase} · intégration requise`}`,`Journal privé : ${e.data.journal}`]),`Skills : ${a.skills.length?a.skills.map(s=>`${s.name} · ${s.kind} · ${s.version.slice(0,12)} · source #${s.sourceSeq}${s.truncated?" · extrait":""}`).join(" ; "):"aucun pertinent chargé"}`,...a.warnings,...(a.text?[a.text]:[])]):["Aucun agent délégué pour cette session. Le harness les crée quand une consultation utile peut être séparée."]};
+      const labels:Record<string,string>={active:"running",result:"proposal received · unverified",failed:"failed",stale:"stale context",cancelled:"cancelled",interrupted:"interrupted"};
+       return {digest:String(shared.revision),offset:start,nextOffset:start+20<agents.length?start+20:null,lines:agents.length?agents.slice(start,start+20).flatMap(a=>{const workerEvents=shared.toSession().events.filter(e=>e.kind==="note"&&e.subject==="terminal.code-worker"&&e.data.id===a.id);const admission=workerEvents.find(e=>e.data.phase==="admitted");const latest=workerEvents.at(-1);const recovery=latest?.data.reconciled===true;const phase=latest?.data.phase;const interrupted=a.phase==="interrupted"&&!!admission;return [`${a.role} · ${labels[a.phase]}`,`Model: ${a.model}`,"Cost: not established in this journal.",a.task,...(latest?[`Workspace : ${latest.data.workspace}`,`Contribution : ${phase==="integrated"?(latest?.data.human===true?"applied by human review · completion not verified":"integrated · final source check"):phase==="rejected"?"set aside · copies preserved":`${phase} · integration required`}`,`Private journal: ${latest.data.journal}`]:[]),...(interrupted?[`Recovery: interrupted · admission #${admission!.seq} · ${String(admission!.data.objectiveId??"unknown objective")}@${String(admission!.data.objectiveRevision??"?")}`,`Provenance : source ${String(admission!.data.source??"unknown")} · digest ${String(admission!.data.sourceDigest??"unknown").slice(0,12)} · journal ${String(admission!.data.journal??"unknown")}`,"Next action: inspect_code_workers {} ; do not replay uncertain effects."]:[]),...(recovery?[`Recovery: proposal restored from private receipt #${String(latest!.data.proposalSeq)} · unverified`,`Next action: integrate_code_workers {} with the current owner check.`]:[]),`Skills : ${a.skills.length?a.skills.map(s=>`${s.name} · ${s.kind} · ${s.version.slice(0,12)} · source #${s.sourceSeq}${s.truncated?" · excerpt":""}`).join(" ; "):"none relevant loaded"}`,...a.warnings,...(a.text?[a.text]:[])];}):["No delegated agents in this session. The harness creates them when a useful consultation can be separated."]};
     },
     sharedContextPage(offset=0,expectedDigest) {
-      if(!activeContexts)return {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]};
+      if(!activeContexts)return {digest:"",offset:0,nextOffset:null,lines:["No shared context configured."]};
       try {
         const snapshot=activeContexts.read();
         const entries=snapshot.profiles.flatMap(profile=>profile.entries.map(entry=>({scope:profile.scope,entry})));
         const start=expectedDigest && expectedDigest!==snapshot.digest ? 0 :
           Number.isSafeInteger(offset) && offset>=0 ? Math.min(offset,Math.max(0,entries.length-1)) : 0;
-        const lines=[`Projet : ${activeWorkspace}`,`Digest : ${snapshot.digest}`,
-          "Sources partagées : interprétations modèle et corrections humaines attribuées ; aucune permission ou preuve supplémentaire.",
-          "Corrections humaines : /context edit|resolve ID REVISION TEXTE — projet actif uniquement.",
-          ...snapshot.profiles.map(profile=>`${profile.scope.kind} · ${profile.scope.id} · révision ${profile.revision} · ${profile.entries.length} souvenirs`),
-          ...(entries.length ? [`Souvenirs ${start+1}–${Math.min(start+20,entries.length)} / ${entries.length}`] : ["Aucun souvenir partagé."]),
+        const lines=[`Project: ${activeWorkspace}`,`Digest : ${snapshot.digest}`,
+          "Shared sources: attributed model interpretations and human corrections; no additional permissions or evidence.",
+          "Human corrections: /context edit|resolve ID REVISION TEXT; active project only.",
+          ...snapshot.profiles.map(profile=>`${profile.scope.kind} · ${profile.scope.id} · revision ${profile.revision} · ${profile.entries.length} memories`),
+          ...(entries.length ? [`Memories ${start+1}–${Math.min(start+20,entries.length)} / ${entries.length}`] : ["No shared memories."]),
           ...entries.slice(start,start+20).flatMap(({scope,entry})=>[
-            `${scope.kind} · ${entry.kind} · ${entry.id} · révision ${entry.revision} · ${entry.author} · ${entry.active ? "actif" : "résolu"}`,
-            entry.text,`Raison initiale : ${entry.rationale}`,`Sources initiales : ${entry.sources.map(source=>`${source.session}:${source.seq}`).join(", ")}`,
-            ...entry.corrections.map(correction=>`Correction humaine ${correction.operation} · ${correction.source.session}:${correction.source.seq} · ${correction.text}`)])];
+            `${scope.kind} · ${entry.kind} · ${entry.id} · revision ${entry.revision} · ${entry.author} · ${entry.active ? "active" : "resolved"}`,
+            entry.text,`Original rationale: ${entry.rationale}`,`Original sources: ${entry.sources.map(source=>`${source.session}:${source.seq}`).join(", ")}`,
+            ...entry.corrections.map(correction=>`Human correction ${correction.operation} · ${correction.source.session}:${correction.source.seq} · ${correction.text}`)])];
         return {digest:snapshot.digest,offset:start,nextOffset:start+20<entries.length ? start+20 : null,lines};
-      } catch {return {digest:"",offset:0,nextOffset:null,lines:["Contexte partagé indisponible ou invalide. Vérifier les racines configurées et leurs journaux ; aucune mémoire vide supposée."]};}
+      } catch {return {digest:"",offset:0,nextOffset:null,lines:["Shared context unavailable or invalid. Check configured roots and journals; empty memory is not assumed."]};}
     },
     checkConfirmation() {
       const current=projectObjectives(shared.toSession().events).current;
@@ -895,7 +990,9 @@ export function createProducer(options: ProducerOptions): Producer {
       const pending=historical.events.filter(event=>event.kind==="note" && event.subject==="terminal.user" && event.data.operation!=="confirm_check" && event.data.operation!=="shared_context").at(-1);
       const lastGoal=historical.events.filter(event=>event.kind==="goal").at(-1);
       if(pending && pending.seq>(lastGoal?.seq ?? -1) && typeof pending.data.text==="string") {
-        runWith(resolveScope(pending.data.text,cwd,ids,bindProject,projectsRoot),pending.data.text);return;
+        const objective=projectObjectives(historical.events).current;
+        const admitted=objective&&!objective.id.startsWith("legacy-")&&ids.some(id=>resolve(projectsRoot,id.path)===objective.scope);
+        runWith(resolveScope(pending.data.text,admitted?objective!.scope:cwd,ids,bindProject,projectsRoot),pending.data.text);return;
       }
       const goal=historical.goal;
       if(!goal || !goal.open) {observe([{kind:"status",label:"reprise",value:goal ? "Ce but a déjà été vérifié. Aucun travail n’a été relancé." : "Aucun but à reprendre dans cette session.",certainty:"unknown"}]);return;}
@@ -915,6 +1012,27 @@ export function createProducer(options: ProducerOptions): Producer {
       log(`[cancel] ${pendingRequest ?? "run"} requested by the user`);
       controller?.abort(new Error("Run interrupted by the user"));
       try {changeObjectiveStatus(shared,"paused","Explicit user interruption");} catch {return;}
+    },
+    steerAt(reference,text) {
+      const resolved=resolveWorkReference(projectWorkSurface(shared.toSession().events,inFlight?activeEffect:false),reference,text);
+      if('error' in resolved)return resolved;
+      return this.steer?.(text,reference)?{ok:true}:{error:'Correction could not be recorded. Your draft is preserved.'};
+    },
+    steer(text: string,reference?:import('../app/state.ts').WorkReference) {
+      const said=text.trim();
+      if(!said||said.length>20000||said.startsWith('/')||!projectObjectives(shared.toSession().events).current)return false;
+      const referenced=reference?resolveWorkReference(projectWorkSurface(shared.toSession().events,inFlight?activeEffect:false),reference,said):{text:said};
+      if('error' in referenced)return false;
+      try{
+        options.journal?.assertWritable();
+        const source=shared.append({kind:'directive',subject:'builder',data:{text:referenced.text,source:'terminal.user',...(reference?{workReference:{...reference},instruction:said}:{})}});
+        correctObjective(shared,said,source.seq);
+      }catch{return false;}
+      if(inFlight)codeWorkerController?.abort(new Error('Human correction invalidated code-worker proposals.'));
+      send({type:'submit',text:said});
+      if(reference)observe([{kind:'status',label:'correction recorded',value:'Selected work attached · active work reconciles at the next safe boundary',certainty:'confirmed'}]);
+      if(!inFlight)this.resume?.();
+      return true;
     },
     say(text: string) {
       const said = text.trim();
@@ -972,7 +1090,9 @@ export function createProducer(options: ProducerOptions): Producer {
       if(options.journal?.failure) return;
       if(inFlight) {log(`[directive] builder ${said}`);return;}
 
-      const scope = resolveScope(said, cwd, ids, bindProject, projectsRoot);
+      const objective=projectObjectives(shared.toSession().events).current;
+      const admitted=objective&&!objective.id.startsWith("legacy-")&&ids.some(id=>resolve(projectsRoot,id.path)===objective.scope);
+      const scope=resolveScope(said,admitted?objective!.scope:cwd,ids,bindProject,projectsRoot);
       runWith(scope, said);
     },
     choose(option: Option) {

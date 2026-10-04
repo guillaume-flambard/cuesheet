@@ -213,7 +213,15 @@ export function bindProject(
   identities: readonly ProjectIdentity[] = projectIdentities(),
 ): Binding {
   const tokens = tokensOf(text);
-  const named = identities
+  // A literal registry name is stronger than a shared prefix or stack word.
+  // Keep hyphens inside the word: intentlane-vault does not name intentlane.
+  // Missing explicit names remain unresolved rather than falling through.
+  const words = new Set(text.toLowerCase().split(/[^a-z0-9-]+/));
+  const explicit = identities.filter(project => words.has(project.name.toLowerCase()));
+  const named = explicit.length ? explicit.map(project => ({
+    path: project.path, name: project.name, basis: "exact-name" as const,
+    tokens: [], exists: project.exists,
+  })) : identities
     .map((p) => candidateFor(p, tokens))
     .filter((c) => c.basis !== "none");
 

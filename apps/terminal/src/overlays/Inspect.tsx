@@ -22,28 +22,36 @@
  * rather than deriving everything from it is that a person debugging needs to see
  * the sequence exactly as it was appended.
  */
-import React from "react";
-import { Box, Text } from "ink";
+import React,{useState,useRef,useLayoutEffect} from "react";
+import { Box, Text, useInput } from "ink";
+import {wrapCells} from "../components/LiveWork.tsx";
+import {ViewTitle} from "../components/Surface.tsx";
 import { theme, inkColor } from "../theme/tokens.ts";
 
-export function Inspect(props: { lines: readonly string[]; maxLines?: number; width?: number }): JSX.Element {
-  if (props.lines.length === 0) {
-    return <Text color={inkColor(theme.dim)}>nothing has happened yet</Text>;
+export function Inspect(props: { reasoning?:string;progressKind?:"reasoning"|"text";lines: readonly string[]; maxLines?: number; width?: number }): JSX.Element {
+  const [offset,setOffset]=useState(0);
+  const full=props.reasoning?wrapCells(props.reasoning,Math.max(1,(props.width??80)-2)):[...props.lines];
+  const count=Math.max(1,props.maxLines??40),max=Math.max(0,full.length-count);
+  const previous=useRef(full.length);
+  useLayoutEffect(()=>{const growth=full.length-previous.current;previous.current=full.length;setOffset(v=>v?Math.min(max,Math.max(0,v+growth)):0);},[full.length,max]);
+  useInput((_input,key)=>{if(key.pageUp)setOffset(v=>Math.min(max,v+count));if(key.pageDown)setOffset(v=>Math.max(0,v-count));});
+  if (full.length === 0) {
+    return <Text color={inkColor(theme.dim)}>No recorded activity yet.</Text>;
   }
   // The tail, because the newest line is the one being looked for, and a log
   // that starts at seq 1 and scrolls away is the same mistake the timeline
   // avoided.
-  const shown = props.lines.slice(-Math.max(1, props.maxLines ?? 40));
+  const shown = full.slice(Math.max(0,full.length-count-Math.min(offset,max)),full.length-Math.min(offset,max));
   return (
     <Box flexDirection="column" width={props.width}>
-      <Text color={inkColor(theme.dim)}>the log, as appended</Text>
+      <ViewTitle title={props.reasoning?(props.progressKind==="text"?"Response":"Published reasoning"):"Session log"} detail={props.reasoning?"live · Pg↑ / Pg↓ scroll":"as recorded"}/>
       {shown.map((line, i) => (
         <Text key={i} color={inkColor(theme.faint)} wrap="truncate-end">
           {line}
         </Text>
       ))}
       <Box marginTop={1}>
-        <Text color={inkColor(theme.faint)}>esc to go back</Text>
+        <Text color={inkColor(theme.faint)}>Esc close</Text>
       </Box>
     </Box>
   );

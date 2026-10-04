@@ -340,25 +340,8 @@ describe("the type errors apps/terminal can see, and the ones it cannot", () => 
     assert.deepEqual(surfaceErrors(), [], "apps/terminal introduced type errors");
   });
 
-  it("the inherited errors are in files this change does not own", () => {
-    // Named rather than counted, so a *new* inherited error fails this test with
-    // its own path instead of quietly raising a total someone has to subtract.
-    // Each of these predates V2 and was invisible until the producer imported the
-    // file; `docs/SURFACE-V2.md` records the measurement.
-    // Keyed on `file:code`, which is the same weakness the repository's own
-    // `test/typecheck-guard.test.ts` documents at its own lines 24-26: a second
-    // `TS2339` in the same file would pass. The message is stripped so an
-    // unrelated rewording of a message does not read as a new error, and the
-    // count is asserted so a second one in the same file cannot slip through
-    // either.
-    const expected = [
-      "src/adapters/shell.ts(58,5)",
-      "src/core/memory.ts(234,5)",
-      "src/core/store.ts(268,22)",
-    ];
-    const actual = inheritedErrors();
-    assert.deepEqual(actual, expected, "the inherited error set changed");
-    assert.equal(actual.length, expected.length, "one error per file, no more");
+  it("the producer imports compile without inherited type errors", () => {
+    assert.deepEqual(inheritedErrors(), [], "producer dependencies must compile");
   });
 });
 
@@ -441,12 +424,12 @@ describe("a real run reaches the timeline as real observations", () => {
     assert.equal(actions[1]?.label, "test", "npm test is a test");
 
     // And the surface settled on the loop's own stop reason, not on the model's
-    // claim that it was done. The model said "the suite is green"; the loop ran
-    // out of budget, and the surface said so.
+    // claim that it was done. A tool-free response yields the interactive turn,
+    // while the goal remains explicitly open and unverified.
     const status = entries(store.get(), "status");
     assert.ok(
-      status.some((s) => s.kind === "status" && /still open/.test(s.value)),
-      `the surface reported the budget, not the model's claim: ${JSON.stringify(status)}`,
+      status.some((s) => s.kind === "status" && /still open|Le but reste ouvert/.test(s.value)),
+      `the surface kept the goal open after the answer: ${JSON.stringify(status)}`,
     );
   });
 
@@ -673,6 +656,9 @@ describe("work is shown as one of five things a person cares about", () => {
   it("the verbs come from the request, not from the output", () => {
     const cases: Array<[ToolRequest, string]> = [
       [{ name: "cat", input: { path: "a.ts" } }, "read"],
+      [{ name: "ls", input: { argv: ["ls", "test"] } }, "read"],
+      [{ name: "node", input: { argv: ["node", "-e", "console.log(\"test\")"] } }, "other"],
+      [{ name: "node", input: { argv: ["node", "--test", "test/example.mjs"] } }, "test"],
       [{ name: "rg", input: { argv: ["rg", "-n", "x", "src"] } }, "read"],
       [{ name: "git", input: { argv: ["git", "status"] } }, "inspect"],
       [{ name: "git", input: { argv: ["git", "diff"] } }, "inspect"],
@@ -749,7 +735,7 @@ describe("the loop's own stop decides what the surface says", () => {
 
     const statuses = entries(store.get(), "status").filter((s) => s.kind === "status");
     assert.ok(
-      statuses.some((s) => s.kind === "status" && s.certainty === "unknown" && /still open/.test(s.value)),
+      statuses.some((s) => s.kind === "status" && s.certainty === "unknown" && /still open|Le but reste ouvert/.test(s.value)),
       `the run is reported as open: ${JSON.stringify(statuses)}`,
     );
     assert.ok(
@@ -834,4 +820,9 @@ describe("overlays are a state, not a component", () => {
     assert.equal(said.overlay, "none");
     assert.equal(said.entries.at(-1)?.kind, "you");
   });
+});
+ it("generic review language keeps the current project while a complete different name can switch it",()=>{
+ const noisy=[...PORTFOLIO,{name:"gtm",path:"tools/gtm",kind:"repo",status:"live",nature:"review",stack:"safety",exists:true}] as ProjectIdentity[];
+ const scope=resolveScope("review the safety of this correction",`${ROOT}/tools/cuesheet`,noisy,binder,ROOT);assert.equal(scope.at,"cwd");if(scope.at!=="choice")assert.equal(scope.path,`${ROOT}/tools/cuesheet`);
+ const other=resolveScope("work on videoai",`${ROOT}/tools/cuesheet`,noisy,binder,ROOT);assert.equal(other.at,"bound");if(other.at!=="choice")assert.equal(other.path,`${ROOT}/experiments/videoai`);
 });

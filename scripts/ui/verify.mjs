@@ -169,7 +169,8 @@ async function drive(cols, rows) {
     return strip(raw, cols, rows).includes(marker);
   };
 
-  await waitFor("cuesheet");
+  try {
+  if(!await waitFor("cuesheet",30000))throw new Error("terminal did not become ready");
   const shots = {};
   const sent = [
     { type: "hello there", marker: "RENDER_PROOF_REPLY" },
@@ -184,15 +185,18 @@ async function drive(cols, rows) {
     // pause forces the literal and the Return to be delivered separately, which
     // is what a person typing produces.
     term.write(step.type);
-    await sleep(500);
+    if(!await waitFor(step.type,30000))throw new Error(`composer did not receive ${step.type}`);
+    await sleep(100);
     term.write("\r");
-    await waitFor(step.marker, 9000);
+    if(!await waitFor(step.marker,30000))throw new Error(`response did not arrive: ${step.marker}`);
     await sleep(PAINT);
     shots[step.marker] = strip(raw, cols, rows);
   }
-  term.kill();
-  await sleep(200);
   return { shots, raw };
+  } finally {
+    term.kill();
+    await sleep(200);
+  }
 }
 
 

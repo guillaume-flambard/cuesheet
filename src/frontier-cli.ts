@@ -50,7 +50,7 @@ function parseObjects(file: string): {
     // leading text of this block rather than re-read as a key. Reading it as a
     // key returns undefined for every object, which silently drops the whole
     // file, so the id is taken from the split position itself.
-    const id = raw.split("\n")[0].trim();
+    const id = raw.split("\n")[0]!.trim();
     if (!id) continue;
     const block = raw.slice(raw.indexOf("\n"));
     const scalar = (key: string): string | undefined => {
@@ -61,7 +61,7 @@ function parseObjects(file: string): {
       // Inline list: [a, b, c]
       const inline = new RegExp(`^\\s*${key}:\\s*\\[(.*)\\]$`, "m").exec(block);
       if (inline) {
-        return inline[1]
+        return inline[1]!
           .split(",")
           .map((s) => s.trim().replace(/^["']|["']$/g, ""))
           .filter(Boolean);
@@ -69,19 +69,23 @@ function parseObjects(file: string): {
       // Block list, on the following indented "- " lines.
       const m = new RegExp(`^\\s*${key}:\\s*\\n((?:\\s*-\\s*.+\\n)+)`, "m").exec(block);
       if (!m) return [];
-      return m[1]
+      return m[1]!
         .split("\n")
         .map((l) => l.replace(/^\s*-\s*/, "").trim())
         .filter(Boolean);
     };
 
     const status = scalar("status") ?? "active";
+    const kind = scalar("kind") ?? "Finding";
+    const horizon = scalar("horizon") ?? "sleep";
+    const what = scalar("what") ?? "";
+    const why = scalar("why") ?? "";
     const object: DurableObject = {
       id,
-      kind: (scalar("kind") ?? "Finding") as DurableObject["kind"],
-      horizon: (scalar("horizon") ?? "sleep") as DurableObject["horizon"],
-      what: scalar("what") ?? "",
-      why: scalar("why") ?? "",
+      kind: kind as DurableObject["kind"],
+      horizon: horizon as DurableObject["horizon"],
+      what,
+      why,
       evidence: [],
       status: status as DurableObject["status"],
       related_to: list("related_to"),
@@ -111,13 +115,13 @@ function parseObjects(file: string): {
   // absent rather than zero.
   const measureBlock = /## mesures connues\s*```yaml\s*\n([\s\S]*?)```/.exec(text);
   if (measureBlock) {
-    for (const line of measureBlock[1].split("\n")) {
+    for (const line of measureBlock[1]!.split("\n")) {
       const m = /^([a-z_]+):\s*(.*)$/.exec(line.trim());
       if (!m) continue;
       const [, name, raw] = m;
       if (raw === "null" || raw === "") continue;
       const n = Number(raw);
-      measured[name] = Number.isFinite(n) ? n : raw === "true";
+      measured[name!] = Number.isFinite(n) ? n : raw === "true";
     }
   }
 

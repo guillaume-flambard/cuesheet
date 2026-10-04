@@ -52,9 +52,18 @@ export interface SubjectView {
   lastAt: number;
 }
 
+/** The verification outcome of work, if any. */
+export type VerificationOutcome = "VERIFIED" | "REJECTED" | "INCONCLUSIVE";
+
 export interface SessionState {
   id: string;
   goal: Observed<{ text: string; open: boolean }>;
+  /**
+   * The verification outcome of the work produced for the goal, if any.
+   * `unknown` when no work was produced or no verification ran.
+   * This distinguishes "work was produced but never checked" from "work was checked and rejected".
+   */
+  goalVerified: Observed<VerificationOutcome>;
   subjects: SubjectView[];
   /** Claims backed by evidence, with the evidence named. */
   proven: Array<{ claim: string; evidence: string; at: number }>;
@@ -175,6 +184,43 @@ export function deriveState(
       requestsById(events).has(e.data.effectId as string),
   );
 
+  // Track work verification outcome. The last work_verified event for the goal's
+  // effect determines the outcome. This distinguishes "work was checked and rejected"
+  // from "work was never checked" (VER-06).
+  const goalVerified = (() => {
+    // Find the effect_id that corresponds to the goal's SpawnAgent request
+    const goalEffectIds = new Set<string>();
+    for (const e of events) {
+      if (e.kind === "effect_requested" && e.data.effect === "SpawnAgent") {
+        const id = typeof e.data.effectId === "string" ? e.data.effectId : null;
+        if (id) goalEffectIds.add(id);
+      }
+    }
+    // Find the last work_verified for any of those effect IDs
+    let lastVerdict: VerificationOutcome | null = null;
+    for (const e of events) {
+      if (e.kind === "work_verified") {
+        const effectId = typeof e.data.effectId === "string" ? e.data.effectId : null;
+        const artifactId = typeof e.data.artifactId === "string" ? e.data.artifactId : null;
+        // Check if this verification relates to our goal's effect
+        if (effectId && goalEffectIds.has(effectId)) {
+          const verdict = typeof e.data.verdict === "string" ? e.data.verdict.toUpperCase() : null;
+          if (verdict === "VERIFIED" || verdict === "REJECTED" || verdict === "INCONCLUSIVE") {
+            lastVerdict = verdict;
+          }
+        } else if (artifactId) {
+          // Fallback: check if artifact was produced by this goal's effect
+          // (in practice, artifactId is linked to the effect via work_produced)
+          const verdict = typeof e.data.verdict === "string" ? e.data.verdict.toUpperCase() : null;
+          if (verdict === "VERIFIED" || verdict === "REJECTED" || verdict === "INCONCLUSIVE") {
+            lastVerdict = verdict;
+          }
+        }
+      }
+    }
+    return lastVerdict !== null ? seen(lastVerdict) : unknown("no work verification recorded");
+  })();
+
   // The intention in the log, if there is one. `staged: true` marks the fact
   // that a person decided something and the world has not taken it yet, but the
   // decision and the handover are the same kind of fact here, because both
@@ -202,6 +248,7 @@ export function deriveState(
               : "the intention was closed and nothing remains to decide",
           )
         : unknown("no goal was staged in this log"),
+    goalVerified,
     subjects: [...subjects.values()].sort((a, b) => a.subject.localeCompare(b.subject)),
     proven,
     // Both counts come from the same pass, so they cannot disagree. A subject

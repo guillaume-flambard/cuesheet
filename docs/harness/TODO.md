@@ -282,3 +282,5 @@ H09.3f4 P1 DEFECT IN_PROGRESS : portable imports/fixtures/CWD ; requis avant ora
 Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
 
 Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.
+
+Checkpoint deux workers réels : MW01..MW06 DONE, AC-MW01..AC-MW06 VERIFIED avec EV-TWO-REAL-WORKERS (evaluation/two-real-workers/evidence.md). 1013 tests,1010 pass,0 fail,3 inherited skips,136703.766875ms PASS. Preuve bornée API installée, source indépendante et audit ; aucune clôture parent/global ni acceptation humaine.

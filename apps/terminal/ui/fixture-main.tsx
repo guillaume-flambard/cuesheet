@@ -11,10 +11,13 @@ import { render } from "ink";
 import { App } from "../src/app/App.tsx";
 import { createStore } from "../src/app/store.ts";
 import { createFixtureProducer } from "./fixture-producer.ts";
+import {terminalInput} from '../src/terminal-input.ts';
 
 const store = createStore();
 const producer = createFixtureProducer(store);
-const instance = render(createElement(App, { store, producer }), { exitOnCtrlC: false });
+const keyboard=terminalInput(process.stdin);
+process.stdout.write('\x1b[?2004h');
+const instance = render(createElement(App, { store, producer }), { exitOnCtrlC: false,stdin:keyboard.input });
 
 // A run that never exits would hang CI. The harness sends Ctrl+C when it is
 // done, and this is the belt to that pair of braces.
@@ -22,6 +25,6 @@ const guard = setTimeout(() => process.exit(3), 60_000);
 guard.unref?.();
 
 instance.waitUntilExit().then(
-  () => process.exit(0),
-  () => process.exit(1),
+  () => {keyboard.dispose();process.stdout.write('\x1b[?2004l');process.exit(0);},
+  () => {keyboard.dispose();process.stdout.write('\x1b[?2004l');process.exit(1);},
 );

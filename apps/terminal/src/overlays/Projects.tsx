@@ -23,10 +23,13 @@
  */
 import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
+import {SelectionRow,ViewTitle} from "../components/Surface.tsx";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
 import type { Option } from "../app/state.ts";
 
 export function Projects(props: {
+  rows?:number;
+  width?:number;
   choices: readonly Option[];
   onChoose(option: Option): void;
   onDismiss(): void;
@@ -48,23 +51,19 @@ export function Projects(props: {
     return <Text color={inkColor(theme.dim)}>nothing to choose from</Text>;
   }
 
+  const visible=Math.max(1,Math.floor(((props.rows??14)-4)/2)),start=Math.max(0,at-visible+1);
   return (
     <Box flexDirection="column">
-      <Text color={inkColor(theme.dim)}>{choices.length} could be it</Text>
-      {choices.map((c, i) => (
+      <ViewTitle title="Resolve the project" detail={`${at+1} / ${choices.length}`}/>
+      {choices.slice(start,start+visible).map((c, offset) => {const i=start+offset;return (
         <Box key={c.path} flexDirection="column">
-          <Box>
-            <Text color={inkColor(i === at ? theme.brand : theme.faint)}>{i === at ? `${glyph.input} ` : "  "}</Text>
-            <Text color={inkColor(i === at ? theme.text : theme.dim)} bold={i === at}>
-              {c.name}
-            </Text>
-            <Text color={inkColor(theme.faint)}>  {c.path}</Text>
-          </Box>
+          <SelectionRow width={props.width??64} selected={i===at} label={c.name} detail={c.path}/>
+
           <Text color={inkColor(theme.faint)}>      {c.why}</Text>
         </Box>
-      ))}
+      );})}
       <Box marginTop={1}>
-        <Text color={inkColor(theme.faint)}>↑↓ to move · enter to work there · esc to keep working where you are</Text>
+        <Text color={inkColor(theme.faint)}>↑↓ choose · Enter confirm · Esc close</Text>
       </Box>
     </Box>
   );

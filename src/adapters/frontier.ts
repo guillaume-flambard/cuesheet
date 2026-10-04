@@ -20,6 +20,14 @@ import { join } from "node:path";
 
 import type { DurableObject, Frontier } from "../core/memory.ts";
 import { buildFrontier, wakeable } from "../core/memory.ts";
+import {
+  resolveOwnership,
+  type Project,
+  type ActiveSession,
+  type ProjectObservation,
+  type OwnershipOptions,
+  type Ownership,
+} from "../core/ownership.ts";
 
 /**
  * Where the portfolio lives on the machine that is not asking.
@@ -37,6 +45,8 @@ const CATEGORIES = ["products", "tools", "infrastructure", "experiments", "clien
 export interface FrontierOptions {
   /** Where the projects tree is. Defaults to `~/projects`. */
   projectsRoot?: string;
+  /** Active sessions to consider for ownership. */
+  sessions?: Array<{ id: string; directory: string; lastActivity: number }>;
 }
 
 /** What the registry says, which is the declared truth about what exists. */
@@ -74,14 +84,15 @@ export function parseRegistry(projectsRoot: string): RegistryEntry[] {
       .map((c) => c.trim());
     // Header and separator rows carry no project.
     if (cells.length < 6) continue;
-    if (cells[0] === "Name" || cells[0].startsWith("---")) continue;
+    if (cells[0] === "Name" || cells[0]!.startsWith("---")) continue;
+    const [name, path, kind, status, nature, stack] = cells;
     out.push({
-      name: cells[0],
-      path: cells[1],
-      kind: cells[2],
-      status: cells[3],
-      nature: cells[4],
-      stack: cells[5],
+      name: name!,
+      path: path!,
+      kind: kind!,
+      status: status!,
+      nature: nature!,
+      stack: stack!,
     });
   }
   return out;
@@ -142,11 +153,11 @@ export interface PortfolioSnapshot {
 export function snapshotPortfolio(options: FrontierOptions = {}): PortfolioSnapshot {
   const projectsRoot = options.projectsRoot ?? DEFAULT_PROJECTS_ROOT;
   const entries = parseRegistry(projectsRoot);
-  const projects = entries
+  const repoRealities = entries
     .filter((e) => e.kind === "repo")
     .map((e) => probe(e, projectsRoot));
 
-  const declared = new Set(projects.map((p) => p.entry.path));
+  const declared = new Set(repoRealities.map((p) => p.entry.path));
 
   const presentButUndeclared: string[] = [];
   for (const category of CATEGORIES) {
@@ -159,19 +170,58 @@ export function snapshotPortfolio(options: FrontierOptions = {}): PortfolioSnaps
     }
   }
 
+  // Convert to core types and delegate ownership decision to the core.
+  const projects: Project[] = repoRealities.map((p) => ({
+    id: p.entry.path,
+    path: join(projectsRoot, p.entry.path),
+  }));
+
+  // Build ProjectObservation map from probe results.
+  const states = new Map<string, ProjectObservation>();
+  for (const p of repoRealities) {
+    if (!p.exists) {
+      states.set(p.entry.path, { observed: false, reason: "not on disk" });
+    } else if (!existsSync(join(projectsRoot, p.entry.path, ".git"))) {
+      states.set(p.entry.path, { observed: false, reason: "not a repository" });
+    } else {
+      states.set(p.entry.path, {
+        observed: true,
+        counts: {
+          dirtyFiles: p.dirty,
+          commitsAhead: p.ahead,
+          hasUpstream: p.hasRemote,
+        },
+      });
+    }
+  }
+
+  // Convert options.sessions to core ActiveSession type
+  const sessions: ActiveSession[] = (options.sessions ?? []).map((s) => ({
+    id: s.id,
+    directory: s.directory,
+    lastActivity: s.lastActivity,
+  }));
+
+  const ownershipOptions: OwnershipOptions = { now: Date.now() };
+  const ownership = resolveOwnership(projects, sessions, states, ownershipOptions);
+
   const free: string[] = [];
   const held: string[] = [];
-  for (const p of projects) {
-    if (p.dirty > 0 || p.ahead > 0) {
-      held.push(p.entry.name);
+  for (const o of ownership) {
+    // Map core project ID back to registry entry name for display
+    const entry = entries.find((e) => e.path === o.project.id);
+    const displayName = entry?.name ?? o.project.id;
+    if (o.availability === "available") {
+      free.push(displayName);
     } else {
-      free.push(p.entry.name);
+      const reason = o.reasons.join("; ");
+      held.push(`${displayName}  [${reason}]`);
     }
   }
 
   return {
-    projects,
-    declaredButMissing: projects
+    projects: repoRealities,
+    declaredButMissing: repoRealities
       .filter((p) => !p.exists)
       .map((p) => p.entry.name),
     presentButUndeclared,

@@ -1,5 +1,10 @@
 # Cuesheet : dossier d'exécution du harness autonome
 
+Direction propriétaire à lire avant ce backlog :
+[mémoire produit et architecture](MASTER-PRODUCT-DIRECTION.md).
+Elle détaille les 44 concepts du master sans élargir le critical path.
+Le [texte source](MASTER-PRODUCT-DIRECTION.source.txt) reste conservé à l'identique.
+
 État de référence : commit `f4f05bf`, 2026-10-01. Ce dossier spécifie le produit
 complet demandé par le propriétaire et les travaux restant à réaliser. Il ne
 déclare pas ces travaux implémentés.
@@ -88,3 +93,5 @@ L’[inventaire complet et les prompts de délégation](OPENCODE-ORCHESTRATION.m
 Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
 
 Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.
+
+Product experience and current UX continuation: [PRODUCT-EXPERIENCE.md](PRODUCT-EXPERIENCE.md). Research: [UX-PRODUCT-TRENDS-2026.md](UX-PRODUCT-TRENDS-2026.md). PX readiness is separate from global AR/IR/PM/AE/H06 completion.

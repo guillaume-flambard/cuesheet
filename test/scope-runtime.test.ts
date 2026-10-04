@@ -76,3 +76,10 @@ test('choosing a project binds execution there and refuses a model cwd escape',a
   assert.equal(refused,true,'the cwd escape produced a recorded refusal');
  }finally{rmSync(root,{recursive:true,force:true});}
 });
+
+test('public runtime accepts only an owner absolute registry override and launcher forwards it',async()=>{
+ const {surfaceEnvironment}=await import('../src/surface-cli.ts');const {createLiveProducer}=await import('../apps/terminal/src/producer/runtime.ts');
+ assert.equal(surfaceEnvironment([], {CUESHEET_PROJECTS_ROOT:'/owner/projects'}).CUESHEET_PROJECTS_ROOT,'/owner/projects');
+ const previous=process.env.CUESHEET_PROJECTS_ROOT;
+ try{process.env.CUESHEET_PROJECTS_ROOT='relative';const result=createLiveProducer(createStore(),'/fixture');assert.ok('missing' in result);if('missing' in result)assert.match(result.missing,/absolute directory/);}finally{if(previous===undefined)delete process.env.CUESHEET_PROJECTS_ROOT;else process.env.CUESHEET_PROJECTS_ROOT=previous;}
+});

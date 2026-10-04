@@ -72,11 +72,14 @@ export function verbFor(request: ToolRequest): Verb {
   const head = (argv[1] ?? "").toLowerCase();
   const joined = `${name} ${argv.join(" ").toLowerCase()}`;
 
+  if (name === "rg" || name === "ls" || name === "cat") return "read";
+  // Arbitrary JavaScript is an execution, not proof of a test because its text mentions test.
+  if(name === "node" && argv[0] === "node" && ["-e","--eval"].includes(head))return "other";
+
   // Tests first: `npm test` is also a read of package.json to a naive matcher,
   // and reading the test output afterwards would invert the order.
   if (/\b(test|jest|vitest|pytest|cargo test|--test|check\b.*--typecheck)/.test(joined)) return "test";
   // `git status`, `git log`, `git diff`, `rg`, `ls` are reading the world.
-  if (name === "rg" || name === "ls" || name === "cat") return "read";
   if (name === "git" && ["status", "log", "diff", "show", "branch", "remote"].includes(head)) return "inspect";
   // A type check is a claim being checked, which is the one thing this surface is
   // built to keep separate from a model's assertion about it. `build` is
@@ -219,7 +222,7 @@ export function translateEvent(event: Event, session: string, pending?: Pending,
         entry: {
           kind: "action",
           label: pending?.label ?? tool,
-          detail: pending?.detail ?? "",
+          detail: certainty === "failed" ? [pending?.detail, exit === null ? "Résultat non confirmé" : `exit ${exit}`, firstLine(output)].filter(Boolean).join(" · ") : pending?.detail ?? "",
           certainty,
         },
         id: entryId(session, event),
@@ -304,6 +307,7 @@ export interface TranslatedEntry {
  */
 export function entryForStop(stop: LoopStop, run: EntryId): Entry[] {
   const id = `r:${run}:stop`;
+  if (stop.reason === "response-delivered") return [{id,kind:"status",label:"tour",value:"Réponse reçue. Le but reste ouvert.",certainty:"unknown"}];
   if (stop.reason === "goal-closed") {
     const steps = stop.steps;
     return [{ id, kind: "status", label: "work", value: `settled in ${steps} step${steps === 1 ? "" : "s"}`, certainty: "confirmed" }];

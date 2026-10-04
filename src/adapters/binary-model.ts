@@ -1,3 +1,4 @@
+import {streamProposal} from './opencode-stream.ts';
 import {declaredTools} from "./tool-vocabulary.ts";
 /**
  * Adapter: the local OpenCode binary as a model provider.
@@ -62,12 +63,13 @@ import {declaredTools} from "./tool-vocabulary.ts";
  * before it was optimised and not after.
  */
 
+import {StringDecoder} from "node:string_decoder";
 import { spawn } from "node:child_process";
 import { accessSync, constants, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 
-import type { ContextFrame, ModelAdapter, ModelResponse, ToolRequest } from "../core/loop.ts";
+import type { ContextFrame, ModelAdapter, ModelProgress, ModelResponse, ToolRequest } from "../core/loop.ts";
 import { FailureWithOrigin } from "../effects.ts";
 
 /** The name this adapter answers to in a run's log. */
@@ -414,10 +416,11 @@ export function renderProposalPrompt(frame: ContextFrame, vocabulary: readonly s
   return [
     "You are a coding agent operating inside a harness that owns the state.",
     "",
-    "You have no tools. That is deliberate and it is not a limitation to work around.",
-    "You do not read files, you do not run commands and you do not write anything.",
-    "Your entire job is to state what you would do. A separate component decides",
-    "whether to do it, runs it, and records what actually happened.",
+    "You have no tools of your own. Request actions through toolCalls; the controller executes admitted calls.",
+    "This is a continuing execution loop: each proposal receives actual tool results in the next frame.",
+    "Choose the next concrete action from those results. Read needed sources, then request edits and checks.",
+    "Do not repeat a completed read whose result is already available; use read_history for a clipped source.",
+    "Your text explains the next action; it does not replace toolCalls for an action request.",
     "",
     "Answer with ONE JSON object and nothing else. No prose, no explanation, no code fence.",
     'Shape: {"text": string, "toolCalls": [{"name": string, "input": object}]}',
@@ -425,7 +428,7 @@ export function renderProposalPrompt(frame: ContextFrame, vocabulary: readonly s
     `The tool calls you may propose, and the only ones that will ever run, are: ${verbs}.`,
     "Older tools declarations in historical facts do not extend this current list.",
     'A call is {"name": "<one of those>", "input": {...}}.',
-    'For example: {"name": "read_file", "input": {"path": "src/index.ts"}}',
+    'For command tools use input.argv beginning with the declared tool name, e.g. node with ["node","-e",code].',
     "",
     "Saying you are finished does not finish anything. The run ends when evidence",
     "exists, never when you claim it does. If you cannot produce the evidence,",
@@ -473,7 +476,7 @@ export class BinaryModelAdapter implements ModelAdapter {
     return { dir: mkdtempSync(join(tmpdir(), "cuesheet-model-")), owned: true };
   }
 
-  async infer(frame: ContextFrame, signal?: AbortSignal): Promise<BinaryModelResponse> {
+  async infer(frame: ContextFrame, signal?: AbortSignal, onProgress?:(progress:ModelProgress)=>void): Promise<BinaryModelResponse> {
     const { dir, owned } = this.workingDir();
     try {
       // The agent config lives in the directory the binary is pointed at, which
@@ -482,8 +485,15 @@ export class BinaryModelAdapter implements ModelAdapter {
       if (owned) {
         writeFileSync(join(dir, "opencode.json"), JSON.stringify(AGENT_CONFIG, null, 2), "utf8");
       }
-      const run = await this.spawnRun(dir, frame, signal);
-      return parseProposal(run);
+      const run = await this.spawnRun(dir, frame, signal,onProgress);
+      try{return parseProposal(run);}catch(error){
+        // A malformed proposal has executed no harness action. Request one new
+        // proposal, never extract commands from rejected prose or retry effects.
+        if(!(error instanceof Error)||!/^opencode binary: (the answer was not the requested JSON object|the envelope was not valid JSON): response content omitted$/.test(error.message))throw error;
+        signal?.throwIfAborted();
+        const repair:ContextFrame={...frame,directives:[...frame.directives,{seq:0,at:0,target:"builder",applied:false,text:'Your previous response was rejected before any tool executed because it was not one valid JSON proposal. Return exactly {"text":string,"toolCalls":[{"name":string,"input":object}]}. Request the next concrete action. No prose or code fence. This is the only format retry.'}]};
+        return parseProposal(await this.spawnRun(dir,repair,signal,onProgress));
+      }
     } finally {
       // A directory this adapter created is a directory it removes. The
       // project's is never touched, so a run cannot leave its agent config
@@ -508,7 +518,7 @@ export class BinaryModelAdapter implements ModelAdapter {
    * stream that can be torn mid-write rather than a string that is only ever
    * whole.
    */
-  private spawnRun(dir: string, frame: ContextFrame, signal?: AbortSignal): Promise<RawRun> {
+  private spawnRun(dir: string, frame: ContextFrame, signal?: AbortSignal,onProgress?:(progress:ModelProgress)=>void): Promise<RawRun> {
     // Keep inline provider/model preferences, while reserving our proposer.
     // Do not echo the inherited config: it can contain provider credentials.
     let inline: Record<string, unknown> = {};
@@ -523,6 +533,7 @@ export class BinaryModelAdapter implements ModelAdapter {
     }
     const inheritedAgents = inline.agent && typeof inline.agent === "object" && !Array.isArray(inline.agent) ? inline.agent : {};
     const config = { ...inline, ...AGENT_CONFIG, agent: { ...inheritedAgents, ...(AGENT_CONFIG.agent as Record<string, unknown>) } };
+    if(onProgress) return streamProposal({binary:this.options.binary,dir,config,agent:PROPOSAL_AGENT,model:this.options.model,prompt:renderProposalPrompt(frame,vocabularyOf(frame)),timeoutMs:this.options.timeoutMs??DEFAULT_TIMEOUT_MS,signal,progress:onProgress});
     const args = [
       "run",
       "--dir",
@@ -534,6 +545,7 @@ export class BinaryModelAdapter implements ModelAdapter {
       // No external plugins. A plugin is third-party code that could add a tool
       // to the list this adapter's whole argument depends on being empty.
       "--pure",
+      "--thinking",
       renderProposalPrompt(frame, vocabularyOf(frame)),
     ];
     if (this.options.model) args.splice(1, 0, "--model", this.options.model);
@@ -548,6 +560,7 @@ export class BinaryModelAdapter implements ModelAdapter {
         env: { ...process.env, OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
       });
       let stdout = "";
+      const decoder=new StringDecoder('utf8');
       let stderr = "";
       let settled = false;
 
@@ -565,7 +578,7 @@ export class BinaryModelAdapter implements ModelAdapter {
       }, this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
       child.stdout.on("data", (chunk: Buffer) => {
-        stdout += chunk.toString("utf8");
+        stdout+=decoder.write(chunk);
       });
       child.stderr.on("data", (chunk: Buffer) => {
         stderr += chunk.toString("utf8");
@@ -589,6 +602,7 @@ export class BinaryModelAdapter implements ModelAdapter {
       });
       child.on("close", (code, signal) => {
         if (settled) return;
+        stdout+=decoder.end();
         settled = true;
         clearTimeout(timer);
         resolve({ stdout, stderr, exit: code, signal });

@@ -47,41 +47,41 @@ H09.3d/e : refresh de route au start/reprise et protection des contrôleurs sous
 
 2026-10-02 H04.5a/H06.1c : sélection skills installés/session → sources versionnées → contexte propre à chaque consultation → guards fraîcheur → Agents affiche sources/versions/limites. EV-AGENT-SKILLS :49 initial/44 final ciblés,814/812/0/2 full final,build/static PASS. Sélection lexicale bornée ; essais/promotion/rollback et agents code restent parents ouverts. Global IMPLEMENTING.
 
-## Situation — checkpoint 2026-10-02
+## Situation - checkpoint 2026-10-02
 
 H03.4a/H08.3a : tranche vérifiée, voir [spec](SITUATION-CONTEXT.md) et [EV-SITUATION](evaluation/situation/evidence.md). Snapshot renouvelé par inférence coordinateur/consultant ; palette Situation en lecture avec horloge live. 818/816/0/2 full ; 43 tests ciblés finaux et build/différentiel PASS (32 diagnostics hérités). Parents H03.3/H03.4/H06.4/H08.3 et harness global restent IMPLEMENTING ; aucun critère parent promu.
 
 Gestion Git affinée : [AGENT-GIT.md](AGENT-GIT.md), H06.3a → b → c → d, TODO. Aucun worktree pour consultation ; isolation des écritures, intégration vérifiée, récupération et coût mesuré. Runtime encore à implémenter.
 
-## H06.3a — checkpoint 2026-10-02
+## H06.3a - checkpoint 2026-10-02
 
 Inventaire Git read-only et décision controller-owned implémentés dans agent-git.ts, sans création ni branche ni integration runtime. [EV-AGENT-GIT-INVENTORY](evaluation/agent-git/evidence.md) : 4 nouveaux tests Git réel,37 ciblés,823/821/0/2 full final ; build/différentiel PASS32 diagnostics hérités. H06.3a DONE borné ; H06.3b/c/d TODO, parent H06.3 et global IMPLEMENTING. Création/reprise/admission/intégration/cleanup restent à livrer.
 
-## Allocation worktrees et notifications — 2026-10-02
+## Allocation worktrees et notifications - 2026-10-02
 
 H06.3b1/H06.3a1 tranche adapter vérifiée : [EV-WORKTREE-ALLOCATION](evaluation/worktree-allocation/evidence.md), attribution/receipts/création detached/reuse physique/récupération conservative et refus Git filters ;45 ciblés finaux,831/829/0/2 full avant correction finale predicate racine, build PASS32 diagnostics hérités après. H06.3b/c/d et runtime admission restent ouverts. [NOTIFICATIONS.md](NOTIFICATIONS.md), H08.3n TODO, notifications significatives/dédup/références/source/canaux sobres, aucune notification livrée. Global IMPLEMENTING.
 
-## Notifications et selfhost — checkpoint 2026-10-02
+## Notifications et selfhost - checkpoint 2026-10-02
 
 H08.3n1a DONE borné, [EV-NOTIFICATIONS](evaluation/notifications/evidence.md) :37 targeted,835/833/0/2 final full,build/différentiel PASS32 baseline. Centre live/M/read durable et badge sans calls externes ; parent H08.3n reste ouvert. [SELFHOST.md](SELFHOST.md) rend explicite le parcours développer Cuesheet depuis Cuesheet, non encore prouvé. H06.3b2 snapshot dirty IN_PROGRESS ; admission worker/intégration/dependencies/recovery restent ouverts. Global IMPLEMENTING.
 
-## H06.3b2 — checkpoint 2026-10-02
+## H06.3b2 - checkpoint 2026-10-02
 
 [EV-GIT-SNAPSHOT](evaluation/git-snapshot/evidence.md) :48 targeted,838/836/0/2 final full,build/différentiel PASS32 baseline. Snapshot dirty humain/cible équivalente/source index conservé API livrée, tâche bornée DONE. Admission terminal, dépendances ignorées et intégration parent restent ouverts. Global IMPLEMENTING.
 
-## H06.3b3 — checkpoint 2026-10-02
+## H06.3b3 - checkpoint 2026-10-02
 
 [EV-WORKSPACE-RUNTIME](evaluation/workspace-runtime/evidence.md) :51 targeted,842/840/0/2 final full,build/différentiel PASS32 baseline. Terminal prepare_workspace/retarget/sources/reprise et palette Workspaces livrés ; correction directe et source intacte vérifiées. finish refuse contribution non intégrée. Code workers parallèles, intégration/dépendances/selfhost réel restent ouverts. Global IMPLEMENTING.
 
-## Build worktrees — 2026-10-02
+## Build worktrees - 2026-10-02
 
 [WORKTREE-BUILD.md](WORKTREE-BUILD.md) : H09.3f1→H09.3f2 (C4), capsule Node/Linux owner/image épinglée → metadata cache → prévalidation alias deps root/apps/packages → même conteneur readonly/networknone/receipts → vrai build/tests snapshot Cuesheet → source préservée. Vérification en cours ; aucun AC parent clos.
 
-## H09.4b/b1/b2/b3 — checkpoint 2026-10-02
+## H09.4b/b1/b2/b3 - checkpoint 2026-10-02
 
 [EV-INSTALLED-SELFHOST](evaluation/installed-selfhost/evidence.md) : parcours installé PTY réel, provider fixture, code/test Linux isolés, intégration/check source, journal/notification/ressources confirmés.5 install/56 ciblés PASS,857/855/0/2 full et build séquentiel/différentiel32 baseline PASS. Défauts alias stockage/fallback après refus/alias dépendances Git corrigés. Tranches DONE ; modèle réel, check toolchain complet, workers parallèles et recovery restent ouverts. Global IMPLEMENTING.
 
-## Workspaces et refus provider — 2026-10-02
+## Workspaces et refus provider - 2026-10-02
 
 [EV-WORKSPACE-PROVIDER](evaluation/workspace-provider/evidence.md) : H06.3d1/H07.1d DONE bornés, live projection unique/cache/next action et erreurs provider sûres.79/40 ciblés,859/857/0/2 full,build/différentiel32 baseline PASS. H10.3a reste ouvert :3 essais gratuits natifs reçus403 avant code, traces/goal/source préservés. Pas de contournement ni fallback payant, aucun résultat qualité modèle. Global IMPLEMENTING.
 
@@ -105,17 +105,19 @@ H09.3f4 P1 DEFECT IN_PROGRESS : portable imports/fixtures/CWD ; requis avant ora
 
 2026-10-02 H06.2c2/H06.3c2a DONE bornés : [EV-CODE-COMPOSITION](evaluation/code-composition/evidence.md),private Container proof et integrate_code_workers {} composition/check owner/apply/source finish.14 ciblés+1 Docker,893/891/0/2 full,build32 baseline. Crash recovery/cleanup/quota/UX dédiée et modèle réel restent ouverts. Global IMPLEMENTING.
 
+2026-10-02 H06.4a-R1 planifié dans [CODE-WORKER-RECOVERY.md](CODE-WORKER-RECOVERY.md) : R1-SPEC → R1-INSPECT → R1-RECONCILE → R1-PROVE. Inspection read-only des admissions/journaux privés/claims/worktrees ; propositions privées durablement attestées avant publication partielle et reconciliation conditionnelle par le contrôleur. Les six critères REC-W01-06 restent PENDING avant runtime proofs. H06.4a/H06.5c/H10.4 et global acceptance restent ouverts.
+
 2026-10-02 C7 : [STATE-GRAPH.md](STATE-GRAPH.md),9 epics/27 tâches, SG01.1 READY et suite TODO. Graphe versionné/impact/invariants/état événementiel/contrats-mocks/contexte/MCP/CI/UX. Spécification uniquement ; preuves pending, global IMPLEMENTING.
 
 2026-10-02 SG01.1/2 DONE bornés : [EV-STATE-GRAPH-FOUNDATION](evaluation/state-graph-foundation/evidence.md), validateur JSON et loader/hash local,6 ciblés/build32 baseline PASS. Pas raccordés au runtime ; AC-SG01 PENDING, SG01.3/SG02.1 READY. Global IMPLEMENTING.
 
-## Extension Intent / Project Map / budgets adaptatifs — 2026-10-02
+## Extension Intent / Project Map / budgets adaptatifs - 2026-10-02
 
-Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
+Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8-C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
 
 Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.
 
-## Six tranches parallèles — 2026-10-02
+## Six tranches parallèles - 2026-10-02
 
 Vague de six workers à portées de fichiers disjointes, chacune vérifiée indépendamment avant intégration et non acceptée sur rapport. [EV-CAPSULE-TEARDOWN](evaluation/capsule-teardown/evidence.md), [EV-STATE-GRAPH-SEED-MAPPING](evaluation/state-graph-seed-mapping/evidence.md), [EV-STATE-GRAPH-INVARIANTS](evaluation/state-graph-invariants/evidence.md), [EV-SHARED-GRANTS](evaluation/shared-grants/evidence.md), [EV-NOTIFICATIONS-PARENT](evaluation/notifications-parent/evidence.md), [EV-WORKTREE-RECOVERY](evaluation/worktree-recovery/evidence.md).
 
@@ -127,7 +129,7 @@ SG02.2, SG03.1 et H08.3n IN_PROGRESS : preuve livrée et vérifiée, mais les cr
 
 Défaut d intégrité corrigé : EV-WORKER-PACKETS était cité sur une tâche DONE mais absent du registre ; l entrée a été créée en lisant le fichier réel. Les références par chemin de fichier restent la convention de la maison.
 
-## Forge de références et spécification du graphe — 2026-10-02
+## Forge de références et spécification du graphe - 2026-10-02
 
 [EV-SHARED-GRANTS-FORGERY](evaluation/shared-grants-forgery/evidence.md) : une SharedReference est une entrée non fiable qu'un principal peut réécrire. Avant, une racine étrangère était acceptée outright. Les racines sont comparées lexicalement avec resolve(), qui replie la traversée sans toucher au système de fichiers : rien n'est staté du côté non fiable, donc une orthographe étrangère, traversante ou symlinkée ne peut ouvrir un journal ni signaler que le chemin existe. Un store sans racine déclarée refuse toute référence qui en porte une. 22/22 cibles, 4 tests de forgery chacun tué par au moins une des 5 mutations. AC-E01.6 reste PENDING : SharedRetrieval n'est pas raccordé, la distribution et la persistance des grants restent ouvertes sur E01.3 et le parent.
 
@@ -135,9 +137,9 @@ Défaut d intégrité corrigé : EV-WORKER-PACKETS était cité sur une tâche D
 
 956 tests, 954 pass, 0 fail, 2 skipped (MB-01) ; capsule Linux 0 fail ; tsc 32 baseline ; artefact inchangé, shared-memory.ts n'étant pas source déclarée.
 
-## Thèmes, concepts et World — 2026-10-02
+## Thèmes, concepts et World - 2026-10-02
 
-[EV-TERMINAL-THEME-AUDIT] : le moteur de design tokens existe déjà et est consommé par neuf composants du terminal. `apps/terminal/src/theme/tokens.ts` pose une palette truecolor en un seul endroit avec une règle explicite : un accent, quatre couleurs d'état `confirmed`, `active`, `unknown`, `failed`, et tout le reste en gris. Le thème habille le World sans changer son langage — la règle impose que `confirmed` reste discret parce que la certitude est le défaut, et que `unknown` soit gris mais distingué par un glyphe, parce que la surface ne doit jamais peindre de la même façon ce qui est établi et ce qui ne l'est pas.
+[EV-TERMINAL-THEME-AUDIT] : le moteur de design tokens existe déjà et est consommé par neuf composants du terminal. `apps/terminal/src/theme/tokens.ts` pose une palette truecolor en un seul endroit avec une règle explicite : un accent, quatre couleurs d'état `confirmed`, `active`, `unknown`, `failed`, et tout le reste en gris. Le thème habille le World sans changer son langage - la règle impose que `confirmed` reste discret parce que la certitude est le défaut, et que `unknown` soit gris mais distingué par un glyphe, parce que la surface ne doit jamais peindre de la même façon ce qui est établi et ce qui ne l'est pas.
 
 Ce qui manque n'est donc pas le moteur mais la commande. `routeIntention` expose 14 `IntentKind` et aucune commande slash, donc `/theme` s'insérerait dans le routage existant plutôt que d'ajouter un mode, ce qui reste cohérent avec l'absence de modes.
 
@@ -145,7 +147,7 @@ Aucun registre de concepts n'existe encore en code. La direction propose un regi
 
 Correction consignée : les 41 sources déclarées du manifeste existent toutes sur disque. Un `ls` trompeur avait suggéré l'absence de `docs/ARCHITECTURE.md` et `docs/INVARIANTS.md` ; la vérification par le manifeste montre l'inverse. Aucune dérive d'artefact.
 
-## Render Proof — 2026-10-02
+## Render Proof - 2026-10-02
 
 [EV-UI-RENDER-PROOF](evaluation/ui-render-proof/evidence.md) : `npm run ui:verify` monte la vraie `App` dans un vrai PTY, à taille contrôlée, pilote un scénario déterministe par de vraies frappes et lit la grille de caractères. Accueil répondu exactement une fois, world mapping, deux workers, un finding, un Human Delta, bascule de provider, direction en direct, PROVEN, à 80x24, 120x30, 160x50 et 240x70.
 
@@ -155,13 +157,13 @@ La réponse d'accueil est livrée deux fois avec une seule identité, donc la pr
 
 Limite dite : c'est une preuve de présentation, pas de runtime. Le scénario est scripté, donc il montre que la surface rend ces états correctement, pas que le runtime les produit. Aucun critère promu.
 
-## Dogfood Gate 0 : ce qui est déjà prouvé — 2026-10-02
+## Dogfood Gate 0 : ce qui est déjà prouvé - 2026-10-02
 
 [EV-SELFHOST-CAPSULE](evaluation/state-graph/../worktree-build) : la Self-Hosting Capsule existe et passe. `test/worktree-build.test.ts` capture un snapshot git réel de CUESHEET, alloue un vrai worktree du dépôt, lance le vrai `npm run build` dans une capsule Linux, vérifie `build: ok`, `dist/apps/terminal/main.mjs` présent et tsc à 32, exécute des tests cibles dans le worktree, puis affirme que la source originale est inchangée. Le lien contrôleur-seul-écrivain est une isolation réelle, pas une intention.
 
 Trois liens sur quatre de la chaîne Dogfood Gate 0 sont donc déjà prouvés : Render Proof (`ui:verify`), World resolution depuis `~` (nouveau test dans `scope-runtime.test.ts`), Self-Hosting Capsule (ce test existant). Le lien manquant est le Global UI Journey / Bootstrap Journey 001 : l'intention floue sur sa propre interface, édition d'un candidat, lancement, Render Proof, Human Delta.
 
-## Dogfood Gate 0 : tranches 6, 8, 13, 16, 17 — 2026-10-02
+## Dogfood Gate 0 : tranches 6, 8, 13, 16, 17 - 2026-10-02
 
 Cycle piloté par la spec d'autonomie. Ordre décidé par dépendance et non par question au propriétaire : d'abord les défauts qui compromettent l'observabilité, puis l'expérience modèle réel.
 
@@ -177,8 +179,18 @@ Cycle piloté par la spec d'autonomie. Ordre décidé par dépendance et non par
 
 Distinction maintenue partout : Journey 001 prouve l'orchestration sous édition scriptée ; Journey 002 prouve la décision du modèle. Ne jamais présenter l'un comme l'autre.
 
-## Journey 003 : réinterprétation en direct — 2026-10-02
+## Journey 003 : réinterprétation en direct - 2026-10-02
 
 [EV-JOURNEY-003](evaluation/state-graph/../worktree-build) : le mécanisme était déjà livré et couvert par quatorze tests unitaires, mais aucun ne montrait que la **surface réelle** se comporte ainsi. `npm run journey:live` tient un run en vol, frappe une phrase pendant qu'il tourne, et vérifie qu'elle devient un fait sur la timeline immédiatement, verbatim, sans Stop exigé et sans file. Le composer accepte ensuite une seconde phrase, donc il ne s'est jamais fermé.
 
 Le fixture gagne un run qui reste en vol : un fixture purement synchrone ne peut pas représenter ce cas, donc le scénario était intestable sans lui. Non-vacuité mesurée en rendant muette l'étape mi-run : le journey échoue avec le bon message.
+
+2026-10-03 GZ01/GZ02/GZ04 machine VERIFIED : [GO-ZEN-SELFHOST.md](GO-ZEN-SELFHOST.md), route Go authentifiée, compteurs rendus candidat/source et vocabulaire Git corrigé ; full1009/1006/0/3. GZ03/GZ05 en vérification installée réelle ; H06.5c/H10.4 restent ouverts.
+
+2026-10-03 GZ03/GZ05 DONE bornés : vrai modèle installé, reprise conservant contribution, intégration et source vérifiées, goal fermé. Audit source/index/resources PASS ; selfhost multiworker et steering sémantique restent ouverts.
+
+2026-10-03, LS machine IN_PROGRESS : parcours installé Go/GLM-5.3, session t-5b31f77c-cda9-4fbf-94d1-e1d4ae202de4. Correction pendant première inférence, contrat5 ->21, check périmé et absence d’intégration observée, renouvellement fixture23, proposition antérieure rejetée. Le rendu corrigé et la clôture restent PENDING. Voir SEMANTIC-LIVE-STEERING.md et rapport semantic-steering.
+
+MW01..MW06 : preuve installée réelle bornée, détails TWO-REAL-WORKERS.md et evaluation/two-real-workers/evidence.md. Intégration/source/audit PASS ; suite finale après régénération canonique en cours. Parents H06.5c/H10.4 et global IMPLEMENTING restent ouverts.
+
+Checkpoint deux workers réels : MW01..MW06 DONE, AC-MW01..AC-MW06 VERIFIED avec EV-TWO-REAL-WORKERS (evaluation/two-real-workers/evidence.md). 1013 tests,1010 pass,0 fail,3 inherited skips,136703.766875ms PASS. Preuve bornée API installée, source indépendante et audit ; aucune clôture parent/global ni acceptation humaine.

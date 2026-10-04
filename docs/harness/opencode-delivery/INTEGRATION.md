@@ -1,0 +1,23 @@
+# Livraison OpenCode : orchestration
+
+Statut : IMPLEMENTING. Autorisation propriétaire : « Spawn les agents opencode pour terminer le produit ». Trois processus OpenCode, modèle opencode-go/deepseek-v4.1-flash, paquets et fichiers disjoints. Les processus travaillent dans le checkout courant pour préserver les modifications non commitées ; seuls leurs nouveaux modules, tests et rapports sont éditables. Le parent tient state.json, intégration et verdict global.
+
+La première vague implémente assistance-scheduler.ts (AR-T01/02), adaptive-model-routing.ts (AR-T04) et knowledge-exchange.ts (AR-T05). Les APIs sont rapportées par chaque worker. Le parent doit les examiner, exécuter leurs tests et les raccorder sans déclarer AR fermé sur la seule présence de ces modules.
+
+Graphe restant : OC01 trois implémentations isolées et preuves ; OC02 intégration consultation/worker/code selon leurs frontières ; OC03 routes autorisées et événements ; OC04 publication/distribution aux destinataires concernés ; OC05 projection UX ; OC06 tests, rendu et parcours installé. OC02..05 dépendent des contrats OC01, OC06 dépend de tous. Tout contrat global AR non rempli reste ouvert. Les sorties et sessions OpenCode sont référencées dans dispatch.json ; les hashes avant travail servent à détecter les modifications hors attribution.
+
+Points d'intégration identifiés : producer/index.ts tool dispatch et finalizeFrame, consultAgents et runTerminalCodeWorkers/runCodeWorker, withSharedContext, projectWorkSurface. Le parcours CLI historique à raccorder est `src/cli-run.ts` (`runAgentLoop` et `ShellToolRunner`). `work-worker.ts` est le contrôleur synchrone des commits et `worker.ts` un processus déterministe de reçu, pas un agent LLM. Le CLI historique persiste actuellement après la boucle ; une admission d’aide durable devra publier avant appel. Sa compatibilité ne sera pas supposée. Les réponses d'aide n'acquièrent aucune autorité d'effet ni de clôture. Les coûts non observés restent inconnus.
+
+Vérification : tests ciblés de chaque worker, analyse des écarts, branchements testés par contrôleurs réels/modèles contrôlés, invalidation pendant aide, annulation, reprise passive, absence de doublon, refus de scope, puis build et terminal installé. Le fournisseur réel sera distingué des fixtures. Aucune installation, nouveau secret, commit, push ou publication demandés aux workers.
+
+## Relance fournisseur
+
+Les trois appels Go ont reçu `Go usage limit exceeded` avant de produire un fichier et ont été arrêtés. La route Zen du même DeepSeek a reçu `Insufficient account funds` et a été arrêtée. Le catalogue OpenCode déclare MiMo V2.6 Flash Free actif, tool-capable, coût entrée/sortie zéro. La route `opencode/mimo-v2.6-flash-free` a commencé les lectures réelles du paquet routage ; les trois workers utilisent désormais cette route pour cette livraison. Le modèle par défaut du produit reste opencode-go/deepseek-v4.1-flash. Aucun achat ni changement de configuration globale.
+
+## OC02 : entraide depuis les workers de code
+
+Exigence OC-HELP-01 : un worker de code peut demander une consultation par le contrôleur tout en conservant son identité, son répertoire isolé, son budget de travail et ses permissions. Le runner des outils de fichier ne doit jamais recevoir cet appel. L'API optionnelle `consult` relie la boucle au contrôleur parent ; sans cette API la capacité reste interdite. Une correction invalide la réponse avant tout effet suivant. Un refus d'aide demeure une observation exploitable à l'inférence suivante, sans ouvrir les droits d'écriture.
+
+Critères : appel disponible seulement avec contrôleur ; résultat présent dans le journal privé puis prochaine inférence ; requête et résultat sourcés dans le journal commun ; aucun effet délégué par le consultant ; ancien résultat écarté après correction ; anciens tests de restriction et de reçus inchangés. Vérification par boucle de worker et contrôleur terminal, puis build. Risque P1 : multiplier les appels par worker ; admission collective via OC01 avant raccordement final. État IN_PROGRESS, dépendance finale OC01.
+
+Exigence OC-HELP-02 : les consultants, reviewers et helpers peuvent eux aussi formuler une demande d'aide, via la même admission collective. La boucle de consultation reste sans effets et bornée à trois inférences, valide le lot entier, et conserve le même identifiant pendant la reprise après aide. Les inférences sont admises individuellement : attendre un helper ne conserve pas un slot d'inférence physique. L'ancienne API sans contrôleur d'aide reste texte seul. Critères : A consulte B, B consulte C, réponse de C dans la reprise de B ; cycle/profondeur/budget refusés ; outil d'écriture refusé ; correction entre aide et reprise bloque la suite.

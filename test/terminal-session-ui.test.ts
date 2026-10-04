@@ -21,10 +21,10 @@ const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref
 const mount=()=>render(<App cwd=${JSON.stringify(cwd)}/>,{stdout:out,stderr:out,stdin:input,debug:true,exitOnCtrlC:false});
 const tick=()=>new Promise(r=>setTimeout(r,70));const key=async(value)=>{input.write(value);await tick();};
 const waitRun=async(expected)=>{const end=Date.now()+6000;while(calls<expected && Date.now()<end)await tick();await tick();};
-let app=mount();await tick();await key('saved goal');await key('\\r');await waitRun(8);await key('unsubmitted draft');
+let app=mount();await tick();await key('saved goal');await key('\\r');await waitRun(1);await key('unsubmitted draft');
 const id=readdirSync(${JSON.stringify(storage)}).find(file=>file.endsWith('.meta.json')).replace('.meta.json','');const countBefore=calls;
 app.unmount();await tick();process.env.CUESHEET_SESSION=id;app=mount();await tick();const loaded=last;const noAuto=calls===countBefore;
-await key('\\x0b');for(let i=0;i<5;i++)await key('\\x1b[B');await key('\\r');await waitRun(16);const continued=frames[8];
+await key('\\x0b');for(let i=0;i<5;i++)await key('\\x1b[B');await key('\\r');await waitRun(2);const continued=frames[1];
 await key('\\x0b');for(let i=0;i<4;i++)await key('\\x1b[B');await key('\\r');const fresh=last;const afterNew=calls;
 await key('\\x0b');for(let i=0;i<3;i++)await key('\\x1b[B');await key('\\r');const chooser=last;await key('\\x1b[B');await key('\\r');const oldAgain=last;
 const ids=readdirSync(${JSON.stringify(storage)}).filter(file=>file.endsWith('.meta.json'));const journal=readFileSync(${JSON.stringify(storage)}+'/'+id+'.jsonl','utf8').trim().split('\\n').map(line=>JSON.parse(line));
@@ -34,9 +34,9 @@ app.unmount();console.log(JSON.stringify({loaded,noAuto,continued,fresh,afterNew
     assert.equal(run.status,0,run.stderr+'\n'+run.stdout);const result=JSON.parse(run.stdout.trim());
     assert.match(result.loaded,/PERSISTED_RESPONSE/);assert.match(result.loaded,/unsubmitted draft/);assert.equal(result.noAuto,true);
     assert.match(result.continued.messages[0].content,/goal: saved goal/);assert.match(result.continued.messages[0].content,/explicitly resumed/);
-    assert.match(result.fresh,/dis-moi ce que tu veux faire/);assert.equal(result.afterNew,16);
+    assert.match(result.fresh,/What do you want to move forward\?/);assert.equal(result.afterNew,2);
     assert.match(result.chooser,/Sessions/);assert.match(result.oldAgain,/unsubmitted draft/);
-    assert.equal(result.ids.length,2);assert.equal(result.calls,16);
+    assert.equal(result.ids.length,2);assert.equal(result.calls,2);
     assert.equal(result.journal.filter((event:any)=>event.kind==='goal').length,2);
   }finally{rmSync(root,{recursive:true,force:true});}
 });

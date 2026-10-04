@@ -1,13 +1,13 @@
 import type { Event, EventStore } from "../core/store.ts";
 
 export const EXECUTION_SUBJECT="terminal.execution";
-export type ExecutionPhase="running"|"continuing"|"limit"|"stagnation"|"goal-closed"|"blocked"|"failed"|"cancelled";
+export type ExecutionPhase="response-delivered"|"running"|"continuing"|"limit"|"stagnation"|"goal-closed"|"blocked"|"failed"|"cancelled";
 export interface ExecutionState {
   id:string;slice:number;phase:ExecutionPhase|"interrupted";recordedPhase:ExecutionPhase;
   steps:number;maxSlices:number;stepsPerSlice:number;cost:null;
   objectiveId:string|null;objectiveRevision:number|null;sourceSeq:number;
 }
-const phases=new Set(["running","continuing","limit","stagnation","goal-closed","blocked","failed","cancelled"]);
+const phases=new Set(["response-delivered","running","continuing","limit","stagnation","goal-closed","blocked","failed","cancelled"]);
 const open=(phase:string)=>phase==="running" || phase==="continuing";
 const integer=(value:unknown,min:number,max:number):value is number=>typeof value==="number" && Number.isSafeInteger(value) && value>=min && value<=max;
 function invalid(seq:number):never {throw new Error(`Invalid execution record at sequence ${seq}.`);}

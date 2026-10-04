@@ -1,0 +1,1081 @@
+Oui. Je choisirais **un seul produit**, pas dix concepts : **Cuesheet Mission Control**, une MCP App portable qui permet à ChatGPT/Claude de devenir la surface de contrôle de Cuesheet sans transformer Cuesheet en chatbot.
+
+Le point important : je le mettrais en **spec/design + prototype vertical**, pas comme nouveau pivot qui bloque Journey 005. L'agent doit prouver une petite tranche réelle.
+
+Tu peux lui donner ceci :
+
+# CUESHEET MISSION CONTROL
+
+## 0. Mission
+
+Design and build the first bounded vertical slice of a Cuesheet MCP App.
+
+Product idea:
+
+> ChatGPT, Claude and other MCP App hosts can become portable human-control surfaces for Cuesheet while Cuesheet remains the execution harness.
+
+The MCP App is NOT Cuesheet itself.
+
+Cuesheet remains responsible for:
+
+- intent;
+- execution state;
+- workers;
+- models;
+- tools;
+- worktrees;
+- verification;
+- evidence;
+- recovery;
+- permissions;
+- durable state.
+
+The MCP App is a projection of that state for a human.
+
+Its purpose is:
+
+**SEE → UNDERSTAND → STEER → APPROVE**
+
+Do not duplicate Cuesheet's terminal UI.
+
+Do not build a dashboard for the sake of having a dashboard.
+
+Do not expose every internal event.
+
+---
+
+# 1. Core user story
+
+A user is talking to ChatGPT or Claude.
+
+They say:
+
+> Continue IntentLane until the next real human gate.
+
+The assistant invokes Cuesheet through MCP.
+
+Cuesheet starts or continues the mission.
+
+The conversation displays:
+
+```text
+┌─────────────────────────────────────────────┐
+│ INTENTLANE                         RUNNING  │
+│                                             │
+│ Reach the next real human gate              │
+│                                             │
+│ ███████████████░░░░                         │
+│                                             │
+│ ✓ Repository reconciliation                 │
+│ ✓ Fixture verification                      │
+│ ● CI verification                           │
+│ ○ Siri acceptance                           │
+│                                             │
+│ 2 workers · 8m · 41k tokens                 │
+│                                             │
+│ No action required                          │
+│                                             │
+│                          Inspect             │
+└─────────────────────────────────────────────┘
+```
+
+The user does not need to watch Cuesheet.
+
+They continue talking normally.
+
+---
+
+# 2. Human interruption
+
+While Cuesheet works, the user says:
+
+> Don't touch the MCP work. Apple proof only.
+
+That instruction must enter the SAME active Cuesheet mission.
+
+No new independent chat-agent universe.
+
+Expected flow:
+
+ChatGPT/Claude
+→ MCP `steer_mission`
+→ Cuesheet shared live context
+→ semantic impact analysis
+→ affected execution nodes reconciled
+→ unaffected work preserved
+
+The MCP App updates:
+
+```text
+┌─────────────────────────────────────────────┐
+│ INTENTLANE                         UPDATED  │
+│                                             │
+│ New constraint                              │
+│                                             │
+│ "Apple proof only. Do not activate MCP."    │
+│                                             │
+│ Impact                                      │
+│                                             │
+│ ✓ Current CI work preserved                 │
+│ ✓ Fixture work preserved                    │
+│ × MCP exploration excluded                  │
+│                                             │
+│ Execution continued                         │
+└─────────────────────────────────────────────┘
+```
+
+This must use Cuesheet's existing live-context semantics.
+
+Do not implement a separate MCP-specific queue.
+
+---
+
+# 3. Human-required transition
+
+Eventually Cuesheet reaches:
+
+`HUMAN_REQUIRED`.
+
+Example:
+
+IntentLane Siri acceptance.
+
+The card becomes:
+
+```text
+┌─────────────────────────────────────────────┐
+│ INTENTLANE                   HUMAN REQUIRED │
+│                                             │
+│ Siri acceptance is ready                    │
+│                                             │
+│ Machine preparation                         │
+│ ✓ Build                                     │
+│ ✓ Metadata                                  │
+│ ✓ Fixture                                   │
+│ ✓ Tests                                     │
+│                                             │
+│ What requires you                           │
+│                                             │
+│ Speak the three Siri journeys and record    │
+│ what appears on screen.                     │
+│                                             │
+│ Why                                         │
+│ This observation cannot be automated        │
+│ without changing the evidence class.        │
+│                                             │
+│ [View procedure]                            │
+└─────────────────────────────────────────────┘
+```
+
+This is the most important state.
+
+Mission Control exists partly to make:
+
+**"the machine has exhausted what it can legitimately do"**
+
+obvious.
+
+---
+
+# 4. Product philosophy
+
+## Conversation for intent
+
+Use natural language for:
+
+- objectives;
+- corrections;
+- constraints;
+- questions;
+- reprioritization.
+
+## UI for state
+
+Use UI for:
+
+- progress;
+- workers;
+- dependencies;
+- evidence;
+- failures;
+- costs;
+- human gates.
+
+## UI for precision
+
+Use UI when the user needs to:
+
+- select;
+- compare;
+- inspect;
+- approve;
+- reject.
+
+## Cuesheet for execution
+
+Never move orchestration logic into the MCP App.
+
+---
+
+# 5. First MCP capability set
+
+Do NOT expose 50 tools.
+
+Implement/specify only the minimum useful surface.
+
+## `list_missions`
+
+Read-only.
+
+Returns active/recent missions.
+
+## `get_mission`
+
+Read-only.
+
+Returns one mission's semantic state.
+
+## `start_mission`
+
+Mutation.
+
+Starts a bounded Cuesheet objective.
+
+Must preserve existing Cuesheet admission/policy.
+
+## `steer_mission`
+
+Mutation.
+
+Adds a human correction/constraint to an existing mission.
+
+Must use Cuesheet's live-context path.
+
+No separate message queue.
+
+## `stop_mission`
+
+Mutation.
+
+Explicit human cancellation.
+
+## `get_human_delta`
+
+Read-only.
+
+Returns only information requiring human understanding/action.
+
+Do not initially expose low-level worker-control tools.
+
+---
+
+# 6. Do NOT initially expose
+
+No:
+
+`spawn_agent`
+
+`kill_agent`
+
+`change_worker_model`
+
+`run_shell`
+
+`merge_worktree`
+
+`approve_git_diff`
+
+`edit_memory`
+
+Those are implementation controls.
+
+Mission Control v0 is goal-level.
+
+The user controls intent.
+
+Cuesheet controls execution topology.
+
+Advanced controls may later appear behind Inspect if evidence demonstrates demand.
+
+---
+
+# 7. Canonical mission model
+
+Do not invent a second execution state.
+
+Project Cuesheet's existing state.
+
+The MCP representation should conceptually expose:
+
+```yaml
+mission:
+  id:
+  project:
+  objective:
+
+  state:
+    running | blocked | failed | human_required | verified | completed
+
+  progress:
+    completed:
+    active:
+    pending:
+
+  workers:
+    active:
+    total:
+
+  resources:
+    elapsed:
+    tokens:
+    cost:
+
+  evidence:
+    verified:
+    failed:
+    unknown:
+
+  humanDelta:
+    required:
+    reason:
+    actions:
+
+  updatedAt:
+```
+
+Use actual available data.
+
+If cost is unknown:
+
+`unknown`
+
+Never estimate fake precision.
+
+---
+
+# 8. Evidence classes
+
+The UI must visually distinguish:
+
+VERIFIED
+
+OBSERVED
+
+RUNNING
+
+FAILED
+
+BLOCKED
+
+UNKNOWN
+
+HUMAN_REQUIRED
+
+Do not render every state as green checkmarks.
+
+A model response is not VERIFIED.
+
+A worker saying DONE is not VERIFIED.
+
+Use Cuesheet evidence semantics.
+
+---
+
+# 9. Three UI levels
+
+Mission Control has exactly three initial views.
+
+## A. Mission Card
+
+Default inline view.
+
+Purpose:
+
+> "Do I need to care right now?"
+
+Contains:
+
+- project;
+- objective;
+- mission state;
+- semantic progress;
+- current phase;
+- worker count;
+- elapsed time;
+- token/cost only when known;
+- Human Delta indicator.
+
+No logs.
+
+No internal IDs unless needed.
+
+---
+
+## B. Mission Inspector
+
+Expanded/fullscreen.
+
+Purpose:
+
+> "What is actually happening?"
+
+Structure:
+
+```text
+MISSION
+│
+├ Objective
+│
+├ Execution graph
+│
+├ Workers
+│
+├ Evidence
+│
+├ Decisions
+│
+├ Failures / recovery
+│
+└ Human Delta
+```
+
+Example:
+
+```text
+IntentLane / Apple proof
+
+                         ┌ CI verifier ✓
+Repository reconciliation┤
+                         └ OpenSpec verifier ✓
+
+Fixture ─────────────────── ✓
+
+NetNewsWire reproduction
+        │
+        ├ build ✓
+        ├ metadata ✓
+        └ Siri ○ HUMAN
+
+Workers
+
+Verifier
+Claude Sonnet
+completed
+14k tokens
+
+Repository investigator
+OpenCode
+completed
+9k tokens
+```
+
+Graph is semantic.
+
+Do not display every internal runtime event.
+
+---
+
+## C. Human Delta
+
+Focused decision/action surface.
+
+Purpose:
+
+> "What specifically needs me?"
+
+Example:
+
+```text
+HUMAN DELTA
+
+Decision required
+
+Two implementation strategies remain
+equally consistent with the product spec.
+
+A
+Keep local storage only
+
+B
+Introduce remote synchronization
+
+Why Cuesheet stopped
+
+This changes product behavior and cannot
+be resolved from existing evidence.
+
+[Choose A]   [Choose B]
+```
+
+This should be rare.
+
+If Human Delta appears constantly, Cuesheet autonomy is failing.
+
+---
+
+# 10. Adaptive View primitives
+
+Do not hand-code every mission state.
+
+Define a small semantic UI vocabulary:
+
+`Status`
+
+`Progress`
+
+`StepList`
+
+`WorkerList`
+
+`EvidenceList`
+
+`Diff`
+
+`Decision`
+
+`Alert`
+
+`Metric`
+
+`Timeline`
+
+`Action`
+
+These are representation primitives.
+
+Not business logic.
+
+---
+
+# 11. Host adaptation
+
+Mission Control must not require identical pixels across hosts.
+
+The same semantics may render differently in:
+
+- Claude;
+- ChatGPT;
+- future MCP hosts;
+- text-only MCP clients.
+
+Maintain:
+
+same mission
+same state
+same evidence
+same available actions
+
+Allow:
+
+different typography
+different spacing
+different host chrome
+different responsive layout
+
+---
+
+# 12. Graceful degradation
+
+Mission Control MUST remain useful without MCP UI support.
+
+Example text fallback:
+
+```text
+IntentLane — HUMAN_REQUIRED
+
+Objective:
+Reach the next Apple proof gate.
+
+Machine complete:
+- build
+- fixture
+- metadata
+- automated tests
+
+Human required:
+Run the Siri acceptance procedure.
+
+No machine work remains before this gate.
+```
+
+The tool semantics cannot depend on the iframe.
+
+---
+
+# 13. Structured content
+
+Separate model context from UI payload.
+
+The model needs:
+
+- semantic summary;
+- important state;
+- human requirement;
+- available high-level actions.
+
+The UI may need:
+
+- execution graph;
+- complete worker list;
+- evidence records;
+- timeline;
+- metrics.
+
+Do not inject full UI datasets into model context unnecessarily.
+
+---
+
+# 14. Security
+
+Mission Control is a control surface.
+
+Treat mutations accordingly.
+
+`start_mission`
+
+`steer_mission`
+
+`stop_mission`
+
+must go through existing Cuesheet authority/admission mechanisms.
+
+The MCP App iframe must never independently grant execution authority.
+
+Never trust:
+
+- project path from UI without validation;
+- worker IDs supplied by arbitrary content;
+- model-generated permissions;
+- client-side confirmation alone.
+
+---
+
+# 15. Human confirmation
+
+Confirmation belongs to the tool/host security path.
+
+The UI may DISPLAY:
+
+preview
+impact
+risk
+
+but cannot be the sole authority for a sensitive mutation.
+
+---
+
+# 16. First vertical slice
+
+Do NOT begin with full remote production infrastructure.
+
+Build/prototype the smallest credible slice:
+
+Cuesheet local runtime
+        ↓
+MCP server
+        ↓
+read mission state
+        ↓
+Mission Card
+        ↓
+steer existing mission
+        ↓
+state updates
+        ↓
+Human Delta
+
+The proof should use a real Cuesheet mission.
+
+Prefer Cuesheet itself or IntentLane.
+
+No fake static dashboard as final proof.
+
+Fixtures are allowed for UI development only.
+
+---
+
+# 17. Required demonstration
+
+The first meaningful demo must show this sequence:
+
+### Step 1
+
+User:
+
+"Continue IntentLane until the next human gate."
+
+### Step 2
+
+Cuesheet mission starts/continues.
+
+Mission Card appears.
+
+### Step 3
+
+While workers are active:
+
+User:
+
+"Do not touch MCP. Apple proof only."
+
+### Step 4
+
+The same mission incorporates the correction.
+
+UI shows affected/unaffected work.
+
+### Step 5
+
+Cuesheet continues autonomously.
+
+### Step 6
+
+It reaches the Siri gate.
+
+Mission state becomes:
+
+`HUMAN_REQUIRED`
+
+### Step 7
+
+Mission Control displays the exact Human Delta.
+
+This demo proves the product thesis.
+
+---
+
+# 18. What this demo must NOT fake
+
+Do not fake:
+
+- workers;
+- progress;
+- token counts;
+- costs;
+- evidence;
+- Human Delta;
+- execution state.
+
+If a field is unavailable, display unknown or omit it.
+
+The demo is valuable because the state is real.
+
+---
+
+# 19. Visual direction
+
+Premium developer infrastructure.
+
+References in spirit:
+
+- Linear density;
+- Stripe clarity;
+- Apple restraint;
+- GitHub evidence legibility.
+
+Avoid:
+
+- AI gradients;
+- glowing brains;
+- excessive glass;
+- fake activity animations;
+- "agent swarm" theatrics.
+
+The interface should feel calm even when ten things are happening.
+
+---
+
+# 20. Information hierarchy
+
+Most important:
+
+1. Do I need to act?
+2. What is Cuesheet trying to achieve?
+3. What state is it in?
+4. What has actually been verified?
+5. What is currently happening?
+6. What failed?
+7. What changed because of my correction?
+8. What resources has it consumed?
+
+Not:
+
+1. Agent avatars.
+2. Streaming logs.
+3. Token animations.
+4. Internal tool calls.
+
+---
+
+# 21. Notification philosophy
+
+Do not notify for:
+
+worker finished
+
+test started
+
+file edited
+
+Notify for:
+
+HUMAN_REQUIRED
+
+mission verified/completed
+
+mission cannot continue
+
+budget threshold reached
+
+meaningful unexpected risk
+
+The goal is asynchronous trust.
+
+---
+
+# 22. Success metric
+
+Primary product metric:
+
+**Human interruptions per successfully verified mission.**
+
+Lower is generally better, provided safety is preserved.
+
+Supporting metrics:
+
+time to verified result
+
+recovery rate
+
+human-required frequency
+
+false human escalations
+
+verified work / total work
+
+cost per verified mission
+
+steering incorporation latency
+
+---
+
+# 23. Why this can become a product
+
+Today agent systems are often observed through:
+
+terminal logs
+IDE panes
+chat transcripts
+provider-specific UIs
+
+Mission Control provides a portable semantic control plane.
+
+Potential future users:
+
+developers
+
+engineering teams
+
+AI-native operations teams
+
+agent-platform builders
+
+companies running autonomous workflows
+
+But do not build the horizontal platform yet.
+
+Prove it with Cuesheet.
+
+---
+
+# 24. Long-term expansion
+
+Only after the vertical slice is proven:
+
+Portfolio view
+
+multiple missions
+
+multiple machines
+
+adaptive scheduler
+
+budget controls
+
+model routing
+
+resource broker
+
+team resource mesh
+
+P2P compute
+
+approval inbox
+
+enterprise policies
+
+audit trails
+
+These belong to the North Star.
+
+Not v0.
+
+---
+
+# 25. Relationship with Cuesheet terminal
+
+Do NOT replace the terminal.
+
+Terminal:
+
+deep local engineering surface.
+
+Mission Control:
+
+portable semantic supervision surface.
+
+They are projections of the same underlying state.
+
+Eventually:
+
+Cuesheet state
+      |
+  ----+----------------
+  |        |          |
+Terminal  MCP App   future UI
+
+No duplicated orchestration logic.
+
+---
+
+# 26. Relationship with IntentLane
+
+IntentLane is NOT required to build Mission Control.
+
+However, Mission Control is an excellent future real-world example of the MCP App model discussed for IntentLane.
+
+Do not merge the projects.
+
+Possible future relationship:
+
+IntentLane
+→ helps define/generate portable capability surfaces
+
+Cuesheet
+→ execution runtime
+
+Mission Control
+→ MCP App consuming Cuesheet
+
+Separate products.
+
+---
+
+# 27. Research before implementation
+
+Before choosing implementation details, verify against current primary sources:
+
+- MCP Apps stable specification;
+- `io.modelcontextprotocol/ui`;
+- `ui://` resources;
+- `text/html;profile=mcp-app`;
+- host context;
+- inline/fullscreen behavior;
+- structured content;
+- tool visibility;
+- graceful degradation;
+- current Claude support;
+- current ChatGPT support.
+
+Document only implementation-relevant conclusions.
+
+Do not turn research into a large report.
+
+---
+
+# 28. Deliverables
+
+Produce:
+
+## A. PRODUCT.md
+
+Final product definition and boundaries.
+
+## B. UX.md
+
+Mission Card, Inspector and Human Delta behavior.
+
+Include state transitions and ASCII/wireframe representations before implementation.
+
+## C. MCP-CONTRACT.md
+
+Tools, resources, schemas, security and degradation behavior.
+
+## D. THREAT-MODEL.md
+
+Control-surface-specific risks.
+
+## E. DEMO.md
+
+Exact real vertical-slice demo procedure.
+
+## F. implementation
+
+Only the minimum code required for the real vertical slice.
+
+## G. verification
+
+Automated verification plus a real Cuesheet mission.
+
+---
+
+# 29. Stop conditions
+
+Do not expand into:
+
+generic workflow builder
+
+generic dashboard platform
+
+resource mesh
+
+enterprise control plane
+
+IntentLane MCP generator
+
+marketplace
+
+mobile app
+
+before the vertical slice works.
+
+Stop expansion and report if the real slice demonstrates that a foundational assumption is wrong.
+
+---
+
+# 30. Definition of Done
+
+v0 is DONE only when:
+
+1. a real Cuesheet mission is represented through MCP;
+2. the Mission Card reflects real state;
+3. a human can steer that SAME mission through conversation/MCP;
+4. Cuesheet incorporates the steering without a message queue;
+5. real verification state is shown;
+6. Human Delta appears when Cuesheet genuinely reaches a human boundary;
+7. a non-UI MCP client receives a useful textual fallback;
+8. sensitive mutations remain controlled by Cuesheet/tool authority;
+9. no fake worker/progress/cost data is displayed;
+10. the demonstration is reproducible.
+
+The product thesis is:
+
+> **Let agents work. Show humans only what matters.**
+
+And the UX thesis is:
+
+> **Conversation controls intent. Mission Control exposes reality. Cuesheet executes.**
+
+Je pense que **c'est celui-là qu'il faut donner à ton agent**, parce qu'il ne crée pas un troisième projet sorti de nulle part : il utilise Cuesheet comme moteur réel et MCP Apps comme nouvelle surface.
+
+Et surtout, la démo est extrêmement compréhensible : **tu demandes quelque chose depuis Claude/ChatGPT, tu continues à discuter pendant que Cuesheet travaille, tu corriges sa mission en direct, et l'interface n'interrompt ta conversation que lorsqu'une vraie décision humaine est nécessaire.** C'est beaucoup plus fort qu'un simple dashboard d'agents.

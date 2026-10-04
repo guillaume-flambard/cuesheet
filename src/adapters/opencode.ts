@@ -67,7 +67,7 @@ export class OpenCodeAdapter implements SessionProvider {
     return stdout
       .split("\n")
       .map((line) => line.split("|"))
-      .filter((parts) => parts.length === 3 && parts[0])
+      .filter((parts): parts is [string, string, string] => parts.length === 3 && typeof parts[0] === "string" && parts[0].length > 0 && typeof parts[1] === "string" && typeof parts[2] === "string")
       .map(([id, directory, updated]) => ({
         id,
         directory,

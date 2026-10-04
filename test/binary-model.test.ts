@@ -655,7 +655,7 @@ describe("MB-01 a real run against the installed binary", () => {
         const { BinaryModelAdapter } = await import("../src/adapters/binary-model.ts");
         const store = new EventStore("live2", () => 1);
         store.append({ kind: "directive", subject: "builder", data: { text: "tools: write_file" } });
-        const model = new BinaryModelAdapter({ binary: binary!, project: root, timeoutMs: 240_000 });
+        const model = new BinaryModelAdapter({ binary: binary!, project: root, model: "opencode/space-bunny-free", timeoutMs: 240_000 });
         const response = await model.infer(
           compileFrame(
             store.toSession(),
@@ -714,4 +714,19 @@ function readdirUtf8(path: string): string[] {
 describe('provider errors are useful without leaking provider payloads',()=>{
  it('reports actual free-tier policy refusal for nonzero and zero exit, never accepting accompanying proposal',()=>{for(const exit of [0,1]){const secret='provider-secret-fixture';const stdout=JSON.stringify({type:'error',error:{name:'APIError',data:{statusCode:403,message:"OpenCode's free tier can only be used from within OpenCode",responseHeaders:{authorization:secret},responseBody:secret}}})+'\n'+text('{"text":"done","toolCalls":[]}');assert.throws(()=>parseProposal({stdout,stderr:secret,exit,signal:null}),(error:Error)=>error.message.includes('HTTP 403')&&error.message.includes('free tier')&&!error.message.includes(secret));}});
  it('classifies status but never echoes arbitrary error text or stderr',()=>{for(const status of [401,403,429,500]){const secret='key-in-provider-error';assert.throws(()=>parseProposal({stdout:JSON.stringify({type:'error',error:{name:'APIError',data:{statusCode:status,message:secret}}})+'\n',stderr:secret,exit:1,signal:null}),(error:Error)=>error.message.includes('HTTP '+status)&&!error.message.includes(secret));}assert.throws(()=>parseProposal({stdout:'',stderr:'secret-in-stderr',exit:1,signal:null}),(error:Error)=>error.message.includes('exited 1')&&!error.message.includes('secret-in-stderr'));});
+});
+
+
+describe("one bounded proposal format retry",()=>{
+ it("rejects the first prose, accepts only the strict second proposal, and never retries a native tool violation",async()=>{
+  const frame:ContextFrame={goal:"edit",history:[],directives:[],evidence:[],capabilities:[],model:"fixture",step:1};
+  const {BinaryModelAdapter}=await import("../src/adapters/binary-model.ts");
+  const model=new BinaryModelAdapter({binary:"fixture",project:"/tmp"});let calls=0;
+  (model as any).spawnRun=async(_dir:string,next:ContextFrame)=>{calls++;if(calls===2)assert.match(next.directives.at(-1)!.text,/rejected before any tool executed/);return {stdout:text(calls===1?'I would write a file.':'{"text":"request edit","toolCalls":[{"name":"node","input":{"argv":["node","-e","console.log(1)"]}}]}'),stderr:'',exit:0,signal:null};};
+  const result=await model.infer(frame);assert.equal(calls,2);assert.equal(result.toolCalls.length,1);assert.equal(frame.directives.length,0);
+  calls=0;(model as any).spawnRun=async()=>{calls++;return {stdout:toolUse('write_file'),stderr:'',exit:0,signal:null};};
+  await assert.rejects(model.infer(frame),/deny-list/);assert.equal(calls,1);
+  calls=0;(model as any).spawnRun=async()=>{calls++;return {stdout:text('still prose'),stderr:'',exit:0,signal:null};};
+  await assert.rejects(model.infer(frame),/requested JSON/);assert.equal(calls,2);
+ });
 });

@@ -32,7 +32,7 @@ export const rgb = (r: number, g: number, b: number): Rgb => ({ r, g, b });
 /** `truecolor` output, which is what Ghostty accepts. */
 export const hex = (c: Rgb): string => `#${[c.r, c.g, c.b].map((n) => n.toString(16).padStart(2, "0")).join("")}`;
 
-const blend = (a: Rgb, b: Rgb, t: number): Rgb =>
+export const blend = (a: Rgb, b: Rgb, t: number): Rgb =>
   rgb(
     Math.round(a.r + (b.r - a.r) * t),
     Math.round(a.g + (b.g - a.g) * t),
@@ -68,10 +68,13 @@ export const theme = {
 
   /** Body text, and the three greys below it. */
   text: rgb(0xd6, 0xdb, 0xe4),
-  dim: rgb(0x8b, 0x93, 0xa7),
-  faint: rgb(0x5c, 0x64, 0x72),
+  dim: rgb(0xb5, 0xbe, 0xcd),
+  faint: rgb(0xa0, 0xaa, 0xba),
+  /** Focus and code use a quiet surface, never a permanent panel. */
+  focus: rgb(0x20, 0x30, 0x38),
+  code: rgb(0x1b, 0x23, 0x2e),
   /** A hairline. Darker than `faint` on purpose: it is a border, not text. */
-  rule: rgb(0x2c, 0x31, 0x3a),
+  rule: rgb(0x58, 0x65, 0x75),
 } as const;
 
 /** The four marks, and nothing else. A surface that draws more than this is a dashboard. */
@@ -87,5 +90,3 @@ export const glyph = {
 
 /** Colour a border or a separator with, which is the faintest thing on screen. */
 export const ruleColor = theme.rule;
-
-export { blend };

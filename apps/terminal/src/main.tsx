@@ -10,10 +10,15 @@
 import { createElement } from "react";
 import { render } from "ink";
 import { App } from "./app/App.tsx";
+import {terminalInput} from "./terminal-input.ts";
 
-const instance = render(createElement(App), { exitOnCtrlC: false });
+const keyboard=terminalInput(process.stdin);
+const mouse=process.stdout.isTTY;
+if(mouse)process.stdout.write("\x1b[?1000h\x1b[?1006h\x1b[?2004h");
+const cleanup=()=>{if(mouse)process.stdout.write("\x1b[?1000l\x1b[?1006l\x1b[?2004l");keyboard.dispose();};
+const instance = render(createElement(App), { exitOnCtrlC: false, stdin:keyboard.input });
 
 instance.waitUntilExit().then(
-  () => process.exit(0),
-  () => process.exit(1),
+  () => {cleanup();process.exit(0);},
+  () => {cleanup();process.exit(1);},
 );

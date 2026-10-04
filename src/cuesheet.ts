@@ -173,6 +173,10 @@ function commandUsage(name: string, spec: CommandSpec): never {
 }
 
 function dispatch(argv: string[]): number {
+  if (argv[0] === "--provider" || argv[0] === "--model") {
+    argv = ["surface", ...argv];
+  }
+
   const wantsHelp = argv.includes("-h") || argv.includes("--help");
   const wantsVersion = argv.includes("-v") || argv.includes("--version");
 

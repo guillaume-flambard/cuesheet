@@ -201,16 +201,16 @@ export class OpenRouterAdapter implements ModelAdapter {
     const body: Record<string, unknown> = {
       model: frame.model === "unset" ? this.options.model : frame.model,
       messages,
-      tools: [
+      tools: tools.length > 0 ? [
         {
           type: "function",
           function: {
-            name: tools[0].name,
-            description: tools[0].description,
-            parameters: tools[0].parameters,
+            name: tools[0]!.name,
+            description: tools[0]!.description,
+            parameters: tools[0]!.parameters,
           },
         },
-      ],
+      ] : [],
     };
     // Only when the run declared one. An absent `maxTokens` sends the key
     // absent rather than absent-and-zero, because `max_tokens: 0` is a different

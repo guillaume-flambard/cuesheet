@@ -1,7 +1,7 @@
 /** Terminal durability at the adapter boundary; core remains in-memory and pure. */
 import { EventStore, type Event } from '../core/store.ts';
 import { SessionStore } from './session-store.ts';
-import { mkdirSync, openSync, closeSync, readdirSync, unlinkSync, readFileSync, writeFileSync, renameSync, realpathSync, existsSync, chmodSync } from 'node:fs';
+import { mkdirSync, openSync, closeSync, readdirSync, opendirSync, unlinkSync, readFileSync, writeFileSync, renameSync, realpathSync, existsSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -127,7 +127,11 @@ function acquire(root:string,id:string):string {
   const claim=join(root,`${prefix}${process.pid}-${randomUUID()}.lock`);
   const fd=openSync(claim,'wx',0o600);closeSync(fd);
   try {
-    for(const file of readdirSync(root)) {
+    let directory=opendirSync(root),entries=0;
+    try{for(;;){
+      const entry=directory.readSync();if(!entry)break;
+      if(++entries>10_000)throw new Error('Répertoire de sessions trop grand ; ouverture refusée.');
+      const file=entry.name;
       if (!file.startsWith(prefix) || !file.endsWith('.lock') || join(root,file)===claim) continue;
       const pid=Number(file.slice(prefix.length).split('-')[0]);
       if (!Number.isSafeInteger(pid) || pid<1) throw new Error('Verrou de session inconnu ; ouverture refusée.');
@@ -135,7 +139,7 @@ function acquire(root:string,id:string):string {
       try {process.kill(pid,0);} catch(error) {live=(error as NodeJS.ErrnoException).code!=='ESRCH';}
       if(live) throw new Error('Cette session est déjà ouverte dans un autre terminal.');
       try {unlinkSync(join(root,file));} catch(error) {if((error as NodeJS.ErrnoException).code!=='ENOENT') throw error;}
-    }
+    }}finally{directory.closeSync();}
     return claim;
   } catch(error) {unlinkSync(claim);throw error;}
 }

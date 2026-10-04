@@ -1,0 +1,17 @@
+{
+  "name": "@cuesheet/mission-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node server.ts",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.1.2",
+    "@modelcontextprotocol/sdk": "1.32.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": { "esbuild": "0.28.0" }
+}

@@ -34,12 +34,12 @@ import {createSituation} from '../../../../src/adapters/situation.ts';
  */
 
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, lstatSync } from "node:fs";
 import { TerminalSession, terminalSessionRoot } from "../../../../src/adapters/terminal-session.ts";
 import { persistentView } from "./session-view.ts";
 import type { CompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { homedir } from "node:os";
-import { join, delimiter, resolve } from "node:path";
+import { join, delimiter, resolve, isAbsolute } from "node:path";
 import { createCompletionCheck } from "../../../../src/adapters/surface-verification.ts";
 import { createModelBinding, type ModelBinding } from "../../../../src/adapters/model-binding.ts";
 import { resolveModel } from "../../../../src/adapters/default-model.ts";
@@ -82,7 +82,9 @@ export function modelFor(cwd: string): { name: string; model: string | null; why
  * App gates task submission on binding.missing. A broken owner check still
  * refuses construction, because model selection cannot repair that check.
  */
-export function createLiveProducer(store: Store, cwd: string, settings: { journal?: TerminalSession; verification?: CompletionCheck; binding?: ModelBinding } = {}): { producer: Producer; binding: ModelBinding } | { missing: string } {
+export function createLiveProducer(store: Store, cwd: string, settings: { journal?: TerminalSession; verification?: CompletionCheck; binding?: ModelBinding; identities?:ProducerOptions['identities'] } = {}): { producer: Producer; binding: ModelBinding } | { missing: string } {
+  const projectsRoot=process.env.CUESHEET_PROJECTS_ROOT;
+  if(projectsRoot!==undefined&&(!isAbsolute(projectsRoot)||/[\0\r\n]/.test(projectsRoot)))return {missing:"CUESHEET_PROJECTS_ROOT must be an absolute directory path."};
   let situation;try{situation=createSituation();}catch{return {missing:"Contexte de situation invalide : vérifier fuseau, langue et labels configurés."};}
   const contextBudgetChars=process.env.CUESHEET_CONTEXT_CHARS===undefined ? undefined : Number(process.env.CUESHEET_CONTEXT_CHARS);
   if(contextBudgetChars!==undefined && (!Number.isSafeInteger(contextBudgetChars) || contextBudgetChars<4000))return {missing:"CUESHEET_CONTEXT_CHARS must be an integer of at least 4000."};
@@ -115,7 +117,7 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const agentModel=(selection:import('../../../../src/adapters/model-preferences.ts').ModelPreferences,scope:string)=>{const resolved=resolveModel({project:scope,preferences:{},env:agentCredentials,provider:selection.provider,model:selection.model??null,baseUrl:selection.baseUrl,maxTokens:selection.maxTokens,onUsage:usage?.record});if('missing' in resolved)throw Error(resolved.missing);return {adapter:resolved.adapter,label:`${resolved.name} · ${resolved.model??"modèle configuré"}`};};
   const toolsForWorker=(scope:string,journal:TerminalSession,signal:AbortSignal):ToolRunner=>{const runner=toolsForScope(scope,journal);return Object.assign({run:(request:Parameters<ToolRunner["run"]>[0])=>(runner as ToolRunner&{run(request:Parameters<ToolRunner["run"]>[0],signal?:AbortSignal):ReturnType<ToolRunner["run"]>}).run(request,signal)},{names:(runner as ToolRunner&{names?:readonly string[]}).names??[]});};
   const workerModel=(scope:string)=>agentModel(binding.selection,scope);
-  const options: ProducerOptions = {toolsForWorker,workerModel,worktreeRoot:settings.journal?join(settings.journal.root,"workspaces",settings.journal.metadata.id):undefined,situation,agentModel,modelLabel:()=>binding.label,vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
+  const options: ProducerOptions = {identities:settings.identities,projectsRoot,toolsForWorker,workerModel,worktreeRoot:settings.journal?join(settings.journal.root,"workspaces",settings.journal.metadata.id):undefined,situation,agentModel,modelLabel:()=>binding.label,vaultPublisherForScope,vaultForScope,toolsForScope,researchForScope,skillsForScope,sharedContexts, store, journal: settings.journal, model, tools, cwd, toolNames: ALLOWED, verification, contextBudgetChars, research, skills, maxSlices };
   return { producer: createProducer(options), binding };
 }
 /** Acquire storage before building any live adapter. Loading never starts work. */
@@ -153,7 +155,12 @@ export function createScopedToolRunner(options:{scope:string;journal?:TerminalSe
     if(route.kind==="local")return Object.assign(new ShellToolRunner({allow:ALLOWED,roots:[scope],defaultCwd:scope}),{policy:route.reason,names:Object.freeze(ALLOWED.slice())});
     try{containers?.read();}catch{throw new Error("Container resource journal is damaged; inspect it before starting tools.");}
     const image=route.image;
-    return new ContainerToolRunner({allow:route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : ALLOWED,roots:[scope],defaultCwd:scope,image,socket:route.socket,
+    // Linked worktree metadata lives outside the one mounted scope. Advertising
+    // git here sends the model into an inspection loop it cannot resolve.
+    let linkedWorktree=false;
+    try { linkedWorktree=lstatSync(join(scope,".git")).isFile(); } catch {}
+    const allow=(route.defaultImage ? [...DEFAULT_CONTAINER_TOOLS] : [...ALLOWED]).filter(name=>!linkedWorktree||name!=="git");
+    const runner=new ContainerToolRunner({allow,roots:[scope],defaultCwd:scope,image,socket:route.socket,
       onAdmission:(name,request)=>{
         if(!containers||!resourceJournal)throw new Error("Container execution requires a durable terminal session.");
         const digest=invocationKey(request.name,request.input);
@@ -162,4 +169,6 @@ export function createScopedToolRunner(options:{scope:string;journal?:TerminalSe
         containers.record({phase:"admitted",name,image,scope,intentSeq:intent.seq,inputDigest:digest});
       },onCleanup:(name,removed)=>containers!.record({phase:"cleanup",name,removed}),
       protectedPaths:[...(resourceJournal?[resourceJournal.root]:[]),...protectedPaths]});
+    if(linkedWorktree)Object.assign(runner,{policy:runner.policy+" Git non disponible dans ce worktree conteneur : métadonnées hors périmètre monté. Le contrôleur garde la préparation et l’intégration vérifiée."});
+    return Object.assign(runner,{requiresIsolatedWorkspace:true});
 }

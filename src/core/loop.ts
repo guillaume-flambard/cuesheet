@@ -40,13 +40,14 @@ export interface ToolResult {
 }
 
 /** One call into a model provider. Providers are adapters, never the session. */
+export type ModelProgress = {kind:"reasoning"|"text";text:string};
 export interface ModelAdapter {
   readonly name: string;
   /**
    * Infer once against a compiled frame. A provider returns text, tool calls,
    * or both. It never sees the event log, only the frame.
    */
-  infer(frame: ContextFrame): Promise<ModelResponse>;
+  infer(frame: ContextFrame, signal?:AbortSignal, onProgress?:(progress:ModelProgress)=>void): Promise<ModelResponse>;
 }
 
 export interface ModelResponse {
@@ -89,6 +90,8 @@ export interface LoopOptions {
   registry?: Capability[];
   /** Hard ceiling on inferences. A loop that cannot be stopped is a hazard. */
   maxSteps: number;
+  /** Interactive turns may return an unverified answer without closing their goal. */
+  yieldOnResponse?: boolean;
   /**
    * Called for every event the moment it is appended. This is how a chat
    * surface can show the work as it happens, and how a caller can persist
@@ -100,6 +103,7 @@ export interface LoopOptions {
 }
 
 export type LoopStop =
+  | { reason: "response-delivered"; steps: number; evidence: number }
   | { reason: "goal-closed"; steps: number; evidence: number }
   | { reason: "budget-exhausted"; steps: number; evidence: number }
   | { reason: "blocked"; missing: string[] };
@@ -212,6 +216,9 @@ export async function runAgentLoop(
     }
 
     const after = store.toSession();
+    if (options.yieldOnResponse && response.text.trim() && response.toolCalls.length === 0 && after.goal?.open) {
+      return { stop: {reason:"response-delivered",steps:step,evidence:after.evidence.length}, session:after, claims };
+    }
     if (after.goal && !after.goal.open) {
       return {
         stop: { reason: "goal-closed", steps: step, evidence: after.evidence.length },

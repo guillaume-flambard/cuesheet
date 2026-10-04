@@ -125,6 +125,13 @@ function printAdmission(
 }
 
 /**
+ * Result of running a goal.
+ */
+type RunGoalResult =
+  | { ran: true; sessionId: string; stopReason: string }
+  | { ran: false; reason: "unverified" | "blocked" | "no_provider" | "blocked_by_loop" };
+
+/**
  * Run one goal.
  *
  * `live` is passed in rather than read from a module-level variable because the
@@ -139,7 +146,7 @@ async function runGoal(
   durable: SessionStore,
   cwd: string,
   live: InteractiveProjection,
-): Promise<void> {
+): Promise<RunGoalResult> {
   const sessionId = newId("run");
   const requirements = extractSkillRequirements(goal).requirements;
 
@@ -166,10 +173,10 @@ async function runGoal(
 
   if (verdict === "unverified") {
     console.log("not running: absence here is not evidence, and the gate refuses to guess.");
-    return;
+    return { ran: false, reason: "unverified" };
   }
   if (verdict === "would_block" && !forced) {
-    return;
+    return { ran: false, reason: "blocked" };
   }
   if (forced && verdict === "would_block") {
     console.log("owner override: running anyway, and the override is on the record.");
@@ -178,7 +185,7 @@ async function runGoal(
   const resolved = resolveModel({ project: cwd });
   if ("missing" in resolved) {
     console.log(`not running: ${resolved.missing}`);
-    return;
+    return { ran: false, reason: "no_provider" };
   }
   // Said before the first inference, because a run that cannot name its own
   // model is a run whose log cannot be read back honestly.
@@ -198,7 +205,7 @@ async function runGoal(
     subject: "builder",
     goal,
     requires: forced ? [] : requirements,
-    registry: forced ? undefined : listing,
+    registry: forced ? undefined : listing.capabilities,
     maxSteps: 8,
     onEvent: (event) => {
       // The live view is one projection of the log, not a third renderer. The
@@ -215,9 +222,11 @@ async function runGoal(
   console.log(`stop: ${outcome.stop.reason}`);
   if (outcome.stop.reason === "blocked") {
     console.log(`  missing: ${outcome.stop.missing.join(", ")}`);
+    return { ran: true, sessionId, stopReason: "blocked_by_loop" };
   }
   console.log(`  evidence: ${outcome.session.evidence.length}, claims: ${outcome.claims.length}`);
   console.log(`  resume with: cuesheet resume ${sessionId} --in ${cwd}`);
+  return { ran: true, sessionId, stopReason: outcome.stop.reason };
 }
 
 /** Short enough to sit in a prompt line, long enough to recognise the goal. */
@@ -372,7 +381,16 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
   const observePortfolio = async () => {
     if (portfolioObservation === null) {
       const { snapshotPortfolio } = await import("./adapters/frontier.ts");
-      portfolioObservation = snapshotPortfolio();
+      // Get active sessions from the durable store
+      const sessionList = durable.list();
+      const sessions = sessionList
+        .filter((s) => !s.damaged && s.id.startsWith("run-"))
+        .map((s) => ({
+          id: s.id,
+          directory: process.cwd(), // TODO: extract actual working directory from session events
+          lastActivity: s.lastAt,
+        }));
+      portfolioObservation = snapshotPortfolio({ sessions });
     }
     return portfolioObservation;
   };
@@ -463,9 +481,32 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
             paintPrompt();
             continue;
           }
-          await runGoal(goal, false, durable, cwd, liveProjection);
-          appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
-          clearIt("approved");
+          const runResult = await runGoal(goal, false, durable, cwd, liveProjection);
+          if (runResult.ran) {
+            appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
+            clearIt("approved");
+          } else {
+            // The goal was refused (unverified, blocked, no provider, or blocked by loop).
+            // Record the refusal and keep the intention staged.
+            type RefusalReason = "unverified" | "blocked" | "no_provider" | "blocked_by_loop";
+            const refusalReasons: Record<RefusalReason, string> = {
+              unverified: "registry unreadable, gate refuses to guess",
+              blocked: "admission blocked, missing requirements",
+              no_provider: "no model provider available",
+              blocked_by_loop: "agent loop stopped: blocked by missing capabilities",
+            };
+            const reason = runResult.reason;
+            appendSurface(
+              effectObserved({
+                effectId: request.id,
+                outcome: "failed",
+                why: refusalReasons[reason],
+              }),
+            );
+            console.log(`request ${request.id} asked; the world has not answered, and it failed: ${refusalReasons[reason]}`);
+            console.log("        the intention is still staged; resolve the issue and go again.");
+            // Do NOT clearIt - the intention survives per EFF-06
+          }
         } catch (cause) {
           // Classify before printing, because the two failures need different
           // sentences. A `ReferenceError` is our wiring, and telling the person
@@ -752,7 +793,11 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           break;
         }
         if (intent.forced) {
-          await runGoal(intent.text, true, durable, cwd, liveProjection);
+          const runResult = await runGoal(intent.text, true, durable, cwd, liveProjection);
+          if (!runResult.ran) {
+            console.log(`run refused: ${runResult.reason}`);
+            // The intention is not staged in forced mode, so nothing to keep.
+          }
           break;
         }
         stageIt(intent.text);

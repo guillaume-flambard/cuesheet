@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-03T22:28:16.270609",
+  "status": "IMPLEMENTING",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "workers": {
+    "assistance": {
+      "state": "RUNNING",
+      "files": [
+        "src/adapters/assistance-scheduler.ts",
+        "test/assistance-scheduler.test.ts",
+        "docs/harness/opencode-delivery/assistance.md"
+      ],
+      "packet": "/Users/memo/projects/tools/cuesheet/docs/harness/opencode-delivery/assistance-packet.md",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "pid": 6561,
+      "started": 1791059325.1360168,
+      "sessions": [],
+      "observedEvents": 0
+    },
+    "routing": {
+      "state": "RUNNING",
+      "files": [
+        "src/adapters/adaptive-model-routing.ts",
+        "test/adaptive-model-routing.test.ts",
+        "docs/harness/opencode-delivery/routing.md"
+      ],
+      "packet": "/Users/memo/projects/tools/cuesheet/docs/harness/opencode-delivery/routing-packet.md",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "pid": 6589,
+      "started": 1791059326.2791522,
+      "sessions": [],
+      "observedEvents": 0
+    },
+    "knowledge": {
+      "state": "RUNNING",
+      "files": [
+        "src/adapters/knowledge-exchange.ts",
+        "test/knowledge-exchange.test.ts",
+        "docs/harness/opencode-delivery/knowledge.md"
+      ],
+      "packet": "/Users/memo/projects/tools/cuesheet/docs/harness/opencode-delivery/knowledge-packet.md",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "pid": 6649,
+      "started": 1791059327.4497159,
+      "sessions": [],
+      "observedEvents": 0
+    }
+  },
+  "providerError": "Go usage limit exceeded",
+  "activeModel": "opencode/mimo-v2.6-flash-free",
+  "routeReason": "Go quota exceeded; paid Zen same-model route insufficient funds; configured Zen free tool-capable route successfully reading implementation packet.",
+  "productDefaultUnchanged": true,
+  "activeWorkers": [
+    {
+      "name": "routing",
+      "pid": 7768,
+      "state": "RUNNING",
+      "started": 1791059599.126195,
+      "model": "opencode/mimo-v2.6-flash-free",
+      "stream": "routing-free.jsonl",
+      "session": "ses_efc875f10ffeYZ85XfF67LXkil",
+      "toolCount": 26
+    },
+    {
+      "name": "assistance",
+      "pid": 7977,
+      "state": "RUNNING",
+      "started": 1791059621.714168,
+      "model": "opencode/mimo-v2.6-flash-free",
+      "stream": "assistance-free.jsonl",
+      "session": "ses_efc8706a9ffeWezUfTLFUJhEk0",
+      "toolCount": 12
+    },
+    {
+      "name": "knowledge",
+      "pid": 8033,
+      "state": "RUNNING",
+      "started": 1791059622.853565,
+      "model": "opencode/mimo-v2.6-flash-free",
+      "stream": "knowledge-free.jsonl",
+      "session": "ses_efc87020dffezK4qPpbqP9XDEf",
+      "toolCount": 13
+    }
+  ]
+}

@@ -265,7 +265,7 @@ export class EventStore {
           // Evidence about the goal closes it, which is the only way a goal
           // is ever closed. An agent claiming completion appends nothing.
           if (goal && event.subject === goal.subject) {
-            goal = { ...goal, open: false };
+            goal = Object.assign({}, goal, { open: false });
           }
           break;
         }

@@ -1,0 +1,1107 @@
+# CUESHEET — MASTER DESIGN DIRECTION
+## Terminal UX / Visual System / Interaction / Motion
+
+Status: canonical design direction
+Purpose: prevent UI drift and restore the intended CUESHEET product identity.
+
+---
+
+# 0. THE DESIGN THESIS
+
+CUESHEET is a terminal-native global AI workspace.
+
+It must NOT look like:
+
+- VS Code
+- a dashboard
+- a SaaS admin panel
+- Slack
+- ChatGPT with sidebars
+- OpenCode with more panels
+- a multi-agent monitoring console
+- a project selector
+- a collection of cards
+
+The terminal is not merely where CUESHEET prints text.
+
+The terminal is the living representation of:
+
+- human intent
+- world understanding
+- active work
+- workers
+- discoveries
+- uncertainty
+- evidence
+- proof
+- human-machine synchronization
+
+The desired feeling is:
+
+    calm when idle
+    alive when working
+    understandable without supervision
+    beautiful without decoration
+    technical without looking like debug output
+
+CUESHEET should feel like an intelligent system organizing itself around the
+human's intention.
+
+---
+
+# 1. GLOBAL, NOT PROJECT-SCOPED
+
+This is the most important visual rule.
+
+CUESHEET must NEVER make the user feel:
+
+    "I am currently inside Kollio."
+
+or:
+
+    "I need to switch to IntentLane."
+
+or:
+
+    "I need another session."
+
+The visual hierarchy is:
+
+    HUMAN
+      ↓
+    CUESHEET
+      ↓
+    WORLD
+      ↓
+    relevant projects / knowledge / web / artifacts / tools
+
+Projects appear only when they become relevant to an intent.
+
+Wrong:
+
+┌──────────────────────────────┐
+│ Project: Kollio              │
+│ Session #123                 │
+│ ...                          │
+└──────────────────────────────┘
+
+Correct:
+
+› Check Apple's latest App Intents changes
+  and tell me if anything I'm building is affected.
+
+  understanding
+  ├─ web / Apple developer changes
+  └─ world / matching against your work
+
+  affected
+  ├─ IntentLane
+  └─ Kollio · no relevant impact
+
+The project is a node in the work.
+
+It is not the container around the UI.
+
+---
+
+# 2. ONE SURFACE
+
+Do NOT introduce permanent tabs such as:
+
+    Chat
+    Plan
+    Build
+    Debug
+    Research
+    Agents
+    Projects
+
+There is one primary surface.
+
+The user can:
+
+- ask
+- think
+- research
+- code
+- redirect
+- inspect
+- create
+- stop
+- resume
+
+from the same input.
+
+The runtime determines the strategy.
+
+---
+
+# 3. THE INPUT IS THE ANCHOR
+
+The permanent human anchor is:
+
+    › _
+
+The input must remain usable while work is running.
+
+Never make the user wait for the current agent response before sending another
+instruction.
+
+No visible message queue.
+
+Example:
+
+CUESHEET is working:
+
+  work
+  ├─ ● A1 · inspecting API
+  └─ ● A2 · running tests
+
+The user types immediately:
+
+› Actually don't modify the database.
+
+The interface must accept this immediately.
+
+The runtime reconciles the active work.
+
+This is LIVE STEERING.
+
+---
+
+# 4. THE UI IS NOT A CHAT LOG
+
+Conversation is an input/output mechanism.
+
+It is NOT the information architecture.
+
+Do not render everything as:
+
+    user bubble
+    assistant bubble
+    user bubble
+    assistant bubble
+
+Important outputs should become semantic objects:
+
+    Intent
+    Finding
+    Human Delta
+    Decision
+    Work
+    Evidence
+    Proof
+    Artifact
+    Unknown
+    Blocker
+
+The timeline may contain conversation, but the screen should represent the
+current world rather than merely replay the transcript.
+
+---
+
+# 5. CALM WHEN IDLE
+
+Whitespace is intentional when nothing is happening.
+
+Idle state should be extremely minimal.
+
+Example:
+
+CUESHEET
+world synced
+
+› _
+
+
+Possibly a few quiet contextual hints:
+
+    CUESHEET · active yesterday
+    IntentLane · 2 relevant changes
+
+But avoid dashboards.
+
+The empty space communicates calm.
+
+---
+
+# 6. ALIVE WHEN WORKING
+
+Critical rule:
+
+    Whitespace is calm when nothing is happening.
+    Whitespace is wasted information when CUESHEET is actively working.
+
+When execution begins, the available terminal space should progressively become
+occupied by meaningful activity.
+
+Not logs.
+
+Not spinner spam.
+
+The WORK GRAPH materializes.
+
+Example:
+
+› Fix the persistence issue in Kollio.
+
+  understanding
+  ├─ resolved Kollio
+  ├─ persistence path mapped
+  └─ compatibility constraint found
+
+  work
+  ├─ ● persistence implementation
+  │    └─ A1
+  │
+  ├─ ● compatibility analysis
+  │    └─ A2
+  │
+  └─ ○ verification
+
+As work finishes, it contracts.
+
+---
+
+# 7. ELASTIC VISUAL DENSITY
+
+The amount of UI shown should adapt to activity.
+
+Idle:
+
+    almost nothing
+
+Simple answer:
+
+    answer + input
+
+Small task:
+
+    intent
+    one work line
+    result
+
+Large task:
+
+    active Work Graph
+    workers
+    findings
+    Human Deltas
+    proof
+
+Do not permanently reserve three columns for information that often does not
+exist.
+
+---
+
+# 8. NO DASHBOARD-FIRST DESIGN
+
+Earlier mockups used:
+
+- left project sidebar
+- center conversation
+- right worker/context panel
+
+This direction is REJECTED as the primary UI.
+
+Why:
+
+It visually recreates:
+
+    project manager + chat + monitoring dashboard
+
+instead of the global CUESHEET model.
+
+Secondary overlays may exist.
+
+But the main experience remains one flowing terminal surface.
+
+---
+
+# 9. THE WORK GRAPH IS THE VISUAL HEART
+
+Active execution should be represented as a compact tree.
+
+Example:
+
+  work
+  ├─ ● API compatibility
+  │   ├─ A2 · inspecting contract
+  │   └─ A7 · checking mobile
+  │
+  ├─ ● implementation
+  │   └─ A1
+  │
+  └─ ○ verification
+
+The graph must remain comprehensible.
+
+Do not expose every internal operation.
+
+The graph represents meaningful work units.
+
+---
+
+# 10. WORKERS ARE PRESENCES, NOT PANELS
+
+Do NOT render agents as giant cards.
+
+Wrong:
+
+┌───────────────┐
+│ AGENT A       │
+│ MODEL GLM     │
+│ TOKENS 19482  │
+│ ...           │
+└───────────────┘
+
+Preferred:
+
+    A3 · verifying contract
+
+or:
+
+    ● A3  verification
+
+Workers should feel like members of a living team.
+
+Their implementation details remain secondary.
+
+---
+
+# 11. WORKERS ARE NOT MODELS
+
+Do not visually identify workers primarily by model.
+
+Wrong:
+
+    Claude Agent
+    Nemotron Agent
+    GLM Agent
+
+Correct:
+
+    A4 · migration analysis
+
+Model information is secondary:
+
+    A4 · migration analysis
+         GLM → Kimi · recovered
+
+Only expose model changes when useful.
+
+---
+
+# 12. HUMAN DELTA
+
+Human Delta is one of the most important visual primitives.
+
+It communicates:
+
+    "Something CUESHEET learned changes what you need to understand."
+
+Example:
+
+◆ HUMAN DELTA
+
+Project.status is still consumed by the mobile application.
+
+Removing it would therefore be breaking.
+
+I'm preserving compatibility.
+
+This should be visually more prominent than ordinary runtime activity.
+
+It should NOT look like an error.
+
+---
+
+# 13. FINDINGS
+
+Findings represent useful discoveries.
+
+Example:
+
+◇ finding
+
+The startup delay begins before document restoration.
+
+or:
+
+◇ found
+
+IntentLane already implements part of the new App Intent path.
+
+Findings can be quiet.
+
+A Finding becomes a Human Delta only if it changes what the human needs to know.
+
+---
+
+# 14. EVIDENCE
+
+Evidence should feel stable.
+
+Example:
+
+  evidence
+  ├─ ✓ 18 relevant tests
+  ├─ ✓ contract compatible
+  └─ ✓ terminal render inspected
+
+Evidence is not exciting.
+
+That is deliberate.
+
+Certainty should visually settle the interface.
+
+---
+
+# 15. UNKNOWN MUST LOOK DIFFERENT FROM KNOWN
+
+CUESHEET has epistemic states:
+
+    ● observed
+    ◐ inferred
+    ◇ assumed
+    ? unknown
+
+Colour must never be the only distinction.
+
+Use:
+
+    glyph
+    label
+    tone
+
+An unknown must never look like an established fact.
+
+---
+
+# 16. SEMANTIC COLOUR SYSTEM
+
+Do NOT scatter arbitrary colours across components.
+
+The repository already has a semantic token/palette system.
+
+Use it.
+
+Semantic roles should include:
+
+    brand
+    text
+    muted
+
+    active
+    confirmed
+    warning
+    error
+    unknown
+
+    human
+    evidence
+    blocked
+
+Themes may change actual colours.
+
+Semantics remain stable.
+
+---
+
+# 17. COLOUR RESTRAINT
+
+The desired interface is mostly:
+
+    background
+    text
+    muted greys
+
+Colour appears when it carries meaning.
+
+Do NOT produce the stereotypical:
+
+    purple AI dashboard
+    neon everywhere
+    gradient everywhere
+
+CUESHEET should look mature enough to use for eight hours.
+
+---
+
+# 18. THEMES
+
+Themes are useful.
+
+But theme support must sit on top of semantic tokens.
+
+Initial direction:
+
+    system
+    cuesheet-dark
+    cuesheet-light
+    minimal
+
+Potential later:
+
+    JSON custom themes
+    community themes
+
+Changing theme must never destroy semantic distinguishability.
+
+---
+
+# 19. MOTION IS SEMANTIC
+
+Animations are NOT decorative.
+
+Every animation must answer:
+
+    "What changed in the runtime?"
+
+Initial motion vocabulary:
+
+## SPAWN
+
+worker/work branch appears.
+
+    work
+      │
+      └── A3
+
+Use a short unfold/reveal.
+
+## ROUTE
+
+knowledge moves between workers.
+
+    A2 ─────→ A5
+
+Represent with a subtle pulse.
+
+This visualizes Knowledge Delta Routing.
+
+## SETTLE
+
+completed work resolves into evidence.
+
+    ● verifying
+
+becomes:
+
+    ✓ verified
+
+The branch may contract.
+
+These three are enough for the first maturity pass.
+
+---
+
+# 20. FUTURE MOTION VOCABULARY
+
+Later:
+
+    CONTEXT_EXPAND
+    REASSIGN
+    PROVIDER_RECOVERY
+    SYNC_CONVERGE
+    PAUSE
+    RESUME
+    PROOF_ACCEPTED
+    INTENT_REVISION
+
+But do NOT build all animations before the first three are excellent.
+
+---
+
+# 21. MOTION MUST NEVER BLOCK
+
+Animations must:
+
+- be interruptible;
+- never block input;
+- never delay execution;
+- gracefully degrade;
+- be optional;
+- preserve correct final rendering when disabled.
+
+Correctness is independent of animation.
+
+---
+
+# 22. LOADING MUST EXPLAIN WAITING
+
+Never:
+
+    Thinking...
+
+for 40 seconds.
+
+Instead, surface the smallest meaningful state:
+
+    mapping world...
+    checking contracts...
+    2 workers verifying...
+    waiting for tests...
+    recovering provider...
+
+Do NOT expose chain-of-thought.
+
+Do NOT expose every tool call.
+
+Explain why the human is waiting.
+
+---
+
+# 23. CONTEXT LENS
+
+One visual concept we want to preserve:
+
+CUESHEET progressively focuses on the relevant part of the World.
+
+Conceptually:
+
+    WORLD
+      ↓
+    Projects
+      ↓
+    IntentLane
+      ↓
+    App Intents
+      ↓
+    Note Entity
+
+This does not necessarily require a literal graphical zoom.
+
+But the UI should make progressive context narrowing perceptible.
+
+If another project becomes relevant:
+
+    IntentLane ───── Kollio
+
+the relationship may appear naturally.
+
+---
+
+# 24. KNOWLEDGE DELTA ROUTING VISUALIZATION
+
+When Agent A discovers something useful to Agent B:
+
+    A2 ─────→ A7
+
+A subtle pulse may move between them.
+
+Do NOT show a fake agent chat.
+
+The visual language is:
+
+    knowledge moved
+
+not:
+
+    agents talked.
+
+---
+
+# 25. LIVE STEERING VISUALIZATION
+
+Example:
+
+User:
+
+› Ignore Kollio for now.
+
+UI:
+
+    Kollio
+    ● → ◐ → paused
+
+Workers assigned exclusively to that branch:
+
+    checkpoint
+    reassign
+    disappear if unnecessary
+
+Other work continues.
+
+No new session.
+
+No full-screen reset.
+
+---
+
+# 26. SYNC BARRIER VISUALIZATION
+
+User:
+
+› Stop, let's make a point.
+
+The active team converges.
+
+Conceptually:
+
+      ●
+      ● ───→ ◉
+      ●
+
+Then:
+
+TEAM SYNC
+
+Goal
+...
+
+Proven
+...
+
+Running
+0
+
+Blocked
+...
+
+Changed
+...
+
+Needs you
+...
+
+The convergence should be visually satisfying but short.
+
+---
+
+# 27. PROVIDER FAILOVER
+
+Provider failure is infrastructure, not drama.
+
+Do NOT display:
+
+    ERROR ERROR NEMOTRON FAILED
+
+if recovery succeeds automatically.
+
+Preferred:
+
+    A7 · architecture
+         Nemotron → GLM · recovered
+
+Worker identity remains unchanged.
+
+If recovery is routine, presentation stays subtle.
+
+---
+
+# 28. EXACTLY-ONCE UI
+
+One semantic response must render exactly once.
+
+This was a real observed bug.
+
+The fix must be structural:
+
+    durable event identity
+      ↓
+    projection identity
+      ↓
+    UI identity
+
+Never deduplicate by text.
+
+Two legitimate identical messages may exist.
+
+The UI must reflect durable semantic identity.
+
+---
+
+# 29. DEBUG INFORMATION IS NOT DEFAULT UI
+
+Hide by default:
+
+- cwd;
+- raw container state;
+- internal network flags;
+- event counters;
+- read counts;
+- raw model telemetry;
+- implementation traces.
+
+Diagnostics can exist behind an explicit view.
+
+Default surface exists for the human doing work.
+
+---
+
+# 30. TOP STATUS
+
+Keep it extremely restrained.
+
+Possible:
+
+    CUESHEET
+    world synced · 4 workers · 28m
+
+or:
+
+    CUESHEET                         ● working
+
+Avoid:
+
+    12 unrelated metrics
+    giant toolbar
+    project path
+    session ID
+
+Only show global state that matters now.
+
+---
+
+# 31. STATUS MUST NOT BE DUPLICATED
+
+Do not show:
+
+    working
+
+at the top AND bottom AND inside the task.
+
+Every visible status needs a distinct purpose.
+
+---
+
+# 32. RESPONSIVE TUI
+
+Required sizes:
+
+    80×24
+    120×30
+    160×50
+    240×70
+
+At small size:
+
+reduce secondary information.
+
+Never lose:
+
+    input
+    active intent
+    blocker requiring human
+    important Human Delta
+
+The UI should degrade semantically, not merely clip.
+
+---
+
+# 33. VISUAL PRIORITY
+
+When space is constrained:
+
+Priority 1:
+    human input
+
+Priority 2:
+    decisions requiring human
+
+Priority 3:
+    active intent
+
+Priority 4:
+    important Human Delta
+
+Priority 5:
+    critical work
+
+Priority 6:
+    evidence/progress
+
+Priority 7:
+    worker/model details
+
+Priority 8:
+    decorative/contextual information
+
+---
+
+# 34. OVERLAYS
+
+Overlays are allowed for deep inspection.
+
+Examples:
+
+    worker detail
+    world view
+    theme selector
+    model/provider view
+    diagnostics
+    command palette
+    history
+
+But overlays must be temporary.
+
+They do not redefine the primary navigation.
+
+---
+
+# 35. COMMAND PALETTE
+
+A command palette can exist.
+
+But natural language remains primary.
+
+For example:
+
+    Ctrl+K
+
+could open actions.
+
+Do not leave an unexplained `Ctrl+K` label floating in the UI.
+
+If a shortcut is displayed, its purpose must be obvious.
+
+---
+
+# 36. HISTORY
+
+History must not become "old chats".
+
+History should increasingly represent:
+
+    intentions
+    decisions
+    work
+    outcomes
+    artifacts
+    evidence
+
+A previous conversation is secondary to the durable objects it produced.
+
+---
+
+# 37. ARTIFACTS
+
+If the user says:
+
+› Make a document from this.
+
+A branch may appear:
+
+    artifact
+    └─ ● Apple / IntentLane impact note
+
+When done:
+
+    artifact
+    └─ ✓ Apple / IntentLane impact note
+
+It belongs to the same global execution surface.
+
+No separate "document mode".
+
+---
+
+# 38. MULTI-PROJECT INTENT
+
+Canonical visual scenario:
+
+› Check Apple's latest developer changes,
+  see whether anything I'm building is affected,
+  and apply what matters.
+
+  understanding
+  ├─ ● web / Apple developer changes
+  └─ ● world / matching projects
+
+  impact
+  ├─ IntentLane
+  │  ├─ ● App Intents change found
+  │  └─ ● verification
+  │
+  └─ Kollio
+     └─ ○ no relevant impact
+
+This is a crucial canonical state.
+
+It proves CUESHEET is not project-scoped.
+
+---
+
+# 39. CANONICAL GLOBAL MOCKUP
+
+The direction closest to what we want:
+
+CUESHEET
+world synced · 6 workers · €0.18 · 38m
+────────────────────────────────────────────────────────────
+
+› Regarde les nouveautés Apple de ce matin, vois si elles
+  concernent quelque chose chez moi et applique ce qui vaut
+  vraiment le coup.
+
+  understanding
+  ├─ ◉ web / Apple developer changes
+  ├─ ◉ world / matching against your projects
+  │
+  ├─ IntentLane
+  │  ├─ ● App Intents impact found
+  │  └─ ◉ A3 investigating implementation
+  │
+  └─ Kollio
+     └─ ○ no relevant impact so far
+
+  + discovery
+    A2 found a new AppIntent API relevant to IntentLane
+    evidence: Apple documentation
+
+  ◆ HUMAN DELTA
+    This changes one assumption in IntentLane:
+    the workaround we currently use may no longer be required.
+
+› Laisse Kollio. Vérifie ça et fais-moi aussi une note.
+
+  ✓ Kollio branch paused
+  ↳ A4 reassigned → IntentLane verification
+  + artifact / Apple IntentLane note
+
+                         4 workers active
+                         1 researching
+                         2 verifying
+                         1 writing
+
+────────────────────────────────────────────────────────────
+› _
+
+This is a conceptual reference.
+
+Do not reproduce it mechanically if a better implementation emerges.
+
+Preserve its product principles.
+
+---
+
+# 40. REJECTED MOCKUP DIRECTION
+
+An earlier design showed:
+
+    projects sidebar
+    central chat
+    context/team sidebar
+    multiple cards
+    dashboards
+
+It looked attractive but conceptually wrong.
+
+It recreated:
+
+    IDE + AI assistant + monitoring dashboard
+
+Do not return to that architecture.
+
+---
+
+# 41. DESIGN MATURITY
+
+The product is NOT visually mature merely because:
+
+    colours look nice
+    borders align
+    logo looks good
+
+Maturity means the human

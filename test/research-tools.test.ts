@@ -6,6 +6,22 @@ import assert from "node:assert/strict";
 import { ResearchTools, publicUrl, publicAddress } from "../src/adapters/research-tools.ts";
 import { EventStore } from "../src/core/store.ts";
 
+test('source text and directory reads need no executor and retain source boundaries',async()=>{
+ const root=realpathSync(mkdtempSync(join(tmpdir(),'cs-native-reads-'))),source=join(root,'source');mkdirSync(source);
+ writeFileSync(join(source,'code.ts'),'export const observed = 1;');writeFileSync(join(source,'.env'),'private');
+ mkdirSync(join(source,'.cuesheet'));writeFileSync(join(source,'.cuesheet','journal'),'controller');
+ symlinkSync(root,join(source,'outside'));
+ const tools=new ResearchTools({root:source}),store=new EventStore('reader',()=>1),signal=new AbortController().signal;
+ try{
+  const read=await tools.readLocalCommand(store,{name:'cat',input:{path:'code.ts'}},signal);assert.equal(read?.exit,0);assert.match(read!.output,/observed/);
+  const listed=await tools.readLocalCommand(store,{name:'ls',input:{argv:['ls','-la']}},signal);assert.equal(listed?.exit,0);const entries=JSON.parse(listed!.output).entries;assert.ok(entries.includes('code.ts'));assert.ok(!entries.includes('.env'));assert.ok(!entries.includes('.cuesheet/'));
+  for(const path of ['.env','.cuesheet/journal','../source/../missing'])assert.notEqual((await tools.readLocalCommand(store,{name:'cat',input:{path}},signal))?.exit,0);
+  assert.equal((await tools.readLocalCommand(store,{name:'ls',input:{path:'outside'}},signal))?.exit,2);
+  assert.equal(await tools.readLocalCommand(store,{name:'ls',input:{argv:['ls','-R']}},signal),null);
+  assert.equal(store.toSession().events.some(e=>e.kind==='work_verified'),false);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
 test("public transport rejects credentials, local destinations and mapped addresses",()=>{
   for(const address of ["127.0.0.1","10.0.0.1","169.254.169.254","192.168.1.1","100.64.0.1","::1","::ffff:127.0.0.1","fc00::1","2001:db8::1"])assert.equal(publicAddress(address),false,address);
   assert.equal(publicAddress("1.1.1.1"),true);

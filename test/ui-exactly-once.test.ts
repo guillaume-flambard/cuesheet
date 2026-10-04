@@ -301,7 +301,8 @@ describe("UI-01 one semantic response renders exactly once", () => {
   it("a model that says the same thing on every step of one run says it every step", async () => {
     // The real producer again, and this is the case that makes content
     // deduplication wrong rather than merely inelegant. The step budget is eight;
-    // this model answers "ok" on all eight, which is eight distinct events in the
+    // this model requests read_history on all eight, retaining a live tool turn,
+    // and answers "ok" eight times, which is eight distinct events in the
     // journal and eight things the model said. A surface that deduplicated on the
     // words would show one line for eight answers and would be wrong about what
     // the run did.
@@ -310,7 +311,7 @@ describe("UI-01 one semantic response renders exactly once", () => {
       name: "repeating",
       async infer(): Promise<ModelResponse> {
         calls += 1;
-        return { text: "ok", toolCalls: [] };
+        return { text: "ok", toolCalls: [{name:"read_history",input:{offset:0}}] };
       },
     };
     const run = await drive(model, "keep going");

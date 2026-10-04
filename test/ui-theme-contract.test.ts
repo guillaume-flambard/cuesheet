@@ -2,7 +2,7 @@
  * THE THEME IS A CONTRACT, NOT A PREFERENCE.
  *
  * `apps/terminal/src/theme/tokens.ts` states its own rules in a docstring and
- * then defines nine colours against them. Nothing checked that the colours
+ * then defines semantic colours against them. Nothing checked that the colours
  * still obeyed the sentence. A palette is exactly the kind of thing that grows
  * one hex at a time, each addition defensible on its own, until the surface is a
  * dashboard and no line on it is louder than another.
@@ -66,7 +66,7 @@ const CERTAINTY = ["confirmed", "active", "unknown", "failed"] as const;
  * `text` is body text and the three below it, per the file's own comment. Their
  * grey-ness is not asserted by name, it is measured: see `GREY_SPREAD`.
  */
-const GREY = ["text", "dim", "faint", "rule"] as const;
+const GREY = ["text", "dim", "faint", "rule", "focus", "code"] as const;
 
 /**
  * Everything that is neither a state colour nor a grey must be the accent, and
@@ -457,4 +457,9 @@ describe("every state colour has a glyph of its own", () => {
     const values = [...(declaration?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
     assert.deepEqual(values.sort(), [...CERTAINTY].sort(), `Certainty is now ${JSON.stringify(values)}, so the palette owes it a state colour`);
   });
+});
+describe('focused terminal surfaces remain readable',()=>{
+ it('keeps body and action labels readable on focus and code backgrounds',()=>{
+  for(const background of [theme.focus,theme.code])for(const foreground of [theme.text,theme.dim,theme.brand])assert.ok(contrast(foreground,background)>=4.5,'focused content needs readable contrast');
+ });
 });

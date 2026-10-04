@@ -103,15 +103,14 @@ export function resolveScope(
   bind: (text: string, ids: readonly ProjectIdentity[]) => Binding,
   projectsRoot: string,
 ): Scope {
-  // Step 1. Standing in a project is the strongest signal a person can give
-  // without typing anything, and it is checked before the binder so a sentence
-  // containing a stray word from another project's name cannot pull them out of
-  // the directory they are standing in.
-  const here = projectUnder(cwd, identities, projectsRoot);
-  if (here) return { at: "cwd", path: here.path, name: here.name };
-
-  // Step 2 and 3. The binder decides, and it is the one that decides.
-  const binding = bind(said, identities);
+  // Keep an established project for generic descriptions. A complete named
+  // project can change scope; weak description/partial-name tokens cannot.
+  const here=projectUnder(cwd,identities,projectsRoot);
+  const binding=bind(said,identities);
+  const candidates=binding.kind==="bound"?[binding.candidate]:binding.candidates;
+  const words=new Set(said.toLowerCase().split(/[^a-z0-9]+/));
+  const explicitlyNamed=candidates.some(c=>c.basis==="exact-name"||c.basis==="name-token"&&c.name.toLowerCase().split(/[^a-z0-9]+/).every(word=>words.has(word)));
+  if(here&&!explicitlyNamed)return {at:"cwd",path:here.path,name:here.name};
   if (binding.kind === "bound") {
     return {
       at: "bound",
@@ -128,6 +127,8 @@ export function resolveScope(
     // somewhere to happen and the cwd is where that is.
     return { at: "unresolved", path: cwd, name: binding.candidates[0]!.name };
   }
+  if(here)return {at:"cwd",path:here.path,name:here.name};
+
   // Step 4. Nothing matched. Not a failure and not a question: the intention
   // stands and the directory the person is standing in is the scope.
   return { at: "unresolved", path: cwd, name: basename(cwd) };

@@ -273,4 +273,46 @@ describe("the intention is folded, not held by the surface", () => {
     );
     assert.equal(state.goal.value?.text, "ship the thing");
   });
+
+  it("VIEW-13 a recorded rejection is not the same as no verification", () => {
+    // ACCEPTED 3: the fold must distinguish "work was checked and rejected"
+    // from "work was never checked". VER-06: producing satisfies nothing.
+    const baseEvents = [
+      goal(1, false),
+      requested(2, "E42"),
+      observed(3, "E42", "succeeded"),
+      event({ seq: 4, kind: "action", subject: "builder", data: { tool: "edit" } }),
+      event({ seq: 5, kind: "work_produced", subject: "builder", data: { artifactId: "A-abc", artifactDigest: "abc", summary: "fixed the sign" } }),
+    ];
+
+    // No verification at all
+    const stateNoVerification = deriveState(baseEvents, "s", "complete");
+    assert.equal(stateNoVerification.goalVerified.known, false, "no verification recorded");
+
+    // Work REJECTED by oracle
+    const eventsRejected = [
+      ...baseEvents,
+      event({ seq: 6, kind: "work_verified", subject: "builder", data: { effectId: "E42", artifactId: "A-abc", artifactDigest: "abc", verdict: "REJECTED" } }),
+    ];
+    const stateRejected = deriveState(eventsRejected, "s", "complete");
+    assert.equal(stateRejected.goalVerified.known, true, "verification recorded");
+    assert.equal(stateRejected.goalVerified.value, "REJECTED", "rejected outcome");
+
+    // The two states must differ in what a surface would decide
+    const decide = (s: ReturnType<typeof deriveState>) => ({
+      goalVerified: s.goalVerified.known ? s.goalVerified.value : "unknown",
+      // goal should be different too: with REJECTED, the intention is still open
+      goalOpen: s.goal.known ? s.goal.value.open : false,
+    });
+    assert.notDeepEqual(decide(stateNoVerification), decide(stateRejected), "rejection changes the state");
+
+    // Work VERIFIED by oracle
+    const eventsVerified = [
+      ...baseEvents,
+      event({ seq: 6, kind: "work_verified", subject: "builder", data: { effectId: "E42", artifactId: "A-abc", artifactDigest: "abc", verdict: "VERIFIED" } }),
+    ];
+    const stateVerified = deriveState(eventsVerified, "s", "complete");
+    assert.equal(stateVerified.goalVerified.value, "VERIFIED", "verified outcome");
+    assert.notDeepEqual(decide(stateRejected), decide(stateVerified), "passed vs rejected differs");
+  });
 });

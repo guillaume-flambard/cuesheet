@@ -15,3 +15,27 @@ test('malformed plan and correction immediately before deletion refuse without d
  await assert.rejects(composeWorktreePlans(plans,allocations[1]),/Conflicting/);
  assert.equal(readFileSync(join(source,'file'),'utf8'),'human');assert.equal(readFileSync(join(allocations[1],'file'),'utf8'),'human');
  }));
+
+test('composition replaces existing files and adds new files without losing source or attribution',async()=>fixture(async(source,workspace,root,git,digest)=>{
+ const snapshot=await captureGitSnapshot(source),head=git('rev-parse','HEAD'),index=git('diff','--cached','--binary');const paths=[];
+ for(const id of ['second-modifier','modified-composition']){const result=await allocateWorktree({repository:source,root:join(root,'worktrees'),allocation:{id,unit:id,agent:'fixture',objective:'goal',revision:1,base:snapshot.base},snapshot});assert.equal(result.kind,'ready');if(result.kind!=='ready')return;paths.push(result.path);}
+ writeFileSync(join(workspace,'file'),'module modification');writeFileSync(join(paths[0],'delete'),'test modification');writeFileSync(join(paths[0],'new'),'new addition');
+ const plans=await Promise.all([workspace,paths[0]].map(path=>planWorktreeIntegration({source,workspace:path,sourceDigest:digest})));
+ const composed=await composeWorktreePlans(plans,paths[1]);assert.deepEqual(composed.files.map(f=>f.path).sort(),['delete','file','new']);
+ assert.equal(readFileSync(join(paths[1],'file'),'utf8'),'module modification');assert.equal(readFileSync(join(paths[1],'delete'),'utf8'),'test modification');assert.equal(readFileSync(join(paths[1],'new'),'utf8'),'new addition');
+ assert.equal((await captureGitSnapshot(source)).digest,digest);assert.equal(git('rev-parse','HEAD'),head);assert.equal(git('diff','--cached','--binary'),index);
+ const applied=await applyWorktreeIntegration(composed,{root:join(root,'composed-receipts'),current:()=>true});assert.equal(applied.kind,'applied');assert.equal(applied.files,3);
+}));
+
+ test('many inherited dirty files do not consume the new contribution limit',async()=>fixture(async(source,_workspace,root,git)=>{
+ for(let i=0;i<110;i++)writeFileSync(join(source,`inherited-${i}`),'base');git('add','.');git('commit','-qm','fixture inherited files');
+ for(let i=0;i<110;i++)writeFileSync(join(source,`inherited-${i}`),'human work');
+ const snapshot=await captureGitSnapshot(source),index=git('diff','--cached','--binary');
+ const allocation=await allocateWorktree({repository:source,root:join(root,'many'),allocation:{id:'many',unit:'many',agent:'worker',objective:'goal',revision:1,base:snapshot.base},snapshot});assert.equal(allocation.kind,'ready');if(allocation.kind!=='ready')return;
+ writeFileSync(join(allocation.path,'file'),'new contribution');
+ const plan=await planWorktreeIntegration({source,workspace:allocation.path,sourceDigest:snapshot.digest});assert.deepEqual(plan.files.map(f=>f.path),['file']);
+ assert.equal((await applyWorktreeIntegration(plan,{root:join(root,'many-receipts'),current:()=>true})).kind,'applied');
+ for(let i=0;i<110;i++)assert.equal(readFileSync(join(source,`inherited-${i}`),'utf8'),'human work');assert.equal(git('diff','--cached','--binary'),index);
+ for(let i=0;i<101;i++)writeFileSync(join(allocation.path,`inherited-${i}`),'agent change');
+ const updated=await captureGitSnapshot(source);await assert.rejects(planWorktreeIntegration({source,workspace:allocation.path,sourceDigest:updated.digest}),/exceeds100 paths/);
+ }));

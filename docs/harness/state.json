@@ -248,6 +248,48 @@
       ]
     },
     {
+      "id": "REC-W01",
+      "description": "La récupération des code workers dérive uniquement des admissions controller-owned, des journaux privés et des worktrees physiques ; un événement active historique ne prouve pas la vie d'un processus.",
+      "acceptance": [
+        "AC-REC-W01"
+      ]
+    },
+    {
+      "id": "REC-W02",
+      "description": "Un intent sans receipt d'effet confirmé reste incertain et interdit replay, intégration et clôture après arrêt réel avant receipt.",
+      "acceptance": [
+        "AC-REC-W02"
+      ]
+    },
+    {
+      "id": "REC-W03",
+      "description": "Une proposition durable ne se réconcilie qu'avec son objectif/révision, source et provenance de journal courants ; le check owner d'intégration demeure indépendant.",
+      "acceptance": [
+        "AC-REC-W03"
+      ]
+    },
+    {
+      "id": "REC-W04",
+      "description": "Workspace manquant, journal invalide, chemin non fiable, effet incertain, claim vivant ou révision changée refusent sans perte ni faux succès.",
+      "acceptance": [
+        "AC-REC-W04"
+      ]
+    },
+    {
+      "id": "REC-W05",
+      "description": "Les outils de recovery sont bornés par admissions; inspections répétées sont déterministes et réconciliations répétées idempotentes.",
+      "acceptance": [
+        "AC-REC-W05"
+      ]
+    },
+    {
+      "id": "REC-W06",
+      "description": "Agents montre interruption, provenance et action suivante dans le terminal installé PTY, sans coût inventé ni suppression automatique.",
+      "acceptance": [
+        "AC-REC-W06"
+      ]
+    },
+    {
       "id": "REQ-H06.3",
       "description": "Écritures isolées sont intégrées explicitement ; conflit reste visible ; preuve finale couvre le résultat composé.",
       "acceptance": [
@@ -695,6 +737,181 @@
       "description": "Avant toute inférence coûteuse, un point de reprise durable existe hors du modèle ; un flux interrompu conserve les effets confirmés, rejette l'inférence incomplète et ne duplique aucun effet déjà observé ; la pression provider applique une backpressure globale plutôt que de laisser chaque worker marteler le même mur.",
       "acceptance": [
         "AC-H07.8"
+      ]
+    },
+    {
+      "id": "REQ-GZ01",
+      "description": "Route Go authentifiée via adaptateur sans outils natifs ; essai Zen borné conservé.",
+      "acceptance": [
+        "AC-GZ01"
+      ]
+    },
+    {
+      "id": "REQ-GZ02",
+      "description": "Compteurs naturels français, zéro absent, busy et aide conservés, source intégrée avec check propriétaire.",
+      "acceptance": [
+        "AC-GZ02"
+      ]
+    },
+    {
+      "id": "REQ-GZ03",
+      "description": "Parcours installé avec vrai modèle, effet isolé, intégration et source vérifiée par terminal.",
+      "acceptance": [
+        "AC-GZ03"
+      ]
+    },
+    {
+      "id": "REQ-GZ04",
+      "description": "Git absent du vocabulaire conteneur du worktree lié et refusé avant admission de ressource, autres routes conservées.",
+      "acceptance": [
+        "AC-GZ04"
+      ]
+    },
+    {
+      "id": "REQ-GZ05",
+      "description": "Reproduction installée après correctif sur copie dirty Cuesheet, périmètre un fichier et HEAD/index conservés.",
+      "acceptance": [
+        "AC-GZ05"
+      ]
+    },
+    {
+      "id": "REQ-LS01",
+      "description": "Correction persistée pendant une inférence réelle, ancien check périmé et absence d’intégration avant renouvellement.",
+      "acceptance": [
+        "AC-LS01"
+      ]
+    },
+    {
+      "id": "REQ-LS02",
+      "description": "Résultat rendu lu/lus après correction, check candidat/source et fermeture sur la nouvelle révision.",
+      "acceptance": [
+        "AC-LS02"
+      ]
+    },
+    {
+      "id": "REQ-LS03",
+      "description": "Périmètre un fichier, HEAD/index conservés, ressources attestées et bornes respectées.",
+      "acceptance": [
+        "AC-LS03"
+      ]
+    },
+    {
+      "id": "REQ-LS04",
+      "description": "Différer publication Vault source pendant isolation sans perdre le plan durable ni contourner le snapshot.",
+      "acceptance": [
+        "AC-LS04"
+      ]
+    },
+    {
+      "id": "REQ-MW01",
+      "description": "Deux workers réels Go, deux responsabilités module/test disjointes, effets conteneur privés.",
+      "acceptance": [
+        "AC-MW01"
+      ]
+    },
+    {
+      "id": "REQ-MW02",
+      "description": "Composition bornée vérifiée puis intégrée et source vérifiée indépendamment.",
+      "acceptance": [
+        "AC-MW02"
+      ]
+    },
+    {
+      "id": "REQ-MW03",
+      "description": "Provenance, scopes, HEAD/index, receipts et nettoyage attestés.",
+      "acceptance": [
+        "AC-MW03"
+      ]
+    },
+    {
+      "id": "REQ-MW04",
+      "description": "Déclaration tools autonome dans frame worker, comprise par adapters réels, sans permission supplémentaire.",
+      "acceptance": [
+        "AC-MW04"
+      ]
+    },
+    {
+      "id": "REQ-MW05",
+      "description": "Conserver sortie privée déjà bornée jusqu’à16000 dans frame worker, avec refus strict de frame trop grand.",
+      "acceptance": [
+        "AC-MW05"
+      ]
+    },
+    {
+      "id": "REQ-MW06",
+      "description": "Composer des modifications existantes sans ENOENT de nettoyage, garder union/source et reprise attestées.",
+      "acceptance": [
+        "AC-MW06"
+      ]
+    },
+    {
+      "id": "REQ-UF01",
+      "description": "Route Go mémorisée et lancement nu répond réellement.",
+      "acceptance": [
+        "AC-UF01"
+      ]
+    },
+    {
+      "id": "REQ-UF02",
+      "description": "Interface vide, Entrée, état et erreur actionables.",
+      "acceptance": [
+        "AC-UF02"
+      ]
+    },
+    {
+      "id": "REQ-UF03",
+      "description": "Soumission clavier et résultat vérifiés sur vraie commande.",
+      "acceptance": [
+        "AC-UF03"
+      ]
+    },
+    {
+      "id": "REQ-UF04",
+      "description": "Réponse sans outils rend la main sans clôture non vérifiée, autonomie owner-check préservée.",
+      "acceptance": [
+        "AC-UF04"
+      ]
+    },
+    {
+      "id": "REQ-UF05",
+      "description": "Conversation compacte, contrastée et débarrassée des métadonnées internes, inspection conservée.",
+      "acceptance": [
+        "AC-UF05"
+      ]
+    },
+    {
+      "id": "REQ-UF06",
+      "description": "Touches Mac DEL et suppression avant curseur, Unicode et restauration du mode terminal vérifiés.",
+      "acceptance": [
+        "AC-UF06"
+      ]
+    },
+    {
+      "id": "REQ-UF07",
+      "description": "Accès direct au sélecteur par Control+P et /model, touche Entrée LF acceptée, sans soumettre au modèle.",
+      "acceptance": [
+        "AC-UF07"
+      ]
+    },
+    {
+      "id": "REQ-UF08",
+      "description": "Toute la fenêtre, activité animée et chronométrée, défilement molette/trackpad et clavier, saisie fixe et nettoyage du terminal.",
+      "acceptance": [
+        "AC-UF08"
+      ]
+    },
+    {
+      "id": "REQ-UF09",
+      "description": "Question simple sans cérémonie imposée, réponse terminale sans faux finish, causes des outils échoués et budget épuisé visibles.",
+      "acceptance": [
+        "AC-UF09"
+      ]
+    },
+    {
+      "id": "REQ-UF10",
+      "description": "Interface en anglais par défaut indépendamment de la langue de la conversation; texte utilisateur et sources conservés.",
+      "acceptance": [
+        "AC-UF10"
       ]
     }
   ],
@@ -4539,6 +4756,135 @@
       "notes": "Parent acceptance remains pending."
     },
     {
+      "id": "H06.4a-R1-SPEC",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REC-W01",
+        "REC-W02",
+        "REC-W03",
+        "REC-W04",
+        "REC-W05",
+        "REC-W06"
+      ],
+      "dependencies": [
+        "H06.2c"
+      ],
+      "description": "Réconcilier le contrat recovery et l'API avec admission, journal privé, receipts, worktrees et check owner existants.",
+      "systems": [
+        "CODE-WORKER-RECOVERY.md",
+        "MULTI-WORKER.md"
+      ],
+      "acceptance": [
+        "AC-REC-W01",
+        "AC-REC-W02",
+        "AC-REC-W03",
+        "AC-REC-W04",
+        "AC-REC-W05",
+        "AC-REC-W06"
+      ],
+      "verification": "Inspection des APIs sources avant code; spec décrit la frontière d'API et les transitions vérifiables.",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ],
+      "notes": "Bounded R1 machine proof complete; parent selfhost, correction/restart and semantic steering acceptance remain open."
+    },
+    {
+      "id": "H06.4a-R1-INSPECT",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REC-W01",
+        "REC-W02",
+        "REC-W04",
+        "REC-W05"
+      ],
+      "dependencies": [
+        "H06.4a-R1-SPEC"
+      ],
+      "description": "Inspection bornée et read-only des admissions, claims privées, journaux, effets et worktrees physiques.",
+      "systems": [
+        "src/adapters/code-worker-recovery.ts",
+        "src/adapters/terminal-code-workers.ts"
+      ],
+      "acceptance": [
+        "AC-REC-W01",
+        "AC-REC-W02",
+        "AC-REC-W04",
+        "AC-REC-W05"
+      ],
+      "verification": "Tests processus Git réels, journal privé endommagé/manquant, claim vivant et stabilité d'inspection.",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ],
+      "notes": "Bounded R1 machine proof complete; parent selfhost, correction/restart and semantic steering acceptance remain open."
+    },
+    {
+      "id": "H06.4a-R1-RECONCILE",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REC-W03",
+        "REC-W04",
+        "REC-W05",
+        "REC-W06"
+      ],
+      "dependencies": [
+        "H06.4a-R1-INSPECT"
+      ],
+      "description": "Persister la proposition privée avant publication commune, exposer réconciliation conditionnelle et rendre Agents récupérable.",
+      "systems": [
+        "src/adapters/terminal-code-workers.ts",
+        "apps/terminal/src/producer/index.ts",
+        "src/adapters/agent-consultation.ts"
+      ],
+      "acceptance": [
+        "AC-REC-W03",
+        "AC-REC-W04",
+        "AC-REC-W05",
+        "AC-REC-W06"
+      ],
+      "verification": "Tests producer stale revision/source, duplicate reconciliation, ordinary owner-check integration and installed PTY.",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ],
+      "notes": "Bounded R1 machine proof complete; parent selfhost, correction/restart and semantic steering acceptance remain open."
+    },
+    {
+      "id": "H06.4a-R1-PROVE",
+      "priority": "P0",
+      "status": "DONE",
+      "requirements": [
+        "REC-W01",
+        "REC-W02",
+        "REC-W03",
+        "REC-W04",
+        "REC-W05",
+        "REC-W06"
+      ],
+      "dependencies": [
+        "H06.4a-R1-RECONCILE"
+      ],
+      "description": "Exécuter proofs adversariaux processus/Git, PTY installé, build/typecheck différentiel et suite autorisée une fois.",
+      "systems": [
+        "test/terminal-code-workers.test.ts",
+        "docs/harness/evaluation/code-worker-recovery/evidence.md"
+      ],
+      "acceptance": [
+        "AC-REC-W01",
+        "AC-REC-W02",
+        "AC-REC-W03",
+        "AC-REC-W04",
+        "AC-REC-W05",
+        "AC-REC-W06"
+      ],
+      "verification": "Process kill-before-receipt + reopen; runtime reconciliation/current owner check; PTY installé; ciblés, build/typecheck, full suite au plus une fois.",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ],
+      "notes": "Bounded R1 machine proof complete; parent selfhost, correction/restart and semantic steering acceptance remain open."
+    },
+    {
       "id": "H06.3c2",
       "priority": "P0",
       "status": "TODO",
@@ -5898,6 +6244,625 @@
       "verification": "Tests de reprise après flux interrompu et de non-duplication d'effet observé",
       "evidence": [],
       "notes": "Spécification ajoutée le 2026-10-02 ; aucune implémentation revendiquée. S'appuie sur le modèle effet demandé / effet observé existant."
+    },
+    {
+      "id": "GZ01",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-GZ01"
+      ],
+      "dependencies": [],
+      "description": "Route Go authentifiée via adaptateur sans outils natifs ; essai Zen borné conservé.",
+      "systems": [
+        "GO-ZEN-SELFHOST.md"
+      ],
+      "acceptance": [
+        "AC-GZ01"
+      ],
+      "verification": "Rendus propriétaires, journal installé et suite complète Docker.",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ],
+      "notes": "2026-10-03. Frontière bornée ; parents selfhost et steering restent ouverts."
+    },
+    {
+      "id": "GZ02",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-GZ02"
+      ],
+      "dependencies": [],
+      "description": "Compteurs naturels français, zéro absent, busy et aide conservés, source intégrée avec check propriétaire.",
+      "systems": [
+        "GO-ZEN-SELFHOST.md"
+      ],
+      "acceptance": [
+        "AC-GZ02"
+      ],
+      "verification": "Rendus propriétaires, journal installé et suite complète Docker.",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ],
+      "notes": "2026-10-03. Frontière bornée ; parents selfhost et steering restent ouverts."
+    },
+    {
+      "id": "GZ03",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-GZ03"
+      ],
+      "dependencies": [
+        "GZ01",
+        "GZ04"
+      ],
+      "description": "Parcours installé avec vrai modèle, effet isolé, intégration et source vérifiée par terminal.",
+      "systems": [
+        "GO-ZEN-SELFHOST.md"
+      ],
+      "acceptance": [
+        "AC-GZ03"
+      ],
+      "verification": "Rendus propriétaires, journal installé et suite complète Docker.",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ],
+      "notes": "2026-10-03. Bounded installed dirty-reproduction journey verified; main full suite separately green. No global multiworker/live-steering acceptance."
+    },
+    {
+      "id": "GZ04",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-GZ04"
+      ],
+      "dependencies": [],
+      "description": "Git absent du vocabulaire conteneur du worktree lié et refusé avant admission de ressource, autres routes conservées.",
+      "systems": [
+        "GO-ZEN-SELFHOST.md"
+      ],
+      "acceptance": [
+        "AC-GZ04"
+      ],
+      "verification": "Rendus propriétaires, journal installé et suite complète Docker.",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ],
+      "notes": "2026-10-03. Frontière bornée ; parents selfhost et steering restent ouverts."
+    },
+    {
+      "id": "GZ05",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-GZ05"
+      ],
+      "dependencies": [
+        "GZ01",
+        "GZ04"
+      ],
+      "description": "Reproduction installée après correctif sur copie dirty Cuesheet, périmètre un fichier et HEAD/index conservés.",
+      "systems": [
+        "GO-ZEN-SELFHOST.md"
+      ],
+      "acceptance": [
+        "AC-GZ05"
+      ],
+      "verification": "Rendus propriétaires, journal installé et suite complète Docker.",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ],
+      "notes": "2026-10-03. Bounded installed dirty-reproduction journey verified; main full suite separately green. No global multiworker/live-steering acceptance."
+    },
+    {
+      "id": "LS01",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-LS01"
+      ],
+      "dependencies": [
+        "GZ05"
+      ],
+      "description": "Correction persistée pendant une inférence réelle, ancien check périmé et absence d’intégration avant renouvellement.",
+      "systems": [
+        "SEMANTIC-LIVE-STEERING.md"
+      ],
+      "acceptance": [
+        "AC-LS01"
+      ],
+      "verification": "Journal installé et audit indépendant.",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ],
+      "notes": "Bounded automated installed proof; source draft after checked integration accounted separately. No human acceptance or global completion."
+    },
+    {
+      "id": "LS02",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-LS02"
+      ],
+      "dependencies": [
+        "LS01"
+      ],
+      "description": "Résultat rendu lu/lus après correction, check candidat/source et fermeture sur la nouvelle révision.",
+      "systems": [
+        "SEMANTIC-LIVE-STEERING.md"
+      ],
+      "acceptance": [
+        "AC-LS02"
+      ],
+      "verification": "Journal installé et audit indépendant.",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ],
+      "notes": "Bounded automated installed proof; source draft after checked integration accounted separately. No human acceptance or global completion."
+    },
+    {
+      "id": "LS03",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-LS03"
+      ],
+      "dependencies": [
+        "LS02"
+      ],
+      "description": "Périmètre un fichier, HEAD/index conservés, ressources attestées et bornes respectées.",
+      "systems": [
+        "SEMANTIC-LIVE-STEERING.md"
+      ],
+      "acceptance": [
+        "AC-LS03"
+      ],
+      "verification": "Journal installé et audit indépendant.",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ],
+      "notes": "Bounded automated installed proof; source draft after checked integration accounted separately. No human acceptance or global completion."
+    },
+    {
+      "id": "LS04",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-LS04"
+      ],
+      "dependencies": [
+        "GZ05"
+      ],
+      "description": "Réparer publication source pendant isolation et vérifier reprise réelle.",
+      "systems": [
+        "SEMANTIC-LIVE-STEERING.md"
+      ],
+      "acceptance": [
+        "AC-LS04"
+      ],
+      "verification": "Regression producer réelle, full/build/package, journal installé.",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ],
+      "notes": "Bounded automated installed proof; source draft after checked integration accounted separately. No human acceptance or global completion."
+    },
+    {
+      "id": "MW01",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-MW01"
+      ],
+      "dependencies": [
+        "GZ05"
+      ],
+      "description": "Deux workers réels Go, deux responsabilités module/test disjointes, effets conteneur privés.",
+      "systems": [
+        "TWO-REAL-WORKERS.md"
+      ],
+      "acceptance": [
+        "AC-MW01"
+      ],
+      "verification": "API installée, modèles réels, owner check et audit indépendant.",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ],
+      "notes": "Bounded installed API proof only. Parent/global criteria remain open; no goal closure or human acceptance claimed."
+    },
+    {
+      "id": "MW02",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-MW02"
+      ],
+      "dependencies": [
+        "MW01"
+      ],
+      "description": "Composition bornée vérifiée puis intégrée et source vérifiée indépendamment.",
+      "systems": [
+        "TWO-REAL-WORKERS.md"
+      ],
+      "acceptance": [
+        "AC-MW02"
+      ],
+      "verification": "API installée, modèles réels, owner check et audit indépendant.",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ],
+      "notes": "Bounded installed API proof only. Parent/global criteria remain open; no goal closure or human acceptance claimed."
+    },
+    {
+      "id": "MW03",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-MW03"
+      ],
+      "dependencies": [
+        "MW02"
+      ],
+      "description": "Provenance, scopes, HEAD/index, receipts et nettoyage attestés.",
+      "systems": [
+        "TWO-REAL-WORKERS.md"
+      ],
+      "acceptance": [
+        "AC-MW03"
+      ],
+      "verification": "API installée, modèles réels, owner check et audit indépendant.",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ],
+      "notes": "Bounded installed API proof only. Parent/global criteria remain open; no goal closure or human acceptance claimed."
+    },
+    {
+      "id": "MW04",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-MW04"
+      ],
+      "dependencies": [
+        "GZ05"
+      ],
+      "description": "Séparer déclaration outils worker et consignes puis retester le paquet avec modèles réels.",
+      "systems": [
+        "TWO-REAL-WORKERS.md"
+      ],
+      "acceptance": [
+        "AC-MW04"
+      ],
+      "verification": "Regression loop/provider, ciblés, build/full, deux workers réels.",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ],
+      "notes": "Bounded installed API proof only. Parent/global criteria remain open; no goal closure or human acceptance claimed."
+    },
+    {
+      "id": "MW05",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-MW05"
+      ],
+      "dependencies": [
+        "MW04"
+      ],
+      "description": "Supprimer seconde troncature privée puis vérifier contexte réel et frames bornés.",
+      "systems": [
+        "TWO-REAL-WORKERS.md"
+      ],
+      "acceptance": [
+        "AC-MW05"
+      ],
+      "verification": "Regression producer, ciblés, build/full, deux modèles réels.",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ],
+      "notes": "Bounded installed API proof only. Parent/global criteria remain open; no goal closure or human acceptance claimed."
+    },
+    {
+      "id": "MW06",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-MW06"
+      ],
+      "dependencies": [
+        "MW01"
+      ],
+      "description": "Composer des modifications existantes sans ENOENT de nettoyage, garder union/source et reprise attestées.",
+      "systems": [
+        "worktree-integration.ts",
+        "TWO-REAL-WORKERS.md"
+      ],
+      "acceptance": [
+        "AC-MW06"
+      ],
+      "verification": "Regression rouge/verte, union/source runtime, full/package.",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ],
+      "notes": "Bounded installed API proof only. Parent/global criteria remain open; no goal closure or human acceptance claimed."
+    },
+    {
+      "id": "UF01",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-UF01"
+      ],
+      "dependencies": [],
+      "description": "Route Go mémorisée et lancement nu répond réellement.",
+      "systems": [
+        "USER-LAUNCH-DEFECT.md"
+      ],
+      "acceptance": [
+        "AC-UF01"
+      ],
+      "verification": "Commande nue réelle et captures.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF02",
+      "priority": "P1",
+      "status": "VERIFYING",
+      "requirements": [
+        "REQ-UF02"
+      ],
+      "dependencies": [
+        "UF01"
+      ],
+      "description": "Interface vide, Entrée, état et erreur actionables.",
+      "systems": [
+        "USER-LAUNCH-DEFECT.md"
+      ],
+      "acceptance": [
+        "AC-UF02"
+      ],
+      "verification": "Commande nue réelle et captures.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF03",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-UF03"
+      ],
+      "dependencies": [
+        "UF02"
+      ],
+      "description": "Soumission clavier et résultat vérifiés sur vraie commande.",
+      "systems": [
+        "USER-LAUNCH-DEFECT.md"
+      ],
+      "acceptance": [
+        "AC-UF03"
+      ],
+      "verification": "Commande nue réelle et captures.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF04",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-UF04"
+      ],
+      "dependencies": [
+        "UF01"
+      ],
+      "description": "Réparer remise de main du tour interactif.",
+      "systems": [
+        "core/loop",
+        "execution-state",
+        "producer",
+        "USER-LAUNCH-DEFECT.md"
+      ],
+      "acceptance": [
+        "AC-UF04"
+      ],
+      "verification": "Régression, vraie surface, full.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF05",
+      "priority": "P1",
+      "status": "VERIFYING",
+      "requirements": [
+        "REQ-UF05"
+      ],
+      "dependencies": [
+        "UF02"
+      ],
+      "description": "Rendre le dialogue compact et lisible suivant capture humaine.",
+      "systems": [
+        "App",
+        "Timeline",
+        "Composer",
+        "Header",
+        "tokens"
+      ],
+      "acceptance": [
+        "AC-UF05"
+      ],
+      "verification": "Rendu aux grandes et petites tailles, régressions et inspection visuelle.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF06",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-UF06"
+      ],
+      "dependencies": [
+        "UF03"
+      ],
+      "description": "Touches Mac DEL et suppression avant curseur, Unicode et restauration du mode terminal vérifiés.",
+      "systems": [
+        "terminal-input",
+        "Composer",
+        "USER-LAUNCH-DEFECT.md"
+      ],
+      "acceptance": [
+        "AC-UF06"
+      ],
+      "verification": "PTY installée, régression UTF8 et nettoyage raw mode.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF07",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-UF07"
+      ],
+      "dependencies": [
+        "UF03"
+      ],
+      "description": "Accès direct au sélecteur par Control+P et /model, touche Entrée LF acceptée, sans soumettre au modèle.",
+      "systems": [
+        "App",
+        "Composer",
+        "Models"
+      ],
+      "acceptance": [
+        "AC-UF07"
+      ],
+      "verification": "Exécutable installé en PTY.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF08",
+      "priority": "P1",
+      "status": "VERIFYING",
+      "requirements": [
+        "REQ-UF08"
+      ],
+      "dependencies": [
+        "UF06"
+      ],
+      "description": "Toute la fenêtre, activité animée et chronométrée, défilement molette/trackpad et clavier, saisie fixe et nettoyage du terminal.",
+      "systems": [
+        "App",
+        "Timeline",
+        "Activity",
+        "terminal-input",
+        "main"
+      ],
+      "acceptance": [
+        "AC-UF08"
+      ],
+      "verification": "Rendus resize, animation attente outil/modèle, vraie PTY wheel et nettoyage.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF09",
+      "priority": "P1",
+      "status": "DONE",
+      "requirements": [
+        "REQ-UF09"
+      ],
+      "dependencies": [
+        "UF04"
+      ],
+      "description": "Question simple sans cérémonie imposée, réponse terminale sans faux finish, causes des outils échoués et budget épuisé visibles.",
+      "systems": [
+        "work-organizer",
+        "producer",
+        "translate",
+        "Timeline"
+      ],
+      "acceptance": [
+        "AC-UF09"
+      ],
+      "verification": "Régressions directives et erreurs, parcours modèle réel question du jour.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "UF10",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "requirements": [
+        "REQ-UF10"
+      ],
+      "dependencies": [
+        "UF08"
+      ],
+      "description": "Interface en anglais par défaut indépendamment de la langue de la conversation; texte utilisateur et sources conservés.",
+      "systems": [
+        "components",
+        "overlays"
+      ],
+      "acceptance": [
+        "AC-UF10"
+      ],
+      "verification": "Rendus sans locale française; clavier et menus inchangés.",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
     }
   ],
   "acceptance": [
@@ -7272,6 +8237,97 @@
       "evidence": []
     },
     {
+      "id": "AC-REC-W01",
+      "requirement": "REC-W01",
+      "given": "A controller-owned worker admission, private journal and allocated Git worktree exist.",
+      "when": "The controller process is killed and its session is reopened.",
+      "then": "Inspection reports interruption from current private-claim/process and physical workspace observations; a stale active event alone never attests liveness.",
+      "verification": [
+        "automated",
+        "runtime",
+        "inspection"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ]
+    },
+    {
+      "id": "AC-REC-W02",
+      "requirement": "REC-W02",
+      "given": "A real child process writes its scoped file after an intent is durable and is killed before its receipt is durable.",
+      "when": "The parent is reopened, inspected, and a second code-worker run/integration/finish is attempted.",
+      "then": "The file remains once, the effect is uncertain, and replay, integration and finish are refused without a successful result append.",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ]
+    },
+    {
+      "id": "AC-REC-W03",
+      "requirement": "REC-W03",
+      "given": "A provenance-bound proposal receipt is durable in a private journal but shared publication was interrupted.",
+      "when": "The controller reopens and conditionally reconciles against unchanged objective/revision/source, then runs ordinary integration.",
+      "then": "The proposal is published once, remains unverified until the pinned owner check passes, and stale objective/revision/source refuses publication.",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ]
+    },
+    {
+      "id": "AC-REC-W04",
+      "requirement": "REC-W04",
+      "given": "A recovery candidate has missing workspace, malformed journal, untrusted path, uncertain effect, live claim, or changed source/revision.",
+      "when": "Inspection or reconciliation is requested.",
+      "then": "The operation refuses safely, preserves work/history and does not append a false successful proposal.",
+      "verification": [
+        "automated",
+        "runtime"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ]
+    },
+    {
+      "id": "AC-REC-W05",
+      "requirement": "REC-W05",
+      "given": "A model requests recovery with arbitrary input or repeats a valid empty request.",
+      "when": "The producer runs bounded inspection/reconciliation.",
+      "then": "Only controller-admitted identities and paths are read; unchanged inspections are deterministic and duplicate reconciliation appends nothing extra.",
+      "verification": [
+        "automated",
+        "inspection"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ]
+    },
+    {
+      "id": "AC-REC-W06",
+      "requirement": "REC-W06",
+      "given": "An installed Cuesheet terminal reopens a session containing an interrupted code worker.",
+      "when": "Agents is opened in the installed terminal through a real PTY driver at widths 100 and 58.",
+      "then": "The view names interruption, source/journal provenance, unknown costs and a useful recovery operation without implying success or deletion.",
+      "verification": [
+        "runtime",
+        "inspection"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-CODE-WORKER-RECOVERY"
+      ]
+    },
+    {
       "id": "AC-H06.3c2",
       "requirement": "REQ-H06.2",
       "given": "The context and fixtures stated in MULTI-WORKER.md",
@@ -7425,6 +8481,346 @@
       "verification": "automated,runtime",
       "status": "PENDING",
       "evidence": []
+    },
+    {
+      "id": "AC-GZ01",
+      "requirement": "REQ-GZ01",
+      "given": "Cuesheet et ses changements dirty conservés ; check propriétaire épinglé.",
+      "when": "Route Go authentifiée via adaptateur sans outils natifs ; essai Zen borné conservé.",
+      "then": "Preuves dans GO-ZEN-SELFHOST.md et son ledger ; aucune acceptation globale déduite.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ]
+    },
+    {
+      "id": "AC-GZ02",
+      "requirement": "REQ-GZ02",
+      "given": "Cuesheet et ses changements dirty conservés ; check propriétaire épinglé.",
+      "when": "Compteurs naturels français, zéro absent, busy et aide conservés, source intégrée avec check propriétaire.",
+      "then": "Preuves dans GO-ZEN-SELFHOST.md et son ledger ; aucune acceptation globale déduite.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ]
+    },
+    {
+      "id": "AC-GZ03",
+      "requirement": "REQ-GZ03",
+      "given": "Cuesheet et ses changements dirty conservés ; check propriétaire épinglé.",
+      "when": "Parcours installé avec vrai modèle, effet isolé, intégration et source vérifiée par terminal.",
+      "then": "Preuves dans GO-ZEN-SELFHOST.md et son ledger ; aucune acceptation globale déduite.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ]
+    },
+    {
+      "id": "AC-GZ04",
+      "requirement": "REQ-GZ04",
+      "given": "Cuesheet et ses changements dirty conservés ; check propriétaire épinglé.",
+      "when": "Git absent du vocabulaire conteneur du worktree lié et refusé avant admission de ressource, autres routes conservées.",
+      "then": "Preuves dans GO-ZEN-SELFHOST.md et son ledger ; aucune acceptation globale déduite.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ]
+    },
+    {
+      "id": "AC-GZ05",
+      "requirement": "REQ-GZ05",
+      "given": "Cuesheet et ses changements dirty conservés ; check propriétaire épinglé.",
+      "when": "Reproduction installée après correctif sur copie dirty Cuesheet, périmètre un fichier et HEAD/index conservés.",
+      "then": "Preuves dans GO-ZEN-SELFHOST.md et son ledger ; aucune acceptation globale déduite.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-GO-ZEN-SELFHOST"
+      ]
+    },
+    {
+      "id": "AC-LS01",
+      "requirement": "REQ-LS01",
+      "given": "Copie dirty isolée et transport Go réel installé.",
+      "when": "Driver corrige pendant inférence puis renouvelle explicitement le check de fixture.",
+      "then": "Correction persistée pendant une inférence réelle, ancien check périmé et absence d’intégration avant renouvellement.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ]
+    },
+    {
+      "id": "AC-LS02",
+      "requirement": "REQ-LS02",
+      "given": "Copie dirty isolée et transport Go réel installé.",
+      "when": "Driver corrige pendant inférence puis renouvelle explicitement le check de fixture.",
+      "then": "Résultat rendu lu/lus après correction, check candidat/source et fermeture sur la nouvelle révision.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ]
+    },
+    {
+      "id": "AC-LS03",
+      "requirement": "REQ-LS03",
+      "given": "Copie dirty isolée et transport Go réel installé.",
+      "when": "Driver corrige pendant inférence puis renouvelle explicitement le check de fixture.",
+      "then": "Périmètre un fichier, HEAD/index conservés, ressources attestées et bornes respectées.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ]
+    },
+    {
+      "id": "AC-LS04",
+      "requirement": "REQ-LS04",
+      "given": "Producer avec publisher source et worktree isolé.",
+      "when": "Plan enregistré puis reprise de même journal.",
+      "then": "Source digest inchangé, pas de Vault source créé, plan dans frame ; publication non isolée compatible.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-SEMANTIC-LIVE-STEERING"
+      ]
+    },
+    {
+      "id": "AC-MW01",
+      "requirement": "REQ-MW01",
+      "given": "Copie dirty Cuesheet et API du paquet installé.",
+      "when": "Contrôleur direct lance deux workers réels puis composition/checks.",
+      "then": "Deux workers réels Go, deux responsabilités module/test disjointes, effets conteneur privés.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ]
+    },
+    {
+      "id": "AC-MW02",
+      "requirement": "REQ-MW02",
+      "given": "Copie dirty Cuesheet et API du paquet installé.",
+      "when": "Contrôleur direct lance deux workers réels puis composition/checks.",
+      "then": "Composition bornée vérifiée puis intégrée et source vérifiée indépendamment.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ]
+    },
+    {
+      "id": "AC-MW03",
+      "requirement": "REQ-MW03",
+      "given": "Copie dirty Cuesheet et API du paquet installé.",
+      "when": "Contrôleur direct lance deux workers réels puis composition/checks.",
+      "then": "Provenance, scopes, HEAD/index, receipts et nettoyage attestés.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ]
+    },
+    {
+      "id": "AC-MW04",
+      "requirement": "REQ-MW04",
+      "given": "Frame du loop worker avec anciens tools et verbes interdits.",
+      "when": "Extraction declaredTools et rendu du prompt BinaryModel.",
+      "then": "Vocabulaire cat/node reconnu, rôle conservé, effet privé et refus interdits préservés.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ]
+    },
+    {
+      "id": "AC-MW05",
+      "requirement": "REQ-MW05",
+      "given": "Worker privé lit une preuve après3200 caractères.",
+      "when": "Prochaine inférence via vrai producer.",
+      "then": "Preuve dans frame et proposition reçue ; plafond de frame conservé.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ]
+    },
+    {
+      "id": "AC-MW06",
+      "requirement": "REQ-MW06",
+      "given": "Deux modifications existantes et une création isolées.",
+      "when": "Composition puis reprise du batch réel par API installée.",
+      "then": "Composer des modifications existantes sans ENOENT de nettoyage, garder union/source et reprise attestées.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-TWO-REAL-WORKERS"
+      ]
+    },
+    {
+      "id": "AC-UF01",
+      "requirement": "REQ-UF01",
+      "given": "Lancement ordinaire signalé cassé.",
+      "when": "Saisie puis Entrée dans vraie PTY.",
+      "then": "Route Go mémorisée et lancement nu répond réellement.",
+      "verification": "runtime,automated",
+      "status": "VERIFIED",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF02",
+      "requirement": "REQ-UF02",
+      "given": "Lancement ordinaire signalé cassé.",
+      "when": "Saisie puis Entrée dans vraie PTY.",
+      "then": "Interface vide, Entrée, état et erreur actionables.",
+      "verification": "runtime,automated",
+      "status": "PENDING",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF03",
+      "requirement": "REQ-UF03",
+      "given": "Lancement ordinaire signalé cassé.",
+      "when": "Saisie puis Entrée dans vraie PTY.",
+      "then": "Soumission clavier et résultat vérifiés sur vraie commande.",
+      "verification": "runtime,automated",
+      "status": "VERIFIED",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF04",
+      "requirement": "REQ-UF04",
+      "given": "Tour interactif sans check owner.",
+      "when": "Modèle produit réponse non vide sans outils.",
+      "then": "Une réponse, busy false, phase response-delivered, objectif ouvert ; outils et check owner gardent autonomie.",
+      "verification": "automated,runtime",
+      "status": "VERIFIED",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF05",
+      "requirement": "REQ-UF05",
+      "given": "Capture humaine d’une grande fenêtre illisible.",
+      "when": "Dialogue court puis long, menus/resize.",
+      "then": "Interface lisible et metadata conservées; critère compact remplacé par plein écran UF08 selon demande propriétaire.",
+      "verification": "automated,runtime,manual",
+      "status": "PENDING",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF06",
+      "requirement": "REQ-UF06",
+      "given": "Mac transmet DEL pour effacer avant curseur.",
+      "when": "DEL, flèche gauche, CSI3~, Entrée et Ctrl+C dans vraie PTY.",
+      "then": "Touches Mac DEL et suppression avant curseur, Unicode et restauration du mode terminal vérifiés.",
+      "verification": "runtime,automated",
+      "status": "VERIFIED",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF07",
+      "requirement": "REQ-UF07",
+      "given": "Utilisateur macOS utilise Command+K et Terminal efface son écran.",
+      "when": "Control+P ou /model puis Entrée.",
+      "then": "Accès direct au sélecteur par Control+P et /model, touche Entrée LF acceptée, sans soumettre au modèle.",
+      "verification": "runtime,automated",
+      "status": "VERIFIED",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF08",
+      "requirement": "REQ-UF08",
+      "given": "Propriétaire demande plein écran, progression et défilement tactile.",
+      "when": "Travail en attente, outils actifs, historique long et resize.",
+      "then": "Toute la fenêtre, activité animée et chronométrée, défilement molette/trackpad et clavier, saisie fixe et nettoyage du terminal.",
+      "verification": "runtime,automated",
+      "status": "PENDING",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF09",
+      "requirement": "REQ-UF09",
+      "given": "Question du jour provoque répétitions et plans refusés.",
+      "when": "Question informative avec sources disponibles.",
+      "then": "Question simple sans cérémonie imposée, réponse terminale sans faux finish, causes des outils échoués et budget épuisé visibles.",
+      "verification": "runtime,automated",
+      "status": "VERIFIED",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
+    },
+    {
+      "id": "AC-UF10",
+      "requirement": "REQ-UF10",
+      "given": "Utilisateur demande défaut anglais.",
+      "when": "Lancement et menus sans préférence de langue explicite.",
+      "then": "Interface en anglais par défaut indépendamment de la langue de la conversation; texte utilisateur et sources conservés.",
+      "verification": "runtime,automated",
+      "status": "PENDING",
+      "evidence": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ]
     }
   ],
   "evidence": [
@@ -7942,6 +9338,59 @@
         "apps/terminal/src/producer/session-view.ts",
         "test/execution-observability.test.ts"
       ]
+    },
+    {
+      "id": "EV-CODE-WORKER-RECOVERY",
+      "kind": "automated",
+      "summary": "Bounded durable worker inspection/reconciliation verified by actual SIGKILL, uncertain-effect refusal, guarded partial publication, competitor claim refusal, malformed/corrupt/oversized/path/source/revision refusals and independent owner check.",
+      "verification": "12 final targeted PASS; installed package PTY widths100/58 PASS; uncertainty mutant rejected; full1007/1004/0/3 PASS with pinned Docker image/socket. No live selfhost claim, no human acceptance claim.",
+      "artifacts": [
+        "docs/harness/evaluation/code-worker-recovery/evidence.md",
+        "test/code-worker-recovery.test.ts",
+        "test/terminal-code-workers.test.ts",
+        "test/install.test.ts"
+      ]
+    },
+    {
+      "id": "EV-GO-ZEN-SELFHOST",
+      "kind": "automated",
+      "summary": "Go transporte des propositions réelles ; compteurs et refus Git indisponible vérifiés. Retries réels installés conservés sans clôture prématurée.",
+      "verification": "Bounded installed real-model journey VERIFIED: Go/Luna real edit, same durable session resumed with Go/GLM-5.3, validation4/4, controller one-file integration, pinned owner candidate/source5/5, goal-closed,19 containers removed,HEAD/index preserved. Main full1009/1006/0/3 PASS. Semantic steering and installed multiworker parent remain open.",
+      "artifacts": [
+        "docs/harness/GO-ZEN-SELFHOST.md",
+        "docs/harness/evaluation/go-zen-selfhost/evidence.md",
+        "test/worktree-container-vocabulary.test.ts",
+        "test/notification-ui.test.ts"
+      ]
+    },
+    {
+      "id": "EV-SEMANTIC-LIVE-STEERING",
+      "kind": "automated",
+      "summary": "Correction reçue pendant inférence réelle, modèle lu/lus, publication isolation réparée, intégration contrôlée et but fermé.",
+      "verification": "Strict candidate/source5/5, auditPASS,HEAD/index and unrelatedfiles preserved,25containers removed, publication full1010/1007/0/3. Retries retained.",
+      "artifacts": [
+        "docs/harness/SEMANTIC-LIVE-STEERING.md",
+        "docs/harness/evaluation/semantic-live-steering/evidence.md",
+        "test/vault-publisher.test.ts"
+      ]
+    },
+    {
+      "id": "EV-TWO-REAL-WORKERS",
+      "kind": "automated,runtime",
+      "summary": "Deux workers réels Go, contributions privées scoped, composition et source vérifiées après reprise du même batch ; trois défauts runtime réparés.",
+      "verification": "1013 tests,1010 pass,0 fail,3 inherited skips,136703.766875ms; owner candidate/source rendu5/5 UI1/1; auditPASS; HEAD/index/source union preserved;6 private tool containers removed,18 all attempt/oracle containers removed.",
+      "artifacts": [
+        "docs/harness/TWO-REAL-WORKERS.md",
+        "docs/harness/evaluation/two-real-workers/evidence.md",
+        "test/worktree-integration.test.ts",
+        "test/terminal-code-workers.test.ts",
+        "test/code-worker-loop.test.ts"
+      ]
+    },
+    {
+      "id": "DU-PUBLIC-SIXTH",
+      "path": "/Users/memo/projects/_reports/cuesheet-daily-2026-10-03/sixth-1",
+      "result": "Pinned candidate and integrated source VERIFIED; HEAD/index/other tracked edits preserved; bounded CLI task only"
     }
   ],
   "risks": {
@@ -7998,15 +9447,177 @@
     "workingTreeAutomaticIsolation": "PASS_PARTIAL controller first external code isolation and uncertain null receipts;55 targeted,866/864/0/2 full,build32 inherited diagnostics. Full dependency owner oracle/parallel workers/real model pilot remain pending.",
     "workingTreeOwnerCapsule": "PASS_PARTIAL owner-pinned container oracle on capture/scratch with admitted outputs and anonymous tmp volume;851 Linux PASS/18 explicit skips,869/867/0/2 host,44 targeted/46 portable,build32 baseline. Source/index/capture intact; no real model/parallel worker/full recovery closure.",
     "workingTreeCodeWorkers": "Terminal→private workers→scoped composition→owner check→recoverable source apply→finish PASS.14 targeted+1 actual Docker;893/891/0/2 full,build32 baseline. Crash recovery/cleanup/live model pending.",
-    "stateGraph": "SG01.1/2 bounded PASS6 targeted/build32 baseline. Loader not runtime-connected; AC-SG01 pending, SG01.3/SG02.1 READY."
+    "stateGraph": "SG01.1/2 bounded PASS6 targeted/build32 baseline. Loader not runtime-connected; AC-SG01 pending, SG01.3/SG02.1 READY.",
+    "workingTreeCodeWorkerRecovery": "R1 machine proofs preserved; current full1009/1006/0/3 PASS. Earlier direct401/OpenCode402 are historical route failures; OpenCode Go now authenticated. Global selfhost and semantic steering remain open.",
+    "goZenSelfhost": "Bounded installed real-model journey VERIFIED: Go/Luna real edit, same durable session resumed with Go/GLM-5.3, validation4/4, controller one-file integration, pinned owner candidate/source5/5, goal-closed,19 containers removed,HEAD/index preserved. Main full1009/1006/0/3 PASS. Semantic steering and installed multiworker parent remain open.",
+    "publicationFixFull": "1010 total,1007 pass,0 fail,3 inherited provider skips,149137ms",
+    "twoRealWorkers": "1013 tests,1010 pass,0 fail,3 inherited skips,136703.766875ms PASS; build32 inherited diagnostics; manifest7/7; installed private contributions/checked composition/source/audit PASS. Direct controller API, no goal closure or global completion.",
+    "userLaunch": {
+      "status": "PASS_MACHINE_PENDING_VISUAL",
+      "fullSuite": {
+        "total": 1020,
+        "passed": 1011,
+        "failed": 0,
+        "skipped": 9,
+        "durationMs": 185916.319917,
+        "proof": "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/final-validation.log"
+      },
+      "additionalDocker": {
+        "total": 18,
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0,
+        "proof": "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/docker-additional-final.log"
+      },
+      "targeted": {
+        "passed": 74,
+        "failed": 0,
+        "proof": "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/english-targeted-final.log"
+      },
+      "build": "PASS with32 inherited typing diagnostics; differential source typing test PASS",
+      "runtime": [
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/editor-live.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/model-english.log",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
+        "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
+      ],
+      "nativeVisual": "NOT_VERIFIED: computer tool refuses Ghostty and Warp for safety reasons despite user authorization and Any App enabled",
+      "remaining": [
+        "Native window visual/usability acceptance UF02/UF05/UF08",
+        "Inspection pages contain inherited French system metadata; UF10 language acceptance remains pending",
+        "UF10 follow-up: translate system-generated inspection labels; preserve user/source payloads and durable enums. Targeted menu/recovery/paging tests, differential typing and full capsule regression required."
+      ],
+      "noGlobalClosure": true
+    },
+    "designAlignment": {
+      "status": "PROTOTYPE_PARTIALLY_VERIFIED_OWNER_ACCEPTANCE_PENDING",
+      "sourceThread": "6ab9fe66-2cc8-83ed-9e04-76d2934afe9d",
+      "sourceTitle": "cuesheet",
+      "date": "2026-10-03",
+      "finding": "Owner rejects fixed panels and web composition. Explicit terminal master requires one flowing character-grid surface, elastic work tree, semantic objects, permanent input and temporary overlays. Open Design correction dispatched; render and interactions pending.",
+      "remaining": [
+        "Compare each block against original reference and implement missing presentation",
+        "Verify compact actions and readable conversation at multiple terminal sizes",
+        "Verify continuous input and truthful live work status",
+        "Owner visual acceptance remains open"
+      ],
+      "firstCorrection": {
+        "change": "Speaker labels above paragraphs, preserving full-width bounded message text",
+        "verification": "12 targeted terminal UX/surface quality tests PASS; git diff --check PASS",
+        "evidence": "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/design-alignment-targeted.log",
+        "limits": "Partial alignment only. Original design still requires header/footer/action comparison and visual acceptance. Full suite after final implementation pending."
+      },
+      "canonicalDesign": "docs/harness/MASTER-DESIGN-DIRECTION.source.txt",
+      "prototypeInspection": {
+        "date": "2026-10-03",
+        "surface": "Open Design index.html",
+        "observed": [
+          "monospace character-grid single surface without panels",
+          "80x24 retains input, intent and Human Delta",
+          "Fit fills preview area",
+          "typed correction retained verbatim, Kollio pauses, A4 verifies IntentLane",
+          "Apple / IntentLane note requested, explicitly not written and not verified"
+        ],
+        "remaining": [
+          "160x50 and 240x70 interactions",
+          "full scrolling/overlay/focus and motion-disabled parity",
+          "real React Ink implementation and terminal render",
+          "owner visual acceptance"
+        ],
+        "scope": "HTML simulated prototype only; no backend capability delivered"
+      }
+    },
+    "productDirectionMemory": {
+      "status": "PASS",
+      "date": "2026-10-03",
+      "source": "docs/harness/MASTER-PRODUCT-DIRECTION.source.txt",
+      "reference": "docs/harness/MASTER-PRODUCT-DIRECTION.md",
+      "concepts": 44,
+      "checks": [
+        "44 sections ordered 01 through 44",
+        "source byte-identical to owner attachment",
+        "AGENTS README HANDOFF link canonical reference",
+        "future vision separated from implementation",
+        "section 44 truncation explicit"
+      ],
+      "scope": "Persistent product context only; does not close product or UI acceptance"
+    },
+    "terminalSurfaceIntegration": {
+      "status": "READY_FOR_MANUAL_ACCEPTANCE",
+      "spec": "TERMINAL-SURFACE-INTEGRATION.md",
+      "scope": "Real Ink semantic context and restrained flowing surface",
+      "evidence": {
+        "latestTargeted": "38/38 PASS: terminal-integration-packets-final.log",
+        "runtime": "14/14 PASS: terminal-integration-runtime-final.log",
+        "installedRecovery": "1/1 PASS at two widths: terminal-integration-recovery-final.log",
+        "pty": "Four master sizes PASS on final source with scripted producer and real Ink/PTY: terminal-integration-pty-final.log",
+        "build": "PASS: terminal-integration-build-final.log; 32 inherited root diagnostics",
+        "typecheck": "Exit 2, three inherited diagnostics in shell.ts/memory.ts/store.ts; no changed-file errors: terminal-integration-typecheck-final.log",
+        "diff": "git diff --check PASS",
+        "keyboard": "Return sends; Control+O newline; optional ESC+CR newline; burst inputs/paste/Unicode/mouse/Escape/EOF verified"
+      },
+      "open": [
+        "Owner live experiential acceptance pending; native Ghostty automation unavailable",
+        "Full broad suite interrupted, no blanket repository PASS",
+        "Typed Human Delta and knowledge-route production streams absent; outside this bounded integration"
+      ],
+      "workGraph": [
+        {
+          "id": "T1",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T2",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T3",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T4",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T5",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T6",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T7",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T8",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        },
+        {
+          "id": "T9",
+          "status": "VERIFIED",
+          "evidence": "TERMINAL-SURFACE-INTEGRATION.md current closure"
+        }
+      ]
+    }
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 97,
-    "acceptanceVerified": 9,
-    "acceptancePending": 101,
+    "requirements": 128,
+    "acceptanceVerified": 36,
+    "acceptancePending": 105,
+    "acceptanceFailed": 0,
     "p0_open": 70,
-    "p1_open": 46
+    "p1_open": 50
   },
   "workstreams": [
     {
@@ -8147,7 +9758,11 @@
         "H06.2b1",
         "H06.2c1",
         "H06.2c2",
-        "H06.3c2a"
+        "H06.3c2a",
+        "H06.4a-R1-SPEC",
+        "H06.4a-R1-INSPECT",
+        "H06.4a-R1-RECONCILE",
+        "H06.4a-R1-PROVE"
       ],
       "dependencies": [
         "C1",
@@ -8425,5 +10040,877 @@
       "status": "FROZEN",
       "note": "Capture sur demande du proprietaire, gele hors du chemin critique. Une idee n est pas un travail."
     }
-  ]
+  ],
+  "currentFocus": {
+    "mission": "usable development of CUESHEET inside CUESHEET",
+    "spec": "DEVELOPMENT-DIAGNOSIS.md",
+    "phase": "IMPLEMENTING",
+    "requirements": [
+      "US01",
+      "US02",
+      "US03",
+      "US04"
+    ],
+    "verified": [],
+    "pending": [
+      "US01",
+      "US02",
+      "US03",
+      "US04"
+    ],
+    "p0_open": 2,
+    "p1_open": 2,
+    "critical_high_risks_open": 2,
+    "tasks": [
+      {
+        "id": "US-AUDIT",
+        "status": "DONE",
+        "proof": "/Users/memo/projects/_reports/cuesheet-intentlane-code-2026-10-03/public-1/failure.json"
+      },
+      {
+        "id": "US-RECOVERY",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "US-SELFHOST",
+        "status": "TODO"
+      },
+      {
+        "id": "US-LEGIBILITY",
+        "status": "TODO"
+      },
+      {
+        "id": "US-CLOSE",
+        "status": "TODO"
+      }
+    ],
+    "remaining": [
+      "Safe live correction/recovery to the revised result.",
+      "Real installed code/test selfhost and fresh replay.",
+      "Observed history and actionable recovery usability.",
+      "Independent final verification and human acceptance."
+    ],
+    "rewriteAuthorized": false,
+    "recoveryAdmissionCorrection": {
+      "phase": "READY_FOR_MANUAL_ACCEPTANCE",
+      "requirements": [
+        "RA01",
+        "RA02"
+      ],
+      "evidence": "DEVELOPMENT-DIAGNOSIS.md#recovery-admission-correction-bounded-scope",
+      "recoveryTests": {
+        "passed": 3,
+        "failed": 0,
+        "durationMs": 8117.671583
+      },
+      "publicContinuationVerified": false,
+      "workerRegressionTests": {
+        "passed": 18,
+        "failed": 0,
+        "durationMs": 29582.035625
+      },
+      "verified": [
+        "RA01",
+        "RA02"
+      ],
+      "scope": "admission diagnostic only; public revised continuation remains open"
+    },
+    "confirmedReceiptCancellation": {
+      "phase": "READY_FOR_MANUAL_ACCEPTANCE",
+      "requirements": [
+        "RC01",
+        "RC02"
+      ],
+      "verified": [
+        "RC01",
+        "RC02"
+      ],
+      "evidence": "DEVELOPMENT-DIAGNOSIS.md",
+      "regressionTests": {
+        "passed": 33,
+        "failed": 0
+      },
+      "lateCancellationTests": {
+        "passed": 4,
+        "failed": 0
+      },
+      "build": "PASS; 25 existing compiler diagnostics remain",
+      "publicContinuationVerified": false,
+      "strictTypecheck": "not green",
+      "installedCommand": "current checkout; shipped surface bundle rebuilt"
+    },
+    "ordinarySelfDevelopment": {
+      "status": "BOUNDED_JOURNEY_VERIFIED",
+      "report": "/Users/memo/projects/_reports/cuesheet-daily-2026-10-03/sixth-1",
+      "journal": "t-1c754e50-4196-4f42-acf9-ae2eee79d92f",
+      "verificationSeq": 68,
+      "sourceChange": "src/cuesheet.ts",
+      "preservation": {
+        "headPreserved": true,
+        "indexPreserved": true,
+        "changedTrackedDiffFiles": [
+          "a/src/cuesheet.ts b/src/cuesheet.ts"
+        ],
+        "otherTrackedEditsPreserved": true,
+        "statusAdded": [
+          " M src/cuesheet.ts"
+        ],
+        "statusRemoved": []
+      },
+      "fixes": [
+        "DU04 complete child frame budget",
+        "DU05 definite preflight refusal and scoped native reads",
+        "DU06 prose-only candidate continuation",
+        "DU07 inherited dirty files excluded from delta limits"
+      ],
+      "remaining": [
+        "Broader fresh self-development replay beyond the bounded CLI change",
+        "Native visual acceptance remains unverified",
+        "Safe live correction/recovery remains unverified",
+        "Overall daily usability and dynamic skill/multi-agent journeys remain unverified"
+      ],
+      "installedRootFlagsLaunch": "Observed PTY startup and project-scoped ls with real model; final project answer not awaited",
+      "installationVerification": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 1,
+        "note": "Sequential rerun; Docker-gated Linux installed full journey skipped"
+      },
+      "tasks": [
+        {
+          "id": "DU-FRAME",
+          "status": "DONE",
+          "proof": "targeted complete-child-frame test"
+        },
+        {
+          "id": "DU-READ",
+          "status": "DONE",
+          "proof": "scoped native read and container preflight regression tests"
+        },
+        {
+          "id": "DU-EMPTY",
+          "status": "DONE",
+          "proof": "single-worker prose-first regression"
+        },
+        {
+          "id": "DU-DELTA",
+          "status": "DONE",
+          "proof": "integration 110 inherited files regression and sixth installed run"
+        },
+        {
+          "id": "DU-PUBLIC",
+          "status": "DONE",
+          "proof": "/Users/memo/projects/_reports/cuesheet-daily-2026-10-03/sixth-1/preservation.json and parent journal seq68"
+        },
+        {
+          "id": "DU-DAILY",
+          "status": "TODO",
+          "proof": null,
+          "remaining": "visual usability, corrected-intent recovery, skills and multiple workers in real daily use"
+        }
+      ]
+    },
+    "visualRecovery": {
+      "phase": "VERIFYING",
+      "spec": "TERMINAL-VISUAL-RECOVERY.md",
+      "tasks": [
+        {
+          "id": "VR-LAYOUT",
+          "status": "DONE",
+          "evidence": "/Users/memo/projects/_reports/cuesheet-visual-2026-10-03/frame-validation.json"
+        },
+        {
+          "id": "VR-CONTENT",
+          "status": "DONE",
+          "evidence": "/Users/memo/projects/_reports/cuesheet-visual-2026-10-03/frame-validation.json"
+        },
+        {
+          "id": "VR-MENUS",
+          "status": "DONE",
+          "evidence": "/Users/memo/projects/_reports/cuesheet-visual-2026-10-03/installed-screens.json"
+        },
+        {
+          "id": "VR-VERIFY",
+          "status": "VERIFYING",
+          "evidence": [
+            "targeted UI behavior PASS",
+            "PTY render matrix PASS",
+            "build PASS"
+          ],
+          "remaining": "Terminal typecheck reports three pre-existing upstream errors; native visual acceptance unverified"
+        },
+        {
+          "id": "VR-ACCEPT",
+          "status": "TODO",
+          "description": "Owner aesthetic acceptance of actual terminal"
+        }
+      ],
+      "nativeVisualAccess": "previously denied; exported actual Ink frames and PTY verification do not imply native acceptance",
+      "evidence": {
+        "report": "/Users/memo/projects/_reports/cuesheet-visual-2026-10-03",
+        "installedImage": "/Users/memo/projects/_reports/cuesheet-visual-2026-10-03/installed-120x30-idle.png",
+        "frameCount": 20,
+        "initialTargetedPass": 42,
+        "finalHistoryIdentityPass": 20,
+        "finalModelPass": 4,
+        "crowdedModelRegressionPass": 1,
+        "requiredSizes": [
+          "80x24",
+          "120x30",
+          "160x50",
+          "240x70"
+        ],
+        "build": "PASS with 25 existing type errors",
+        "terminalTypecheck": "FAIL: 3 upstream errors in shell.ts, memory.ts, store.ts; no terminal component errors",
+        "defaultModel": "opencode-go/deepseek-v4.1-flash"
+      }
+    },
+    "macMotionCommands": {
+      "phase": "VERIFYING",
+      "spec": "MAC-MOTION-COMMANDS.md",
+      "tasks": [
+        {
+          "id": "MC-COMMANDS",
+          "status": "DONE",
+          "evidence": "MAC-MOTION-COMMANDS.md#verification-evidence; installed result.json and targeted tests"
+        },
+        {
+          "id": "MC-MAC",
+          "status": "DONE",
+          "evidence": "MAC-MOTION-COMMANDS.md#verification-evidence; installed result.json and targeted tests"
+        },
+        {
+          "id": "MC-MOTION",
+          "status": "DONE",
+          "evidence": "MAC-MOTION-COMMANDS.md#verification-evidence; installed result.json and targeted tests"
+        },
+        {
+          "id": "MC-VERIFY",
+          "status": "IN_PROGRESS",
+          "remaining": [
+            "Native Mac visual acceptance",
+            "Preexisting upstream strict typecheck errors"
+          ]
+        },
+        {
+          "id": "MC-ACCEPT",
+          "status": "TODO"
+        }
+      ],
+      "evidenceReport": "/Users/memo/projects/_reports/cuesheet-mac-commands-2026-10-03/result.json"
+    },
+    "visualDriver": {
+      "phase": "READY_FOR_MANUAL_ACCEPTANCE",
+      "spec": "VISUAL-TERMINAL-DRIVER.md",
+      "nativeHostAcceptance": false,
+      "evidenceReport": "/Users/memo/projects/_reports/cuesheet-visual-driver-2026-10-03",
+      "driverVerification": "PASS",
+      "observedProductDefect": "Onboarding answer exposes internal primitives instead of clear daily usage"
+    },
+    "terminalPolish": {
+      "phase": "VERIFYING",
+      "spec": "TERMINAL-POLISH.md",
+      "implementation": "verified",
+      "ownerAestheticAcceptance": "pending",
+      "evidenceReport": "/Users/memo/projects/_reports/cuesheet-visual-driver-2026-10-03",
+      "tests": "11 passed; four render sizes PASS",
+      "staticValidation": "preexisting upstream errors remain"
+    },
+    "terminalRedesign": {
+      "phase": "VERIFYING",
+      "spec": "TERMINAL-REDESIGN.md",
+      "tasks": {
+        "RD-LAYOUT": "DONE",
+        "RD-COMPOSER": "DONE",
+        "RD-CONTENT": "DONE",
+        "RD-OVERLAYS": "DONE",
+        "RD-VERIFY": "IN_PROGRESS",
+        "RD-ACCEPT": "TODO"
+      },
+      "evidenceReport": "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/verification.json",
+      "remaining": [
+        "owner appearance/native fidelity acceptance",
+        "preexisting upstream strict type errors"
+      ],
+      "verification": {
+        "installedRuntime": "PASS",
+        "requiredRenderSizes": "PASS",
+        "extra40x14": "PASS after correction",
+        "longDraftCursor": "PASS",
+        "modelRoleContextSessionRegressions": "PASS",
+        "themeContrast": "PASS",
+        "build": "PASS emitted; preexisting source errors",
+        "strictStatic": "existing upstream errors",
+        "nativeAesthetics": "pending"
+      }
+    },
+    "liveActivity": {
+      "phase": "VERIFYING",
+      "spec": "LIVE-ACTIVITY.md",
+      "implementation": "DONE",
+      "tests": "12 pass; four-size render PASS",
+      "nativeFlickerAcceptance": "pending",
+      "providerTokenStreaming": "not implemented; published responses and tool events visible"
+    },
+    "modelProgress": {
+      "status": "VERIFYING",
+      "transport": "owned authenticated OpenCode SSE",
+      "evidence": [
+        "test/model-progress.test.ts",
+        "docs/harness/MODEL-PROGRESS.md",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/stream-6.png",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/stream-8.png",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/stream-11.png"
+      ],
+      "remaining": [
+        "native Mac manual acceptance",
+        "preexisting strict static errors outside this scope"
+      ],
+      "static": "25 preexisting build type errors"
+    },
+    "referenceDrivenUI": {
+      "status": "ACCEPTANCE_FAILED",
+      "spec": "docs/harness/REFERENCE-DRIVEN-UI.md",
+      "requirements": [
+        "RF01",
+        "RF02",
+        "RF03",
+        "RF04"
+      ],
+      "graph": {
+        "RF-LAYOUT": "DONE",
+        "RF-STREAM": "DONE",
+        "RF-INSPECT": "DONE",
+        "RF-VERIFY": "VERIFYING"
+      },
+      "evidence": [
+        "test/live-work-render.test.ts",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/reference-final-draft-80.png",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/reference-final-inspection-up.png"
+      ],
+      "checks": {
+        "targetedTests": "8 passed",
+        "macCommands": "4 passed",
+        "renderProof": "four sizes passed",
+        "build": "emitted successfully, 25 preexisting type errors",
+        "strictTerminal": "3 preexisting errors",
+        "diffCheck": "pass"
+      },
+      "remaining": [
+        "preexisting strict static gate",
+        "native Mac manual acceptance"
+      ],
+      "followUp": "RF-SHORTCUT P2 Ctrl+L PTY behavior; tested Tab hint used",
+      "ownerAcceptance": "2026-10-03: owner screenshot rejects interactivity and functional self development; streaming/layout proof does not establish usability."
+    },
+    "executionBlocker": {
+      "status": "VERIFYING",
+      "spec": "docs/harness/EXECUTION-BLOCKER.md",
+      "requirements": [
+        "EB01",
+        "EB02",
+        "EB03",
+        "EB04",
+        "EB05",
+        "EB06",
+        "EB07",
+        "EB08",
+        "EB09"
+      ],
+      "graph": {
+        "EB-ISOLATE": "DONE",
+        "EB-GUIDANCE": "VERIFYING",
+        "EB-DIAGNOSTIC": "DONE",
+        "EB-REAL": "VERIFYING",
+        "EB-FEEDBACK": "DONE",
+        "EB-PROMPT": "DONE",
+        "EB-ACTION-LABELS": "DONE",
+        "EB-FORMAT": "DONE",
+        "EB-CONVERSATION": "VERIFYING"
+      },
+      "evidence": [
+        "test/workspace-runtime.test.ts: real Docker dirty/hardlink isolation test, source content/index/HEAD/status unchanged",
+        "test/container-tools.test.ts: exact failure stage/exit126, actual two-command Docker ownership",
+        "17 container/progress/render tests passed with actual Docker, no skips; 10 workspace runtime tests passed",
+        "Installed real default Flash: prepare_workspace and actual node inspection observed; repeated reading needs correction, not accepted",
+        "5 shared-context/UI tests pass including forced truncation retaining latest failure and immutable journal",
+        "4 translator tests pass: ls test remains read, arbitrary node -e remains node, node --test remains test",
+        "4 prompt/format tests pass: rejected prose executes no action, strict second response required, native tools never retried",
+        "Actual installed default Flash self-development, bounded supplied-code request: workspace selected, Node write 607 bytes receipt #38 exit0, Node --test receipt #44 exit0, 1 pass, 0 failures; source has no created test file",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/bounded-selfdev-result.png visually inspected",
+        "/models and settled Ctrl+P open actual provider selector; Esc returns to result",
+        "latest conversation references survive forced context reduction"
+      ],
+      "remaining": [
+        "Unguided autonomous progression: prior broad request repeatedly read; supplied-code request is narrower evidence",
+        "Native owner usability/interaction acceptance failed, still open",
+        "Ctrl+C active PTY cancellation not confirmed",
+        "EB09 short continuation real-model scenario not verified",
+        "Three baseline terminal strict type errors, 25 build baseline errors"
+      ]
+    },
+    "dailyUse": {
+      "status": "READY_FOR_MANUAL_ACCEPTANCE",
+      "spec": "docs/harness/DAILY-USE.md",
+      "requirements": [
+        "DU01",
+        "DU02",
+        "DU03",
+        "DU04",
+        "DU05",
+        "DU06",
+        "DU07",
+        "DU08",
+        "DU09",
+        "DU10",
+        "DU11",
+        "DU12"
+      ],
+      "graph": {
+        "DU-CONVERSATION": "VERIFIED",
+        "DU-REVIEW-BACK": "VERIFIED",
+        "DU-REVIEW-FRONT": "VERIFIED",
+        "DU-STOP": "VERIFIED",
+        "DU-RESUME": "VERIFIED",
+        "DU-MODELS": "VERIFIED",
+        "DU-AGENTS-SKILLS": "VERIFIED",
+        "DU-STATIC": "VERIFIED",
+        "DU-VERIFY": "VERIFIED"
+      },
+      "acceptance": {
+        "verified": [
+          "DU01",
+          "DU02",
+          "DU03",
+          "DU04",
+          "DU05",
+          "DU06",
+          "DU07",
+          "DU08",
+          "DU09",
+          "DU10",
+          "DU11",
+          "DU12"
+        ],
+        "pending": []
+      },
+      "readyForManualAcceptance": true,
+      "evidence": [
+        "docs/harness/DAILY-USE.md#evidence-and-closure",
+        "test/worktree-review.test.ts",
+        "test/workspace-runtime.test.ts",
+        "test/change-review-ui.test.ts",
+        "test/static-typecheck.test.ts",
+        "test/terminal-sessions.test.ts",
+        "test/terminal-session-ui.test.ts",
+        "test/worktree-integration.test.ts",
+        "test/model-switch.test.ts",
+        "test/terminal-code-workers.test.ts",
+        "docs/harness/evaluation/two-real-workers/evidence.md",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/daily-use-2-diff.png",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/daily-use-draft-restored.png",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/daily-use-agent-inspection.png",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/daily-use-evidence.json",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/daily-use-final-restored.png"
+      ],
+      "p0_open": 0,
+      "p1_open": 0,
+      "critical_high_risks_open": 0,
+      "manualAcceptance": {
+        "required": true,
+        "received": false
+      },
+      "remaining": [
+        "Owner experiential acceptance of the bounded daily-use delivery."
+      ]
+    },
+    "multiAgentDailyUse": {
+      "status": "IMPLEMENTING",
+      "spec": "MULTI-AGENT-DAILY-USE.md",
+      "todos": {
+        "MA-T01": "DONE",
+        "MA-T02": "DONE",
+        "MA-T03": "IN_PROGRESS",
+        "MA-T04": "DONE",
+        "MA-T05": "DONE",
+        "MA-T06": "DONE",
+        "MA-T07": "DONE",
+        "MA-T08": "DONE",
+        "MA-T09": "DONE",
+        "MA-T10": "DONE"
+      },
+      "acceptance": {
+        "MA01": "VERIFIED",
+        "MA02": "VERIFIED",
+        "MA03": "FAILED",
+        "MA04": "VERIFIED"
+      },
+      "remaining": [
+        "MA-T03: two successful real workers, review and restart remain unverified; authorized free route starts workers but fails to deliver two valid proposals. Flash remains the global default."
+      ],
+      "manualAcceptance": {
+        "required": true,
+        "received": false
+      },
+      "evidence": [
+        "test/static-typecheck.test.ts",
+        "test/code-worker-loop.test.ts",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/sessions-1791039903433",
+        "test/terminal-code-workers.test.ts",
+        "test/change-review-ui.test.ts",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/review-fixture-1791041335380/proof.json",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/sessions-1791040913452",
+        "test/model-progress.test.ts",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/sessions-1791042331180/t-51f81aa8-78e1-4a4f-8edc-866159b468e3.jsonl",
+        "test/agent-ui.test.ts",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/sessions-1791055392161",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/sessions-1791055748458",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/agents-diagnostic-bottom.png",
+        "/Users/memo/projects/_reports/cuesheet-redesign-2026-10-03/free-restored-review.png"
+      ],
+      "ready_for_manual_acceptance": false,
+      "verification": {
+        "focusedTests": 46,
+        "failedTests": 0,
+        "build": "PASS: zero type errors",
+        "installedReviewFixture": "PASS",
+        "installedFlashEndToEnd": "FAILED: provider waiting; effects preserved",
+        "providerRefusal": {
+          "status": "PASS",
+          "installedElapsedMs": 3433,
+          "toolActions": 0,
+          "tests": 96,
+          "build": "PASS: zero type errors"
+        },
+        "alternativeRoute": {
+          "route": "openrouter/openrouter/free",
+          "status": "FAILED: two workers admitted; one confirmed write, no complete batch",
+          "globalDefaultUnchanged": true,
+          "restoredPartialReview": "PASS: application refused"
+        },
+        "agentInspection": {
+          "status": "PASS",
+          "sizes": [
+            "80x24",
+            "120x30",
+            "160x50",
+            "240x70"
+          ],
+          "tests": 45,
+          "build": "PASS: zero type errors"
+        }
+      },
+      "todosSummary": {
+        "p0_open": 1,
+        "p1_open": 0
+      },
+      "risks": {
+        "critical_open": 0,
+        "high_open": 1,
+        "open": [
+          "Paid provider routes refused quota/access; free route produces invalid proposals, preventing the full two-worker journey."
+        ]
+      }
+    },
+    "agentAssistRouting": {
+      "status": "IMPLEMENTING",
+      "spec": "AGENT-ASSIST-ROUTING.md",
+      "parents": [
+        "H06.8",
+        "AE03"
+      ],
+      "requirements": {
+        "AR01": "PENDING",
+        "AR02": "PENDING",
+        "AR03": "PENDING",
+        "AR04": "PENDING",
+        "AR05": "PENDING",
+        "AR06": "PENDING",
+        "AR07": "PENDING"
+      },
+      "todos": {
+        "AR-T01": "IN_PROGRESS",
+        "AR-T02": "TODO",
+        "AR-T03": "TODO",
+        "AR-T04": "TODO",
+        "AR-T05": "TODO",
+        "AR-T06": "IN_PROGRESS",
+        "AR-T07": "TODO"
+      },
+      "todosSummary": {
+        "p0_open": 6,
+        "p1_open": 1
+      },
+      "ready_for_manual_acceptance": false,
+      "manualAcceptance": {
+        "required": true,
+        "received": false
+      },
+      "evidence": [
+        "MASTER-PRODUCT-DIRECTION.md",
+        "CONCEPT-IMPLEMENTATION-AUDIT.md",
+        "INTERACTIVE-WORK.md",
+        "test/agent-assistance.test.ts"
+      ],
+      "remaining": [
+        "Implement universal assistance, adaptive authorized routing, sourced central learning and targeted redistribution; verify every agent type and real terminal journey."
+      ],
+      "research": {
+        "status": "DOCUMENTED",
+        "date": "2026-10-03",
+        "views": "AGENT-ASSIST-VIEWS-RESEARCH.md",
+        "logic": "AGENT-ASSIST-LOGIC-RESEARCH.md",
+        "runtimeChanged": false,
+        "acceptanceVerified": false,
+        "ux": "UX-INTERVENTION-RESEARCH.md",
+        "productTrends": "UX-PRODUCT-TRENDS-2026.md"
+      }
+    },
+    "interactiveWork": {
+      "status": "READY_FOR_MANUAL_ACCEPTANCE",
+      "spec": "INTERACTIVE-WORK.md",
+      "verification": {
+        "targetedTests": "10 PASS; final render/interactions 2 PASS",
+        "build": "PASS, zero TypeScript errors",
+        "installedPTY": "PASS navigation, draft, context",
+        "historyAnchor": "PASS hidden growth and inactive navigation"
+      },
+      "remaining": [
+        "Owner aesthetic acceptance"
+      ],
+      "ready_for_manual_acceptance": true,
+      "broaderWork": "Universal assistance and adaptive routing remain in AR-T01 through AR-T07",
+      "uxContinuation": {
+        "status": "READY_FOR_MANUAL_ACCEPTANCE",
+        "todos": {
+          "UX-T01": "DONE",
+          "UX-T02": "DONE",
+          "UX-T03": "DONE",
+          "UX-T04": "DONE"
+        },
+        "criteria": {
+          "UX01": "VERIFIED",
+          "UX02": "VERIFIED",
+          "UX03": "VERIFIED",
+          "UX04": "VERIFIED"
+        },
+        "verification": {
+          "targeted": "32 PASS; final adversarial/UI/session 4 PASS",
+          "build": "PASS, zero TypeScript errors",
+          "installedPTY": "PASS context -> Work -> composer; draft preserved; no provider invocation"
+        },
+        "manualAcceptance": {
+          "required": true,
+          "received": false
+        },
+        "remaining": [
+          "Owner aesthetic acceptance; full assistance/routing tracked separately under AR"
+        ]
+      }
+    },
+    "productExperience": {
+      "status": "READY_FOR_MANUAL_ACCEPTANCE",
+      "spec": "PRODUCT-EXPERIENCE.md",
+      "requirements": {
+        "PX01": "VERIFIED",
+        "PX02": "VERIFIED",
+        "PX03": "VERIFIED",
+        "PX04": "VERIFIED",
+        "PX05": "VERIFIED"
+      },
+      "todos": {
+        "PX-T01": "DONE",
+        "PX-T02": "DONE",
+        "PX-T03": "DONE",
+        "PX-T04": "DONE",
+        "PX-T05": "DONE",
+        "PX-T06": "DONE"
+      },
+      "ready_for_manual_acceptance": true,
+      "remaining": [
+        "Owner experiential acceptance of PX",
+        "Global AR/IR/PM/AE/H06 remain open; PX does not close them"
+      ],
+      "evidence": [
+        "PRODUCT-EXPERIENCE.md#preuves-de-la-livraison-px",
+        "test/work-objects.test.ts",
+        "test/product-experience-ui.test.ts"
+      ],
+      "manualAcceptance": {
+        "required": true,
+        "received": false
+      }
+    },
+    "openCodeDelivery": {
+      "status": "IMPLEMENTING",
+      "manifest": "opencode-delivery/dispatch.json",
+      "scope": "AR-T01/02/04/05 implementations followed by parent runtime integration and verification",
+      "workers": [
+        "assistance",
+        "routing",
+        "knowledge"
+      ],
+      "ready_for_manual_acceptance": false,
+      "remaining": [
+        "Worker results",
+        "Controller integration for all roles",
+        "Installed end-to-end flow",
+        "Global product contracts still open"
+      ]
+    }
+  },
+  "previousFocus": {
+    "mission": "autonomous supervised execution against IntentLane",
+    "spec": "INTENTLANE-VERTICAL.md",
+    "phase": "READY_FOR_MANUAL_ACCEPTANCE",
+    "workflow": [
+      "DISCOVER",
+      "MODEL",
+      "SPECIFY",
+      "DECOMPOSE",
+      "IMPLEMENT",
+      "VERIFY",
+      "CLOSE"
+    ],
+    "requirements": [
+      "REQ-IV01",
+      "REQ-IV02",
+      "REQ-IV03",
+      "REQ-IV04",
+      "REQ-IV05",
+      "REQ-IV06",
+      "REQ-IV07"
+    ],
+    "verified": [
+      "AC-IV01",
+      "AC-IV02",
+      "AC-IV03",
+      "AC-IV04",
+      "AC-IV05",
+      "AC-IV06",
+      "AC-IV07"
+    ],
+    "pending": [],
+    "p0_open": 0,
+    "p1_open": 0,
+    "critical_high_risks_open": 0,
+    "tasks": [
+      {
+        "id": "IV01",
+        "status": "DONE",
+        "proof": "NOW.md"
+      },
+      {
+        "id": "IV02",
+        "status": "DONE",
+        "proof": "INTENTLANE-VERTICAL.md#evidence-and-reproduction"
+      },
+      {
+        "id": "IV03",
+        "status": "DONE",
+        "proof": "INTENTLANE-VERTICAL.md#evidence-and-reproduction"
+      },
+      {
+        "id": "IV04",
+        "status": "DONE",
+        "proof": "INTENTLANE-VERTICAL.md#evidence-and-reproduction"
+      },
+      {
+        "id": "IV05",
+        "status": "DONE",
+        "proof": "INTENTLANE-VERTICAL.md#evidence-and-reproduction"
+      },
+      {
+        "id": "IV06",
+        "status": "DONE",
+        "proof": "INTENTLANE-VERTICAL.md#evidence-and-reproduction"
+      },
+      {
+        "id": "IV07",
+        "status": "DONE",
+        "proof": "INTENTLANE-VERTICAL.md#evidence-and-reproduction"
+      }
+    ],
+    "evidenceRoot": "/Users/memo/projects/_reports/cuesheet-intentlane-vertical-2026-10-03",
+    "evidence": [
+      "public-5/audit.json",
+      "public-6/audit.json",
+      "final-audit.json",
+      "full-final.log",
+      "docker-final.log",
+      "worker-docker-final.log",
+      "installed-linux-final.log",
+      "capsule-proof-retry.log"
+    ],
+    "verification": {
+      "full": {
+        "tests": 1043,
+        "passed": 1027,
+        "failed": 0,
+        "skipped": 16
+      },
+      "docker": {
+        "passed": 14,
+        "failed": 0
+      },
+      "workerDocker": {
+        "passed": 7,
+        "failed": 0
+      },
+      "installedLinux": {
+        "passed": 1,
+        "failed": 0
+      },
+      "isolatedCapsule": {
+        "passed": 6,
+        "failed": 0
+      },
+      "publicFreshRuns": [
+        5,
+        6
+      ],
+      "replayEquivalent": true,
+      "realWorkerRedirection": true,
+      "primaryIntentLanePreserved": true
+    },
+    "limitations": [
+      "Build emits with 25 inherited TypeScript diagnostics; strict typecheck is not green.",
+      "Provider proposals can still fail or exhaust and must remain uncertified.",
+      "The wider product backlog remains IMPLEMENTING; existing dirty work is preserved."
+    ],
+    "remaining": [
+      "Human acceptance of this scoped delivery."
+    ],
+    "manualAcceptance": {
+      "required": true,
+      "received": false
+    }
+  },
+  "pendingIntentLaneCodeVertical": {
+    "mission": "real IntentLane code change with live correction and fresh replay",
+    "spec": "INTENTLANE-CODE-VERTICAL.md",
+    "phase": "DISCOVERY",
+    "requirements": [
+      "CV01",
+      "CV02",
+      "CV03",
+      "CV04",
+      "CV05"
+    ],
+    "verified": [],
+    "pending": [
+      "CV01",
+      "CV02",
+      "CV03",
+      "CV04",
+      "CV05"
+    ],
+    "p0_open": 3,
+    "p1_open": 2,
+    "critical_high_risks_open": 2,
+    "remaining": [
+      "Reproducer failed on live correction; recovery repair needed before implementation and replay."
+    ],
+    "evidenceRoot": "/Users/memo/projects/_reports/cuesheet-intentlane-code-2026-10-03"
+  }
 }

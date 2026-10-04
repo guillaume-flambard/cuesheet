@@ -1,0 +1,1224 @@
+Oui. Je vais te faire un **document maître**, pensé pour être donné tel quel à ton autre agent. Il doit lui permettre de reprendre CUESHEET sans reconstruire la conversation ni transformer toutes les idées en chantiers immédiats.
+
+Le point essentiel à préserver est : **la vision est immense, mais le critical path actuel est volontairement étroit.** Tout ce qui suit définit le produit ; ça ne signifie pas « implémente tout maintenant ».
+
+# CUESHEET — MASTER PRODUCT & ARCHITECTURE DIRECTION
+
+## 0. Pourquoi ce document existe
+
+CUESHEET a accumulé beaucoup d'idées, de concepts et de primitives. Le risque actuel est double :
+
+1. perdre la vision globale et revenir vers « un OpenCode amélioré » ;
+2. transformer chaque nouvelle idée en chantier immédiat et ne jamais atteindre le dogfooding.
+
+Ce document fixe donc :
+
+- ce qu'est CUESHEET ;
+- ce qu'il ne doit surtout pas devenir ;
+- son modèle mental ;
+- ses concepts fondamentaux ;
+- sa direction UX ;
+- son architecture agentique ;
+- sa gestion du contexte, des modèles et des ressources ;
+- sa vision entreprise ;
+- sa stratégie de preuve ;
+- sa direction self-hosting ;
+- les idées futures déjà identifiées ;
+- et surtout **l'ordre d'exécution actuel**.
+
+---
+
+# 1. THÈSE PRODUIT
+
+CUESHEET n'est pas :
+
+- un clone d'OpenCode ;
+- un terminal pour Claude/Codex ;
+- un orchestrateur de sub-agents ;
+- un IDE ;
+- un chat avec accès au filesystem ;
+- un projet dans lequel on ouvre des sessions.
+
+CUESHEET doit devenir :
+
+> **A living runtime that keeps human intent, machine understanding, software reality and evidence continuously synchronized.**
+
+Ou, en termes plus opérationnels :
+
+```text
+HUMAN INTENT
+     ↓
+CUESHEET
+     ↓
+UNDERSTAND THE WORLD
+     ↓
+DETERMINE WHAT MUST HAPPEN
+     ↓
+ALLOCATE THE RIGHT INTELLIGENCE
+     ↓
+CHANGE REALITY
+     ↓
+PROVE THE RESULT
+     ↓
+KEEP HUMANS SYNCHRONIZED
+     ↓
+LEARN FROM REAL EXPERIENCE
+```
+
+Le développement logiciel est le premier domaine d'application.
+
+Le modèle peut potentiellement s'étendre beaucoup plus loin.
+
+---
+
+# 2. LA RUPTURE FONDAMENTALE : WORLD > PROJECT > SESSION
+
+CUESHEET ne doit jamais imposer le modèle :
+
+```text
+select project
+↓
+open session
+↓
+load context
+↓
+work
+↓
+close session
+↓
+select another project
+```
+
+Cette frontière doit disparaître.
+
+CUESHEET existe au niveau du **World**.
+
+```text
+                         WORLD
+                           │
+       ┌───────────────────┼───────────────────┐
+       ↓                   ↓                   ↓
+    Projects            Knowledge          Capabilities
+       │                   │                   │
+ repos/apps             concepts             tools
+ services               decisions            skills
+ packages               evidence             MCP
+ documents              artifacts            models
+       │                   │                   │
+       └───────────────────┼───────────────────┘
+                           ↓
+                        CUESHEET
+                           ↕
+                         HUMAN
+```
+
+Le user doit pouvoir lancer CUESHEET depuis `~`.
+
+Puis dire :
+
+> « Va voir mon projet Siri. »
+
+CUESHEET doit retrouver IntentLane.
+
+Puis :
+
+> « Regarde aussi si Kollio est concerné. »
+
+Même conversation.
+
+Puis :
+
+> « Cherche sur internet ce qu'Apple a changé. »
+
+Même conversation.
+
+Puis :
+
+> « Fais-moi un document avec les conséquences. »
+
+Même conversation.
+
+Puis :
+
+> « Applique ce qui vaut le coup. »
+
+Même conversation.
+
+Aucun changement de cwd visible.
+
+Aucune « nouvelle session IntentLane ».
+
+---
+
+# 3. ZERO MODES
+
+Pas de :
+
+```text
+Chat | Plan | Build | Debug | Research
+```
+
+Ce sont des stratégies internes.
+
+L'utilisateur parle.
+
+CUESHEET détermine s'il faut :
+
+- répondre ;
+- réfléchir ;
+- chercher sur le web ;
+- inspecter le World ;
+- retrouver un projet ;
+- créer un document ;
+- coder ;
+- lancer des tests ;
+- créer des agents ;
+- demander une décision ;
+- attendre ;
+- vérifier ;
+- observer.
+
+Exemple :
+
+```text
+"Pourquoi on avait fait ça ?"
+→ knowledge
+
+"Vérifie si c'est encore vrai."
+→ research / reality
+
+"OK change-le."
+→ implementation
+
+"Attends, pas la DB."
+→ live steering
+
+"Continue."
+→ execution resumes
+```
+
+---
+
+# 4. WORLD AWARENESS
+
+CUESHEET doit comprendre progressivement la machine et l'environnement.
+
+Sources possibles :
+
+- registres explicites ;
+- Git repositories ;
+- manifests ;
+- fichiers ;
+- Xcode projects ;
+- packages ;
+- activité récente ;
+- documentation ;
+- CUESHEET state ;
+- tools ;
+- skills ;
+- services locaux ;
+- CI ;
+- MCP ;
+- connaissances déjà établies.
+
+Mais :
+
+> **Progressive Discovery.**
+
+Ne jamais scanner stupidement toute la machine avant chaque demande.
+
+Commencer peu cher.
+
+Étendre la connaissance seulement lorsque nécessaire.
+
+---
+
+# 5. INTENT EST L'UNITÉ FONDAMENTALE
+
+Pas le prompt.
+
+Pas la tâche.
+
+Pas le chat.
+
+**Intent.**
+
+Un intent peut contenir :
+
+```yaml
+intent:
+  actor:
+  goal:
+  why:
+  constraints:
+  acceptance:
+  assumptions:
+  provenance:
+  status:
+```
+
+Exemple :
+
+```text
+Intent:
+allow project status transition
+
+Why:
+support certification workflow
+
+Constraints:
+- no breaking mobile API
+- preserve audit history
+
+Success:
+- valid transitions work
+- invalid transitions rejected
+- old clients remain compatible
+```
+
+---
+
+# 6. INTENT GRAPH
+
+Les intents doivent être reliés au monde réel :
+
+```text
+Intent
+  ↓
+Decision
+  ↓
+Domain
+  ↓
+Contract
+  ↓
+Implementation
+  ↓
+Data
+  ↓
+Evidence
+  ↓
+Outcome
+```
+
+Et inversement, à partir d'un fichier ou d'une API :
+
+```text
+Why does this exist?
+Who depends on it?
+Which intent justifies it?
+What proves it?
+```
+
+---
+
+# 7. INTENT DRIFT
+
+CUESHEET doit détecter :
+
+```text
+ORIGINAL INTENT
+      ≠
+CURRENT WORK
+```
+
+Exemple :
+
+```text
+Original:
+edit project title
+
+Current modifications:
+auth
+organisation permissions
+project creation
+```
+
+CUESHEET ne bloque pas aveuglément.
+
+Il demande :
+
+> Ces dépendances sont-elles réellement nécessaires ?
+
+Si oui : étendre proprement l'impact.
+
+Sinon : drift.
+
+---
+
+# 8. INTENT COMPILER
+
+À terme :
+
+```text
+Human language
+     ↓
+Intent normalization
+     ↓
+Constraints
+     ↓
+Acceptance
+     ↓
+World traversal
+     ↓
+Conflict detection
+     ↓
+Feasibility
+     ↓
+Work Graph
+     ↓
+Execution
+     ↓
+Proof
+```
+
+Le prompt cesse progressivement d'être le protocole fondamental.
+
+---
+
+# 9. FEASIBILITY ENGINE
+
+Avant de coder aveuglément :
+
+```text
+technical feasibility
+dependency feasibility
+contract compatibility
+data migration risk
+security
+capabilities
+ownership
+testability
+rollbackability
+```
+
+Éviter les faux scores LLM du style `82/100`.
+
+Préférer :
+
+```text
+FEASIBLE
+FEASIBLE_WITH_CONSTRAINTS
+UNKNOWN
+CONFLICT
+BLOCKED
+```
+
+avec preuves.
+
+---
+
+# 10. REALITY / STATE GRAPH
+
+Le World doit progressivement contenir une représentation déterministe de :
+
+- domaines ;
+- entités ;
+- fichiers ;
+- modules ;
+- APIs ;
+- contracts ;
+- DB ;
+- schemas ;
+- migrations ;
+- tests ;
+- CI ;
+- services ;
+- ownership ;
+- capabilities ;
+- evidence.
+
+Le LLM peut suggérer des relations.
+
+Mais :
+
+> **Inference is not fact.**
+
+---
+
+# 11. IMPACT ENGINE
+
+Un changement doit permettre :
+
+```text
+changed node
+     ↓
+dependency traversal
+     ↓
+affected nodes
+     ↓
+required validation
+```
+
+Exemple :
+
+```text
+Project.status
+├── API
+├── Mobile
+├── lifecycle
+├── DB
+└── tests
+```
+
+Le repo possède déjà les prémices réelles de cette direction.
+
+---
+
+# 12. COUNTERFACTUAL GRAPH
+
+Plus tard :
+
+> « Que se passe-t-il si on supprime Project.status ? »
+
+Sans modification :
+
+```text
+known impact
+inferred impact
+unknown impact
+```
+
+CUESHEET doit pouvoir simuler le blast radius connu.
+
+---
+
+# 13. EPISTEMIC RUNTIME
+
+Un des axes les plus importants.
+
+Chaque claim important doit pouvoir être :
+
+```text
+● OBSERVED
+◐ INFERRED
+◇ ASSUMED
+? UNKNOWN
+```
+
+Exemple :
+
+```text
+Mobile uses API v1
+● OBSERVED
+source: MobileContract.swift
+
+External customers use API v1
+? UNKNOWN
+external consumers unavailable
+```
+
+Règle :
+
+> **Inference may guide exploration. Evidence closes work.**
+
+---
+
+# 14. KNOWLEDGE HALF-LIFE
+
+La mémoire n'est pas automatiquement vraie éternellement.
+
+Une connaissance possède :
+
+- provenance ;
+- freshness ;
+- supporting sources ;
+- invalidators.
+
+Si la source change :
+
+```text
+OBSERVED
+↓
+source changed
+↓
+STALE
+↓
+re-observe
+```
+
+Une mémoire ancienne fausse peut être plus dangereuse qu'une absence de mémoire.
+
+---
+
+# 15. SHARED ENGINEERING STATE
+
+Principe fondamental :
+
+> Material knowledge known by a human must become addressable by agents.
+
+Et :
+
+> Material knowledge discovered by an agent must become addressable by humans and relevant agents.
+
+Mais surtout pas :
+
+```text
+send every conversation
+to every agent
+```
+
+La mémoire doit être structurée.
+
+---
+
+# 16. CONTEXT CAPSULE
+
+Chaque worker reçoit uniquement le contexte nécessaire :
+
+```text
+relevant intent
+relevant decisions
+relevant graph neighborhood
+relevant code
+relevant contracts
+relevant tests
+relevant recent changes
+relevant evidence
+```
+
+Pas 500k tokens « au cas où ».
+
+---
+
+# 17. PROGRESSIVE CONTEXT EXPANSION
+
+Commencer avec un petit sous-graphe.
+
+Si une dépendance manque :
+
+```text
+context frontier reached
+↓
+missing dependency
+↓
+expand one hop
+```
+
+---
+
+# 18. CONTEXT MARKET
+
+Le contexte lui-même est une ressource.
+
+Considérer :
+
+```text
+relevance
+information gain
+freshness
+tokens
+latency
+```
+
+Objectif :
+
+> acheter le minimum de contexte suffisant pour résoudre la prochaine incertitude.
+
+---
+
+# 19. ADAPTIVE EXECUTION LOOP
+
+Boucle fondamentale :
+
+```text
+OBSERVE
+ ↓
+MAP
+ ↓
+ASSESS
+ ↓
+BUDGET
+ ↓
+ROUTE
+ ↓
+ACT
+ ↓
+MEASURE
+ ↓
+RECONCILE
+ ↓
+OBSERVE...
+```
+
+Réévaluer continuellement :
+
+- intent ;
+- scope ;
+- complexity ;
+- risk ;
+- time ;
+- cost ;
+- context ;
+- workers ;
+- model ;
+- blockers ;
+- evidence.
+
+---
+
+# 20. PROGRESSIVE DISCOVERY
+
+Avant de lancer un gros modèle :
+
+```text
+repo size
+languages
+manifest
+framework
+git
+tests
+DB indicators
+contracts
+CI
+```
+
+Les choses déterministes ne nécessitent pas de LLM.
+
+---
+
+# 21. MODÈLE ≠ AGENT
+
+Très important.
+
+Un worker ne doit jamais être :
+
+```text
+Agent A = Nemotron
+```
+
+Mais :
+
+```text
+Worker A
+├── work
+├── intent
+├── context
+├── evidence
+├── unresolved question
+└── current compute
+```
+
+Le modèle est du compute interchangeable.
+
+---
+
+# 22. RESILIENT MODEL FABRIC
+
+Providers initiaux importants :
+
+- OpenCode Zen ;
+- OpenCode Go ;
+- puis autres providers/local.
+
+Le catalogue de modèles doit idéalement être découvert dynamiquement.
+
+Chaque worker peut utiliser un modèle différent.
+
+Un quota atteint ne doit PAS bloquer le workflow.
+
+```text
+Nemotron / Zen
+↓
+quota exhausted
+↓
+worker checkpoint
+↓
+router
+↓
+compatible model
+↓
+resume
+```
+
+---
+
+# 23. FAILURE CLASSIFICATION
+
+Différencier :
+
+```text
+TRANSIENT
+RATE_LIMIT
+QUOTA_EXHAUSTED
+CONTEXT_OVERFLOW
+AUTH
+MODEL_UNAVAILABLE
+INVALID_REQUEST
+```
+
+Réactions différentes.
+
+Pas « retry x3 » universel.
+
+---
+
+# 24. CIRCUIT BREAKER + GLOBAL BACKPRESSURE
+
+Si 30 workers utilisent Zen et Zen commence à répondre 429 :
+
+ne pas laisser 30 workers retenter individuellement.
+
+Le runtime voit la pression globale.
+
+Il peut :
+
+- diminuer la concurrence ;
+- rerouter ;
+- retarder le non-critique ;
+- réserver les capacités restantes au critical path.
+
+---
+
+# 25. ADAPTIVE MODEL ROUTING
+
+Principe :
+
+```text
+WORK UNIT
+↓
+requirements
+↓
+router
+↓
+capability
+```
+
+Exemples :
+
+```text
+grep/imports
+→ deterministic
+
+small summary
+→ cheap model
+
+coding
+→ coding model
+
+architecture ambiguity
+→ reasoning model
+
+tests
+→ tool
+
+hard failure
+→ escalation
+```
+
+Règle :
+
+> **Deterministic before probabilistic. Cheap before expensive. Local before global. Escalate on evidence.**
+
+Et downgrade ensuite si le problème devient simple.
+
+---
+
+# 26. TIME EST UNE RESSOURCE
+
+CUESHEET doit comprendre :
+
+> « On a 40 minutes. »
+
+Et protéger :
+
+- discovery ;
+- implementation ;
+- verification ;
+- buffer.
+
+À 8 minutes de la fin, on ne commence pas une exploration architecture optionnelle.
+
+---
+
+# 27. BUDGET CONTROLLER
+
+Ressources :
+
+```text
+time
+tokens
+money
+latency
+context
+CPU
+RAM
+GPU
+API quota
+```
+
+---
+
+# 28. WORK GRAPH
+
+Pas une TODO-list plate.
+
+```text
+DISCOVERED
+READY
+CLAIMED
+RUNNING
+VERIFYING
+PROVEN
+
+BLOCKED
+STALE
+SUPERSEDED
+CANCELLED
+```
+
+Les dépendances déterminent ce qui peut être exécuté.
+
+---
+
+# 29. ELASTIC WORKFORCE
+
+Pas de nombre statique d'agents.
+
+```text
+1 → 3 → 12 → 5 → 1
+```
+
+si cela a du sens.
+
+Le nombre dépend :
+
+- travail parallélisable ;
+- ressources ;
+- temps ;
+- coût ;
+- contexte ;
+- conflits ;
+- critical path.
+
+Règle :
+
+> **No capable worker waits while useful, admissible, conflict-free work exists, unless a synchronization barrier is active.**
+
+---
+
+# 30. WORK STEALING
+
+Un worker qui termine ne meurt pas automatiquement.
+
+S'il existe du travail utile :
+
+```text
+worker AVAILABLE
+↓
+scheduler
+↓
+best next work
+```
+
+Le warm context déjà payé est un facteur de scheduling.
+
+---
+
+# 31. AGENT ASSIST
+
+Un worker peut demander de l'aide :
+
+```text
+HELP REQUEST
+Need:
+understand ledger invariant
+
+Blocking:
+W42
+```
+
+Le scheduler peut lancer un helper.
+
+Le helper retourne :
+
+```text
+finding
+evidence
+confidence
+implications
+unknowns
+```
+
+Pas 20k tokens de conversation.
+
+---
+
+# 32. KNOWLEDGE DELTA ROUTING
+
+Un agent découvre quelque chose concernant un autre.
+
+```text
+Agent A
+↓
+structured finding
+↓
+Shared State
+↓
+relevance routing
+↓
+Agent B
+```
+
+Agent B reçoit le delta pertinent.
+
+Pas tout le chat d'A.
+
+---
+
+# 33. PEER REVIEW / ADVERSARIAL REVIEW
+
+Selon risque :
+
+```text
+implementation
+↓
+independent reviewer
+↓
+possibly adversarial reviewer
+↓
+proof
+```
+
+Pas systématique.
+
+Le coût de review dépend :
+
+```text
+risk × uncertainty × blast radius
+```
+
+---
+
+# 34. LIVE STEERING
+
+Pas de queue de messages.
+
+Pendant que les agents travaillent :
+
+> « Ne touchez plus à la DB. »
+
+Immédiatement :
+
+```text
+context revision 42 → 43
+```
+
+Workers :
+
+```text
+unaffected → continue
+affected → checkpoint/replan
+invalid → stop safely
+```
+
+---
+
+# 35. SYNC BARRIER
+
+> « Stop, faisons le point. »
+
+Pas nécessairement kill.
+
+```text
+stop new claims
+↓
+safe checkpoints
+↓
+persist
+↓
+reconcile
+↓
+Team Sync
+```
+
+Puis :
+
+```text
+continue
+redirect
+cancel
+```
+
+---
+
+# 36. HUMAN LEGIBILITY
+
+Principe :
+
+> **Don't narrate your work. Maintain the human's model of the work.**
+
+Machine :
+
+```text
+dependency graph
+execution state
+intent
+evidence
+uncertainty
+decisions
+```
+
+Humain :
+
+```text
+what it touches
+where we are
+why
+how we know
+what we don't know
+what changed
+```
+
+---
+
+# 37. HUMAN DELTA
+
+Ne pas expliquer tout.
+
+Expliquer uniquement ce qui change le modèle mental nécessaire.
+
+Exemple :
+
+```text
+◆ HUMAN DELTA
+
+Project.status is also consumed by mobile.
+
+Removing it would therefore be breaking.
+
+I adjusted the plan to preserve compatibility.
+```
+
+---
+
+# 38. CONFIRMATION BY EXCEPTION
+
+Pas :
+
+> « Est-ce que j'ai compris ? »
+
+à chaque étape.
+
+Niveaux :
+
+```text
+0 routine
+→ silent
+
+1 informative
+→ surface
+
+2 important assumption
+→ surface and continue
+
+3 irreversible / genuinely ambiguous
+→ block for decision
+```
+
+---
+
+# 39. HUMAN MODEL
+
+Ne pas deviner ce que l'humain pense.
+
+Suivre seulement ce qui lui a été communiqué :
+
+```text
+communicated facts
+decisions
+assumptions
+open questions
+last sync
+```
+
+Puis détecter :
+
+```text
+SYSTEM KNOWLEDGE
+≠
+LAST HUMAN MODEL
+```
+
+→ Human Delta.
+
+---
+
+# 40. TEACH BACK
+
+Pour certaines décisions importantes :
+
+```text
+MY CURRENT UNDERSTANDING
+
+You want:
+...
+
+Important constraint:
+...
+
+I am deliberately NOT:
+...
+
+Success means:
+...
+```
+
+Sans demander automatiquement confirmation.
+
+---
+
+# 41. PROOF BEFORE DONE
+
+`Done` n'est pas une preuve.
+
+```text
+INTENT SATISFIED
++
+REQUIRED PROOF SATISFIED
+=
+DONE
+```
+
+Le producteur n'est pas seul juge.
+
+---
+
+# 42. PROOF-CARRYING WORK
+
+Un résultat devrait pouvoir transporter :
+
+```text
+Intent
+Change
+Impact
+Evidence
+Unknowns
+Verdict
+```
+
+---
+
+# 43. UI PROOF
+
+Pour une UI :
+
+```text
+Implementation Proof
++
+Behavior Proof
++
+Render Proof
+=
+UI Proof
+```
+
+Un agent qui modifie `apps/terminal/**` ne peut pas dire « verified » s'il n'a pas lancé la vraie interface.
+
+---
+
+# 44. RENDER PROOF
+
+Boucle :
+
+```text
+CHANGE

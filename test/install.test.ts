@@ -39,7 +39,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -246,7 +246,6 @@ send "installed goal"
 waitms 500
 send "\\r"
 seen {INSTALLED_TERMINAL_OK}
-seen {still open after 8 steps}
 waitms 500
 send "\\003"
 expect -timeout 5 eof {} timeout {catch {close};exit 10}
@@ -254,7 +253,7 @@ set result [wait]
 exit [lindex $result 3]
 `);
  const run=spawnSync('/usr/bin/expect',[driver],{cwd:project,encoding:'utf8',timeout:25000,env:{PATH:`${bin}:${NODE_DIR}:/usr/bin:/bin`,HOME:home,TERM:'xterm-256color',CUESHEET_SESSIONS:join(stage,'terminal-sessions'),CUESHEET_OPENCODE_BIN:binary,CUESHEET_MAX_SLICES:'1'}});
- assert.equal(run.status,0,`${run.error??''}\n${run.stdout}\n${run.stderr}`);assert.match(run.stdout,/INSTALLED_TERMINAL_OK/);assert.match(run.stdout.slice(-1000),/\x1b\[\?25h/,'the cursor is restored before exiting');assert.doesNotMatch(run.stdout,/ERR_MODULE_NOT_FOUND|Dynamic require.*not supported/);assert.ok(existsSync(join(stage,'terminal-sessions')));
+ assert.equal(run.status,0,`${run.error??''}\n${run.stdout}\n${run.stderr}`);assert.match(run.stdout,/INSTALLED_TERMINAL_OK/);assert.match(run.stdout.slice(-1000),/\x1b\[\?25h/,'the cursor is restored before exiting');assert.doesNotMatch(run.stdout,/ERR_MODULE_NOT_FOUND|Dynamic require.*not supported/);assert.ok(existsSync(join(stage,'terminal-sessions')));const journals=readdirSync(join(stage,'terminal-sessions')).filter(name=>name.endsWith('.jsonl')&&!name.includes('.view.'));const events=journals.flatMap(name=>readFileSync(join(stage,'terminal-sessions',name),'utf8').trim().split('\n').map(JSON.parse));assert.equal(events.filter(event=>event.subject==='terminal.execution'&&event.data.state==='response-delivered').length,1);assert.equal(events.filter(event=>event.kind==='work_verified').length,0);
 });
 
 
@@ -288,4 +287,43 @@ exit [lindex $result 3]
  const run=spawnSync('/usr/bin/expect',[driver],{cwd:source,encoding:'utf8',timeout:35000,env:{PATH:`${NODE_DIR}:/usr/bin:/bin`,HOME:home,TERM:'xterm-256color',CUESHEET_SESSIONS:state,CUESHEET_OPENCODE_BIN:binary,CUESHEET_MAX_SLICES:'1',CUESHEET_TOOL_IMAGE:process.env.CUESHEET_TEST_CAPSULE_IMAGE!,CUESHEET_TOOL_SOCKET:process.env.CUESHEET_TEST_TOOL_SOCKET!}});
  assert.equal(run.status,0,`${run.error??''}\n${run.stdout.slice(-12000)}\n${run.stderr}`);assert.doesNotMatch(run.stdout,/ERR_MODULE_NOT_FOUND|Dynamic require.*not supported/);assert.equal(readFileSync(join(source,'feature.mjs'),'utf8'),'export const value=2;\n');assert.equal(readFileSync(join(source,'human'),'utf8'),'human pending');assert.equal(readFileSync(join(source,'human-staged'),'utf8'),'keep');assert.equal(git('rev-parse','HEAD'),head);assert.equal(git('diff','--cached','--binary'),index);
  const {TerminalSession,listTerminalSessions}=await import(join(installed,'dist','src','adapters','terminal-session.js'));const listed=listTerminalSessions(state);assert.equal(listed.length,1);assert.equal(listed[0].damaged,false);const journal=new TerminalSession({root:state,cwd:source,id:listed[0].id});try{const session=journal.core.toSession();assert.equal(session.goal.open,false);assert.ok(session.events.some((e:any)=>e.subject==='terminal.workspace'&&e.data.phase==='integrated'));assert.equal(session.events.filter((e:any)=>e.kind==='work_verified').length,1);assert.ok(session.events.some((e:any)=>e.subject==='terminal.execution'&&e.data.state==='goal-closed'));const {SessionContainers}=await import(join(installed,'dist','src','adapters','container-receipts.js'));const containers=new SessionContainers({root:state,sessionId:journal.metadata.id}).read();assert.equal(containers.length,2);assert.ok(containers.every((c:any)=>c.status==='removed'));assert.ok(containers.every((c:any)=>session.events.some((e:any)=>e.seq===c.intentSeq&&e.subject==='terminal.intent')));const {NotificationProjection}=await import(join(installed,'dist','src','adapters','notifications.js'));const projection=new NotificationProjection();const n=projection.update(session.events);assert.ok(n.items.some((i:any)=>i.phase==='goal-closed'));}finally{journal.close();}
+});
+
+
+it("installed Agents reopens an interrupted private proposal with recovery provenance",{skip:!existsSync('/usr/bin/expect')},async()=>{
+ const result=oracle();assert.equal(result.ok,true,result.why);const {installed,home}=result.terminal!;const stage=realpathSync(result.terminal!.stage);
+ const source=join(stage,'recovery-source'),state=join(stage,'recovery-state'),worktrees=join(stage,'recovery-worktrees');mkdirSync(source);mkdirSync(state);mkdirSync(worktrees);
+ const git=(...args:string[])=>execFileSync('git',args,{cwd:source,encoding:'utf8',env:childEnv({home,sessions:state})});
+ git('init','-q');git('config','user.name','Recovery');git('config','user.email','recovery@example.invalid');writeFileSync(join(source,'base'),'base');git('add','.');git('commit','-qm','base');
+ const {TerminalSession}=await import('../src/adapters/terminal-session.ts');const {createObjective}=await import('../src/adapters/objectives.ts');const {runTerminalCodeWorkers}=await import('../src/adapters/terminal-code-workers.ts');
+ const parent=new TerminalSession({root:state,cwd:source});parent.core.append({kind:'goal',subject:'recovery',data:{text:'Inspect preserved contribution'}});const objective=createObjective(parent.core,'Inspect preserved contribution',source,parent.core.revision);
+ const append=parent.core.append.bind(parent.core);parent.core.append=(event)=>{if(event.subject==='terminal.agent'&&event.data.phase==='result')throw Error('publication interrupted');return append(event);};
+ await runTerminalCodeWorkers({input:{tasks:[{role:'builder',task:'Preserved contribution',files:['base']}]},source,root:worktrees,parent,shared:parent.core,execution:'recovery-ui',objective,signal:new AbortController().signal,current:()=>true,
+ route:()=>{let step=0;return {adapter:{name:'fixture',async infer(){return ++step===1?{text:'',toolCalls:[{name:'node',input:{argv:['node','-e',"require('fs').writeFileSync('base','changed')"]}}]}:{text:'private proposal',toolCalls:[]};}},label:'fixture'};},tools:(scope)=>({names:['node'],async run(){writeFileSync(join(scope,'base'),'changed');return {name:'node',exit:0,output:'changed contribution'};}}),frame:()=>({goal:'Inspect preserved contribution',history:[],directives:[],evidence:[],capabilities:[],model:'fixture',step:0}),skills:()=>({references:[],instructions:'',warnings:[],current:()=>true}),notice:()=>{}});
+ assert.ok(parent.core.toSession().events.some(event=>event.subject==='terminal.code-worker'&&event.data.phase==='admitted'),'real worker admission is required before UI proof');
+ const id=parent.metadata.id;parent.close();
+ const provider=join(stage,'recovery-provider');writeFileSync(provider,`#!${NODE}\nprocess.exit(75);\n`,{mode:0o755});
+ for(const width of [100,58]){
+  const driver=join(stage,`recovery-${width}.exp`);writeFileSync(driver,`set stty_init {rows 40 columns ${width}}
+match_max -d 200000
+proc seen {pattern} {expect -timeout 12 -re $pattern {} timeout {catch {close};exit 8} eof {exit 9}}
+proc waitms {ms} {set end [expr {[clock milliseconds]+$ms}];while {[clock milliseconds]<$end} {expect -timeout 1 -re {(?s).+} {} timeout {} eof {return}}}
+spawn {${NODE}} {${join(installed,'dist','src','cuesheet.js')}} surface --session ${id}
+seen {Ctrl\\+K}
+waitms 300
+send "\\013"
+seen {> View the log}
+foreach label {{Help} {Provider and model} {Sessions} {New session} {Resume work} {Acceptance check} {Shared context} {Agents}} {send "\\033\\\[B";seen "> $label"}
+send "\\r"
+seen {interrupted}
+for {set i 0} {$i<18} {incr i} {send "\\033\\\[B";waitms 60}
+send "\\033"
+waitms 200
+send "\\003"
+expect -timeout 5 eof {} timeout {catch {close};exit 10}
+exit 0
+`);
+  const run=spawnSync('/usr/bin/expect',[driver],{cwd:source,encoding:'utf8',timeout:60000,env:{PATH:`${NODE_DIR}:/usr/bin:/bin`,HOME:home,TERM:'xterm-256color',CUESHEET_SESSIONS:state,CUESHEET_OPENCODE_BIN:provider}});
+  assert.equal(run.status,0,`width=${width} ${run.error??''}\n${run.stdout.slice(-12000)}\n${run.stderr}`);assert.doesNotMatch(run.stdout,/ERR_MODULE_NOT_FOUND|ReferenceError/);for(const label of [/Cost/,/Private journal/,/inspect_code_workers/,/Provenance/])assert.match(run.stdout,label);
+ }
 });

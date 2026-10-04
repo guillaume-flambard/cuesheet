@@ -1,0 +1,11 @@
+import {build} from 'esbuild';
+import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {dirname,join} from 'node:path';
+const root=dirname(fileURLToPath(import.meta.url));
+const built=await build({entryPoints:[join(root,'ui.ts')],bundle:true,write:false,format:'iife',platform:'browser',target:'es2022',minify:true});
+const script=built.outputFiles[0].text.replaceAll('</script','<\\/script');
+const template=readFileSync(join(root,'ui.html'),'utf8');
+mkdirSync(join(root,'dist'),{recursive:true});
+writeFileSync(join(root,'dist','mission-control.html'),template.replace('<!-- BUNDLE -->',()=>'<script>'+script+'</script>'));
+console.log('Mission Control UI bundled.');

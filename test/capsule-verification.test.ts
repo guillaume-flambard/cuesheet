@@ -34,10 +34,10 @@ test('actual capsule oracle permits admitted derived build outputs and rejects p
 });
 test('independent owner capsule builds and checks captured Cuesheet without mutating source or artifact',{skip:!available},async()=>{
  const source=realpathSync(process.cwd()),root=realpathSync(mkdtempSync(join(tmpdir(),'cs-owner-selfhost-')));let workspace:string|undefined;try{
- const before=await captureGitSnapshot(source),script=join(root,'owner.mjs');
+ const baselineDiagnostics=readFileSync(join(source,'.typecheck.log'),'utf8').split('\n').filter(line=>/error TS/.test(line));const before=await captureGitSnapshot(source),script=join(root,'owner.mjs');
  const allocated=await allocateWorktree({repository:source,root:join(root,'workspaces'),allocation:{id:'owner-check',unit:'independent-check',agent:'fixture-verifier',objective:'selfhost-oracle',revision:1,base:before.base},snapshot:before});assert.equal(allocated.kind,'ready',JSON.stringify(allocated));if(allocated.kind!=='ready')return;workspace=allocated.path;
  writeFileSync(script,profile(['dist','.typecheck.log'],'volume')+`import {spawnSync} from 'node:child_process';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
-const build=spawnSync('bash',['scripts/build.sh'],{stdio:'inherit'});assert.equal(build.status,0);assert.equal((readFileSync('.typecheck.log','utf8').match(/error TS/g)||[]).length,32);
+const build=spawnSync('bash',['scripts/build.sh'],{stdio:'inherit'});assert.equal(build.status,0);assert.deepEqual(readFileSync('.typecheck.log','utf8').split('\\n').filter(line=>/error TS/.test(line)),${JSON.stringify(baselineDiagnostics)});
 const tests=spawnSync(process.execPath,['--test','--test-concurrency=1','--test-skip-pattern=MB-01 a real run against the installed binary','--test-reporter=spec','test/**/*.test.ts'],{stdio:'inherit'});assert.equal(tests.status,0);`);
  const check=createCompletionCheck({script,root:join(root,'proof'),containerSocket:socket,timeoutMs:300000});const result=await check.verify(workspace,'E-selfhost');
  const diagnostics=readdirSync(join(root,'proof'),{recursive:true}).filter(p=>String(p).endsWith('oracle-output.log')).map(p=>readFileSync(join(root,'proof',String(p)),'utf8')).join('\n');

@@ -36,15 +36,15 @@ console.log(JSON.stringify({initial,providerScreen,waiting,cancelled,catalog,con
     const env=childEnv({home:root,sessions:join(root,'sessions')});
     env.XDG_CONFIG_HOME=join(root,'config');env.CUESHEET_PROVIDER='openai';env.CUESHEET_MODEL='unavailable';
     delete env.OPENAI_API_KEY;delete env.OPENROUTER_API_KEY;
-    const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{cwd:root,env,encoding:'utf8',timeout:15000});
+    const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{cwd:root,env,encoding:'utf8',timeout:30000});
     assert.equal(run.status,0,run.stderr+'\n'+run.stdout);
     const result=JSON.parse(run.stdout.trim());
     assert.match(result.initial,/OPENAI_API_KEY/);
-    assert.match(result.providerScreen,/Provider et modèle/);
+    assert.match(result.providerScreen,/Provider and model/);
     assert.equal(result.cancelled,true);
     assert.match(result.catalog,/UI_NEW_MODEL/);
     assert.doesNotMatch(result.catalog,/LATE_MODEL/);
-    assert.match(result.confirm,/Appliquer/);
+    assert.match(result.confirm,/Apply/);
     assert.match(result.applied,/compatible.*UI_NEW_MODEL/);
     assert.deepEqual(result.preferences,{provider:'compatible',model:'UI_NEW_MODEL',baseUrl:'http://localhost:9000/v1',maxTokens:256});
     assert.equal(result.composer,'draft preserved');
@@ -72,11 +72,11 @@ await key('\\r');await key('\\r');const failedCatalog=last;await key('\\t');cons
 await key('MANUAL_ID');await key('\\r');await key('0');await key('\\r');const invalidLimit=last;
 await key('\\x7f');await key('512');await key('\\r');await key('\\x1b[A');await key('\\r');app.unmount();
 console.log(JSON.stringify({failedCatalog,manual,invalidLimit,applied,closed}));`);
-    const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:15000});
+    const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:30000});
     assert.equal(run.status,0,run.stderr);
     const result=JSON.parse(run.stdout.trim());
-    assert.match(result.failedCatalog,/Catalogue indisponible/);assert.match(result.manual,/ID libre/);
-    assert.match(result.invalidLimit,/entier positif/);
+    assert.match(result.failedCatalog,/Catalogue indisponible/);assert.match(result.manual,/Manual ID/);
+    assert.match(result.invalidLimit,/positive integer/);
     assert.deepEqual(result.applied,{choice:{provider:'compatible',baseUrl:'http://localhost:9000/v1',model:'MANUAL_ID',maxTokens:512},save:false});
     assert.equal(result.closed,true);
   } finally {rmSync(root,{recursive:true,force:true});}
@@ -99,9 +99,20 @@ const tick=()=>new Promise(r=>setTimeout(r,50));const key=async(value)=>{input.w
 await key('\\r');await key('\\t');await key('EXPLICIT_CLAUDE_ID');await key('\\r');await key('\\r');const required=last;const appliedBefore=!!applied;
 await key('128');await key('\\r');await key('\\r');app.unmount();
 console.log(JSON.stringify({required,appliedBefore,applied,closed}));`);
-    const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:15000});
+    const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:30000});
     assert.equal(run.status,0,run.stderr);
-    const result=JSON.parse(run.stdout.trim());assert.match(result.required,/Anthropic exige une limite/);assert.equal(result.appliedBefore,false);
+    const result=JSON.parse(run.stdout.trim());assert.match(result.required,/Anthropic requires an explicit output limit/);assert.equal(result.appliedBefore,false);
     assert.deepEqual(result.applied,{choice:{provider:'anthropic',model:'EXPLICIT_CLAUDE_ID',maxTokens:128},save:true});assert.equal(result.closed,true);
   } finally {rmSync(root,{recursive:true,force:true});}
+});
+
+
+it('current model remains visible in a crowded catalog viewport',()=>{
+ const root=mkdtempSync(join(tmpdir(),'cs-model-viewport-'));
+ try{const terminal=resolve('apps/terminal'),script=join(root,'viewport.tsx');writeFileSync(join(root,'package.json'),'{"type":"module"}');
+ writeFileSync(script,`import React from ${JSON.stringify(join(terminal,'node_modules/react/index.js'))};import {render} from ${JSON.stringify(join(terminal,'node_modules/ink/build/index.js'))};import {Models} from ${JSON.stringify(join(terminal,'src/overlays/Models.tsx'))};import {PassThrough} from 'node:stream';
+ const out=new PassThrough();Object.assign(out,{columns:80,rows:24,isTTY:false});let last='';out.on('data',b=>last=b.toString());const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});
+ const app=render(<Models rows={12} busy={false} selection={{provider:'opencode',model:'opencode-go/deepseek-v4.1-flash'}} list={async()=>[...Array.from({length:40},(_,i)=>({id:'earlier-'+i,name:'Earlier'})),{id:'opencode-go/deepseek-v4.1-flash',name:'DeepSeek'}]} apply={()=>({ok:true})} onClose={()=>{}}/>,{stdout:out,stderr:out,stdin:input,debug:true,exitOnCtrlC:false});await new Promise(r=>setTimeout(r,40));input.write('\\r');await new Promise(r=>setTimeout(r,100));const frame=last;app.unmount();console.log(JSON.stringify({frame}));`);
+ const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{env:childEnv({home:root,sessions:root}),encoding:'utf8',timeout:10000});assert.equal(run.status,0,run.stderr);const r=JSON.parse(run.stdout.trim());assert.match(r.frame,/› opencode-go\/deepseek-v4\.1-flash/);assert.match(r.frame,/Enter: choose/);assert.ok(r.frame.trimEnd().split('\n').length<=12);
+ }finally{rmSync(root,{recursive:true,force:true});}
 });

@@ -52,7 +52,7 @@ const HARNESS_CREDENTIALS = new Set([
 ]);
 
 export class ShellToolRunner {
-  private readonly options: Required<ShellToolRunnerOptions>;
+  private readonly options: Required<Omit<ShellToolRunnerOptions,"defaultCwd">> & Pick<ShellToolRunnerOptions,"defaultCwd">;
 
   constructor(options: ShellToolRunnerOptions) {
     this.options = {
@@ -125,7 +125,7 @@ export class ShellToolRunner {
 
     return new Promise<ToolResult>((resolvePromise) => {
       execFile(
-        argv[0],
+        argv[0]!,
         argv.slice(1),
         {
           cwd: cwd || process.env.HOME,

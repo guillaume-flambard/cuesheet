@@ -1,4 +1,4 @@
-# Workers de code isolés — H06.2
+# Workers de code isolés - H06.2
 
 Le contrôleur décompose automatiquement un objectif en unités utiles. Chaque
 worker reçoit le même objectif/révision, ses références de mémoire et ses skills,
@@ -31,7 +31,7 @@ jamais d'un document ou d'une sortie modèle.
 
 | Tâche | Priorité | Critère | Vérification |
 | --- | --- | --- | --- |
-| H06.2a | P0 | REQ-H06.2 / AC-H06.2a : lot de 1–2 tâches strict, rôles distincts, fichiers relatifs sûrs et responsabilités sans recouvrement ; lot invalide refusé avant effet ; données détachées de la proposition | tests validation, chemins Windows/POSIX, conflit parent/enfant, charge bornée et mutation tardive |
+| H06.2a | P0 | REQ-H06.2 / AC-H06.2a : lot de 1-2 tâches strict, rôles distincts, fichiers relatifs sûrs et responsabilités sans recouvrement ; lot invalide refusé avant effet ; données détachées de la proposition | tests validation, chemins Windows/POSIX, conflit parent/enfant, charge bornée et mutation tardive |
 | H06.2b | P0 | AC-H06.2b : routes configurées et deux worktrees distincts avant effets ; deux processus réels exécutent dans leurs scopes ; aucun fallback fournisseur | tests runtime/Git/processus réels et receipts |
 | H06.2c | P0 | AC-H06.2c : journaux privés et admission conditionnelle, aucun finish/intégration enfant ; le contrôleur conserve seul l'autorité | effets simultanés, effet null, appel interdit, correction pendant admission |
 | H06.4a | P0 | AC-H06.4a : correction directe arrête les effets futurs et écarte les réponses R ; les changements déjà produits restent inspectables | correction pendant inférence/outils, redérivation R+1, kill après écriture avant receipt, reopen sans replay aveugle |
@@ -60,7 +60,7 @@ palette Agents. Auth distante et synchronisation entreprise restent aux parents.
 
 H06.2a vérifié borné : [EV-WORKER-PACKETS](evaluation/worker-packets/evidence.md). Adaptateur pur non raccordé ; tous les critères runtime des étapes suivantes restent pending.
 
-## H06.2b1 — préparation atomique du lot avant exécution
+## H06.2b1 - préparation atomique du lot avant exécution
 
 Le contrôleur valide et copie le lot complet, résout toutes les routes configurées
 avant toute allocation puis capture une seule base/source dirty. Les allocations
@@ -76,9 +76,9 @@ AC-H06.2b1 : deux worktrees réels depuis source dirty/staged intacte, aucun app
 infer, refus route avant allocation, correction en préparation sans ready,
 source drift refusé et aucun fallback. Vérification Git réel et chemins de refus.
 
-## H06.2c1 — boucle privée et admission de chaque effet
+## H06.2c1 - boucle privée et admission de chaque effet
 
-Adaptateur de boucle bornée owner (1–8 inférences), modèle déjà résolu et
+Adaptateur de boucle bornée owner (1-8 inférences), modèle déjà résolu et
 exécuteur déjà scoppé. Chaque callback append privé doit persister avant retour.
 Un intent lié à un effect ID propre est inscrit avant chaque appel externe, puis
 un receipt lié seulement si exit entier est confirmé. Exit null, exception
@@ -94,7 +94,7 @@ outils interdits non exécutés, correction pendant inférence et entre deux out
 append échoué avant intent et exécution bornée. Raccordement runtime/journal
 durable effectif et processus fournisseurs encore aux parents.
 
-## H06.2c2 — branchement terminal durable
+## H06.2c2 - branchement terminal durable
 
 Le contrôleur expose run_code_workers uniquement quand stockage, factory modèle
 scoppée et factory outils worker sont configurés. Admission et garde des effets
@@ -128,7 +128,7 @@ observations privées bornées ; dépassement refuse sans supprimer une contrain
 Publication des résultats via allSettled pour attendre les autres workers avant
 fermeture des journaux, même si une publication échoue.
 
-## H06.3c2a — composition et intégration contrôleur
+## H06.3c2a - composition et intégration contrôleur
 
 integrate_code_workers {} sélectionne uniquement le lot ready du journal parent
 et ses workers proposal au contrat courant. Les journaux privés sont réouverts
@@ -157,3 +157,34 @@ dirty/index préservés ; scope réel hors paquet, conflit, drift, journal incer
 ancien contrat ou check refusé => source intacte ; composition et plan attribués
 persistés ; finish ne ferme que via check indépendant. Tests Git réels/runtime,
 full/build ; cleanup/crash recovery reste parent, risque R06/R09 ouvert.
+
+## H06.4a-R1 - inspection et réconciliation durable des workers
+
+Cette tranche bornée complète la récupération après disparition du contrôleur,
+sans clore H06.4a. Le contrôleur conserve les outils `inspect_code_workers {}` et
+`reconcile_code_workers {}`. L'inspection part du dernier lot pending et des
+admissions controller-owned, ouvre les journaux en lecture seule, observe les
+claims PID et les vrais worktrees Git, et traite un ancien `terminal.agent`
+`active` comme interrompu après reopen. Les identifiants et chemins ne viennent
+pas de l'entrée modèle.
+
+Un worker écrit `terminal.code-worker-proposal` dans son journal privé après
+avoir terminé avec un résultat de proposition, avant de publier Agents ou
+`terminal.code-worker` dans le journal partagé. L'absence de ce reçu après crash
+ne se répare jamais depuis du texte modèle, un fichier de travail seul ou un
+ancien `active`. Un intent sans receipt d'effet confirmé reste incertain : aucune
+répétition, intégration ni clôture.
+
+La réconciliation publie seulement une proposition privée dont identité,
+objectif/révision, exécution, journal, digest/source/base et workspace concordent
+avec les admissions et les observations physiques courantes. Elle est idempotente
+et ne lance aucun effet. Une correction R+1, source modifiée, claim potentiellement
+vivante, journal absent/corrompu, chemin non attribué, worktree absent ou effet
+incertain refuse en préservant toutes les données. La proposition réconciliée
+reste non vérifiée et suit `integrate_code_workers {}` avec le check owner épinglé
+existant ; cette récupération ne fournit jamais le check elle-même.
+
+Les six critères détaillés REC-W01-06, scénarios de falsification, API et preuve
+PTY sont dans [CODE-WORKER-RECOVERY.md](CODE-WORKER-RECOVERY.md). H06.4a,
+H06.5c, H10.4, R06/R09 et l'acceptation globale restent ouverts jusqu'à leurs
+preuves propres.

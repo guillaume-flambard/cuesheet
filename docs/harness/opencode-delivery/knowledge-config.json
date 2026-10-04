@@ -1,0 +1,91 @@
+{
+  "autoupdate": false,
+  "share": "disabled",
+  "permission": {
+    "*": "deny",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*/auth.json": "deny",
+      "*/credentials*": "deny",
+      "/Users/memo/Documents/*": "deny",
+      "/Users/memo/.ssh/*": "deny"
+    },
+    "glob": "allow",
+    "grep": "allow",
+    "edit": {
+      "*": "deny",
+      "src/adapters/knowledge-exchange.ts": "allow",
+      "/Users/memo/projects/tools/cuesheet/src/adapters/knowledge-exchange.ts": "allow",
+      "test/knowledge-exchange.test.ts": "allow",
+      "/Users/memo/projects/tools/cuesheet/test/knowledge-exchange.test.ts": "allow",
+      "docs/harness/opencode-delivery/knowledge.md": "allow",
+      "/Users/memo/projects/tools/cuesheet/docs/harness/opencode-delivery/knowledge.md": "allow"
+    },
+    "bash": {
+      "*": "deny",
+      "rtk rg *": "allow",
+      "rtk proxy cat *": "allow",
+      "rtk proxy sed *": "allow",
+      "rtk git status*": "allow",
+      "rtk git diff*": "allow",
+      "rtk node --test test/knowledge-exchange.test.ts": "allow"
+    },
+    "external_directory": {
+      "*": "deny",
+      "/Users/memo/.agents/skills/whole-project-protocol/*": "allow",
+      "/Users/memo/.codex/RTK.md": "allow",
+      "/Users/memo/.home/CONSTITUTION.md": "allow"
+    },
+    "question": "deny",
+    "task": "deny"
+  },
+  "agent": {
+    "delivery": {
+      "description": "Bounded Cuesheet delivery worker",
+      "mode": "primary",
+      "steps": 40,
+      "permission": {
+        "*": "deny",
+        "read": {
+          "*": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny",
+          "*/auth.json": "deny",
+          "*/credentials*": "deny",
+          "/Users/memo/Documents/*": "deny",
+          "/Users/memo/.ssh/*": "deny"
+        },
+        "glob": "allow",
+        "grep": "allow",
+        "edit": {
+          "*": "deny",
+          "src/adapters/knowledge-exchange.ts": "allow",
+          "/Users/memo/projects/tools/cuesheet/src/adapters/knowledge-exchange.ts": "allow",
+          "test/knowledge-exchange.test.ts": "allow",
+          "/Users/memo/projects/tools/cuesheet/test/knowledge-exchange.test.ts": "allow",
+          "docs/harness/opencode-delivery/knowledge.md": "allow",
+          "/Users/memo/projects/tools/cuesheet/docs/harness/opencode-delivery/knowledge.md": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "rtk rg *": "allow",
+          "rtk proxy cat *": "allow",
+          "rtk proxy sed *": "allow",
+          "rtk git status*": "allow",
+          "rtk git diff*": "allow",
+          "rtk node --test test/knowledge-exchange.test.ts": "allow"
+        },
+        "external_directory": {
+          "*": "deny",
+          "/Users/memo/.agents/skills/whole-project-protocol/*": "allow",
+          "/Users/memo/.codex/RTK.md": "allow",
+          "/Users/memo/.home/CONSTITUTION.md": "allow"
+        },
+        "question": "deny",
+        "task": "deny"
+      }
+    }
+  }
+}

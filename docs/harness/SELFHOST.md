@@ -21,3 +21,7 @@ Admission premier code automatique livrée : contrôleur prépare worktree Git a
 2026-10-02 H06.2c2 VERIFYING : [EV-TERMINAL-CODE-WORKERS](evaluation/terminal-code-workers/evidence.md),run_code_workers branché producer/runtime, journaux privés durables, Agents, correction et model change directs.35+9 ciblés,886/884/0/2 full,build32 baseline. Preuve Container privé dédiée et intégration composée/recovery/live model restent ouverts. Global IMPLEMENTING.
 
 2026-10-02 H06.2c2/H06.3c2a DONE bornés : [EV-CODE-COMPOSITION](evaluation/code-composition/evidence.md),private Container proof et integrate_code_workers {} composition/check owner/apply/source finish.14 ciblés+1 Docker,893/891/0/2 full,build32 baseline. Crash recovery/cleanup/quota/UX dédiée et modèle réel restent ouverts. Global IMPLEMENTING.
+
+2026-10-03 : parcours installé réel séquentiel vérifié avec OpenCode Go, reprise même journal Luna -> GLM-5.3, checks candidat/source et but fermé. Voir [GO-ZEN-SELFHOST](GO-ZEN-SELFHOST.md). Cette preuve remplace l’absence de modèle réel pour ce périmètre seulement. Deux workers réels installés, steering sémantique et acceptation globale restent ouverts ; le steering machine est décrit dans [SEMANTIC-LIVE-STEERING](SEMANTIC-LIVE-STEERING.md).
+
+Preuves installées réelles bornées : GO-ZEN-SELFHOST.md, SEMANTIC-LIVE-STEERING.md et TWO-REAL-WORKERS.md. Dernière suite 1013 tests,1010 pass,0 fail,3 inherited skips,136703.766875ms PASS. Le dernier parcours utilise un contrôleur direct API, sans coordinateur modèle ni goal-closed ; les parents restent ouverts.

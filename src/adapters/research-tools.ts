@@ -1,4 +1,4 @@
-import { realpath, stat, readFile } from "node:fs/promises";
+import { realpath, stat, readFile, readdir } from "node:fs/promises";
 import { resolve, relative, sep } from "node:path";
 import { lookup } from "node:dns/promises";
 import { request as httpsRequest } from "node:https";
@@ -80,6 +80,36 @@ export class ResearchTools {
     this.timeoutMs=options.timeoutMs ?? 15000;
     if(!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs<1 || this.timeoutMs>60000)throw new Error("Research timeout must be 1-60000 milliseconds.");
   }
+  /** Common text inspections use the existing scoped reader, not an executable mount. */
+  async readLocalCommand(store:EventStore,request:ToolRequest,signal:AbortSignal):Promise<ToolResult|null>{
+    if(!this.root||!['cat','ls'].includes(request.name)||Object.keys(request.input).some(k=>!['argv','path','cwd'].includes(k)))return null;
+    const supplied=request.input.argv;
+    if(supplied!==undefined&&(!Array.isArray(supplied)||supplied.some(a=>typeof a!=='string')))return null;
+    const args=supplied===undefined?[]:(supplied as string[]).slice();
+    if(args[0]===request.name)args.shift();
+    if(request.input.path!==undefined){if(args.length||typeof request.input.path!=='string')return null;args.push(request.input.path);}
+    if(request.name==='cat'&&(args.length!==1||args[0]!.startsWith('-')))return null;
+    if(request.name==='ls'&&args.some(a=>a.startsWith('-')&&!['-a','-l','-la','-al','-1','-lh','-lah','--'].includes(a)))return null;
+    const paths=request.name==='ls'?args.filter(a=>!a.startsWith('-')):args;
+    if(paths.length>1)return null;
+    const cwd=request.input.cwd??this.root;
+    if(typeof cwd!=='string')return null;
+    const path=resolve(this.root,cwd,paths[0]??'.');
+    if(request.name==='cat'){
+      const read=await this.run(store,{name:'read_document',input:{path}},signal);
+      return read?{...read,name:request.name}:null;
+    }
+    const fail=(output:string):ToolResult=>({name:request.name,exit:2,output});
+    try{
+      signal.throwIfAborted();const root=await realpath(this.root),directory=await realpath(path),scoped=relative(root,directory);
+      if(scoped==='..'||scoped.startsWith('..'+sep)||scoped.split(sep).some(p=>p==='.git'||p==='.cuesheet'||p==='node_modules'||/^\.env(?:\.|$)/i.test(p)))return fail('Directory inspection is outside the admitted source scope.');
+      const entries=await readdir(directory,{withFileTypes:true});signal.throwIfAborted();
+      if(entries.length>512)return fail('Directory inspection exceeds 512 entries; select a narrower source directory.');
+      const names=entries.filter(e=>!['.git','.cuesheet','node_modules'].includes(e.name)&&!/^\.(?:env)(?:\.|$)/i.test(e.name)&&!/^(?:credentials|secrets|id_rsa|id_ed25519)(?:\.|$)/i.test(e.name)&&!/\.(?:pem|key|p12|pfx)$/i.test(e.name)).map(e=>e.name+(e.isDirectory()?'/':e.isSymbolicLink()?' [link]':'' )).sort();
+      const event=store.append({kind:'note',subject:'terminal.research',data:{version:1,operation:'local-directory',path:directory,entries:names,fetchedAt:this.now(),trust:'untrusted local source'}});
+      return {name:request.name,exit:0,output:JSON.stringify({sourceSeq:event.seq,path:directory,entries:names,note:'Scoped directory names; excluded private/control entries omitted, links not followed.'})};
+    }catch{return fail('Scoped directory inspection refused or interrupted. No command was executed.');}
+  }
   async run(store:EventStore,request:ToolRequest,signal:AbortSignal):Promise<ToolResult|null>{
     if(request.name!=="read_document" && request.name!=="search_web")return null;
     const combined=AbortSignal.any([signal,AbortSignal.timeout(this.timeoutMs)]);
@@ -121,7 +151,7 @@ export class ResearchTools {
         const scoped=relative(root,path);
         if(!scoped || scoped===".." || scoped.startsWith(".."+sep) || resolve(root,scoped)!==path)return fail("Local document resolves outside its configured root.");
         const parts=scoped.split(sep);
-        if(parts.some(part=>part===".git" || part==="node_modules" || /^\.env(?:\.|$)/i.test(part) || /^(?:id_(?:rsa|ed25519)|credentials|secrets)(?:\.|$)/i.test(part)) || /\.(?:pem|key|p12|pfx)$/i.test(path))return fail("This local file is excluded from document sources.");
+        if(parts.some(part=>part===".git" || part===".cuesheet" || part==="node_modules" || /^\.env(?:\.|$)/i.test(part) || /^(?:id_(?:rsa|ed25519)|credentials|secrets)(?:\.|$)/i.test(part)) || /\.(?:pem|key|p12|pfx)$/i.test(path))return fail("This local file is excluded from document sources.");
         const info=await stat(path);combined.throwIfAborted();
         if(!info.isFile() || info.size>262144)return fail("Local document must be a regular file no larger than 256 KiB.");
         const bytes=await readFile(path,{signal:combined});combined.throwIfAborted();

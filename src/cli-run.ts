@@ -63,7 +63,7 @@ by accident.
 function parseArgs(argv: string[]): Record<string, string> {
   const out: Record<string, string> = {};
   for (let i = 0; i < argv.length; i++) {
-    const token = argv[i];
+    const token = argv[i]!;
     if (!token.startsWith("--")) continue;
     const key = token.slice(2);
     const next = argv[i + 1];
@@ -255,7 +255,7 @@ function cmdSessions(): number {
       // The intact prefix is real and worth showing, because "I could not read
       // all of it" and "there was nothing there" are different facts.
       console.log(
-        `${id}  DAMAGED  ${attested.damage.why}${attested.damage.line ? ` at line ${attested.damage.line}` : ""}` +
+        `${id}  DAMAGED  ${attested.damage.why}${"line" in attested.damage && attested.damage.line ? ` at line ${attested.damage.line}` : ""}` +
           `  (${attested.events.length} event(s) readable)`,
       );
       continue;

@@ -66,6 +66,23 @@ export type Certainty = "confirmed" | "active" | "unknown" | "failed";
  */
 export type EntryId = string;
 
+/** A reference describes observed work. It never confers execution authority. */
+export interface WorkReference { id:string; source:number; objectiveId:string; objectiveRevision:number }
+export interface WorkObject {
+  id:string; kind:'intent'|'plan'|'task'|'agent'|'contribution'|'verification';
+  title:string; status:string; detail:string; source:number; reference?:WorkReference;
+}
+
+/** Read-only semantic context; durable IDs do not confer completion authority. */
+export interface WorkSurface {
+  intent: string | null;
+  objects?: readonly WorkObject[];
+  criteria?: readonly string[];
+  corrections: readonly string[];
+  tasks: readonly {id:string;text:string}[];
+  workers: readonly {id:string;label:string;role:string;task:string;phase:string;model?:string;result?:string;source?:number;helping?:string;routeReason?:string;assistancePhase?:string}[];
+}
+
 /**
  * One line in the timeline, as it reads. Five kinds, and the three that were
  * dead are live.
@@ -116,7 +133,7 @@ export interface SurfaceState {
   readonly entries: readonly Entry[];
   readonly composer: string;
   /** Which overlay is open, if any. Overlays are a state, not a component. */
-  readonly overlay: "none" | "palette" | "projects" | "inspect" | "help" | "models" | "sessions";
+  readonly overlay: "none" | "palette" | "projects" | "inspect" | "work" | "help" | "models" | "sessions" | "changes";
   /**
    * The choices an ambiguous sentence produced.
    *
@@ -129,6 +146,8 @@ export interface SurfaceState {
   readonly log: readonly string[];
   readonly statusRight: string;
   readonly busy: boolean;
+  readonly reasoning?:string;
+  readonly progressKind?:"reasoning"|"text";
   /**
    * Every line this surface has ever put on the timeline, by identity,
    * including the ones the cap has since scrolled off the end.
@@ -159,6 +178,7 @@ export interface SurfaceState {
 
 /** What a component may ask for. Nothing else crosses the boundary. */
 export type Control =
+  | {readonly type:"reasoning";readonly text:string;readonly kind?:"reasoning"|"text"}
   /** A sentence, verbatim. There is no classifier between this and the producer. */
   | { readonly type: "submit"; readonly text: string }
   | { readonly type: "compose"; readonly text: string }
@@ -318,14 +338,16 @@ export function derive(state: SurfaceState, control: Control): SurfaceState {
       };
     }
 
+    case "reasoning":
+      return {...state,reasoning:control.text.slice(-16000),progressKind:control.kind};
     case "began":
-      return { ...state, busy: true, overlay: "none" };
+      return { ...state, reasoning:"", busy: true, overlay: "none" };
 
     case "ended":
-      return { ...state, busy: false };
+      return { ...state, reasoning:"", busy: false };
 
     case "interrupted":
-      return { ...state, busy: false, entries: state.entries.map(entry =>
+      return { ...state, reasoning:"", busy: false, entries: state.entries.map(entry =>
         (entry.kind === "action" || entry.kind === "status") && entry.certainty === "active"
           ? { ...entry, certainty: "unknown" as const } : entry) };
 

@@ -4,7 +4,7 @@ import { projectExecutions } from '../../../../src/adapters/execution-state.ts';
 import { createStore, type Store } from '../app/store.ts';
 import { derive, emptySurface, type Control, type Entry, type EntryBody, type SurfaceState } from '../app/state.ts';
 import type { TerminalSession } from '../../../../src/adapters/terminal-session.ts';
-const controls=new Set(['submit','compose','open','close','choose','quit','began','ended','interrupted','observed','settled','noted','logged','scoped','offered']);
+const controls=new Set(['submit','compose','open','close','choose','quit','began','ended','interrupted','observed','settled','noted','logged','scoped','offered','reasoning']);
 const certainty=new Set(['confirmed','active','unknown','failed']);
 
 /**
@@ -37,6 +37,7 @@ function control(value:unknown):value is Control {
   if(!value || typeof value!=='object') return false;
   const c=value as Record<string,unknown>;
   if(!controls.has(String(c.type))) return false;
+  if(c.type==='reasoning')return typeof c.text==='string' && c.text.length<=16384 && (c.kind===undefined||c.kind==='reasoning'||c.kind==='text');
   if(c.type==='submit' || c.type==='compose') return typeof c.text==='string';
   if(c.type==='logged') return typeof c.line==='string';
   if(c.type==='scoped') return typeof c.project==='string' && typeof c.where==='string';
@@ -48,7 +49,7 @@ function control(value:unknown):value is Control {
   if(c.type==='observed') return Array.isArray(c.entries) && c.entries.every(entry);
   if(c.type==='noted') return body(c.entry);
   if(c.type==='settled') return Number.isSafeInteger(c.at) && body(c.entry);
-  if(c.type==='open') return ['none','palette','projects','inspect','help','models','sessions'].includes(String(c.overlay));
+  if(c.type==='open') return ['none','palette','projects','inspect','help','models','sessions','changes','work'].includes(String(c.overlay));
   const option=(v:unknown)=>!!v && typeof v==='object' && ['name','path','why'].every(key=>typeof (v as Record<string,unknown>)[key]==='string');
   if(c.type==='offered') return Array.isArray(c.choices) && c.choices.every(option);
   if(c.type==='choose') return option(c.option);
@@ -71,9 +72,9 @@ export function restoreView(journal:TerminalSession):SurfaceState {
   let state=emptySurface;
   for(const event of journal.viewEvents) {
     if(event.kind!=='note' || event.subject!=='terminal.view' || !control(event.data.control)) throw new Error('Journal de conversation invalide ; reprise refusée.');
-    state=derive(state,event.data.control);
+    if(event.data.control.type!=="reasoning")state=derive(state,event.data.control);
   }
-  const interrupted=state.busy || state.entries.some(e=>(e.kind==='action' || e.kind==='status') && e.certainty==='active');
+  const interrupted=state.busy || projectExecutions(journal.core.toSession().events,{replaying:true}).at(-1)?.phase==='interrupted';
   state=derive(state,{type:'interrupted'});
   state={...state,overlay:'none',choices:[]};
   const core=journal.core.toSession();
@@ -105,7 +106,7 @@ export function persistentView(journal:TerminalSession):Store {
     send(c) {
       if(journal.failure && !["open","close","quit"].includes(c.type)) return;
       // Navigation is ephemeral. Work, messages and the draft are durable.
-      if(!['open','close','quit'].includes(c.type)) {
+      if(!['open','close','quit','reasoning'].includes(c.type)) {
         try {journal.appendView(c);} catch {return;}
       }
       base.send(c);

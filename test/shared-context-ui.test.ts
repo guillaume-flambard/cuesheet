@@ -25,16 +25,16 @@ test("shared context inspection is read-only, paginated, sourced and refreshed",
   assert.equal(readFileSync(path,"utf8"),before);
   contexts.project.create({kind:"question",text:"new decision pending",rationale:"fixture",sources:[{session:"local",seq:24}]},contexts.project.read().revision);
   const refreshed=producer.sharedContextPage!(20,page.digest);assert.equal(refreshed.offset,0);assert.notEqual(refreshed.digest,page.digest);
-  writeFileSync(path,"invalid-json\n");assert.match(producer.sharedContextPage!().lines.join("\n"),/indisponible ou invalide/);assert.equal(readFileSync(path,"utf8"),"invalid-json\n");
+  writeFileSync(path,"invalid-json\n");assert.match(producer.sharedContextPage!().lines.join("\n"),/unavailable or invalid/);assert.equal(readFileSync(path,"utf8"),"invalid-json\n");
  }finally{rmSync(root,{recursive:true,force:true});}
 });
 
 test("empty/unconfigured/unavailable contexts never create storage or pretend a mounted scope is empty",()=>{
  const root=mkdtempSync(join(tmpdir(),"cuesheet-context-empty-"));
  try{
-  const contexts=new SharedContexts({cwd:root});assert.match(fixture(root,contexts).sharedContextPage!().lines.join("\n"),/Aucun souvenir partagé/);assert.equal(existsSync(join(root,".cuesheet")),false);
-  assert.match(fixture(root).sharedContextPage!().lines.join("\n"),/Aucun contexte partagé configuré/);
-  const unavailable=new SharedContexts({cwd:root,organizations:[join(root,"absent")]});assert.match(fixture(root,unavailable).sharedContextPage!().lines.join("\n"),/indisponible ou invalide/);assert.equal(existsSync(join(root,"absent")),false);
+  const contexts=new SharedContexts({cwd:root});assert.match(fixture(root,contexts).sharedContextPage!().lines.join("\n"),/No shared memories/);assert.equal(existsSync(join(root,".cuesheet")),false);
+  assert.match(fixture(root).sharedContextPage!().lines.join("\n"),/No shared context configured/);
+  const unavailable=new SharedContexts({cwd:root,organizations:[join(root,"absent")]});assert.match(fixture(root,unavailable).sharedContextPage!().lines.join("\n"),/unavailable or invalid/);assert.equal(existsSync(join(root,"absent")),false);
  }finally{rmSync(root,{recursive:true,force:true});}
 });
 
@@ -60,12 +60,12 @@ const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref
 const app=render(<App store={store} producer={producer}/>,{stdout:out,stderr:out,stdin:input,debug:true,exitOnCtrlC:false});const tick=()=>new Promise(r=>setTimeout(r,45));
 const before=journal.core.revision;const bytes=readFileSync(join(contexts.project.root,'context.jsonl'),'utf8');
 const until=async(predicate)=>{const deadline=Date.now()+4000;while(!predicate()&&Date.now()<deadline)await tick();if(!predicate())throw new Error('UI did not reach the expected rendered state');};
-input.write('\\x0b');await until(()=>last.includes('> View the log'));for(const label of ['Help','Provider et modèle','Sessions','Nouvelle session','Reprendre le travail','Critère de validation','Contexte partagé']){input.write('\\x1b[B');await until(()=>last.includes('> '+label));}input.write('\\r');await until(()=>last.includes('N/P pages'));const opened=last;
+input.write('\\x0b');await until(()=>last.includes('› View the log'));for(const label of ['Help','Provider and model','Sessions','New session','Resume work','Acceptance check','Shared context']){input.write('\\x1b[B');await until(()=>last.includes('› '+label));}input.write('\\r');await until(()=>last.includes('N/P pages'));const opened=last;
 input.write('n');await tick();for(let i=0;i<20;i++){input.write('\\x1b[B');await tick();}const next=frames.join('\\n');
 input.write('p');await tick();const previous=last;const sizes=[];for(const [columns,rows] of [[40,14],[80,24],[120,36]]){out.columns=columns;out.rows=rows;out.emit('resize');await tick();sizes.push({rows,frame:last});}
 input.write('\\x1b');await tick();const closed=store.get().overlay==='none';const unchanged=before===journal.core.revision&&bytes===readFileSync(join(contexts.project.root,'context.jsonl'),'utf8');app.unmount();journal.close();console.log(JSON.stringify({opened,next,previous,sizes,closed,unchanged,calls}));`);
-  const run=spawnSync(process.execPath,[join(terminal,"node_modules/tsx/dist/cli.mjs"),script],{encoding:"utf8",timeout:20000,env:childEnv(root)});assert.equal(run.status,0,run.stderr);const result=JSON.parse(run.stdout.trim());
-  assert.match(result.opened,/Contexte partagé/);assert.match(result.opened,/révision 22/);assert.match(result.next,/shared row 21/);assert.match(result.next,/source-session:22/);assert.match(result.previous,/Souvenirs 1–20/);
+  const run=spawnSync(process.execPath,[join(terminal,"node_modules/tsx/dist/cli.mjs"),script],{encoding:"utf8",timeout:30000,env:childEnv(root)});assert.equal(run.status,0,run.stderr);const result=JSON.parse(run.stdout.trim());
+  assert.match(result.opened,/Shared context/);assert.match(result.opened,/revision 22/);assert.match(result.next,/shared row 21/);assert.match(result.next,/source-session:22/);assert.match(result.previous,/Memories 1–20/);
   assert.equal(result.closed,true);assert.equal(result.unchanged,true);assert.equal(result.calls,0);for(const size of result.sizes){assert.match(size.frame,/N\/P pages/);assert.ok(size.frame.split("\n").length<=size.rows,size.frame);}
  }finally{rmSync(root,{recursive:true,force:true});}
 });

@@ -1,5 +1,5 @@
 /** Switch the model at the edge without replacing the harness or its event log. */
-import type { ContextFrame, ModelAdapter } from '../core/loop.ts';
+import type { ContextFrame, ModelAdapter, ModelProgress } from '../core/loop.ts';
 import type {UsageSink} from "./model-usage.ts";
 import { resolveModel, type ResolvedModel } from './default-model.ts';
 import { preferencesPath, readModelPreferences, prepareModelPreferences, validatePreferences, type ModelPreferences } from './model-preferences.ts';
@@ -39,7 +39,7 @@ export function createModelBinding(options: { onUsage?:UsageSink; project: strin
   const inferences=new Set<AbortController>();
   const adapter: ModelAdapter = {
     get name() { return 'missing' in resolved ? 'none' : resolved.adapter.name; },
-    async infer(frame, signal?: AbortSignal) {
+    async infer(frame, signal?: AbortSignal, onProgress?:(progress:ModelProgress)=>void) {
       const current = resolved;
       if ('missing' in current) throw new Error(current.missing);
       signal?.throwIfAborted();
@@ -48,7 +48,7 @@ export function createModelBinding(options: { onUsage?:UsageSink; project: strin
       let stop=()=>{};
       const aborted=new Promise<never>((_,reject)=>{stop=()=>reject(combined.reason);combined.addEventListener('abort',stop,{once:true});});
       try {
-        const work=(current.adapter as ModelAdapter & { infer(frame: ContextFrame, signal?: AbortSignal): ReturnType<ModelAdapter['infer']> }).infer({...frame,model:current.model ?? "unset"},combined);
+        const work=current.adapter.infer({...frame,model:current.model ?? "unset"},combined,progress=>{if(!combined.aborted)onProgress?.(progress);});
         const result=await Promise.race([work,aborted]);combined.throwIfAborted();return result;
       } finally {combined.removeEventListener('abort',stop);inferences.delete(controller);}
     },

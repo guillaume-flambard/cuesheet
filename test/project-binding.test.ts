@@ -186,3 +186,11 @@ describe("BIND-06 the same goal continues, and the tokens say why a project matc
     assert.equal(describeBinding(said, binding)[0], `goal     ${said}`, "verbatim, whitespace and all");
   });
 });
+
+describe('explicit canonical names distinguish the real validation repository from its pilots',()=>{
+ const projects=snap(repo('intentlane','products/intentlane'),repo('intentlane-vault','experiments/intentlane-vault'),repo('intentlane-iina','experiments/intentlane-iina'),repo('videoai','experiments/videoai',{nature:'pilot'}));
+ it('binds a naturally stated task to IntentLane without asking which pilot',()=>{const binding=bindProject('In IntentLane, ignore generated pilot .build directories.',projects);assert.equal(binding.kind,'bound');if(binding.kind==='bound')assert.equal(binding.candidate.name,'intentlane');});
+ it('names a hyphenated pilot without selecting its parent',()=>{const binding=bindProject('Fix intentlane-vault source paths',projects);assert.equal(binding.kind,'bound');if(binding.kind==='bound')assert.equal(binding.candidate.name,'intentlane-vault');});
+ it('keeps two explicit names ambiguous',()=>assert.equal(bindProject('Compare IntentLane and intentlane-vault',projects).kind,'unbound'));
+ it('does not fall through a missing explicit project to a sibling',()=>{const binding=bindProject('Fix IntentLane pilot paths',projects.map(p=>p.name==='intentlane'?{...p,exists:false}:p));assert.equal(binding.kind,'unbound');if(binding.kind==='unbound')assert.deepEqual(binding.candidates.map(c=>c.name),['intentlane']);});
+});

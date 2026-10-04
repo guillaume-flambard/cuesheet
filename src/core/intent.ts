@@ -280,7 +280,7 @@ export function routeIntention(raw: string): Intent {
   // it is how a brief is naturally prefixed when pasting one in.
   const admission = /^(?:gate|admission|vérifie)(?:\s*:|\s+)\s*(.+)$/is.exec(line);
   if (admission) {
-    return { kind: "admission", text: admission[1], forced };
+    return { kind: "admission", text: admission[1]!, forced };
   }
 
   // The default, and the reason the chat exists: everything else is work.

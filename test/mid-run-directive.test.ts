@@ -479,7 +479,7 @@ describe("the composer is always available and never demands a stop", () => {
 
     assert.doesNotMatch(composer, /busy/, "the composer never learns whether a run is in flight");
     assert.doesNotMatch(composer, /waiting|please wait|current response/i, "and never says wait");
-    assert.doesNotMatch(composer, /\bstop\b/i, "and offers no stop control of its own");
+    assert.doesNotMatch(composer, /\bonStop\b|<Stop\b/, "no separate stop control gates ordinary input; Ctrl+C hint remains available");
     // What it does have: Enter submits and typing is unguarded.
     assert.ok(composer.includes("key.return"), "Enter submits");
     assert.ok(composer.includes("props.onChange"), "typing is unguarded");

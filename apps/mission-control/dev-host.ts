@@ -1,0 +1,10 @@
+import {AppBridge,PostMessageTransport} from '@modelcontextprotocol/ext-apps/app-bridge';
+const frame=document.querySelector('iframe')!;
+const bridge=new AppBridge(null,{name:'Cuesheet local rendering proof',version:'0.1.0'},{serverTools:{}});
+const snapshot=()=>fetch('/snapshot').then(r=>r.json());
+bridge.oncalltool=async params=>{if(params.name!=='get_mission')throw new Error('Rendering host is read-only');return snapshot();};
+bridge.onrequestdisplaymode=async({mode})=>({mode});
+bridge.oninitialized=async()=>{await bridge.sendToolInput({arguments:{}});await bridge.sendToolResult(await snapshot());};
+await bridge.connect(new PostMessageTransport(frame.contentWindow!,frame.contentWindow!));
+bridge.setHostContext({theme:new URLSearchParams(location.search).get('theme')==='dark'?'dark':'light',availableDisplayModes:['inline','fullscreen']});
+frame.src='/resource';

@@ -167,7 +167,7 @@ export function deriveAffordances(input: AffordanceInput): AvailableAction[] {
     //
     // Withheld as absence, not as a flag: the affordance is not in the list at
     // all, so a surface cannot render it and an agent cannot select it.
-    if (input.pending.value === false) {
+    if (input.pending.known && input.pending.value === false) {
       out.push({ action: "APPROVE_GOAL", reads, revision: input.revision, mutates: true });
     }
     out.push({ action: "REJECT_GOAL", reads, revision: input.revision, mutates: true });
