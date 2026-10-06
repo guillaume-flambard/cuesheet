@@ -271,6 +271,15 @@ export class OpenRouterAdapter implements ModelAdapter {
         // the runner decides whether that is usable.
         input = {};
       }
+      // The advertised contract is {"tool": name, "input": {...}}. The runner reads
+      // argv/path from the INNER object, so passing the whole arguments object on
+      // made every call that followed the contract fail with "no argv supplied",
+      // forever, for any model that obeyed it. A flat shape ({"tool", "argv"}) has
+      // no inner object and keeps its previous meaning.
+      const inner = input.input;
+      if (typeof input.tool === "string" && inner !== null && typeof inner === "object" && !Array.isArray(inner)) {
+        return { name: input.tool, input: inner as Record<string, unknown> };
+      }
       return { name: String(input.tool ?? c.function.name), input };
     });
 
