@@ -35,7 +35,7 @@ export async function runTerminalCodeWorkers(options:{
   notice(text:string):void;
 }):Promise<ToolResult>{
   const result=(exit:number|null,output:string):ToolResult=>({name:'run_code_workers',exit,output});
-  if(pendingCodeWorkers(options.shared.toSession().events))return result(126,'Earlier code contributions remain pending. Inspect their workspaces/journals before new code delegation or goal closure.');
+  if(pendingCodeWorkers(options.shared.toSession().events))return result(126,'A code-worker batch is still pending, so new code delegation and goal closure are refused. Inspection cannot clear this: inspect_code_workers and reconcile_effect read and publish but never clear the batch. Clear it with set_aside_code_workers {} when no durable proposal is recoverable, or with /changes set aside, which is the human decision.');
   try{parseCodeWorkerPackets(options.input);}catch{return result(126,'Invalid code-worker packet. Expected tasks:[{role:lowercase slug such as builder,task:nonempty text,files:[safe relative paths],skills?:[names]}], with one or two disjoint roles. No worker was launched.');}
   const prepared=await prepareCodeWorkers({input:options.input,source:options.source,root:options.root,execution:options.execution,
     objective:options.objective,signal:options.signal,current:options.current,route:role=>options.route(role,options.source),append:event=>options.shared.append(event)});

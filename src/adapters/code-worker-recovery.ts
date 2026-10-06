@@ -265,6 +265,70 @@ export async function reconcileCodeWorkerRecovery(options:{events():readonly Eve
   finally{for(const claim of claims)claim.close();}
 }
 
+/**
+ * Set a pending batch aside, on the model's own authority, so the gate stops blocking.
+ *
+ * This clears the gate and nothing else. It applies no file, integrates nothing,
+ * closes no goal, claims no verification, deletes no workspace, journal or receipt,
+ * and never re-attempts an effect. Every byte of the batch is preserved exactly as
+ * the human reject path preserves it.
+ *
+ * A batch that still holds a durable proposal eligible for reconciliation refuses:
+ * discarding real work is a human decision, so the model is sent to /changes.
+ *
+ * A batch superseded by a human correction is the one case that is allowed through
+ * on a revision mismatch. Its contribution cannot integrate anyway, so nothing
+ * usable is discarded, and blocking it would strand the session on exactly the live
+ * correction this exists to survive.
+ */
+export async function setAsideCodeWorkerBatch(options:{events():readonly Event[];parentRoot:string;parentId:string;worktreeRoot:string;source:string;objective:{id:string;revision:number};current():boolean;append(event:NewEvent):Event;signal?:AbortSignal}):Promise<{kind:'set-aside'|'unchanged'|'refused'|'stale';workers:string[];reason:string}>{
+  const before=options.events();
+  const snapshot=await inspectCodeWorkerRecovery({events:before,parentRoot:options.parentRoot,parentId:options.parentId,worktreeRoot:options.worktreeRoot,source:options.source,objective:options.objective,signal:options.signal});
+  if(snapshot.kind==='none')return {kind:'unchanged',workers:[],reason:snapshot.reason};
+  if(snapshot.workers.some(worker=>worker.phase==='proposal-recoverable'||worker.phase==='proposal-published'))return {kind:'refused',workers:[],reason:'A durable proposal is still recoverable from this batch. Use /changes to review and apply or set it aside; the model does not discard real work.'};
+  if(snapshot.workers.some(worker=>worker.phase==='live'))return {kind:'refused',workers:[],reason:'A private journal is claimed by a live writer. Stop active work, then inspect again; a live writer is never set aside.'};
+  if(snapshot.batch===null)return {kind:'refused',workers:[],reason:snapshot.reason};
+  // Objective/revision and source digest/base are re-read immediately before the
+  // append, matching the reconciliation guard. A changed intention is not this
+  // model's to discard.
+  if(!options.current())return {kind:'stale',workers:[],reason:'Objective, revision or controller instructions changed before the set-aside decision.'};
+  const now=options.events();
+  const latestBatch=now.filter(event=>event.kind==='note'&&event.subject==='terminal.code-workers'&&event.data.batch===snapshot.batch).at(-1);
+  if(!latestBatch||latestBatch.data.phase!=='ready')return {kind:'unchanged',workers:[],reason:'This batch is no longer pending, or its phase changed before the decision.'};
+  const batchObjective=String(latestBatch.data.objective??''),batchRevision=Number(latestBatch.data.revision);
+  // A batch admitted under an older revision was superseded by a human correction.
+  // Its contribution is historical by construction: reconciliation and integration
+  // both refuse it, so no work is being discarded that could have been used. It is
+  // also the live-correction case, where leaving the gate blocked strands the
+  // session. Re-inspect under the batch's own revision so the recoverable-proposal
+  // guarantee below still holds, then allow it and record the supersession.
+  const superseded=batchObjective===options.objective.id&&Number.isSafeInteger(batchRevision)&&batchRevision<options.objective.revision;
+  if(batchObjective!==options.objective.id)return {kind:'stale',workers:[],reason:'This batch belongs to another intention. Preserve it and inspect offline; the model does not discard it.'};
+  if(!superseded&&batchRevision!==options.objective.revision)return {kind:'stale',workers:[],reason:'This batch records a later revision than the current intention. Preserve it and inspect offline; the model does not discard it.'};
+  if(superseded){
+    const own=await inspectCodeWorkerRecovery({events:before,parentRoot:options.parentRoot,parentId:options.parentId,worktreeRoot:options.worktreeRoot,source:options.source,objective:{id:batchObjective,revision:batchRevision},signal:options.signal});
+    if(own.kind!=='none'&&own.workers.some(worker=>worker.phase==='proposal-recoverable'||worker.phase==='proposal-published'))return {kind:'refused',workers:[],reason:'A durable proposal is still recoverable from this superseded batch. Use /changes to review and apply or set it aside; the model does not discard real work.'};
+    if(own.kind!=='none'&&own.workers.some(worker=>worker.phase==='live'))return {kind:'refused',workers:[],reason:'A private journal is claimed by a live writer. Stop active work, then inspect again; a live writer is never set aside.'};
+  }
+  // The source must not have moved under the batch. A moved source means the delta
+  // is no longer the delta this batch produced, so preserve and let a human decide.
+  const digest=snapshot.sourceDigest;
+  if(digest===null)return {kind:'stale',workers:[],reason:'The current source snapshot is unavailable; nothing is discarded.'};
+  if(!superseded&&latestBatch.data.sourceDigest!==digest)return {kind:'stale',workers:[],reason:'The source digest changed since delegation. Set aside the old batch with /changes as the human decision.'};
+  const ids=snapshot.workers.map(worker=>worker.id);
+  if(!ids.length)return {kind:'refused',workers:[],reason:'No admitted worker could be attributed to this batch; preserve it and inspect offline.'};
+  if(!options.current())return {kind:'stale',workers:[],reason:'Objective or instructions changed before the set-aside append.'};
+  options.append({kind:'note',subject:'terminal.code-workers',data:{...latestBatch.data,phase:'rejected',human:false,authority:'model set-aside: the gate was cleared without applying, integrating or verifying anything'}});
+  for(const id of ids){
+    const saved=lastEvent(options.events(),event=>event.kind==='note'&&event.subject==='terminal.code-worker'&&event.data.id===id);
+    const savedData=eventData(saved);
+    if(!savedData)continue;
+    options.append({kind:'note',subject:'terminal.code-worker',data:{...savedData,phase:'rejected',human:false,authority:'model set-aside: workspace and private journal preserved; nothing applied, integrated or verified'}});
+  }
+  if(!options.current())return {kind:'stale',workers:ids,reason:'Objective or instructions changed during the set-aside append; the durable partial projection is preserved for inspection.'};
+  return {kind:'set-aside',workers:ids,reason:'Batch set aside on model authority. Every workspace, private journal and receipt is preserved; nothing was applied, integrated or verified. Delegation and goal closure may resume, and the objective still requires independent verification.'};
+}
+
 /** Safe bounded projection for the model/tool response; excludes private proposal text. */
 export function codeWorkerRecoverySummary(snapshot:CodeWorkerRecoverySnapshot):Record<string,unknown>{
   return {kind:snapshot.kind,batch:snapshot.batch,objectiveId:snapshot.objectiveId,objectiveRevision:snapshot.objectiveRevision,sourceDigest:snapshot.sourceDigest,reason:snapshot.reason.slice(0,512),workers:snapshot.workers.slice(0,MAX_WORKERS).map(({proposalText,...worker})=>({...worker,reason:worker.reason.slice(0,512)}))};
