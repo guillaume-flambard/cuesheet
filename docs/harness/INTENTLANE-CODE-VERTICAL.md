@@ -20,8 +20,8 @@ CV05: applicable target test/build/validate/generated-output checks and CUESHEET
 
 ## Finite graph
 
-C01 P0 DISCOVER/MODEL/SPECIFY task and owner oracle: IN_PROGRESS, evidence pending.
-C02 P0 first public code execution and live correction: TODO, depends C01.
+C01 P0 DISCOVER/MODEL/SPECIFY task and owner oracle: DONE. Spec above (task, scope, flow); owner oracle v2 below, C01-EV01..C01-EV06.
+C02 P0 first public code execution and live correction: TODO after four attempts, none reaching VERIFIED. Three defects were found by real runs and closed with regressions; two attempts were blocked externally (provider quota, provider timeout). Evidence and the exact defects are in DEVELOPMENT-DIAGNOSIS.md under "C02 public run: four attempts, three defects, still open". Depends C01.
 C03 P0 required controller defects found by C02, with regression and safe recovery: TODO, depends C02; only observed defects enter scope.
 C04 P1 fresh replay and Git preservation: TODO, depends C03.
 C05 P1 independent adversarial/target/runtime verification and closure: TODO, depends C04.
@@ -33,3 +33,23 @@ High open: stale worker batches may prevent safe continuation after correction; 
 Applicable: text/report UX, success/empty/error inputs, cancellation/live revision, restart/recovery, data/Git integrity, current proof/check binding, scoped tools/security/privacy, deterministic output, dependencies/offline, diagnostics, unit/integration/public runtime, build and docs. N/A: schema/API changes, authentication, migrations, caching, UI/accessibility redesign, deployment and Apple human acceptance; none changes in this slice. Closure requires all scoped criteria, no high risk or P0/P1 open. Only subsequent human acceptance remains.
 
 Owner steering during this run: replacement usability/selfhost and development diagnosis take precedence. See DEVELOPMENT-DIAGNOSIS.md. C01 oracle baseline independently rejected; C02 public run failed after live correction, with zero integration/verification. C03 required recovery defects are identified, not implemented. No target task or criterion marked complete.
+
+## Owner oracle v2, C01 evidence
+
+The v1 oracle (`owner.mjs`) had two tautologies. `formatDeltaJson(delta)===json` compared one call to itself, and `baseline.score===candidate.score` compared a document to a clone of itself, so both held even if the change corrupted JSON or scores. Oracle v2 (`owner-v2.mjs`) replaces them with values pinned to `golden-captured.json`, captured from pristine IntentLane HEAD, and adds a rendered-level pin. The warn matrix is declared in the oracle from CV01, never derived from observed output, so the oracle cannot absorb whatever the code happens to do.
+
+Six cases: 27.0->28.0, 27.0->absent, absent->28.0, absent->absent, unknown->unknown warn; 27.0->27.0 does not. 41 assertions.
+
+C01-EV01: oracle fails on the real target at HEAD f395ca56b, 9 of 41 assertions, every one a missing warning on a case that requires it. Exit 1. IntentLane HEAD and dirty-state hash unchanged (`89b6343...`) before and after; the oracle is read-only and bundles through esbuild into a temp dir.
+
+C01-EV02: `vitest run packages/core/src/audit-diff.test.ts` PASS 19/19 at the same HEAD. This is the CV05 target baseline, recorded before any worker touches the tree.
+
+C01-EV03: oracle is satisfiable. A reference implementation in a scratch copy outside both repos passes 41/41. It exposes the non-obvious edge: `diffAuditDocuments` normalizes a missing catalogue to the sentinel `"unknown"`, so warning on version inequality alone is wrong. Warn unless the versions are equal AND known.
+
+C01-EV04: four adversaries are rejected, evidence in `adversarial/results.log`. Corrupted summary line 6 failures; reworded warning phrase 10 failures; naive version-inequality-only implementation, the most plausible worker output, 4 failures on exactly the absent and unknown cases; rendered score tamper 6 failures.
+
+C01-EV05: two oracle defects were found by that adversarial pass and fixed, not worked around. The score-tamper adversary initially passed because the tamper was inserted before the score lines were built, so it had nothing to corrupt. The first replacement compared rendered lines against a golden set, which discarded the tampered line as an "added line". The accepted invariant is that all non-warning lines must equal the HEAD output exactly.
+
+C01-EV06: an earlier draft of oracle v2 passed on the pristine tree because the captured cases carried no warn field, so every case took the no-warning branch and the warning check never executed. A vacuous oracle would have green-lit an unimplemented requirement. The warn matrix now lives in the oracle and a disagreement between matrix and case list is a hard error.
+
+C01 proves the oracle rejects a false claim and accepts a true one. It does not prove the target task is implemented, and no target criterion is marked complete.

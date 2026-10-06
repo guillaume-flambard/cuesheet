@@ -64,7 +64,69 @@ RC-EV01: recovery + code-worker-loop + mid-run-directive suites PASS, 33 tests /
 RC-EV02: cancellation-only adversarial run PASS, 4 tests / 0 failures, 0.825 seconds. Immediate confirmed and delayed confirmed results publish exactly one linked receipt; null and thrown results remain uncertain. Cancelled work never verifies the objective or invokes another tool. RC-FIX DONE; RC-VERIFY IN_PROGRESS pending shipped build; RC-CLOSE TODO.
 
 RC-EV03: shipped `bash scripts/build.sh` PASS. Compiler reports the same 25 existing diagnostics as the previous shipped build; strict typecheck remains non-green and is not claimed. Terminal bundle and dispatcher validation pass. RC-FIX DONE; RC-VERIFY DONE for this receipt scope; RC-CLOSE DONE. The command shim executes this checkout and the shipped surface bundle was regenerated, so the cancellation fix is available to ordinary launches. No claim of a verified public revised-task completion.
-Remaining US-RECOVERY blocker: genuinely uncertain private effects and obsolete preserved batches still lack a safe usable continuation. A confirmed receipt now survives cancellation, but cannot turn unconfirmed writes into success. Model/agent/skill and multi-project daily acceptance, installed self-development and owner visual acceptance remain open.
+Remaining US-RECOVERY blocker, corrected2026-10-05: the earlier wording said uncertain effects and obsolete batches "lack a safe usable continuation". A reproducer disproved the implied mechanism. The human path works: `producer.changes()` returns a review carrying `blocked`, `decideChanges(reject)` returns `rejected`, and `pendingCodeWorkers` becomes false. No mechanism is missing and nothing is unreachable. The real gap is narrower: the gate is legible to the model but not actionable by it. Model/agent/skill and multi-project daily acceptance, installed self-development and owner visual acceptance remain open.
+
+## Pending-batch gate: legibility without an affordance
+
+Measured from the retained failed run, 142 events, and reproduced against current source. The failing run reconciled the wrong obligation: `reconcile_effect` succeeded once against the parent-level `run_code_workers` intent (seq 119, conclusion not-performed) and `run_code_workers` still returned 126 at seq 127, because the pending gate reads worker-batch events, not the parent intent. Tool census: `reconcile_effect` 8 calls, exits {0,2}; `run_code_workers` 4 calls, exits {126, null}. The model looped 18 steps and ended with zero integration.
+
+Two causes, both still present in current source.
+
+GT01, misleading refusal. `pendingCodeWorkers` refusals tell the model to inspect workspaces and journals. Inspection provably cannot clear the gate: the only operation that clears a worker batch is a human set-aside decision. A refusal that names an action which cannot help is worse than no refusal, because it sends the model into a loop.
+
+GT02, missing affordance. `declaredNames()` publishes `inspect_code_workers` and `reconcile_code_workers` to the builder. Neither can open or clear the gate. The model is told a gate exists, given two tools that cannot act on it, and has no third option. Owner decision 2026-10-05: add a bounded model-callable set-aside, because the alternative leaves the model looping while a human watches.
+
+### Bounded scope
+
+SA01: refusals name the action that works. Every pending-batch refusal states that only a set-aside decision clears it, names that operation, and states that reconciliation cannot clear it. Inspection and reconciliation keep their existing read-only and conditional-publication authority.
+
+SA02: a bounded `set_aside_code_workers {}` operation, controller-owned, accepting exactly `{}`. It appends the existing `rejected` batch and worker phases with `human:false` and an explicit model authority marker. It never applies a file, never integrates, never closes a goal, never claims verification, never deletes a workspace, journal or receipt, and never re-attempts an effect. Its entire effect is to stop the gate from blocking.
+
+SA03: model set-aside is refused, not merely discouraged, when the batch still carries a recoverable durable proposal, because discarding one is a human decision. It is permitted only when no worker holds a proposal eligible for reconciliation. Refusal names `/changes` as the human path.
+
+SA04: currentness guards match reconciliation. Objective ID/revision, source digest/base, controller admission provenance and workspace ownership are re-read before the append. A changed revision or source refuses and preserves everything.
+
+SA05: idempotence. A second call on an already set-aside batch returns the recorded outcome without appending, so a model retry loop cannot grow the journal.
+
+SA06: bounded output and input, exactly as REC-W05 already requires for the sibling operations, and readable in the Agents projection as an explicit model decision rather than a human one.
+
+Map: pending gate -> model refusal text and declared tools -> controller-owned set-aside append -> existing batch phase. Additive journal records only, no schema, permission, network, deployment or migration change. Privacy, integrity, diagnostics, concurrency and restart are applicable; accessibility and UI redesign are not.
+
+Finite graph: SA-SPEC DONE (this section); SA-FIX DONE; SA-VERIFY DONE for this slice; SA-CLOSE DONE. Broader US-RECOVERY stays open: a corrected public run is still required.
+
+SA-EV01: `node --test test/code-worker-gate.test.ts` PASS 9/9. Refusals name the clearing operation and the human path; the model set-aside clears the gate with `human:false` and an explicit authority marker; no `work_verified`, no evidence event, no file in the source, HEAD and index preserved; workspaces, private journals and the uncertain receipt all survive; a recoverable proposal refuses and names `/changes`; `[]`, `{workerId}`, `{x:1}` and a bare string all refuse and none clears the gate; three retries produce exactly one batch record and one record per worker; a batch superseded by a live correction is clearable; a superseded batch that still holds a recoverable proposal refuses.
+
+SA-EV02: existing suites preserved. `test/terminal-code-workers.test.ts` 27/27 and `test/code-worker-recovery.test.ts` 7/7 sequentially, and 43/43 for all three files together at `--test-concurrency=4`.
+
+SA-EV03: `bash scripts/build.sh` PASS, 0 type errors, dispatcher and bundle validated. `tsc --noEmit` clean on both the terminal package and `tsconfig.build.json`. The previously recorded 25 compiler diagnostics are absent from this build.
+
+SA-EV04: full suite differential, 1119 tests at `--test-concurrency=4`. With the three source files: 1088 pass / 14 fail / 17 skipped. With them stashed and a clean rebuild: 1080 pass / 22 fail / 17 skipped. The 8-failure delta is exactly the 9 new gate tests failing without the source, minus one that also failed for an unrelated pre-existing reason. Every failure present with the change is also present without it: `installed terminal runs in a real PTY`, `installed Agents reopens an interrupted private proposal`, `situation survives frame compaction`, `a conversation fills the terminal window`, `busy surface animates`, and the palette/live-notification PTY cases. Zero new failures, zero fixed-by-accident claims. Both install and `situation` failures were independently reproduced on the unmodified tree.
+
+Two findings changed the design while implementing, both from tests rather than review.
+
+The obvious reproduction was wrong. A reproducer for an uncertain worker suggested the human "set aside" path was unreachable, because `code-worker-review.ts` requires phase `proposal`. It is reachable: the review opens with `blocked`, `decideChanges(reject)` returns `rejected`, and `pendingCodeWorkers` becomes false. That hypothesis is discarded and the recorded blocker wording was corrected above.
+
+A second, worse gate sits in front of the one that was diagnosed. When the uncertain effect is the worker run itself, `reconcile_effect` uncertainty refuses `run_code_workers` and `finish` before the pending-batch check is reached, and that refusal sends the model to `reconcile_effect`, which cannot clear a worker batch. This is the loop the retained run actually hit: `reconcile_effect` exited 0 once, delegation still exited 126. Both gates are now named in both refusals, and the model is told they are separate obligations.
+
+The Agents projection had no next action for this state. Its recovery line only rendered for an `interrupted` agent, which requires a reload; a live uncertain worker projects as `failed` and showed nothing. It now covers both, which is why the wedged session has something to act on.
+
+Known flake, not claimed fixed: one earlier concurrent run of `terminal-code-workers.test.ts` failed `wait()` on its 15s busy-timeout under 4-way load. It passes on repeated reruns including the same concurrency and the same file set. Timing sensitivity in the fixture, not a behavioural regression.
+
+## C02 public run: four attempts, three defects, still open
+
+C02 is not done. No attempt reached independent VERIFIED. What the attempts produced is three defects that only a real installed run could find, each closed with a regression.
+
+Attempt 1, `opencode-go/gpt-5.6-luna`: quota exhausted at the first inference, before delegation. `public-1/outcome.json` records `BLOCKED_EXTERNAL` with every acceptance field false.
+
+Attempt 2, `opencode/space-bunny-free`, owner-directed model substitution: delegated, took the live correction, renewed the pinned check, and reached `set_aside_code_workers` at event 85 after 9 wasted steps. It was refused. The guard required `batch.revision === current.revision`, but the correction had advanced the objective from revision 5 to 29, so the batch could never be set aside precisely because a correction arrived. The tool could not be used in the one scenario it exists for. Fixed: a batch admitted under an older revision is superseded by a human correction, its contribution cannot integrate anyway, so nothing usable is discarded, and it is re-inspected under its own revision so the recoverable-proposal guarantee holds. Regression SA07, refusal regression SA08.
+
+Attempt 3: the gate was clear and the model inspected the batch at event 49, then spent 16 steps in a loop. `reconcile_effect` requires a successful `cat`/`ls`; `cat`/`ls` were refused by the isolated-workspace gate; that gate auto-calls `prepare_workspace`; `prepare_workspace` was refused by the uncertain-effect gate. Nothing could be observed, so the uncertainty could never be discharged. The intent was already in the code, since `cat` and `ls` are declared inspection tools and inspection is the designated escape from uncertainty; the isolated-workspace gate overrode it for container scopes. Fixed at `producer/index.ts`: that gate now yields while an uncertain mutation is outstanding, so read-only inspection stays available on the current scope. A read cannot mutate, so no safety property is weakened.
+
+Attempt 4: provider inference timeout on the first controller turn, zero steps. `public-4/outcome.json` records `BLOCKED_EXTERNAL`.
+
+C02 therefore remains TODO with a narrower and better-understood blocker: the three wedges that made it loop are closed and regression-covered, and no run has yet demonstrated a corrected public journey reaching the revised result. US-SELFHOST and US-LEGIBILITY stay open behind it. IntentLane is unchanged throughout: `f395ca56b`, dirty hash `89b6343...`, 36 dirty paths, and the v2 oracle still rejects the baseline.
+
+Risk: granting the model an authority over discarding work. Mitigated by SA03 (never against a recoverable proposal), by the authority marker, by the fact that set-aside preserves every byte, and by integration and verification remaining separately gated. The invariant that matters is preserved: no set-aside path may ever turn a contribution into verified work.
 
 ## Ordinary self-development, restart 2026-10-03
 
@@ -92,3 +154,13 @@ Verification: child-frame/research/container/worker targeted set 46 passed, 5 Do
 
 
 Final bounded checks: sequential install suite passed 5, failed 0, skipped 1 Docker-gated Linux journey. This includes packed install, real installed PTY outside checkout, and preserved interrupted proposal UI provenance. Fresh root flags launched the local installed terminal and executed a project-scoped native ls through the real model. The final answer to that read-only launch question was not awaited; no claim of full conversational completion. `git diff --check` clean. Global phase remains IMPLEMENTING; visual daily acceptance, intent correction/recovery, real multi-worker and dynamic skills remain open. No commit, reset, staging or push performed.
+
+## C02 rerun 2026-10-06: free models exposed an OpenRouter tool-call shape defect
+
+Context: provider quotas (luna) and the opencode free tier were unavailable, so C02 was retried through OpenRouter with `:free` models. Harness rebuilt in `docs/harness/c02/` (oracle v2 for IntentLane c1f915196, capsule form pinned to the local node capsule image, adversaries, PTY driver). Oracle: HEAD pristine 24/42 (rejected), reference 42/42 including inside the no-network capsule, five adversaries rejected. Runs 1-19 retained under `/Users/memo/projects/_reports/cuesheet-c02-2026-10-06/`; none reached VERIFIED, C02 stays TODO.
+
+Finding 1 (provider constraint, not a defect): opencode's free tier answers 403 FreeTierError "can only be used from within OpenCode" on the `opencode serve` HTTP path that Cuesheet uses. `opencode run` works for the same models. No free opencode model can be used by Cuesheet.
+
+Finding 2 (defect, fixed): the OpenRouter adapter advertises `{"tool": name, "input": {...}}` but passed the whole arguments object on as the request input. The shell runner reads `argv`/`path` from the top level, so every call that followed the contract returned exit 2 "no argv supplied", which the surface printed as "the call had no command in it", forever. The workspace gate was a bystander: its refusal is a one-shot and the model's next call ran. Fix in `src/adapters/openrouter.ts`: unwrap `input` when `tool` is a string and `input` is a plain object; the flat shape is unchanged. Regression `test/openrouter-tool-call-shape.test.ts`, 6 tests, 3 fail without the fix. Neighbouring suites (provider-ux, model-switch, model-selection, llm-producer, adapters, current-tool-vocabulary, reliability-matrix, terminal-sessions) 69 pass, 0 fail, 2 skipped. Replay run 19 on the rebuilt bundle: `cat`/`ls` now execute (31 exit 0 observations) where run 18 had 22 "no argv supplied".
+
+Still open: the free model then re-reads the same 8000-character excerpt 43 times instead of retrieving the rest through `read_history`, so no delegation or edit happened. That is a model limit against an existing bounded-reader design, not changed here. C02 needs a model that delegates.

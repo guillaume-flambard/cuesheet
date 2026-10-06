@@ -10061,6 +10061,79 @@
     "p0_open": 2,
     "p1_open": 2,
     "critical_high_risks_open": 2,
+    "pendingBatchGate": {
+      "phase": "READY_FOR_MANUAL_ACCEPTANCE",
+      "requirements": ["SA01", "SA02", "SA03", "SA04", "SA05", "SA06", "SA07", "SA08", "GT01", "GT02"],
+      "spec": "DEVELOPMENT-DIAGNOSIS.md#pending-batch-gate-legibility-without-an-affordance",
+      "gateTests": { "passed": 9, "failed": 0 },
+      "existingSuites": { "terminalCodeWorkers": 27, "codeWorkerRecovery": 7, "combinedAtConcurrency4": 43, "failed": 0 },
+      "build": "PASS; 0 type errors; strict typecheck clean on the terminal package and tsconfig.build.json",
+      "fullSuiteDifferential": {
+        "tests": 1119,
+        "pass": 1088,
+        "fail": 14,
+        "skipped": 17,
+        "baselineWithoutChange": { "pass": 1080, "fail": 22, "skipped": 17 },
+        "deltaExplanation": "The 8-failure delta is exactly the new gate tests failing without the source.",
+        "newFailures": 0,
+        "preExistingFailures": [
+          "installed terminal runs in a real PTY",
+          "installed Agents reopens an interrupted private proposal",
+          "situation survives frame compaction",
+          "a conversation fills the terminal window",
+          "busy surface animates",
+          "palette and live-notification PTY cases"
+        ],
+        "preexistingIndependentlyReproduced": ["install PTY cases", "situation compaction"]
+      },
+      "verified": [
+        "a pending-batch refusal names the operation that clears it",
+        "a reconcile_effect refusal states it cannot clear a worker batch",
+        "a model set-aside clears the gate without applying, integrating or verifying anything",
+        "a recoverable durable proposal refuses the model set-aside and names /changes",
+        "a batch superseded by a live correction can be set aside, while a superseded batch holding a recoverable proposal still refuses",
+        "set-aside preserves every workspace, private journal and receipt",
+        "repeated set-aside is a no-op",
+        "only {} is accepted as input"
+      ],
+      "doesNotProve": [
+        "a corrected public installed run reaching the revised result",
+        "US01 through US04",
+        "installed PTY visual acceptance",
+        "the pre-existing install and situation failures"
+      ],
+      "knownFlake": "One concurrent run of terminal-code-workers.test.ts failed its 15s busy-timeout under 4-way load; passes on repeated reruns at the same concurrency."
+    },
+    "c02": {
+      "status": "TODO",
+      "attempts": 4,
+      "outcome": "three defects found and closed; no attempt reached independent VERIFIED",
+      "externalBlocks": [
+        { "attempt": 1, "model": "opencode-go/gpt-5.6-luna", "reason": "provider quota exhausted at the first inference" },
+        { "attempt": 4, "model": "opencode/space-bunny-free", "reason": "provider inference timeout on the first controller turn" }
+      ],
+      "defectsFoundByRealRuns": [
+        {
+          "attempt": 2,
+          "defect": "the set-aside guard required equal revisions, so a live correction made the batch unclearable",
+          "fix": "src/adapters/code-worker-recovery.ts superseded-batch allowance",
+          "regression": ["SA07", "SA08"]
+        },
+        {
+          "attempt": 3,
+          "defect": "the isolated-workspace gate blocked the read-only inspection that reconcile_effect requires, closing an unsatisfiable loop",
+          "fix": "apps/terminal/src/producer/index.ts yields while an uncertain mutation is outstanding",
+          "regression": ["GT01", "GT02"]
+        }
+      ],
+      "evidenceRoot": "/Users/memo/projects/_reports/cuesheet-intentlane-code-2026-10-05",
+      "targetUnchanged": {
+        "head": "f395ca56b56d808c40d320594b38ff50c924eef9",
+        "dirtyHash": "89b634338786a02deb5e8e703b3ab355942fafd5",
+        "dirtyPaths": 36,
+        "oracleRejectsBaseline": true
+      }
+    },
     "tasks": [
       {
         "id": "US-AUDIT",
