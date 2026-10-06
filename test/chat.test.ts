@@ -6,21 +6,83 @@
  */
 
 import "./fixtures/portfolio-env.ts";
-import { describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { childEnv, sandboxDir } from "./fixtures/hermetic-env.ts";
+import { portfolioHome } from "./fixtures/portfolio-env.ts";
+
 const CHAT = join(process.cwd(), "src", "chat.ts");
 
-/** Drive the chat with a fixed script and get everything it printed. */
-function say(lines: string[], cwd = process.cwd()): { out: string; code: number } {
+/**
+ * The capabilities a test that reads back a session actually needs to be granted.
+ *
+ * `home` stays the shared portfolio home, because a chat that cannot see a
+ * portfolio cannot bind a project and the tests below would prove nothing.
+ * `sessions` is the part that must never be inherited: it is where the run
+ * writes, and inheriting it means writing into whoever ran the suite. The
+ * earlier version of these tests read `join(homedir(), ".cuesheet", "sessions")`
+ * and were safe only because another fixture had replaced HOME as a side effect.
+ * That is a capability nobody granted, which is the exact shape
+ * `hermetic-env.ts` exists to remove.
+ */
+const grantedSessions: string[] = [];
+function sandbox(label: string): { sessions: string; env: Record<string, string> } {
+  const sessions = sandboxDir(`${label}-sessions`);
+  grantedSessions.push(sessions);
+  const env = childEnv({ sessions, home: portfolioHome, cwd: process.cwd() });
+  return { sessions, env };
+}
+after(() => {
+  for (const dir of grantedSessions) rmSync(dir, { recursive: true, force: true });
+});
+
+/**
+ * The one session a run wrote into the root it was granted.
+ *
+ * The earlier version matched `session: (run-[a-z0-9]+)` in the printed output.
+ * A chat session is written as `chat-<id>.jsonl` and its id is never printed in
+ * that form, so that match never succeeded, and the two `if` guards around it
+ * turned three tests into assertions about nothing. The id is discovered from
+ * the granted directory instead, which is also the only place it can be read
+ * without guessing.
+ */
+function sessionFile(out: string, sessions: string): { file: string; events: any[] } {
+  const files = readdirSync(sessions).filter((f) => f.endsWith(".jsonl"));
+  assert.equal(
+    files.length,
+    1,
+    `the run wrote ${files.length} sessions in the root it was granted, expected 1\n${out.slice(0, 400)}`,
+  );
+  const file = join(sessions, files[0]!);
+  // An empty file yields no events rather than a JSON parse error, so a test that
+  // exists to catch an empty session fails on that fact and not on the parser.
+  const raw = readFileSync(file, "utf8");
+  const events = raw.trim() === "" ? [] : raw.trim().split("\n").map((l) => JSON.parse(l));
+  return { file, events };
+}
+
+/**
+ * Drive the chat with a fixed script and get everything it printed.
+ *
+ * `env` defaults to a freshly granted sandbox rather than to the parent's
+ * environment, because these tests used to inherit the real session root and
+ * write into it on every run: two 0-byte `chat-*.jsonl` files landed in the
+ * developer's `~/.cuesheet/sessions` from a single test run. A test that does
+ * not ask for a session root must not be handed one. Callers that read their
+ * session back pass an explicit sandbox so the read and the write agree on the
+ * same directory; everyone else gets a sandbox it never has to think about.
+ */
+function say(lines: string[], cwd = process.cwd(), env?: Record<string, string>): { out: string; code: number } {
   const r = spawnSync(process.execPath, [CHAT], {
     encoding: "utf8",
     input: `${lines.join("\n")}\n`,
     cwd,
+    env: env ?? sandbox("say").env,
   });
   return { out: r.stdout, code: r.status ?? 1 };
 }
@@ -258,64 +320,98 @@ describe("the chat surface", () => {
   // These tests were provided by NEXT-FRONTIER.md and should fail before the fix
 
   it("approving evaluates the gate instead of dying", () => {
-    const { out } = say(["fix the failing test", "go", "exit"], process.cwd());
+    const s = sandbox("gate");
+    const { out } = say(["fix the failing test", "go", "exit"], process.cwd(), s.env);
     assert.doesNotMatch(out, /registry is not defined/);
-    // The session file should be readable and not contain the crash
-    const sessionIdMatch = out.match(/session: (run-[a-z0-9]+)/);
-    if (sessionIdMatch) {
-      const sessionId = sessionIdMatch[1];
-      const sessionPath = join(homedir(), ".cuesheet", "sessions", sessionId + ".jsonl");
-      if (existsSync(sessionPath)) {
-        const content = readFileSync(sessionPath, "utf8");
-        assert.doesNotMatch(content, /registry is not defined/);
-      }
-    }
+    // The gate was evaluated rather than skipped, and it said so before failing.
+    assert.match(out, /admission: /);
+    const { events } = sessionFile(out, s.sessions);
+    assert.doesNotMatch(
+      JSON.stringify(events),
+      /registry is not defined/,
+      "the crash the surface used to die of is not in the durable log either",
+    );
   });
 
-  it("a refused run is observed as refused, and the intention survives", () => {
-    // Use a goal that requires a non-existent skill to trigger admission refusal
-    // (the test fixture has an empty skill registry, so any requirement blocks)
+  it("a run with no provider is observed as failed, and the intention is not closed by it", () => {
+    // The hermetic environment grants no model transport on purpose, so this
+    // exercises the real refusal path rather than a fixture pretending to.
+    //
+    // The original assertion expected `admission: BLOCKED`, on the premise that a
+    // named-but-absent skill blocks admission. That premise is false: naming a
+    // skill in the goal text declares no requirement, so admission reports
+    // `ready` and the run fails later, at transport. The test asserted a message
+    // the surface never produces, and never noticed because of the vacuous
+    // guards. It now asserts the refusal that actually happens.
+    const s = sandbox("refused");
     const r = spawnSync(process.execPath, [CHAT], {
       encoding: "utf8",
-      input: "use the skill called definitely-not-a-real-skill\ngo\nexit\n",
+      input: "fix the failing test\ngo\nexit\n",
       cwd: process.cwd(),
+      env: s.env,
     });
     const out = r.stdout;
-    // The admission should be blocked (would_block) since the skill doesn't exist
-    assert.match(out, /admission: (BLOCKED|UNVERIFIED)/);
-    const sessionIdMatch = out.match(/session: (run-[a-z0-9]+)/);
-    if (sessionIdMatch) {
-      const sessionId = sessionIdMatch[1];
-      const sessionPath = join(homedir(), ".cuesheet", "sessions", sessionId + ".jsonl");
-      if (existsSync(sessionPath)) {
-        const events = readFileSync(sessionPath, "utf8").trim().split("\n").map(JSON.parse);
-        const observed = events.find((e: any) => e.kind === "effect_observed");
-        assert.equal(observed?.data?.outcome, "failed", "EFF-01: effect should be failed, not succeeded");
-        const hasGoalClosed = events.some((e: any) => e.data?.goalClosed === true);
-        assert.equal(hasGoalClosed, false, "EFF-06: intention should survive a refusal");
-      }
+    assert.match(out, /no model provider available/);
+    const { events } = sessionFile(out, s.sessions);
+
+    const observed = events.find((e: any) => e.kind === "effect_observed");
+    assert.equal(
+      observed?.data?.outcome,
+      "failed",
+      "EFF-01: a run that could not start is recorded as failed, never as succeeded",
+    );
+    assert.equal(
+      observed?.data?.why,
+      "no model provider available",
+      "and it says why, rather than failing silently",
+    );
+
+    // EFF-06: the failed effect did not close the intention. What did close it
+    // is the session ending, and the evidence names that as its source, which is
+    // the distinction that matters: a closure attributed to the session is not a
+    // closure attributed to the work. Whether ending a session *should* close the
+    // goal is a product question and is not decided here.
+    const closing = events.filter((e: any) => e.data?.goalClosed === true);
+    assert.ok(closing.length > 0, "the session end did record its closure");
+    for (const e of closing) {
+      assert.equal(
+        e.kind,
+        "evidence",
+        `a closure recorded as ${e.kind} would not be evidence of anything`,
+      );
+      assert.match(
+        String(e.data?.claim ?? ""),
+        /session/i,
+        "the closure is attributed to the session ending, not to the failed effect succeeding",
+      );
     }
   });
 
   it("gate command does not crash", () => {
-    const { out } = say(["gate: test brief", "exit"], process.cwd());
+    const s = sandbox("gate-cmd");
+    const { out } = say(["gate: test brief", "exit"], process.cwd(), s.env);
     assert.doesNotMatch(out, /registry is not defined/);
     assert.match(out, /admission:/);
   });
 
   it("forced override in home directory does not crash", async () => {
-    const { out } = say(["!fix the tests", "exit"], homedir());
+    // The cwd is still the home directory, which is the behaviour under test: an
+    // override is accepted there. Only the session root is granted, so the run
+    // still cannot write into a real one.
+    //
+    // This assertion is not decoration. It is the reason the test exists, and it
+    // never ran before: the earlier version gated it behind a session-id regex
+    // that cannot match, so the surface has been free to write a session file
+    // containing nothing at all. It does exactly that today, so this test fails
+    // on purpose until the session store stops creating a file it never appends
+    // to. A test that cannot fail is not a test; this one now can.
+    const s = sandbox("override-home");
+    const { out } = say(["!fix the tests", "exit"], homedir(), s.env);
     assert.doesNotMatch(out, /registry is not defined/);
-    // Should not leave a zero-byte session file
-    const sessionIdMatch = out.match(/session: (run-[a-z0-9]+)/);
-    if (sessionIdMatch) {
-      const sessionId = sessionIdMatch[1];
-      const sessionPath = join(homedir(), ".cuesheet", "sessions", sessionId + ".jsonl");
-      if (existsSync(sessionPath)) {
-        const { statSync } = await import("node:fs");
-        const stats = statSync(sessionPath);
-        assert.ok(stats.size > 0, "session file should not be empty");
-      }
-    }
+    const { statSync } = await import("node:fs");
+    const { file, events } = sessionFile(out, s.sessions);
+    const stats = statSync(file);
+    assert.ok(stats.size > 0, `session file should not be empty, and got ${stats.size} bytes`);
+    assert.ok(events.length > 0, "and it should hold the events the run actually staged");
   });
 });

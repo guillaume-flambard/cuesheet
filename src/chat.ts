@@ -793,6 +793,12 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
           break;
         }
         if (intent.forced) {
+          // The override is announced as "on the record", so it has to be on the
+          // record before anything can refuse it. It used to live only inside the
+          // run, which meant a run that never started (no provider, a refusal)
+          // left the chat session as a file with nothing in it and the override
+          // unrecorded.
+          appendSurface({ kind: "note", subject: "chat.override", data: { text: intent.text, cwd, forced: true } });
           const runResult = await runGoal(intent.text, true, durable, cwd, liveProjection);
           if (!runResult.ran) {
             console.log(`run refused: ${runResult.reason}`);
