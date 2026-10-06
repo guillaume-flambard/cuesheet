@@ -1,0 +1,3 @@
+import json,sys
+req="In intentlane, the text output of the audit diff shows score arrows between two audits even when they were measured against different catalogue versions. Add a clear warning in that text output that names the baseline and candidate catalogue versions whenever they differ. Keep raw numbers, rankings and the JSON output unchanged, and leave the output untouched when both audits use the same known version. Only touch packages/core/src/audit-diff.ts and packages/core/src/audit-diff.test.ts, and add meaningful tests."
+open(sys.argv[1]+'/actions.jsonl','a').write(json.dumps({"send":req})+"\n"+json.dumps({"key":"enter"})+"\n")
