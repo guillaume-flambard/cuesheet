@@ -1,0 +1,11 @@
+import { spawn } from "node:child_process";
+const pw = "x" + Math.random().toString(36).slice(2);
+const s = spawn(process.env.HOME + "/.opencode/bin/opencode", ["serve", "--hostname", "127.0.0.1", "--port", "0", "--pure"], { cwd: "/tmp", env: { ...process.env, OPENCODE_SERVER_USERNAME: "cuesheet", OPENCODE_SERVER_PASSWORD: pw } });
+const base = await new Promise((r) => s.stdout.on("data", (c) => { const m = c.toString().match(/http:\/\/127\.0\.0\.1:\d+/); if (m) r(m[0]); }));
+const h = { "content-type": "application/json", authorization: "Basic " + Buffer.from("cuesheet:" + pw).toString("base64") };
+const call = async (route, body) => (await fetch(base + route + "?directory=/tmp", { method: "POST", headers: h, body: JSON.stringify(body) })).json();
+const ses = await call("/session", {});
+const [prov, ...rest] = process.argv[2].split("/");
+const out = await call(`/session/${ses.id}/message`, { model: { providerID: prov, modelID: rest.join("/") }, tools: { "*": false }, parts: [{ type: "text", text: "reply with the single word ok" }] });
+console.log(JSON.stringify({ error: out.info?.error, parts: out.parts?.map((p) => p.type + ":" + (p.text ?? "").slice(0, 40)) }));
+s.kill("SIGKILL");
