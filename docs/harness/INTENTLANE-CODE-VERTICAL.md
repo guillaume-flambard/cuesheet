@@ -21,7 +21,7 @@ CV05: applicable target test/build/validate/generated-output checks and CUESHEET
 ## Finite graph
 
 C01 P0 DISCOVER/MODEL/SPECIFY task and owner oracle: DONE. Spec above (task, scope, flow); owner oracle v2 below, C01-EV01..C01-EV06.
-C02 P0 first public code execution and live correction: TODO after four attempts, none reaching VERIFIED. Three defects were found by real runs and closed with regressions; two attempts were blocked externally (provider quota, provider timeout). Evidence and the exact defects are in DEVELOPMENT-DIAGNOSIS.md under "C02 public run: four attempts, three defects, still open". Depends C01.
+C02 P0 first public code execution and live correction: FROZEN 2026-10-07 (still TODO, nothing verified) after four attempts, none reaching VERIFIED. Three defects were found by real runs and closed with regressions; two attempts were blocked externally (provider quota, provider timeout). Evidence and the exact defects are in DEVELOPMENT-DIAGNOSIS.md under "C02 public run: four attempts, three defects, still open". Depends C01.
 C03 P0 required controller defects found by C02, with regression and safe recovery: TODO, depends C02; only observed defects enter scope.
 C04 P1 fresh replay and Git preservation: TODO, depends C03.
 C05 P1 independent adversarial/target/runtime verification and closure: TODO, depends C04.
@@ -53,3 +53,10 @@ C01-EV05: two oracle defects were found by that adversarial pass and fixed, not 
 C01-EV06: an earlier draft of oracle v2 passed on the pristine tree because the captured cases carried no warn field, so every case took the no-warning branch and the warning check never executed. A vacuous oracle would have green-lit an unimplemented requirement. The warn matrix now lives in the oracle and a disagreement between matrix and case list is a hard error.
 
 C01 proves the oracle rejects a false claim and accepts a true one. It does not prove the target task is implemented, and no target criterion is marked complete.
+
+
+## C02 frozen, 2026-10-07
+
+Owner decision: stop. Three days of attempts produced a working oracle (v2, host and capsule form), a replay harness (`docs/harness/c02/`) and four real defects closed with regressions (OpenRouter tool-call shape, Google compatible request shape, request pacing, batch set-aside), but no run reached an independent VERIFIED. What blocked every run was model access, not the controller: opencode-go quota and silence, the opencode free tier refusing the serve path, small OpenRouter free models not following the delegation protocol, and the Google free quota spent on both usable models.
+
+C02 stays TODO and CV02 to CV05 stay unverified. It reopens when a model that can delegate is available without a search for one. To resume: `docs/harness/c02/public-run.mjs` (or `start-gemini-run.sh`), the saved request in `send-request.py`, the oracle `owner-capsule.mjs`. Evidence for runs 1 to 29: `/Users/memo/projects/_reports/cuesheet-c02-2026-10-06/`.

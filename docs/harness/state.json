@@ -10063,17 +10063,40 @@
     "critical_high_risks_open": 2,
     "pendingBatchGate": {
       "phase": "READY_FOR_MANUAL_ACCEPTANCE",
-      "requirements": ["SA01", "SA02", "SA03", "SA04", "SA05", "SA06", "SA07", "SA08", "GT01", "GT02"],
+      "requirements": [
+        "SA01",
+        "SA02",
+        "SA03",
+        "SA04",
+        "SA05",
+        "SA06",
+        "SA07",
+        "SA08",
+        "GT01",
+        "GT02"
+      ],
       "spec": "DEVELOPMENT-DIAGNOSIS.md#pending-batch-gate-legibility-without-an-affordance",
-      "gateTests": { "passed": 9, "failed": 0 },
-      "existingSuites": { "terminalCodeWorkers": 27, "codeWorkerRecovery": 7, "combinedAtConcurrency4": 43, "failed": 0 },
+      "gateTests": {
+        "passed": 9,
+        "failed": 0
+      },
+      "existingSuites": {
+        "terminalCodeWorkers": 27,
+        "codeWorkerRecovery": 7,
+        "combinedAtConcurrency4": 43,
+        "failed": 0
+      },
       "build": "PASS; 0 type errors; strict typecheck clean on the terminal package and tsconfig.build.json",
       "fullSuiteDifferential": {
         "tests": 1119,
         "pass": 1088,
         "fail": 14,
         "skipped": 17,
-        "baselineWithoutChange": { "pass": 1080, "fail": 22, "skipped": 17 },
+        "baselineWithoutChange": {
+          "pass": 1080,
+          "fail": 22,
+          "skipped": 17
+        },
         "deltaExplanation": "The 8-failure delta is exactly the new gate tests failing without the source.",
         "newFailures": 0,
         "preExistingFailures": [
@@ -10084,7 +10107,10 @@
           "busy surface animates",
           "palette and live-notification PTY cases"
         ],
-        "preexistingIndependentlyReproduced": ["install PTY cases", "situation compaction"]
+        "preexistingIndependentlyReproduced": [
+          "install PTY cases",
+          "situation compaction"
+        ]
       },
       "verified": [
         "a pending-batch refusal names the operation that clears it",
@@ -10109,21 +10135,35 @@
       "attempts": 4,
       "outcome": "three defects found and closed; no attempt reached independent VERIFIED",
       "externalBlocks": [
-        { "attempt": 1, "model": "opencode-go/gpt-5.6-luna", "reason": "provider quota exhausted at the first inference" },
-        { "attempt": 4, "model": "opencode/space-bunny-free", "reason": "provider inference timeout on the first controller turn" }
+        {
+          "attempt": 1,
+          "model": "opencode-go/gpt-5.6-luna",
+          "reason": "provider quota exhausted at the first inference"
+        },
+        {
+          "attempt": 4,
+          "model": "opencode/space-bunny-free",
+          "reason": "provider inference timeout on the first controller turn"
+        }
       ],
       "defectsFoundByRealRuns": [
         {
           "attempt": 2,
           "defect": "the set-aside guard required equal revisions, so a live correction made the batch unclearable",
           "fix": "src/adapters/code-worker-recovery.ts superseded-batch allowance",
-          "regression": ["SA07", "SA08"]
+          "regression": [
+            "SA07",
+            "SA08"
+          ]
         },
         {
           "attempt": 3,
           "defect": "the isolated-workspace gate blocked the read-only inspection that reconcile_effect requires, closing an unsatisfiable loop",
           "fix": "apps/terminal/src/producer/index.ts yields while an uncertain mutation is outstanding",
-          "regression": ["GT01", "GT02"]
+          "regression": [
+            "GT01",
+            "GT02"
+          ]
         }
       ],
       "evidenceRoot": "/Users/memo/projects/_reports/cuesheet-intentlane-code-2026-10-05",
@@ -10982,8 +11022,17 @@
     "p1_open": 2,
     "critical_high_risks_open": 2,
     "remaining": [
-      "Reproducer failed on live correction; recovery repair needed before implementation and replay."
+      "FROZEN, blocked by external model access; see frozen.reopenWhen. Defects closed: OpenRouter tool-call shape, Google compatible request shape, request pacing, batch set-aside."
     ],
-    "evidenceRoot": "/Users/memo/projects/_reports/cuesheet-intentlane-code-2026-10-03"
+    "evidenceRoot": "/Users/memo/projects/_reports/cuesheet-intentlane-code-2026-10-03",
+    "status": "FROZEN",
+    "frozen": {
+      "on": "2026-10-07",
+      "by": "owner decision in chat",
+      "reason": "No public run reached an independent VERIFIED. The only open blocker is external model access: opencode-go quota and silence, opencode free tier refused on the serve path, OpenRouter free models not following the delegation protocol, Google free quota spent. Three real defects were found and closed on the way.",
+      "reopenWhen": "A model that can delegate is available without searching for one (a working opencode-go/gpt-5.6-luna, or any model that completes a delegation in a probe).",
+      "howToResume": "docs/harness/c02/start-gemini-run.sh or public-run.mjs with the saved request in send-request.py; oracle docs/harness/c02/owner-capsule.mjs",
+      "notClaimed": "C02 stays TODO. No criterion CV02 to CV05 is verified."
+    }
   }
 }
