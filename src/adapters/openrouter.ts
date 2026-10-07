@@ -76,6 +76,29 @@ export class OpenRouterAdapter implements ModelAdapter {
   }
 
   /**
+   * Pacing for providers that meter requests per minute (free tiers).
+   *
+   * CUESHEET_MIN_INTERVAL_MS is the least time between the starts of two
+   * requests. Waiting before a request is not a retry: nothing is sent twice and
+   * no failed call is replayed, which is the rule a provider failure keeps. Unset
+   * or invalid means no pacing, exactly as before.
+   */
+  private lastStart = 0;
+  // Returns nothing when no wait is needed, so an unpaced request still starts in
+  // the same turn: a caller that cancels right after calling infer relies on that.
+  private pace(signal?: AbortSignal): Promise<void> | undefined {
+    const gap = Number(process.env.CUESHEET_MIN_INTERVAL_MS);
+    if (!Number.isFinite(gap) || gap <= 0) return undefined;
+    const wait = this.lastStart + gap - Date.now();
+    this.lastStart = Math.max(Date.now(), this.lastStart + gap);
+    if (wait <= 0) return undefined;
+    return new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, wait);
+      signal?.addEventListener("abort", () => { clearTimeout(timer); reject(signal.reason); }, { once: true });
+    });
+  }
+
+  /**
    * Render the frame into a prompt. Provider-neutral in, provider-shaped out.
    *
    * The tool contract is spelled out in full, with the two accepted input
@@ -158,6 +181,13 @@ export class OpenRouterAdapter implements ModelAdapter {
             ...facts,
           ].join("\n"),
         },
+        // Everything the model needs is in the system message above, and OpenAI and
+        // OpenRouter accept a request that has nothing else. Google's OpenAI
+        // compatible endpoint does not: it maps messages to Gemini contents, a
+        // system-only request leaves contents empty, and it answers 400
+        // "contents is not specified". A user turn makes the request valid
+        // everywhere and says nothing the system message did not already say.
+        { role: "user", content: "Continue from the state above: request the next tool call, or answer in text if there is nothing left to do." },
       ],
       tools: [
         {
@@ -219,6 +249,8 @@ export class OpenRouterAdapter implements ModelAdapter {
       body[this.options.tokenParameter ?? "max_tokens"] = this.options.maxTokens;
     }
 
+    const pacing = this.pace(signal);
+    if (pacing) await pacing;
     // Everything inside this boundary belongs to the provider, including the
     // SDK's own programming errors. Wrapping it here is what stops a
     // `ReferenceError` from a third-party client being read as Cuesheet's own

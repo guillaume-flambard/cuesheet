@@ -52,3 +52,47 @@ it('end to end: a contract-shaped ls is executed instead of answering "no argv s
   assert.notEqual(result.output, 'no argv supplied');
   assert.equal(result.exit, 0);
 });
+
+it('a request always carries a user turn after the system message, which Google compatible endpoints require', async () => {
+  const original = globalThis.fetch;
+  let body: any;
+  try {
+    globalThis.fetch = async (_url, options) => { body = JSON.parse(String(options?.body)); return Response.json({ choices: [{ message: { content: 'ok', tool_calls: [] } }] }); };
+    await new OpenRouterAdapter({ apiKey: 'test-key', model: 'm' } as any).infer(frame);
+  } finally { globalThis.fetch = original; }
+  assert.equal(body.messages[0].role, 'system');
+  assert.ok(body.messages.slice(1).some((m: any) => m.role === 'user' && String(m.content).length > 0), 'no user turn in the request');
+});
+
+it('CUESHEET_MIN_INTERVAL_MS spaces the starts of two requests, and unset leaves them unpaced', async () => {
+  const original = globalThis.fetch, saved = process.env.CUESHEET_MIN_INTERVAL_MS;
+  const starts: number[] = [];
+  try {
+    globalThis.fetch = async () => { starts.push(Date.now()); return Response.json({ choices: [{ message: { content: 'ok', tool_calls: [] } }] }); };
+    const adapter = new OpenRouterAdapter({ apiKey: 'test-key', model: 'm' } as any);
+    process.env.CUESHEET_MIN_INTERVAL_MS = '200';
+    await adapter.infer(frame); await adapter.infer(frame); await adapter.infer(frame);
+    assert.ok(starts[1]! - starts[0]! >= 180, `second start only ${starts[1]! - starts[0]!} ms after the first`);
+    assert.ok(starts[2]! - starts[1]! >= 180, `third start only ${starts[2]! - starts[1]!} ms after the second`);
+    delete process.env.CUESHEET_MIN_INTERVAL_MS;
+    starts.length = 0;
+    await adapter.infer(frame); await adapter.infer(frame);
+    assert.ok(starts[1]! - starts[0]! < 150, 'unset must not pace');
+  } finally { globalThis.fetch = original; if (saved === undefined) delete process.env.CUESHEET_MIN_INTERVAL_MS; else process.env.CUESHEET_MIN_INTERVAL_MS = saved; }
+});
+
+it('an abort during the pacing wait rejects instead of sending', async () => {
+  const original = globalThis.fetch, saved = process.env.CUESHEET_MIN_INTERVAL_MS;
+  let sent = 0;
+  try {
+    globalThis.fetch = async () => { sent++; return Response.json({ choices: [{ message: { content: 'ok', tool_calls: [] } }] }); };
+    process.env.CUESHEET_MIN_INTERVAL_MS = '5000';
+    const adapter = new OpenRouterAdapter({ apiKey: 'test-key', model: 'm' } as any);
+    await adapter.infer(frame);
+    const abort = new AbortController();
+    const pending = adapter.infer(frame, abort.signal);
+    setTimeout(() => abort.abort(new Error('stop')), 50);
+    await assert.rejects(pending, /stop/);
+    assert.equal(sent, 1);
+  } finally { globalThis.fetch = original; if (saved === undefined) delete process.env.CUESHEET_MIN_INTERVAL_MS; else process.env.CUESHEET_MIN_INTERVAL_MS = saved; }
+});
