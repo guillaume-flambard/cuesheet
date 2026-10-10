@@ -20,7 +20,7 @@ it('project inference carries the proposal config without rewriting owner settin
     writeFileSync(fake,`#!${process.execPath}\nrequire('fs').writeFileSync(${JSON.stringify(envFile)},process.env.OPENCODE_CONFIG_CONTENT);console.log(JSON.stringify({type:'text',part:{type:'text',text:JSON.stringify({text:'proposal',toolCalls:[]})}}));`);chmodSync(fake,0o755);
     const frame=compileFrame(new EventStore('quality',()=>1).toSession(),{subject:'builder',goal:'proposal',maxSteps:1},1);
     await new BinaryModelAdapter({binary:fake,project}).infer(frame);
-    assert.deepEqual(JSON.parse(readFileSync(envFile,'utf8')),{...inherited,...AGENT_CONFIG,agent:{...inherited.agent,...(AGENT_CONFIG.agent as object)}});
+    assert.deepEqual(JSON.parse(readFileSync(envFile,'utf8')),{...inherited,...AGENT_CONFIG,agent:{...inherited.agent,...(AGENT_CONFIG.agent as object)},agents:{...(AGENT_CONFIG.agents as object)}});
     assert.equal(readFileSync(config,'utf8'),original);
   } finally {
     if(previous===undefined)delete process.env.OPENCODE_CONFIG_CONTENT;else process.env.OPENCODE_CONFIG_CONTENT=previous;

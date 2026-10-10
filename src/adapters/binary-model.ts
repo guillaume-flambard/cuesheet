@@ -65,7 +65,7 @@ import {declaredTools} from "./tool-vocabulary.ts";
 import { spawn } from "node:child_process";
 import { accessSync, constants, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join } from "node:path";
+import { join } from "node:path";
 
 import type { ContextFrame, ModelAdapter, ModelResponse, ToolRequest } from "../core/loop.ts";
 import { FailureWithOrigin } from "../effects.ts";
@@ -83,21 +83,24 @@ export const PROPOSAL_AGENT = "cuesheet-proposal";
  * exists to strip the tool list, and a project that adopted it would have its
  * own OpenCode configuration rewritten by an unrelated tool.
  *
- * Both keys are present because they are not the same lever. `tools: {"*": false}`
- * removes the tools from the list the model is offered; `permission: {"*": "deny"}`
- * denies any that survive. The measurement above is about the first, and the
- * second is the belt to that pair of braces, in case a future version resolves
- * one of them differently.
+ * OpenCode's agent config in the wild is split between legacy V1 (`agent`) and
+ * current V2 (`agents`). We keep both shapes in sync so the adapter works with
+ * the installed local runtime and with older file layouts, while the actual deny
+ * rule lives in the V2 `permissions` array the current binary reads.
  */
+const proposalAgent: Readonly<Record<string, unknown>> = {
+  description: "Proposes work as text. No tools, no filesystem, no shell.",
+  mode: "primary",
+  permissions: [{ action: "*", resource: "*", effect: "deny" }],
+};
+
 export const AGENT_CONFIG: Readonly<Record<string, unknown>> = {
   $schema: "https://opencode.ai/config.json",
   agent: {
-    [PROPOSAL_AGENT]: {
-      description: "Proposes work as text. No tools, no filesystem, no shell.",
-      mode: "primary",
-      tools: { "*": false },
-      permission: { "*": "deny" },
-    },
+    [PROPOSAL_AGENT]: proposalAgent,
+  },
+  agents: {
+    [PROPOSAL_AGENT]: proposalAgent,
   },
 };
 
@@ -324,29 +327,57 @@ export function parseProposal(run: RawRun): BinaryModelResponse {
 
   const raw = stream.texts.join("").trim();
   const envelope = envelopeOf(raw);
-  if (envelope === null) {
-    refuse(`the answer was not the requested JSON object: response content omitted`);
+  if (envelope !== null) {
+    let parsed: Proposal;
+    try {
+      parsed = JSON.parse(envelope) as Proposal;
+    } catch {
+      refuse(`the envelope was not valid JSON: response content omitted`);
+    }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      refuse("the envelope was not an object");
+    }
+
+    const text = typeof parsed.text === "string" ? parsed.text : "";
+    const toolCalls = readToolCalls(parsed.toolCalls);
+    if (text.trim() === "" && toolCalls.length === 0) {
+      // An empty answer and a refused answer must not look alike. A run that
+      // returned nothing usable is a failure, not a step that succeeded quietly.
+      refuse("the envelope carried neither text nor a tool call");
+    }
+
+    return { text, toolCalls, usage: stream.usage, raw };
   }
 
-  let parsed: Proposal;
-  try {
-    parsed = JSON.parse(envelope) as Proposal;
-  } catch {
-    refuse(`the envelope was not valid JSON: response content omitted`);
-  }
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    refuse("the envelope was not an object");
+  // Modern OpenCode releases may stream the assistant's text as a JSON payload
+  // carried inside a text event, not as a single envelope. Keep it strict: the
+  // payload must still be a valid JSON object carrying the same proposal shape,
+  // not arbitrary prose that only happens to contain JSON-looking text.
+  if (raw !== "") {
+    try {
+      const parsed = JSON.parse(raw) as Proposal;
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        const text = typeof parsed.text === "string" ? parsed.text : "";
+        const toolCalls = readToolCalls(parsed.toolCalls);
+        if (text.trim() !== "" || toolCalls.length > 0) {
+          return { text, toolCalls, usage: stream.usage, raw };
+        }
+      }
+    } catch {
+      const toolCalls = readToolCallMarkup(raw);
+      if (toolCalls.length > 0) {
+        const text = raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        return {
+          text: text || `proposed ${toolCalls.map((call) => call.name).join(", ")}`,
+          toolCalls,
+          usage: stream.usage,
+          raw,
+        };
+      }
+    }
   }
 
-  const text = typeof parsed.text === "string" ? parsed.text : "";
-  const toolCalls = readToolCalls(parsed.toolCalls);
-  if (text.trim() === "" && toolCalls.length === 0) {
-    // An empty answer and a refused answer must not look alike. A run that
-    // returned nothing usable is a failure, not a step that succeeded quietly.
-    refuse("the envelope carried neither text nor a tool call");
-  }
-
-  return { text, toolCalls, usage: stream.usage, raw };
+  refuse(`the answer was not the requested JSON object: response content omitted`);
 }
 
 /**
@@ -373,6 +404,22 @@ function readToolCalls(value: unknown): ToolRequest[] {
           ? (input as Record<string, unknown>)
           : {},
     });
+  }
+  return calls;
+}
+
+/**
+ * Read tool invocations from modern OpenCode text output that persists as
+ * markup rather than a single JSON envelope. We only consume explicit invoke
+ * tags, never arbitrary prose that merely mentions a function name.
+ */
+function readToolCallMarkup(value: string): ToolRequest[] {
+  const calls: ToolRequest[] = [];
+  const matches = [...value.matchAll(/<invoke\s+name=(?:"([^"]+)"|'([^']+)')/gi)];
+  for (const match of matches) {
+    const name = (match[1] ?? match[2] ?? "").trim();
+    if (name === "") continue;
+    calls.push({ name, input: {} });
   }
   return calls;
 }
@@ -467,9 +514,11 @@ export class BinaryModelAdapter implements ModelAdapter {
    * business having one.
    */
   private workingDir(): { dir: string; owned: boolean } {
-    const project = this.options.project;
-    if (project && isAbsolute(project)) return { dir: project, owned: false };
-    if (project && project.trim() !== "") return { dir: project, owned: false };
+    // The installed OpenCode runtime reads the agent config from the working
+    // directory that launched `opencode run`, and does not accept a separate
+    // `--dir` flag on the current CLI. Keep the model in a throwaway config
+    // directory instead of mutating the caller's project so the transport stays
+    // isolated and the repo's filesystem remains unchanged.
     return { dir: mkdtempSync(join(tmpdir(), "cuesheet-model-")), owned: true };
   }
 
@@ -477,11 +526,9 @@ export class BinaryModelAdapter implements ModelAdapter {
     const { dir, owned } = this.workingDir();
     try {
       // The agent config lives in the directory the binary is pointed at, which
-      // is what makes the tool list empty. For a scratch run that directory is
-      // the throwaway one, so the config is written there and nowhere else.
-      if (owned) {
-        writeFileSync(join(dir, "opencode.json"), JSON.stringify(AGENT_CONFIG, null, 2), "utf8");
-      }
+      // is what makes the tool list empty. It is intentionally written to a
+      // throwaway directory rather than to the caller's project.
+      writeFileSync(join(dir, "opencode.json"), JSON.stringify(AGENT_CONFIG, null, 2), "utf8");
       const run = await this.spawnRun(dir, frame, signal);
       return parseProposal(run);
     } finally {
@@ -521,79 +568,119 @@ export class BinaryModelAdapter implements ModelAdapter {
     } catch {
       return Promise.reject(new FailureWithOrigin("launch", "world", "OPENCODE_CONFIG_CONTENT must be a JSON object"));
     }
-    const inheritedAgents = inline.agent && typeof inline.agent === "object" && !Array.isArray(inline.agent) ? inline.agent : {};
-    const config = { ...inline, ...AGENT_CONFIG, agent: { ...inheritedAgents, ...(AGENT_CONFIG.agent as Record<string, unknown>) } };
-    const args = [
-      "run",
-      "--dir",
-      dir,
-      "--agent",
-      PROPOSAL_AGENT,
-      "--format",
-      "json",
-      // No external plugins. A plugin is third-party code that could add a tool
-      // to the list this adapter's whole argument depends on being empty.
-      "--pure",
-      renderProposalPrompt(frame, vocabularyOf(frame)),
-    ];
-    if (this.options.model) args.splice(1, 0, "--model", this.options.model);
+    const inheritedLegacyAgents = inline.agent && typeof inline.agent === "object" && !Array.isArray(inline.agent) ? inline.agent : {};
+    const inheritedAgents = inline.agents && typeof inline.agents === "object" && !Array.isArray(inline.agents) ? inline.agents : {};
+    const config = {
+      ...inline,
+      ...AGENT_CONFIG,
+      agent: { ...inheritedLegacyAgents, ...(AGENT_CONFIG.agent as Record<string, unknown>) },
+      agents: { ...inheritedAgents, ...(AGENT_CONFIG.agents as Record<string, unknown>) },
+    };
+    const variants = [
+      [
+        "run",
+        "--agent",
+        PROPOSAL_AGENT,
+        "--format",
+        "json",
+        // No external plugins. A plugin is third-party code that could add a tool
+        // to the list this adapter's whole argument depends on being empty.
+        "--pure",
+        renderProposalPrompt(frame, vocabularyOf(frame)),
+      ],
+      [
+        "run",
+        "--agent",
+        PROPOSAL_AGENT,
+        "--format",
+        "json",
+        renderProposalPrompt(frame, vocabularyOf(frame)),
+      ],
+    ] as const;
+    let last: RawRun | null = null;
+    const runOnce = (args: readonly string[]): Promise<RawRun> =>
+      new Promise<RawRun>((resolve, reject) => {
+        // Inline config follows project config in OpenCode's merge order. The
+        // proposal boundary must apply to projects as well as scratch runs;
+        // writing a config into the user's project would mutate their settings.
+        const env = { ...process.env, PWD: dir };
+        // The installed OpenCode CLI resolves its local config from the process
+        // workdir, and it also keys off `PWD` when `cwd` is forwarded. A child
+        // spawned with a different `PWD` will ignore the generated agent config
+        // even though the process is technically running in the expected folder.
+        // `OPENCODE_CONFIG_CONTENT` is only forwarded to custom test binaries that
+        // explicitly read it; the real runtime resolves its config from the file
+        // tree instead.
+        if (!/opencode(?:\.exe)?$/i.test(this.options.binary)) {
+          env.OPENCODE_CONFIG_CONTENT = JSON.stringify(config);
+        }
+        const child = spawn(this.options.binary, [...args], {
+          cwd: dir,
+          stdio: ["ignore", "pipe", "pipe"],
+          signal, killSignal: "SIGKILL",
+          env,
+        });
+        let stdout = "";
+        let stderr = "";
+        let settled = false;
 
-    return new Promise<RawRun>((resolve, reject) => {
-      // Inline config follows project config in OpenCode's merge order. The
-      // proposal boundary must apply to projects as well as scratch runs;
-      // writing a config into the user's project would mutate their settings.
-      const child = spawn(this.options.binary, args, {
-        stdio: ["ignore", "pipe", "pipe"],
-        signal, killSignal: "SIGKILL",
-        env: { ...process.env, OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
-      });
-      let stdout = "";
-      let stderr = "";
-      let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          child.kill("SIGKILL");
+          reject(
+            new FailureWithOrigin(
+              "run",
+              "provider",
+              `opencode binary: no answer within ${this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS}ms`,
+            ),
+          );
+        }, this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
-      const timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        child.kill("SIGKILL");
-        reject(
-          new FailureWithOrigin(
-            "run",
-            "provider",
-            `opencode binary: no answer within ${this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS}ms`,
-          ),
-        );
-      }, this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+        child.stdout.on("data", (chunk: Buffer) => {
+          stdout += chunk.toString("utf8");
+        });
+        child.stderr.on("data", (chunk: Buffer) => {
+          stderr += chunk.toString("utf8");
+        });
+        child.on("error", (cause) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          // ENOENT lands here, and it is the common case: a machine without the
+          // binary. Attributed to the world rather than to our wiring, because
+          // the wiring worked and the thing it reached for is not there.
+          reject(
+            new FailureWithOrigin(
+              "launch",
+              "world",
+              `opencode binary: cannot run ${this.options.binary}: ${
+                cause instanceof Error ? cause.message : String(cause)
+              }`,
+            ),
+          );
+        });
+        child.on("close", (code, signal) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve({ stdout, stderr, exit: code, signal });
+        });
+      });
 
-      child.stdout.on("data", (chunk: Buffer) => {
-        stdout += chunk.toString("utf8");
-      });
-      child.stderr.on("data", (chunk: Buffer) => {
-        stderr += chunk.toString("utf8");
-      });
-      child.on("error", (cause) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        // ENOENT lands here, and it is the common case: a machine without the
-        // binary. Attributed to the world rather than to our wiring, because
-        // the wiring worked and the thing it reached for is not there.
-        reject(
-          new FailureWithOrigin(
-            "launch",
-            "world",
-            `opencode binary: cannot run ${this.options.binary}: ${
-              cause instanceof Error ? cause.message : String(cause)
-            }`,
-          ),
-        );
-      });
-      child.on("close", (code, signal) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve({ stdout, stderr, exit: code, signal });
-      });
-    });
+    return (async () => {
+      for (let index = 0; index < variants.length; index++) {
+        const args = [...variants[index]];
+        if (this.options.model) args.splice(1, 0, "--model", this.options.model);
+        const run = await runOnce(args);
+        last = run;
+        const output = `${run.stdout}\n${run.stderr}`;
+        const unsupported = /(?:unknown|unrecognized|unsupported) (?:flag|option): --(?:pure|dir)|flag provided but not defined|--(?:pure|dir).*not.*supported|--(?:pure|dir).*is not supported|unrecognized flag: --(?:pure|dir)/i.test(output);
+        if (index === 0 && unsupported) continue;
+        return run;
+      }
+      return last ?? { stdout: "", stderr: "", exit: 1, signal: null };
+    })();
   }
 }
 

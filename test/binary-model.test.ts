@@ -68,16 +68,16 @@ const goodRun = (envelope: unknown): RawRun => ({
 });
 
 describe("MB-01 the proposal agent strips the tool list", () => {
-  it("denies every tool and every permission, in the config Cuesheet owns", () => {
-    // The whole safety argument is this object. Asserted rather than described
-    // because a later edit that softens one key would otherwise pass every other
-    // test in this file and silently remove the guarantee.
-    const agent = (AGENT_CONFIG as { agent: Record<string, Record<string, unknown>> }).agent[
-      PROPOSAL_AGENT
-    ];
-    assert.deepEqual(agent?.["tools"], { "*": false });
-    assert.deepEqual(agent?.["permission"], { "*": "deny" });
-    assert.equal(agent?.["mode"], "primary");
+  it("denies every permission in both the legacy and current config shapes", () => {
+    // The safety guarantee is the permission gate, no matter which OpenCode
+    // config shape the installed runtime expects. A later edit that softens one
+    // branch would still be a real security regression.
+    const legacy = (AGENT_CONFIG as { agent: Record<string, Record<string, unknown>> }).agent[PROPOSAL_AGENT];
+    const modern = (AGENT_CONFIG as { agents: Record<string, Record<string, unknown>> }).agents[PROPOSAL_AGENT];
+    assert.deepEqual(legacy?.["permissions"], [{ action: "*", resource: "*", effect: "deny" }]);
+    assert.deepEqual(modern?.["permissions"], [{ action: "*", resource: "*", effect: "deny" }]);
+    assert.equal(legacy?.["mode"], "primary");
+    assert.equal(modern?.["mode"], "primary");
   });
 
   it("never runs with --auto, which is the opposite of the guarantee", () => {
@@ -457,6 +457,42 @@ describe("MB-01 the four verbs stay the only path to a change", () => {
     const asRequest = /toolCalls\.(push|concat)\([^)]*toolUse|input:\s*part\[/.test(source);
     assert.equal(asRequest, false, "a tool event must never become a ToolRequest");
     assert.match(source, /toolEvents/, "but it must be collected, so the refusal can name it");
+  });
+
+  it("retries without --pure when the installed OpenCode rejects that flag", async () => {
+    const root = realpathSync(tmp());
+    try {
+      const fake = join(root, "fake-opencode");
+      writeExecutable(
+        fake,
+        [
+          "#!/bin/sh",
+          "if printf '%s\n' \"$*\" | grep -q -- '--pure'; then",
+          "  echo 'ERROR' >&2",
+          "  echo '  Unrecognized flag: --pure in command opencode run' >&2",
+          "  exit 1",
+          "fi",
+          "cat <<'STREAM'",
+          stepStart(),
+          text('{"text":"ok","toolCalls":[]}'),
+          stepFinish(),
+          "STREAM",
+        ].join("\n"),
+      );
+
+      const { BinaryModelAdapter } = await import("../src/adapters/binary-model.ts");
+      const model = new BinaryModelAdapter({ binary: fake, project: root, timeoutMs: 20_000 });
+      const response = await model.infer(
+        compileFrame(
+          new EventStore("compat", () => 1).toSession(),
+          { subject: "builder", goal: "answer with a proposal", maxSteps: 1 },
+          1,
+        ),
+      );
+      assert.equal(response.text, "ok");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 
