@@ -59,6 +59,9 @@ export class ShellToolRunner {
       timeoutMs: DEFAULT_TIMEOUT_MS,
       outputBytes: DEFAULT_OUTPUT_BYTES,
       ...options,
+      // The absent default is represented by an empty cwd. prepare() already
+      // treats it as a refused scope, never as a fallback to an ambient folder.
+      defaultCwd: options.defaultCwd ?? "",
       // Copy at admission; neither the model nor later environment changes can
       // inject provider credentials into an already configured tool runner.
       env: Object.fromEntries(Object.entries(options.env ?? process.env)

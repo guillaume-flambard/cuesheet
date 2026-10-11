@@ -598,10 +598,16 @@ describe("MB-01 a real run against the installed binary", () => {
   // realpathed refuses every path inside itself. That is the runner behaving
   // correctly, and the fix belongs in the test rather than in the runner.
   const binary = findBinary();
+  // A CLI being installed does not authorize requests to its provider.
+  // Live tests may consume credits or hit a provider's usage restrictions.
+  const liveOptIn = process.env.CUESHEET_LIVE_BINARY_TESTS === "1";
+  const skipReason = !liveOptIn
+    ? "set CUESHEET_LIVE_BINARY_TESTS=1 with explicitly authorized provider/quota"
+    : binary ? false : "no opencode binary on this machine";
 
   it(
-    "returns text at no cost, and touches nothing",
-    { skip: binary ? false : "no opencode binary on this machine" },
+    "returns a proposal and touches nothing when the provider permits the request",
+    { skip: skipReason },
     async () => {
       const root = realpathSync(tmp());
       try {
@@ -624,12 +630,11 @@ describe("MB-01 a real run against the installed binary", () => {
         assert.equal(typeof response.text, "string");
         assert.ok(response.text.length > 0, "the model said something");
         assert.ok(Array.isArray(response.toolCalls));
-        // The measurement that made this slice possible, asserted every time it
-        // runs rather than remembered from a probe.
-        assert.equal(
-          response.usage.some((u) => u.cost !== null && u.cost > 0),
-          false,
-          "this transport costs no credits",
+        // A former free provider may change its policy. Never infer that an
+        // external call is free; retain non-negative cost when it is reported.
+        assert.ok(
+          response.usage.every((u) => u.cost === null || (Number.isFinite(u.cost) && u.cost >= 0)),
+          "reported cost is non-negative; absent usage is unknown, not free",
         );
         assert.equal(
           readdirSync(root).sort().join(","),
@@ -644,7 +649,7 @@ describe("MB-01 a real run against the installed binary", () => {
 
   it(
     "asked to write a file, proposes it as a tool call and writes nothing",
-    { skip: binary ? false : "no opencode binary on this machine" },
+    { skip: skipReason },
     async () => {
       // The live restatement of the measured finding, so a future OpenCode
       // version that stops stripping the tool list fails here rather than in a

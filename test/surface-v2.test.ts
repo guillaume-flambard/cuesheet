@@ -340,25 +340,10 @@ describe("the type errors apps/terminal can see, and the ones it cannot", () => 
     assert.deepEqual(surfaceErrors(), [], "apps/terminal introduced type errors");
   });
 
-  it("the inherited errors are in files this change does not own", () => {
-    // Named rather than counted, so a *new* inherited error fails this test with
-    // its own path instead of quietly raising a total someone has to subtract.
-    // Each of these predates V2 and was invisible until the producer imported the
-    // file; `docs/SURFACE-V2.md` records the measurement.
-    // Keyed on `file:code`, which is the same weakness the repository's own
-    // `test/typecheck-guard.test.ts` documents at its own lines 24-26: a second
-    // `TS2339` in the same file would pass. The message is stripped so an
-    // unrelated rewording of a message does not read as a new error, and the
-    // count is asserted so a second one in the same file cannot slip through
-    // either.
-    const expected = [
-      "src/adapters/shell.ts(58,5)",
-      "src/core/memory.ts(234,5)",
-      "src/core/store.ts(268,22)",
-    ];
-    const actual = inheritedErrors();
-    assert.deepEqual(actual, expected, "the inherited error set changed");
-    assert.equal(actual.length, expected.length, "one error per file, no more");
+  it("the imported source files contain no inherited type errors", () => {
+    // The historical exceptions were corrected. A new error is no longer
+    // accepted as part of the expected baseline.
+    assert.deepEqual(inheritedErrors(), [], "imported source has a new type error");
   });
 });
 

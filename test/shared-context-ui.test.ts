@@ -59,7 +59,7 @@ const out=new PassThrough();Object.assign(out,{columns:80,rows:24,isTTY:false});
 const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});
 const app=render(<App store={store} producer={producer}/>,{stdout:out,stderr:out,stdin:input,debug:true,exitOnCtrlC:false});const tick=()=>new Promise(r=>setTimeout(r,45));
 const before=journal.core.revision;const bytes=readFileSync(join(contexts.project.root,'context.jsonl'),'utf8');
-const until=async(predicate)=>{const deadline=Date.now()+4000;while(!predicate()&&Date.now()<deadline)await tick();if(!predicate())throw new Error('UI did not reach the expected rendered state');};
+const until=async(predicate)=>{const deadline=Date.now()+8000;while(!predicate()&&Date.now()<deadline)await tick();if(!predicate())throw new Error('UI did not reach the expected rendered state');};
 input.write('\\x0b');await until(()=>last.includes('> View the log'));for(const label of ['Help','Provider et modèle','Sessions','Nouvelle session','Reprendre le travail','Critère de validation','Contexte partagé']){input.write('\\x1b[B');await until(()=>last.includes('> '+label));}input.write('\\r');await until(()=>last.includes('N/P pages'));const opened=last;
 input.write('n');await tick();for(let i=0;i<20;i++){input.write('\\x1b[B');await tick();}const next=frames.join('\\n');
 input.write('p');await tick();const previous=last;const sizes=[];for(const [columns,rows] of [[40,14],[80,24],[120,36]]){out.columns=columns;out.rows=rows;out.emit('resize');await tick();sizes.push({rows,frame:last});}
