@@ -7,26 +7,36 @@ that get proposed do not satisfy it.
 
 ## Prerequisites
 
-- **Node 22 or newer.** The floor is in `package.json` under `engines`.
-- **Nothing else.** There are no dependencies and no install step.
+- **Node 22 or newer**, as declared by package.json.
+- **pnpm 10.x** for the terminal workspace dependencies.
+- The **core** has no external dependencies; the terminal UI uses React,
+  Ink, TSX and TypeScript. A fresh checkout needs the lockfile installed
+  before the complete suite is available.
 
 ## Set up
 
-```bash
+~~~bash
+pnpm install --frozen-lockfile
 npm test
-```
+pnpm --filter @cuesheet/terminal typecheck
+~~~
 
-That is the whole gate. There is no build, no lint, no typecheck step, because
-there is nothing to build, lint or typecheck that the test does not already
-cover.
+pnpm may require explicit approval for some native dependency build scripts,
+including node-pty. Do not approve additional scripts without reviewing them.
 
 ## The gate
 
-```bash
-npm test    # node --test, 11 tests
-```
+npm test runs the deterministic core and terminal tests; its count evolves.
+Do not leave it red. Run the terminal TypeScript check separately.
 
-`npm test` green is the baseline. Do not leave it red.
+Live OpenCode provider integration is **opt-in only**, using
+CUESHEET_LIVE_BINARY_TESTS=1 with a provider whose quota and policy permit
+use from this harness. Those calls may cost money or be rejected with HTTP
+403. A green deterministic suite is not evidence that these live integration
+checks ran.
+
+The package also ships an installability build via npm run build. It is a
+separate verification surface from the unit tests and terminal typecheck.
 
 ## The admission rule
 

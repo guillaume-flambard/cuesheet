@@ -142,6 +142,11 @@ export interface Session {
   openDirectives: Directive[];
 }
 
+/** Close the prior goal without mutating a value another projection may hold. */
+function closeGoal(goal: Goal): Goal {
+  return { ...goal, open: false };
+}
+
 export class EventStore {
   readonly id: string;
   private readonly now: () => number;
@@ -265,7 +270,7 @@ export class EventStore {
           // Evidence about the goal closes it, which is the only way a goal
           // is ever closed. An agent claiming completion appends nothing.
           if (goal && event.subject === goal.subject) {
-            goal = { ...goal, open: false };
+            goal = closeGoal(goal);
           }
           break;
         }

@@ -9,20 +9,27 @@ import "./fixtures/portfolio-env.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { childEnv, sandboxDir } from "./fixtures/hermetic-env.ts";
 
 const CHAT = join(process.cwd(), "src", "chat.ts");
 
 /** Drive the chat with a fixed script and get everything it printed. */
-function say(lines: string[], cwd = process.cwd()): { out: string; code: number } {
-  const r = spawnSync(process.execPath, [CHAT], {
-    encoding: "utf8",
-    input: `${lines.join("\n")}\n`,
-    cwd,
-  });
-  return { out: r.stdout, code: r.status ?? 1 };
+function say(lines: string[], cwd = process.cwd(), grants: Record<string, string> = {}): { out: string; code: number } {
+  const sessions = sandboxDir("chat-sessions");
+  try {
+    const r = spawnSync(process.execPath, [CHAT], {
+      encoding: "utf8",
+      input: `${lines.join("\n")}\n`,
+      cwd,
+      env: { ...childEnv({ sessions, home: process.env.HOME ?? homedir(), cwd }), ...grants },
+    });
+    return { out: r.stdout, code: r.status ?? 1 };
+  } finally {
+    rmSync(sessions, { recursive: true, force: true });
+  }
 }
 
 describe("the chat surface", () => {
@@ -246,6 +253,67 @@ describe("the chat surface", () => {
     assert.match(out, /registry\s+\d+ capabilities/);
     if (/unreadable/.test(out)) {
       assert.match(out, /absence is not evidence/);
+    }
+  });
+
+  it("an unavailable provider never turns an approved intention into a false success", () => {
+    const sessionRoot = mkdtempSync(join(tmpdir(), "cuesheet-chat-refusal-"));
+    try {
+      const { out, code } = say(
+        ["fix the failing test", "go", "exit"],
+        process.cwd(),
+        { CUESHEET_SESSIONS: sessionRoot, CUESHEET_PROVIDER: "unavailable-test-provider" },
+      );
+      assert.equal(code, 0, out);
+      assert.match(out, /not running: Unknown provider/);
+      assert.match(out, /the intention is still staged/);
+      const chatLog = readdirSync(sessionRoot).find((name) => name.startsWith("chat-") && name.endsWith(".jsonl"));
+      assert.ok(chatLog, "chat session journal was created");
+      const events = readFileSync(join(sessionRoot, chatLog), "utf8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as { kind: string; data?: { outcome?: string } });
+      const observations = events.filter((event) => event.kind === "effect_observed");
+      assert.equal(observations.length, 1);
+      assert.equal(observations[0]?.data?.outcome, "failed");
+      assert.equal(observations.some((event) => event.data?.outcome === "succeeded"), false);
+    } finally {
+      rmSync(sessionRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("a model claiming done without evidence cannot close the goal", () => {
+    const root = mkdtempSync(join(tmpdir(), "cuesheet-fake-provider-"));
+    try {
+      const sessions = join(root, "sessions");
+      mkdirSync(sessions);
+      const binary = join(root, "fake-opencode");
+      const stream = JSON.stringify({
+        type: "message",
+        part: { type: "text", text: JSON.stringify({ text: "Done! Trust me.", toolCalls: [] }) },
+      });
+      writeFileSync(binary, "#!/bin/sh\nprintf '%s\\n' '" + stream + "'\n");
+      chmodSync(binary, 0o755);
+      const { out, code } = say(
+        ["fix the failing test", "go", "exit"],
+        process.cwd(),
+        { CUESHEET_SESSIONS: sessions, CUESHEET_PROVIDER: "opencode", CUESHEET_OPENCODE_BIN: binary },
+      );
+      assert.equal(code, 0, out);
+      assert.match(out, /stop: budget-exhausted/);
+      assert.match(out, /the intention is still staged/);
+      const file = readdirSync(sessions).find((name) => name.startsWith("chat-") && name.endsWith(".jsonl"));
+      assert.ok(file, "surface journal was persisted");
+      const events = readFileSync(join(sessions, file), "utf8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as { kind: string; data?: { outcome?: string } });
+      const observed = events.filter((event) => event.kind === "effect_observed");
+      assert.equal(observed.length, 1);
+      assert.equal(observed[0]?.data?.outcome, "failed", "a claim is not verified completion");
+      assert.equal(observed.some((event) => event.data?.outcome === "succeeded"), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 

@@ -231,8 +231,11 @@ export function buildFrontier(
     watch: alive.filter((o) => o.horizon === "watch"),
     woken: wakeable(objects, measured),
     asleep: permanentlyAsleep(objects),
-    lessons: objects
-      .filter((o) => o.status === "falsified")
-      .map((o) => ({ id: o.id, ...lessonFrom(o, objects) })),
+    // A falsified object has a lesson; everything else has none.
+    // Preserve the null result explicitly rather than spreading a maybe-null.
+    lessons: objects.flatMap((o) => {
+      const lesson = lessonFrom(o, objects);
+      return lesson === null ? [] : [{ id: o.id, ...lesson }];
+    }),
   };
 }

@@ -139,7 +139,7 @@ async function runGoal(
   durable: SessionStore,
   cwd: string,
   live: InteractiveProjection,
-): Promise<void> {
+): Promise<"completed" | "refused"> {
   const sessionId = newId("run");
   const requirements = extractSkillRequirements(goal).requirements;
 
@@ -166,10 +166,10 @@ async function runGoal(
 
   if (verdict === "unverified") {
     console.log("not running: absence here is not evidence, and the gate refuses to guess.");
-    return;
+    return "refused";
   }
   if (verdict === "would_block" && !forced) {
-    return;
+    return "refused";
   }
   if (forced && verdict === "would_block") {
     console.log("owner override: running anyway, and the override is on the record.");
@@ -178,7 +178,7 @@ async function runGoal(
   const resolved = resolveModel({ project: cwd });
   if ("missing" in resolved) {
     console.log(`not running: ${resolved.missing}`);
-    return;
+    return "refused";
   }
   // Said before the first inference, because a run that cannot name its own
   // model is a run whose log cannot be read back honestly.
@@ -218,6 +218,7 @@ async function runGoal(
   }
   console.log(`  evidence: ${outcome.session.evidence.length}, claims: ${outcome.claims.length}`);
   console.log(`  resume with: cuesheet resume ${sessionId} --in ${cwd}`);
+  return outcome.stop.reason === "goal-closed" ? "completed" : "refused";
 }
 
 /** Short enough to sit in a prompt line, long enough to recognise the goal. */
@@ -463,9 +464,20 @@ export async function chat(cwd: string = process.cwd()): Promise<number> {
             paintPrompt();
             continue;
           }
-          await runGoal(goal, false, durable, cwd, liveProjection);
-          appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
-          clearIt("approved");
+          const runStatus = await runGoal(goal, false, durable, cwd, liveProjection);
+          if (runStatus === "refused") {
+            appendSurface(
+              effectObserved({
+                effectId: request.id,
+                outcome: "failed",
+                why: "the goal was not completed (admission, model availability, or loop stop)",
+              }),
+            );
+            console.log("the intention is still staged; resolve the blocker before trying again.");
+          } else {
+            appendSurface(effectObserved({ effectId: request.id, outcome: "succeeded" }));
+            clearIt("approved");
+          }
         } catch (cause) {
           // Classify before printing, because the two failures need different
           // sentences. A `ReferenceError` is our wiring, and telling the person
