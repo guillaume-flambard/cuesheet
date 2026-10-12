@@ -180,6 +180,11 @@ export async function runAgentLoop(
 
   append({ kind: "goal", subject: options.subject, data: { text: options.goal } });
 
+  // A permanent refusal repeated unchanged is not progress. Keep both real
+  // observations; prevent further identical denied effects and leave the goal
+  // open for a human to correct the tool route or the plan.
+  let previousRefusedBatch: string | null = null;
+
   for (let step = 1; step <= options.maxSteps; step++) {
     const session = store.toSession();
     const frame = compileFrame(session, options, step);
@@ -195,8 +200,10 @@ export async function runAgentLoop(
       });
     }
 
+    const observedBatch: Array<{ call: ToolRequest; result: ToolResult }> = [];
     for (const call of response.toolCalls) {
       const result = await tools.run(call);
+      observedBatch.push({ call, result });
       append({
         kind: "action",
         subject: options.subject,
@@ -219,6 +226,25 @@ export async function runAgentLoop(
         claims,
       };
     }
+
+    // An unknown effect (exit null) may have run and must be reconciled, not
+    // classified as an identical refusal. Any successful tool is progress.
+    // Two identical batches containing an explicit refusal (126) and no
+    // successful or uncertain effect stop early, preserving the observations.
+    const permanentlyRefused = observedBatch.length > 0
+      && observedBatch.some(({ result }) => result.exit === 126)
+      && observedBatch.every(({ result }) => result.exit !== 0 && result.exit !== null);
+    const fingerprint = permanentlyRefused
+      ? JSON.stringify(observedBatch.map(({ call, result }) => [call.name, call.input, result.exit, result.output]))
+      : null;
+    if (fingerprint !== null && fingerprint === previousRefusedBatch) {
+      return {
+        stop: { reason: "blocked", missing: ["Repeated identical denied tool requests; inspect the recorded refusal and change the plan or tool route."] },
+        session: after,
+        claims,
+      };
+    }
+    previousRefusedBatch = fingerprint;
   }
 
   const final = store.toSession();

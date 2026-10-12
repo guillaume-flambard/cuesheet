@@ -258,3 +258,81 @@ describe("runAgentLoop", () => {
     );
   });
 });
+
+describe("repeated tool refusals", () => {
+  it("does not spend the whole inference budget repeating an identical denied effect", async () => {
+    const store = new EventStore("repeat-refusal", () => 1000);
+    let calls = 0;
+    let inferences = 0;
+    const model: ModelAdapter = {
+      name: "stuck",
+      async infer() {
+        inferences++;
+        return { text: "trying", toolCalls: [{ name: "node", input: { argv: ["node", "--version"] } }] };
+      },
+    };
+    const outcome = await runAgentLoop(store, model, {
+      async run(request) {
+        calls++;
+        return { name: request.name, exit: 126, output: "Tool route unavailable: sandbox not ready" };
+      },
+    }, { subject: "builder", goal: "produce verified result", maxSteps: 8 });
+    assert.equal(outcome.stop.reason, "blocked");
+    assert.equal(calls, 2, "the second identical permanent refusal must stop the run");
+    assert.equal(inferences, 2);
+    assert.equal(outcome.session.goal?.open, true, "a refusal never proves completion");
+    assert.equal(outcome.session.evidence.length, 0);
+    assert.equal(outcome.session.events.filter(event => event.kind === "action").length, 2);
+    assert.equal(outcome.session.events.filter(event =>
+      event.kind === "observation" && event.data.exit === 126,
+    ).length, 2, "both real refusals remain in the replayable journal");
+  });
+
+  it("does not classify a changed request or uncertain result as a permanent repeated refusal", async () => {
+    for (const exit of [126, null]) {
+      const store = new EventStore("changed-" + exit, () => 1000);
+      let calls = 0;
+      const model: ModelAdapter = {
+        name: "changing",
+        async infer() {
+          calls++;
+          return { text: "", toolCalls: [{ name: "node", input: { argv: ["node", "--version", String(calls)] } }] };
+        },
+      };
+      const outcome = await runAgentLoop(store, model, {
+        async run(request) { return { name: request.name, exit, output: "not a confirmed permanent repeat" }; },
+      }, { subject: "builder", goal: "g", maxSteps: 3 });
+      assert.equal(outcome.stop.reason, "budget-exhausted");
+      assert.equal(calls, 3);
+    }
+  });
+});
+
+describe("multi-tool stalled batches", () => {
+  it("stops a repeated denied write plus failed verification without claiming success", async () => {
+    const store = new EventStore("denied-and-finish", () => 1000);
+    let calls = 0;
+    const model: ModelAdapter = {
+      name: "fixed",
+      async infer() {
+        return { text: "work", toolCalls: [
+          { name: "node", input: { argv: ["node", "-e", "0"] } },
+          { name: "finish", input: {} },
+        ] };
+      },
+    };
+    const outcome = await runAgentLoop(store, model, {
+      async run(request) {
+        calls++;
+        return request.name === "node"
+          ? { name: "node", exit: 126, output: "Container unavailable" }
+          : { name: "finish", exit: 1, output: "INCONCLUSIVE" };
+      },
+    }, { subject: "builder", goal: "complete", maxSteps: 8 });
+    assert.equal(outcome.stop.reason, "blocked");
+    assert.equal(calls, 4, "two entire denied+failed batches are preserved, not eight");
+    assert.equal(outcome.session.goal?.open, true);
+    assert.equal(outcome.session.evidence.length, 0);
+    assert.equal(outcome.session.events.filter(event => event.kind === "observation" && event.data.tool === "finish").length, 2);
+  });
+});
