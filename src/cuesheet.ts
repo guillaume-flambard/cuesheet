@@ -92,6 +92,16 @@ const COMMANDS: Record<string, CommandSpec> = {
     style: "subcommand",
     usage: "cuesheet surface [--provider NAME] [--model ID] [--max-tokens N] [--base-url URL] [--verify check.mjs] [--session ID]",
   },
+  worktrees: {
+    file: "worktrees-cli.ts",
+    about: "list or release the worktrees Cuesheet allocated",
+    style: "subcommand",
+    usage: "cuesheet worktrees release [--root <dir>] [--id <id>] [--dry-run]",
+    sub: {
+      list: { about: "show each managed worktree, its condition and why", usage: "cuesheet worktrees list [--root <dir>]" },
+      release: { about: "free dead-owner clean worktrees; exit 1 if any is held", usage: "cuesheet worktrees release [--root <dir>] [--dry-run]" },
+    },
+  },
   chat: {
     file: "chat.ts",
     about: "the diagnostic chat, with every internal fact printed",

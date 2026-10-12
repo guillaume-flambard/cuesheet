@@ -41,7 +41,7 @@
       "sourceRefs": [
         {
           "path": "src/cuesheet.ts",
-          "digest": "ab1f94c731af6d3ed9d518faba6b5c1984dd7126616ee0b5716ba510ddeccee6"
+          "digest": "76694a13b557bf2c7feeb55d59ef7b560f1b8d843f08e51e5bc76ad602927cd1"
         },
         {
           "path": "src/index.ts",
@@ -285,7 +285,7 @@
       "sourceRefs": [
         {
           "path": "apps/terminal/src/producer/index.ts",
-          "digest": "b5cdfbecf8b4496b9f2f849e994577aa54ce7bf0753f1f54e1f8f4d73a1b46cc"
+          "digest": "20309cae33f5051ff265275be9506a180a9e6fad4f0b7a0f5e2040252d0d7de0"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -337,7 +337,7 @@
       "sourceRefs": [
         {
           "path": "src/cuesheet.ts",
-          "digest": "ab1f94c731af6d3ed9d518faba6b5c1984dd7126616ee0b5716ba510ddeccee6"
+          "digest": "76694a13b557bf2c7feeb55d59ef7b560f1b8d843f08e51e5bc76ad602927cd1"
         },
         {
           "path": "src/index.ts",
@@ -544,6 +544,22 @@
       "checkRefs": []
     },
     {
+      "id": "entity.workers.release",
+      "kind": "entity",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "src/worktrees-cli.ts",
+          "digest": "c26035f8034ee3100a79723199e45435e16fb32662e92a46f847164b6b3365db"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
       "id": "entity.workers.workspaces",
       "kind": "entity",
       "domainId": "domain.workers",
@@ -555,7 +571,7 @@
         },
         {
           "path": "src/adapters/managed-worktrees.ts",
-          "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
+          "digest": "91c12b16a63f1773a0a3b4af13626facfcb08df04f37f42e0689d08f8ec2d46b"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -917,6 +933,28 @@
       ]
     },
     {
+      "id": "invariant.workers.release",
+      "kind": "invariant",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/harness/WORKTREE-RELEASE.md",
+          "digest": "65398a35137e9b3047dedce614f7e3ea5f5b8c957185ae76de4f98cf243e0b63"
+        },
+        {
+          "path": "test/managed-worktree-release.test.ts",
+          "digest": "75a07f831475b860263a6342566281af5e271253d93778564ef2f3e300c1cecb"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": [
+        "test.workers.release"
+      ]
+    },
+    {
       "id": "source.integration.architecture",
       "kind": "source",
       "domainId": "domain.integration",
@@ -989,6 +1027,22 @@
         {
           "path": "docs/harness/MULTI-WORKER.md",
           "digest": "f7c5b9c0db32cf69caa49f54b922f1a1934b8e759e80dd7b4537a5f092633ee0"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [],
+      "checkRefs": []
+    },
+    {
+      "id": "source.workers.release",
+      "kind": "source",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "docs/harness/WORKTREE-RELEASE.md",
+          "digest": "65398a35137e9b3047dedce614f7e3ea5f5b8c957185ae76de4f98cf243e0b63"
         }
       ],
       "ownerRef": "owner.cuesheet",
@@ -1227,6 +1281,28 @@
       "checkRefs": []
     },
     {
+      "id": "test.workers.release",
+      "kind": "test",
+      "domainId": "domain.workers",
+      "revision": 1,
+      "sourceRefs": [
+        {
+          "path": "test/managed-worktree-release.test.ts",
+          "digest": "75a07f831475b860263a6342566281af5e271253d93778564ef2f3e300c1cecb"
+        },
+        {
+          "path": "test/worktrees-cli.test.ts",
+          "digest": "c2821b762d3659b47758ba45cb55c48c8f88e179bb313877677692f60f1116e8"
+        }
+      ],
+      "ownerRef": "owner.cuesheet",
+      "contractRefs": [],
+      "invariantRefs": [
+        "invariant.workers.release"
+      ],
+      "checkRefs": []
+    },
+    {
       "id": "test.workers.runtime",
       "kind": "test",
       "domainId": "domain.workers",
@@ -1300,7 +1376,7 @@
       "dependency": "entity.integration.producer",
       "sourceRef": {
         "path": "apps/terminal/src/producer/index.ts",
-        "digest": "b5cdfbecf8b4496b9f2f849e994577aa54ce7bf0753f1f54e1f8f4d73a1b46cc"
+        "digest": "20309cae33f5051ff265275be9506a180a9e6fad4f0b7a0f5e2040252d0d7de0"
       }
     },
     {
@@ -1484,13 +1560,23 @@
       }
     },
     {
+      "id": "edge:contains:domain.workers--entity.workers.release",
+      "type": "contains",
+      "dependent": "domain.workers",
+      "dependency": "entity.workers.release",
+      "sourceRef": {
+        "path": "src/worktrees-cli.ts",
+        "digest": "c26035f8034ee3100a79723199e45435e16fb32662e92a46f847164b6b3365db"
+      }
+    },
+    {
       "id": "edge:contains:domain.workers--entity.workers.workspaces",
       "type": "contains",
       "dependent": "domain.workers",
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
         "path": "src/adapters/managed-worktrees.ts",
-        "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
+        "digest": "91c12b16a63f1773a0a3b4af13626facfcb08df04f37f42e0689d08f8ec2d46b"
       }
     },
     {
@@ -1520,7 +1606,7 @@
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
         "path": "src/adapters/managed-worktrees.ts",
-        "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
+        "digest": "91c12b16a63f1773a0a3b4af13626facfcb08df04f37f42e0689d08f8ec2d46b"
       }
     },
     {
@@ -1600,7 +1686,17 @@
       "dependency": "entity.workers.workspaces",
       "sourceRef": {
         "path": "src/adapters/managed-worktrees.ts",
-        "digest": "87a2e93ae4c199845e83736f9f9e1b1987874105cef581fde0f88bb50fa1aad3"
+        "digest": "91c12b16a63f1773a0a3b4af13626facfcb08df04f37f42e0689d08f8ec2d46b"
+      }
+    },
+    {
+      "id": "edge:depends_on:entity.workers.release--entity.workers.workspaces",
+      "type": "depends_on",
+      "dependent": "entity.workers.release",
+      "dependency": "entity.workers.workspaces",
+      "sourceRef": {
+        "path": "src/adapters/managed-worktrees.ts",
+        "digest": "91c12b16a63f1773a0a3b4af13626facfcb08df04f37f42e0689d08f8ec2d46b"
       }
     },
     {
@@ -1721,6 +1817,16 @@
       "sourceRef": {
         "path": "docs/harness/MULTI-WORKER.md",
         "digest": "f7c5b9c0db32cf69caa49f54b922f1a1934b8e759e80dd7b4537a5f092633ee0"
+      }
+    },
+    {
+      "id": "edge:describes:source.workers.release--entity.workers.release",
+      "type": "describes",
+      "dependent": "source.workers.release",
+      "dependency": "entity.workers.release",
+      "sourceRef": {
+        "path": "docs/harness/WORKTREE-RELEASE.md",
+        "digest": "65398a35137e9b3047dedce614f7e3ea5f5b8c957185ae76de4f98cf243e0b63"
       }
     },
     {
@@ -1991,6 +2097,26 @@
       "sourceRef": {
         "path": "src/adapters/code-worker-packets.ts",
         "digest": "1c8c261706beff6f975da21ce3dc17c2b2635724c7186d113555b799ea556d60"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.release--entity.workers.release",
+      "type": "validates",
+      "dependent": "test.workers.release",
+      "dependency": "entity.workers.release",
+      "sourceRef": {
+        "path": "src/worktrees-cli.ts",
+        "digest": "c26035f8034ee3100a79723199e45435e16fb32662e92a46f847164b6b3365db"
+      }
+    },
+    {
+      "id": "edge:validates:test.workers.release--invariant.workers.release",
+      "type": "validates",
+      "dependent": "test.workers.release",
+      "dependency": "invariant.workers.release",
+      "sourceRef": {
+        "path": "docs/harness/WORKTREE-RELEASE.md",
+        "digest": "65398a35137e9b3047dedce614f7e3ea5f5b8c957185ae76de4f98cf243e0b63"
       }
     },
     {

@@ -1,7 +1,7 @@
 import {trustedGitSnapshot,snapshotMatches,applyGitSnapshot,type GitContentSnapshot} from './git-snapshot.ts';
-/** Controller-owned allocations. No integration, cleanup or worker effects. */
+/** Controller-owned allocations. No integration or worker effects; the only removal is the explicit owner release at the end of this file, which the controller never calls. */
 import {execFile} from 'node:child_process';
-import {mkdir,realpath,lstat,readFile,open,unlink,readdir} from 'node:fs/promises';
+import {mkdir,realpath,lstat,readFile,open,unlink,readdir,rename,type FileHandle} from 'node:fs/promises';
 import {resolve,join,relative,isAbsolute,sep} from 'node:path';
 import {inspectAgentGit,type ManagedWorkspaceCandidate} from './agent-git.ts';
 export interface WorktreeAllocation {id:string;unit:string;agent:string;objective:string;revision:number;base:string;}
@@ -75,6 +75,40 @@ export async function allocateWorktree(options:{repository:string;root:string;al
   * here: no timer, no size, no age makes an orphaned claim deletable.
   */
  const pendingClaim=async(ledger:string):Promise<{claim:boolean;note:string}>=>{try{const stat=await lstat(ledger+'.finalize');if(stat.isSymbolicLink()||!stat.isFile())return {claim:true,note:'Finalize claim is not an owned regular file; preserve it and inspect it.'};return {claim:true,note:''};}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return {claim:false,note:''};return {claim:true,note:'Finalize claim state is not attested; inspect it before any effect.'};}};
+/** One allocation re-inspected: ledger, claim, physical worktree. Read-only, like the listing it serves. */
+async function inspectAllocation(dir:string,id:string,signal?:AbortSignal):Promise<ManagedWorktreeState>{
+    const ledger=join(dir,id+'.jsonl'),path=join(dir,id);
+    const claim=await pendingClaim(ledger);
+    let saved:Reservation&{phase:string};let ready=false;
+    try{
+     const stat=await lstat(ledger);
+     if(!stat.isFile()||stat.isSymbolicLink()||stat.size>32768)throw Error('Ledger is not an owned bounded file.');
+     const bytes=await readFile(ledger,'utf8');if(!bytes.endsWith('\n'))throw Error('Ledger is incomplete.');
+     const lines=bytes.trimEnd().split('\n').map(s=>JSON.parse(s));const first=lines[0] as Reservation&{phase:string};
+     if(lines.length<1||lines.length>2||first.phase!=='reserved'||first.version!==1||first.id!==id||!valid(first))throw Error('Ledger attribution is invalid.');
+     if(lines.length===2){const receipt=lines[1] as {version?:unknown;phase?:unknown;base?:unknown};if(receipt.version!==1||receipt.phase!=='ready'||receipt.base!==first.base)throw Error('Ready receipt is invalid.');ready=true;}
+     saved=first;
+    }catch{return unattested(id,path,ledger,claim.note||'Ledger cannot be attested; inspect it before any effect.',claim.claim);}
+    const state:ManagedWorktreeState={id,path,ledger,phase:ready?'ready':'reserved',finalizeClaim:claim.claim,repository:saved.repository,commonDirectory:saved.commonDirectory,base:saved.base,unit:saved.unit,agent:saved.agent,objective:saved.objective,revision:saved.revision,snapshotDigest:saved.snapshotDigest,ownerAlive:alive(saved.pid),worktree:'unknown',head:null,clean:null,condition:'uncertain',reason:''};
+    if(signal?.aborted){state.reason='Inspection was cancelled; allocation state is not attested.';return state;}
+    if(await absent(path)){state.worktree='absent';state.reason='Managed worktree is absent; its receipt is preserved and it is never recreated implicitly.';return state;}
+    state.worktree='present';
+    try{
+     const actual=await inspectAgentGit(path,{signal});
+     if(actual.kind==='unavailable'&&actual.reason==='cancelled'){state.reason='Inspection was cancelled; preserve the managed worktree and inspect it.';return state;}
+     if(actual.kind!=='repository'){state.reason='Managed worktree is not an attested Git worktree; preserve it and inspect it.';return state;}
+     state.head=actual.head;
+     if(actual.workspace!==path||actual.repository!==path||actual.commonDirectory!==saved.commonDirectory){state.reason='Managed worktree no longer belongs to its recorded repository; preserve it and inspect it.';return state;}
+     if(actual.head!==saved.base){state.reason='Managed worktree HEAD moved from its recorded base; preserve its contribution and inspect it.';return state;}
+     state.clean=!actual.dirty;
+     if(claim.note){state.reason=claim.note;return state;}
+     // An orphaned finalize claim is a crash residue: report it, never reclaim it.
+     if(claim.claim&&!state.ownerAlive){state.reason='A crashed controller left its finalize claim without a ready receipt; report it and inspect it. The claim is never reclaimed or deleted here.';return state;}
+     if(state.ownerAlive){state.condition='owned';state.reason=state.clean?ready?'Allocation owner is alive and holds a clean ready worktree.':'Allocation owner is alive and creation or receipt is still in flight.':'Allocation owner is alive and its worktree holds unmerged content; it is held for its unit.';}
+     else{state.condition='recoverable';state.reason=state.clean?'Owner disappeared with a clean attested worktree; it can be reused.':'Owner disappeared with unmerged content preserved; report it and inspect it before any reuse.';}
+    }catch{state.reason='Managed worktree inspection failed; preserve it and inspect it manually.';}
+   return state;
+}
  /**
   * Every ledger under a managed root, with the physical worktree re-inspected.
   *
@@ -90,43 +124,83 @@ export async function allocateWorktree(options:{repository:string;root:string;al
   catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return [];throw e;}
   const limit=Math.max(1,options.limit??64),bounded=names.slice(0,limit),overflow=names.length>bounded.length;
   const out:ManagedWorktreeState[]=[];
-  for(const name of bounded){
-const id=ledgerId.exec(name)![1]!,ledger=join(dir,name),path=join(dir,id);
-    const claim=await pendingClaim(ledger);
-    let saved:Reservation&{phase:string};let ready=false;
-    try{
-     const stat=await lstat(ledger);
-     if(!stat.isFile()||stat.isSymbolicLink()||stat.size>32768)throw Error('Ledger is not an owned bounded file.');
-     const bytes=await readFile(ledger,'utf8');if(!bytes.endsWith('\n'))throw Error('Ledger is incomplete.');
-     const lines=bytes.trimEnd().split('\n').map(s=>JSON.parse(s));const first=lines[0] as Reservation&{phase:string};
-     if(lines.length<1||lines.length>2||first.phase!=='reserved'||first.version!==1||first.id!==id||!valid(first))throw Error('Ledger attribution is invalid.');
-     if(lines.length===2){const receipt=lines[1] as {version?:unknown;phase?:unknown;base?:unknown};if(receipt.version!==1||receipt.phase!=='ready'||receipt.base!==first.base)throw Error('Ready receipt is invalid.');ready=true;}
-     saved=first;
-    }catch{out.push(unattested(id,path,ledger,claim.note||'Ledger cannot be attested; inspect it before any effect.',claim.claim));continue;}
-    const state:ManagedWorktreeState={id,path,ledger,phase:ready?'ready':'reserved',finalizeClaim:claim.claim,repository:saved.repository,commonDirectory:saved.commonDirectory,base:saved.base,unit:saved.unit,agent:saved.agent,objective:saved.objective,revision:saved.revision,snapshotDigest:saved.snapshotDigest,ownerAlive:alive(saved.pid),worktree:'unknown',head:null,clean:null,condition:'uncertain',reason:''};
-    if(options.signal?.aborted){state.reason='Inspection was cancelled; allocation state is not attested.';out.push(state);continue;}
-    if(await absent(path)){state.worktree='absent';state.reason='Managed worktree is absent; its receipt is preserved and it is never recreated implicitly.';out.push(state);continue;}
-    state.worktree='present';
-    try{
-     const actual=await inspectAgentGit(path,{signal:options.signal});
-     if(actual.kind==='unavailable'&&actual.reason==='cancelled'){state.reason='Inspection was cancelled; preserve the managed worktree and inspect it.';out.push(state);continue;}
-     if(actual.kind!=='repository'){state.reason='Managed worktree is not an attested Git worktree; preserve it and inspect it.';out.push(state);continue;}
-     state.head=actual.head;
-     if(actual.workspace!==path||actual.repository!==path||actual.commonDirectory!==saved.commonDirectory){state.reason='Managed worktree no longer belongs to its recorded repository; preserve it and inspect it.';out.push(state);continue;}
-     if(actual.head!==saved.base){state.reason='Managed worktree HEAD moved from its recorded base; preserve its contribution and inspect it.';out.push(state);continue;}
-     state.clean=!actual.dirty;
-     if(claim.note){state.reason=claim.note;out.push(state);continue;}
-     // An orphaned finalize claim is a crash residue: report it, never reclaim it.
-     if(claim.claim&&!state.ownerAlive){state.reason='A crashed controller left its finalize claim without a ready receipt; report it and inspect it. The claim is never reclaimed or deleted here.';out.push(state);continue;}
-     if(state.ownerAlive){state.condition='owned';state.reason=state.clean?ready?'Allocation owner is alive and holds a clean ready worktree.':'Allocation owner is alive and creation or receipt is still in flight.':'Allocation owner is alive and its worktree holds unmerged content; it is held for its unit.';}
-     else{state.condition='recoverable';state.reason=state.clean?'Owner disappeared with a clean attested worktree; it can be reused.':'Owner disappeared with unmerged content preserved; report it and inspect it before any reuse.';}
-    }catch{state.reason='Managed worktree inspection failed; preserve it and inspect it manually.';}
-   out.push(state);
-  }
+  for(const name of bounded)out.push(await inspectAllocation(dir,ledgerId.exec(name)![1]!,options.signal));
   if(overflow)out.push(unattested('overflow','','','Inspection bound reached; further allocations are not attested here.'));
   return out;
  }
  /** Only a recoverable, physically clean, attested worktree is ever offered for reuse. */
  export function managedWorktreeCandidates(states:readonly ManagedWorktreeState[]):ManagedWorkspaceCandidate[]{
   return states.map(s=>({id:s.id,repository:s.repository,base:s.base,unit:s.unit,active:s.condition!=='recoverable',clean:s.clean===true}));
+ }
+
+ /**
+  * Explicit owner release: the only removal Cuesheet performs, and nothing in
+  * the controller, producer or terminal calls it.
+  *
+  * A managed worktree stays registered in its source repository until it is
+  * removed through Git. Deleting the managed root cannot unregister it, because
+  * the ledger that explains it goes with the directory. This frees what the
+  * listing already classifies as safe and nothing else: a recoverable,
+  * Git-clean worktree is removed; an attested allocation whose directory is
+  * already gone is unregistered; everything else is held with its reason.
+  *
+  * Git runs without --force, so a modified, untracked or locked tree is refused
+  * by Git itself even if it changed after the recheck. The ledger is archived as
+  * `<id>.released.jsonl`, never deleted: listing and allocation only read
+  * `<id>.jsonl`, so the archive leaves both and the evidence stays.
+  */
+ export type ReleaseOutcome={id:string;path:string;kind:'released'|'unregistered'|'already-released'|'held';reason:string;dryRun:boolean};
+ const devNull=process.platform==='win32'?'NUL':'/dev/null';
+ const gitCommon=(common:string,args:string[],signal?:AbortSignal)=>new Promise<string>((accept,reject)=>{
+  const env={PATH:process.env.PATH??'/usr/bin:/bin',...(process.env.SystemRoot?{SystemRoot:process.env.SystemRoot}:{}),LC_ALL:'C',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:devNull};
+  execFile('git',['--git-dir='+common,'-c','core.fsmonitor=false','-c','submodule.recurse=false','-c','core.hooksPath='+devNull,...args],{env,timeout:30000,maxBuffer:1048576,signal},(error,stdout,stderr)=>error?reject(Error(String(stderr||error.message).trim().split('\n')[0])):accept(stdout));
+ });
+ const syncDirectory=async(dir:string)=>{const d=await open(dir,'r');try{await d.sync();}finally{await d.close();}};
+ /** Every allocation id with a live ledger under a managed root, sorted. Archived ledgers are not allocations any more. */
+ export async function managedAllocationIds(root:string):Promise<string[]>{
+  try{return (await readdir(resolve(root),{withFileTypes:true})).filter(e=>e.isFile()&&!e.isSymbolicLink()&&ledgerId.test(e.name)).map(e=>ledgerId.exec(e.name)![1]!).sort();}
+  catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return [];throw e;}
+ }
+ export async function releaseManagedWorktree(root:string,id:string,options:{dryRun?:boolean;signal?:AbortSignal}={}):Promise<ReleaseOutcome>{
+  const dir=resolve(root),path=join(dir,id),dryRun=options.dryRun===true;
+  const held=(reason:string):ReleaseOutcome=>({id,path,kind:'held',reason,dryRun});
+  if(!/^[a-z][a-z0-9-]{0,63}$/.test(id))return held('Invalid allocation id.');
+  try{if((await lstat(dir)).isSymbolicLink()||await realpath(dir)!==dir)return held('Managed root must be canonical, without symlink redirection.');}catch{return held('Managed root unavailable.');}
+  const ledger=join(dir,id+'.jsonl'),archive=join(dir,id+'.released.jsonl');
+  // Releasing twice is a no-op: the archive is the proof of the first release.
+  if(await absent(ledger)&&!await absent(archive))return {id,path,kind:'already-released',reason:'Released earlier; its archived ledger is preserved.',dryRun};
+  const claimFile=ledger+'.release';let claim:FileHandle|undefined;
+  if(!dryRun){
+   try{claim=await open(claimFile,'wx',0o600);}
+   catch(e){return held((e as NodeJS.ErrnoException).code==='EEXIST'?'A release claim exists, in progress or left by a crash; inspect it. It is never reclaimed here.':'Release claim unavailable; nothing was released.');}
+  }
+  try{
+   type Decision={kind:'remove'|'unregister';state:ManagedWorktreeState}|{kind:'held';reason:string};
+   const decide=async():Promise<Decision>=>{
+    if(!await absent(archive))return {kind:'held',reason:'An archived ledger already exists beside a live one; inspect both.'};
+    const state=await inspectAllocation(dir,id,options.signal);
+    if(state.phase==='invalid')return {kind:'held',reason:state.reason};
+    if(state.finalizeClaim)return {kind:'held',reason:state.reason||'A finalize claim is pending; inspect it before any release.'};
+    if(state.worktree==='present'&&state.condition==='recoverable'&&state.clean===true)return {kind:'remove',state};
+    if(state.worktree==='absent'&&state.ownerAlive===false)return {kind:'unregister',state};
+    return {kind:'held',reason:state.reason||'Allocation cannot be attested as releasable.'};
+   };
+   const first=await decide();if(first.kind==='held')return held(first.reason);
+   const kind=first.kind==='remove'?'released':'unregistered';
+   const done=first.kind==='remove'?'Owner is dead and the tree is clean: worktree removed, ledger archived.':'Directory was already gone: registration dropped, ledger archived.';
+   if(dryRun)return {id,path,kind,reason:'Would be '+kind+'. '+done,dryRun};
+   // Recheck immediately before the sole effect; Git's refusal of an unclean tree closes the remaining window.
+   const latest=await decide();if(latest.kind!==first.kind)return held(latest.kind==='held'?latest.reason:'Allocation changed during release; inspect it.');
+   const common=latest.state.commonDirectory;
+   try{
+    const listed=(await gitCommon(common,['worktree','list','--porcelain'],options.signal)).split('\n').includes('worktree '+path);
+    if(latest.kind==='remove'&&!listed)return held('Git does not list this worktree for its recorded repository; inspect it.');
+    if(listed)await gitCommon(common,['worktree','remove',path],options.signal);
+   }catch(e){return held('Git refused the release: '+(e as Error).message);}
+   // Remove first, archive second: a crash between them leaves a ready ledger over an absent worktree, which the next release resolves as unregistered.
+   await rename(ledger,archive);
+   const h=await open(archive,'a');try{await h.write(JSON.stringify({version:1,phase:'released',mode:latest.kind==='remove'?'removed':'unregistered',path,at:new Date().toISOString()})+'\n');await h.sync();}finally{await h.close();}
+   await syncDirectory(dir);
+   return {id,path,kind,reason:done,dryRun:false};
+  }finally{if(claim){await claim.close();await unlink(claimFile).catch(()=>{});await syncDirectory(dir).catch(()=>{});}}
  }

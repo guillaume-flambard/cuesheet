@@ -78,6 +78,11 @@ const NODES:readonly Declaration[]=Object.freeze([
  n('test.workers.workspaces','test','domain.workers',['test/code-worker-workspaces.test.ts'],{invariant:['invariant.workers.isolation']}),
  n('test.workers.worktrees','test','domain.workers',['test/managed-worktrees.test.ts'],{invariant:['invariant.workers.isolation']}),
  n('source.workers.multi','source','domain.workers',['docs/harness/MULTI-WORKER.md']),
+ // Release: the explicit owner command that frees dead-owner clean worktrees; the controller never calls it.
+ n('entity.workers.release','entity','domain.workers',['src/worktrees-cli.ts']),
+ n('invariant.workers.release','invariant','domain.workers',['docs/harness/WORKTREE-RELEASE.md','test/managed-worktree-release.test.ts'],{check:['test.workers.release']}),
+ n('test.workers.release','test','domain.workers',['test/managed-worktree-release.test.ts','test/worktrees-cli.test.ts'],{invariant:['invariant.workers.release']}),
+ n('source.workers.release','source','domain.workers',['docs/harness/WORKTREE-RELEASE.md']),
  // Integration: composition, worktree merge, project binding, context and the surface.
  n('domain.integration','domain','domain.integration',['src/index.ts','docs/ARCHITECTURE.md']),
  n('entity.integration.composition','entity','domain.integration',['src/adapters/code-worker-integration.ts']),
@@ -124,6 +129,7 @@ const LINKS:readonly Link[]=Object.freeze([
  e('depends_on','entity.workers.loop','entity.workers.workspaces'),e('depends_on','entity.workers.workspaces','entity.workers.packets'),
  e('validates','test.workers.runtime','entity.workers.process'),e('validates','test.workers.runtime','invariant.workers.confinement'),e('validates','test.workers.runtime','invariant.workers.receipt'),e('validates','test.workers.delegation','contract.workers.requirements'),e('validates','test.workers.packets','invariant.workers.admission'),e('validates','test.workers.workspaces','invariant.workers.isolation'),e('validates','test.workers.worktrees','invariant.workers.isolation'),
  e('describes','source.workers.multi','entity.workers.process'),e('describes','source.workers.multi','entity.workers.workspaces'),
+ e('contains','domain.workers','entity.workers.release'),e('depends_on','entity.workers.release','entity.workers.workspaces'),e('validates','test.workers.release','entity.workers.release'),e('validates','test.workers.release','invariant.workers.release'),e('describes','source.workers.release','entity.workers.release'),
  e('contains','domain.integration','entity.integration.composition'),e('contains','domain.integration','entity.integration.worktree_merge'),e('contains','domain.integration','entity.integration.project_binding'),e('contains','domain.integration','entity.integration.shared_context'),e('contains','domain.integration','entity.integration.surface'),e('contains','domain.integration','entity.integration.producer'),e('contains','domain.integration','source.integration.architecture'),e('contains','domain.integration','source.integration.invariants'),
  e('implements','entity.integration.project_binding','contract.integration.binding'),e('implements','entity.integration.worktree_merge','contract.integration.plan'),e('implements','entity.integration.surface','contract.integration.entry'),
  e('depends_on','entity.integration.composition','entity.integration.worktree_merge'),e('depends_on','entity.integration.composition','entity.workers.workspaces'),e('depends_on','entity.integration.surface','entity.integration.project_binding'),
