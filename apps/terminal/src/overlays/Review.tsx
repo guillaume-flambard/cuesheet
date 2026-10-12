@@ -9,6 +9,7 @@ export function Review(props: {
   width: number;
   rows: number;
   onLoad(): Promise<GitReview>;
+  evidence?: readonly string[];
 }): JSX.Element {
   const [review, setReview] = useState<GitReview | null>(null);
   const [offset, setOffset] = useState(0);
@@ -23,7 +24,9 @@ export function Review(props: {
     );
     return () => { mounted = false; };
   }, [props.onLoad, revision]);
-  const lines = review?.kind === "observed" ? review.lines : [];
+  const lines = review?.kind === "observed"
+    ? [...(props.evidence??[]), "─── Modifications Git observées (non vérifiées) ───", ...review.lines]
+    : [...(props.evidence??[]), ...(review?.kind === "unavailable" ? [review.reason] : [])];
   const viewport = Math.max(1, props.rows - 3);
   const maxOffset = Math.max(0, lines.length - viewport);
   useInput((input, key) => {
