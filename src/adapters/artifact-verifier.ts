@@ -125,16 +125,18 @@ export async function runAgainstArtifactAsync(options: RunOptions): Promise<Veri
     return { target: { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest }, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: readable.why }] };
   }
   const result = await new Promise<{ status: number | null; signal: string | null; error?: Error; output: string }>((settle) => {
-    let output = "";
-    const collect=(chunk:Buffer)=>{if(output.length<8192)output+=chunk.toString("utf8").slice(0,8192-output.length);};
+    let stdout = "", stderr = "";
+    const collectOut=(chunk:Buffer)=>{if(stdout.length<8192)stdout+=chunk.toString("utf8").slice(0,8192-stdout.length);};
+    const collectErr=(chunk:Buffer)=>{if(stderr.length<4096)stderr+=chunk.toString("utf8").slice(0,4096-stderr.length);};
+    const output=()=>stderr ? stderr+"\n"+stdout : stdout;
     const child = spawn(options.command, options.args, {
       cwd: options.artifact.location, stdio: ["ignore","pipe","pipe"], env: { PATH: process.env.PATH ?? "" },
       signal: options.signal, killSignal: "SIGKILL",
     });
-    child.stdout?.on("data",collect); child.stderr?.on("data",collect);
+    child.stdout?.on("data",collectOut); child.stderr?.on("data",collectErr);
     const timer = setTimeout(() => child.kill("SIGKILL"), options.timeoutMs ?? 30_000);
-    child.on("error", (error) => { clearTimeout(timer); settle({ status: null, signal: null, error, output }); });
-    child.on("close", (status, signal) => { clearTimeout(timer); settle({ status, signal, output }); });
+    child.on("error", (error) => { clearTimeout(timer); settle({ status: null, signal: null, error, output:output() }); });
+    child.on("close", (status, signal) => { clearTimeout(timer); settle({ status, signal, output:output() }); });
   });
   const after = readCapture(options.artifact);
   if (after.kind === "unavailable") {

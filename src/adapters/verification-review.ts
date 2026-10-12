@@ -2,7 +2,7 @@ import type { Event } from "../core/store.ts";
 import { projectObjectives } from "./objectives.ts";
 
 /** Historical verification receipts, not a current working tree attestation. */
-export function verificationReviewLines(events: readonly Event[]): string[] {
+export function verificationReviewLines(events: readonly Event[], readDiagnostic?: (record:string)=>readonly string[]): string[] {
   const objective=projectObjectives([...events]).current;
   const header=objective
     ? [`Objectif : ${objective.id} · révision ${objective.revision}`]
@@ -23,12 +23,14 @@ export function verificationReviewLines(events: readonly Event[]): string[] {
       typeof d.checkDigest==="string" && d.checkDigest.length>0 &&
       typeof d.record==="string" && d.record.length>0;
     const details=Array.isArray(d.evidence) ? d.evidence.slice(0,8).flatMap(item=>{ if(!item || typeof item!=="object") return []; const row=item as Record<string,unknown>; if(!["expected_digest","actual_digest","target_digest","producer_claim_ignored","check_output"].includes(String(row.kind))) return []; const value=typeof row.value==="string" ? row.value.replace(/[\x00-\x1f\x7f-\x9f]/g,"�").slice(0,row.kind==="check_output"?4096:160) : "(absent)"; return row.kind==="check_output" ? ["Sortie du check · diagnostic non fiable, extrait borné",...value.split("\n").slice(0,70)] : [`Mesure ${String(row.kind)} · ${value}`]; }) : [];
+    const privateLines = typeof d.record === "string" && readDiagnostic ? readDiagnostic(d.record) : [];
     return [
       `Reçu #${event.seq} · ${accepted?"VÉRIFIÉ HISTORIQUEMENT": "NON VALIDÉ POUR LE CONTRAT ACTUEL"}`,
       `Verdict enregistré : ${String(d.verdict??"UNKNOWN")}${current?"":" · contrat ancien ou inconnu"}`,
       `Artefact : ${digest ? digest.slice(0,16):"digest absent"} · source ${produced?"#"+produced.seq:"introuvable"}`,
       `Check : ${typeof d.checkDigest==="string"?d.checkDigest.slice(0,16):"non attesté"}`,
       ...details,
+      ...(privateLines.length ? ["Sortie du check · fichier privé, extrait borné",...privateLines] : []),
       ...(Array.isArray(d.evidence) && d.evidence.length>8 ? ["… autres mesures dans le reçu original."] : []),
       "Attention : la revue n'a pas recalculé le digest du workspace courant.",
     ];
