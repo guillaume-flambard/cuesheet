@@ -913,6 +913,55 @@
       "acceptance": [
         "AC-UF10"
       ]
+    },
+    {
+      "id": "REQ-WTR-01",
+      "description": "A dead-owner, Git-clean managed worktree is removed and unregistered on explicit owner release.",
+      "acceptance": [
+        "AC-WTR-01"
+      ]
+    },
+    {
+      "id": "REQ-WTR-02",
+      "description": "A managed worktree with an alive owner, modified or untracked content, a moved HEAD, a finalize claim or an invalid ledger is never removed.",
+      "acceptance": [
+        "AC-WTR-02"
+      ]
+    },
+    {
+      "id": "REQ-WTR-03",
+      "description": "An allocation whose directory is gone but whose registration remains is unregistered.",
+      "acceptance": [
+        "AC-WTR-03"
+      ]
+    },
+    {
+      "id": "REQ-WTR-04",
+      "description": "Release is exclusive and idempotent.",
+      "acceptance": [
+        "AC-WTR-04"
+      ]
+    },
+    {
+      "id": "REQ-WTR-05",
+      "description": "A dry run writes nothing.",
+      "acceptance": [
+        "AC-WTR-05"
+      ]
+    },
+    {
+      "id": "REQ-WTR-06",
+      "description": "The CLI exposes list and release with a usable gate.",
+      "acceptance": [
+        "AC-WTR-06"
+      ]
+    },
+    {
+      "id": "REQ-WTR-07",
+      "description": "Nothing else changes.",
+      "acceptance": [
+        "AC-WTR-07"
+      ]
     }
   ],
   "tasks": [
@@ -6863,6 +6912,41 @@
         "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
         "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
       ]
+    },
+    {
+      "id": "WTR",
+      "priority": "P1",
+      "status": "VERIFYING",
+      "requirements": [
+        "REQ-WTR-01",
+        "REQ-WTR-02",
+        "REQ-WTR-03",
+        "REQ-WTR-04",
+        "REQ-WTR-05",
+        "REQ-WTR-06",
+        "REQ-WTR-07"
+      ],
+      "dependencies": [],
+      "description": "Explicit owner release of managed worktrees: cuesheet worktrees list and release.",
+      "systems": [
+        "src/adapters/managed-worktrees.ts",
+        "src/worktrees-cli.ts",
+        "src/cuesheet.ts"
+      ],
+      "acceptance": [
+        "AC-WTR-01",
+        "AC-WTR-02",
+        "AC-WTR-03",
+        "AC-WTR-04",
+        "AC-WTR-05",
+        "AC-WTR-06",
+        "AC-WTR-07"
+      ],
+      "verification": "Real Git tests per requirement, four mutations, CLI through the dispatcher, full suite against baseline ae9f391, state-graph regen, build",
+      "evidence": [
+        "EV-WTR"
+      ],
+      "notes": "READY_FOR_MANUAL_ACCEPTANCE: automated acceptance verified; owner manual checklist in docs/harness/WORKTREE-RELEASE.md (WTR-T8)."
     }
   ],
   "acceptance": [
@@ -8821,6 +8905,109 @@
         "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/progress-english-audit.json",
         "/Users/memo/projects/_reports/cuesheet-intentlane-supervision-2026-10-02/user-launch/day-question-audit.json"
       ]
+    },
+    {
+      "id": "AC-WTR-01",
+      "requirement": "REQ-WTR-01",
+      "given": "Managed worktrees allocated by allocateWorktree in a real Git repository.",
+      "when": "A dead-owner, Git-clean managed worktree is removed and unregistered on explicit owner release.",
+      "then": "After release the path is gone, Git no longer lists it, the ledger is archived with a released receipt.",
+      "verification": [
+        "automated",
+        "mutation"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-WTR"
+      ]
+    },
+    {
+      "id": "AC-WTR-02",
+      "requirement": "REQ-WTR-02",
+      "given": "Managed worktrees allocated by allocateWorktree in a real Git repository.",
+      "when": "A managed worktree with an alive owner, modified or untracked content, a moved HEAD, a finalize claim or an invalid ledger is never removed.",
+      "then": "Each case returns held; bytes, ledger and Git registration are unchanged; a locked tree is refused by Git without --force.",
+      "verification": [
+        "automated",
+        "mutation"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-WTR"
+      ]
+    },
+    {
+      "id": "AC-WTR-03",
+      "requirement": "REQ-WTR-03",
+      "given": "Managed worktrees allocated by allocateWorktree in a real Git repository.",
+      "when": "An allocation whose directory is gone but whose registration remains is unregistered.",
+      "then": "Git no longer lists the path; the ledger is archived with mode unregistered; a live owner holds.",
+      "verification": [
+        "automated",
+        "mutation"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-WTR"
+      ]
+    },
+    {
+      "id": "AC-WTR-04",
+      "requirement": "REQ-WTR-04",
+      "given": "Managed worktrees allocated by allocateWorktree in a real Git repository.",
+      "when": "Release is exclusive and idempotent.",
+      "then": "An existing release claim holds without effect; a second release is a no-op; a crash between removal and archive is resolved by the next release.",
+      "verification": [
+        "automated",
+        "mutation"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-WTR"
+      ]
+    },
+    {
+      "id": "AC-WTR-05",
+      "requirement": "REQ-WTR-05",
+      "given": "Managed worktrees allocated by allocateWorktree in a real Git repository.",
+      "when": "A dry run writes nothing.",
+      "then": "No claim, no archive and no Git change after a dry run that reports released.",
+      "verification": [
+        "automated",
+        "mutation"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-WTR"
+      ]
+    },
+    {
+      "id": "AC-WTR-06",
+      "requirement": "REQ-WTR-06",
+      "given": "Managed worktrees allocated by allocateWorktree in a real Git repository.",
+      "when": "The CLI exposes list and release with a usable gate.",
+      "then": "cuesheet worktrees release exits 0 when nothing is held, 1 when anything is held, 2 on bad arguments, and accepts a parent of managed roots.",
+      "verification": [
+        "automated"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-WTR"
+      ]
+    },
+    {
+      "id": "AC-WTR-07",
+      "requirement": "REQ-WTR-07",
+      "given": "Managed worktrees allocated by allocateWorktree in a real Git repository.",
+      "when": "Nothing else changes.",
+      "then": "The full suite fails no test that did not fail before; the committed state graph matches the generator; the build type-checks.",
+      "verification": [
+        "automated"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "EV-WTR"
+      ]
     }
   ],
   "evidence": [
@@ -9391,6 +9578,13 @@
       "id": "DU-PUBLIC-SIXTH",
       "path": "/Users/memo/projects/_reports/cuesheet-daily-2026-10-03/sixth-1",
       "result": "Pinned candidate and integrated source VERIFIED; HEAD/index/other tracked edits preserved; bounded CLI task only"
+    },
+    {
+      "id": "EV-WTR",
+      "commit": "c199cc8",
+      "result": "PASS",
+      "method": "automated tests, mutation, full-suite differential, build, dry run on real data",
+      "details": "managed-worktree-release 13/13, worktrees-cli 3/3, state-graph 41/41; suite 44 failures before, 43 after, none new; build 0 type errors; C02 dry run 13/13 releasable. docs/harness/WORKTREE-RELEASE.md#evidence"
     }
   ],
   "risks": {
@@ -9612,12 +9806,12 @@
   },
   "ready_for_manual_acceptance": false,
   "counts": {
-    "requirements": 128,
-    "acceptanceVerified": 36,
+    "requirements": 135,
+    "acceptanceVerified": 43,
     "acceptancePending": 105,
     "acceptanceFailed": 0,
     "p0_open": 70,
-    "p1_open": 50
+    "p1_open": 51
   },
   "workstreams": [
     {
