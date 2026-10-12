@@ -88,3 +88,14 @@ L’[inventaire complet et les prompts de délégation](OPENCODE-ORCHESTRATION.m
 Voir [la spécification canonique](INTENT-MAP-ADAPTIVE.md) et [les paquets OpenCode](OPENCODE-ORCHESTRATION.md). C8–C10 ajoutent 15 tâches et critères PENDING dans state.json ; aucune implémentation ni clôture annoncée. Les risques, transitions et vérifications de cette extension sont détaillés dans la spec.
 
 Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplémentaires TODO/PENDING. Vue humaine dérivée des mêmes événements ; checkpoints par exception, corrections directes et preuves de livraison distinctes de la compréhension.
+
+## Compléments d'architecture et de gouvernance (2026-10-12)
+
+- [Inspirations des harnesses et séquence d'intégration](REFERENCE-HARNESSES-2026-10.md) : étude et propositions, sans fermeture de backlog.
+- [Interface / design agentique](INTERFACE-DESIGN-2026-10.md) : hiérarchie UX, états et parcours de test Ink/PTY.
+- [Migration GitHub et bot](GITHUB-ORG-AND-BOT.md) : accès du bot multi-projets, PR de test et protections.
+- [Classement détaillé des 10 harnesses](REFERENCE-DEEP-DIVE-2026-10.md) : priorités, concepts, limites, tests et sources primaires.
+- [Plan de chantiers et critères d'acceptation](IMPLEMENTATION-GATES-2026-10.md) : P0 CI/bot → P1 moteur → P2 continuité → P3 multi-agent → P4 design → P5 benchmarks.
+- [Design System Human UI V2](DESIGN-SYSTEM-V2-2026-10.md) : vues, 40×14/80×24/120×40, états, wording, navigation et tests PTY.
+
+Les documents ci-dessus complètent H01–H10 et HL sans remplacer TODO.md, state.json ni les preuves.
