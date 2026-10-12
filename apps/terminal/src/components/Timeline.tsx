@@ -87,7 +87,7 @@ function Line({ entry }: { entry: Entry }): JSX.Element {
       return (
         <Box flexShrink={0}>
           <Text color={inkColor(theme.faint)}>    {entry.label.padEnd(12)}</Text>
-          <Text color={colorFor(entry.certainty)}>{markFor(entry.certainty)} {entry.value}</Text>
+          <Text wrap="truncate-end" color={colorFor(entry.certainty)}>{markFor(entry.certainty)} {entry.value}</Text>
         </Box>
       );
     case "failure":
