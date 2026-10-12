@@ -50,3 +50,7 @@ Le compositeur propose jusqu'à 3 noms de fichiers suivis par Git au moment du c
 ## Reçus de vérification historiques (tranche #35)
 
 La revue présente aussi les événements work_produced / work_verified historiquement journalisés, liés par effect id, digest, objectif et révision. Un verdict manquant, orphelin ou périmé est présenté comme non validé. La revue ne recalcule pas les digests du workspace courant : un reçu historiquement vérifié ne signifie pas que les fichiers visibles sont encore validés. Aucun nouveau test n'est lancé à l'ouverture. Prochain lot : associer la sortie intégrale de chaque test au verdict courant, recalculer l'artefact sur le workspace choisi, et détecter la dérive de source avant tout statut VERIFIED actuel.
+
+## Comparaison ponctuelle de digest du workspace (candidat #35)
+
+La revue lit le workspace Git courant uniquement si la racine est attestée, les fichiers sont réguliers et les limites d'inspection sont respectées (3000 fichiers / 64 MiB). Elle calcule le digest selon la même règle de contenu que l'artefact capturé. Une différence signale un reçu historique périmé ; une égalité ne prouve qu'une observation ponctuelle non atomique, sans revalider l'oracle ni l'objectif. Aucune permission ou check n'est créé. L'inspection abandonne sur erreur. Travaux restants : snapshot atomique sous verrou/cohérence temporelle, vérification du contrat courant et sortie de tests paginée.
