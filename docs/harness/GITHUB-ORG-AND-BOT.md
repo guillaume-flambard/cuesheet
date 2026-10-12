@@ -52,11 +52,13 @@ Issue/objectif → branche bot isolée → tests rouges reproduisant la friction
 - [x] Bot drop-agent-bot identifié et accès write accordé au dépôt CUESHEET.
 - [x] Auth propre au bot, push sous drop-agent-bot, branche et PR draft #7 démontrés (commits 830dac0, 0ad0093, 0409124).
 - [x] Premier workflow CI exécuté sur GitHub, résultat failure (run 38274444853 : 1008 pass, 6 fail, 23 skip).
-- [ ] Corriger et faire passer la CI avant de la rendre obligatoire.
+- [x] CI corrigée sur PR draft #7 : deux exécutions Ubuntu réussies (runs 38278572223 et 38279070595 ; première 1014 pass, 0 fail, 23 skip). Attention : main n'est pas encore corrigée tant que la PR n'est pas relue et fusionnée.
 - [x] Protection main activée : PR, une revue, refus force-push/delete, admins exemptés.
-- [ ] Ajouter le check CI obligatoire après un premier run vert (premier run 38274444853 : 1008 pass, 6 fail, 23 skip).
+- [ ] Après merge de #7 et première exécution verte sur main, rendre le check « Core and integration tests » obligatoire ; main n'a pas encore le workflow stabilisé.
 - [x] Parcours authentification → commit/push → PR par bot démontré sans nouveaux droits admin.
-- [ ] Réponse à revue humaine et mise à jour d'une PR sous identité bot encore à tester.
+- [x] Commentaire autonome du bot sur sa PR : https://github.com/memolabs-dev/cuesheet/pull/7#issuecomment-6128534827 .
+- [ ] Traiter une vraie revue humaine et y répondre sous identité bot, sans auto-approbation.
+- [ ] Corriger le test PTY Mac encore rouge : https://github.com/memolabs-dev/cuesheet/issues/9 ; Ubuntu vert ne couvre pas ce cas.
 - [ ] Vérification des webhooks et autres intégrations spécifiques par un admin.
 
 Source officielle : https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository
