@@ -96,7 +96,7 @@ Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplém
 - [Migration GitHub et bot](GITHUB-ORG-AND-BOT.md) : accès du bot multi-projets, PR de test et protections.
 - [Classement détaillé des 10 harnesses](REFERENCE-DEEP-DIVE-2026-10.md) : priorités, concepts, limites, tests et sources primaires.
 - [Plan de chantiers et critères d'acceptation](IMPLEMENTATION-GATES-2026-10.md) : P0 CI/bot → P1 moteur → P2 continuité → P3 multi-agent → P4 design → P5 benchmarks.
-- [Design System Human UI V2](DESIGN-SYSTEM-V2-2026-10.md) : vues, 40×14/80×24/120×40, états, wording, navigation et tests PTY.
+- [CUESHEET Daily Driver — UX P0](DAILY-DRIVER-UX-2026-10.md) : usage quotidien, parcours Claude Code/Codex/OpenCode, interface de travail, métriques et lots UX.\n- [Design System Human UI V2](DESIGN-SYSTEM-V2-2026-10.md) : vues, 40×14/80×24/120×40, états, wording, navigation et tests PTY.
 - [Audit GitHub 2026 : Pi Durable, OpenCode V2, LangGraph, Codex, Letta, OpenHands, Hermes, Goose](HARNESS-RESEARCH-2026-10.md) : mécanismes actuels, écarts réels, limites et sources vérifiées.
 - [Programme de réalisation T0–T8](HARNESS-PROGRAM-2026-10.md) : neuf axes techniques dont QA transversal, dépendances, lots atomiques, portes de validation et rattachement H01–H10.
 

@@ -35,7 +35,7 @@ T0 tests et traces ────────────────────�
                                                    T8 release/benchmark
 ```
 
-Les tranches de T3/T6 peuvent commencer plus tôt si testées isolément. Le design système reste documenté avant que l'UI ne soit implémentée ; pas de big-bang.
+Les tranches de T3/T6 peuvent commencer plus tôt si testées isolément. **Décision UX P0 du propriétaire (12 octobre 2026)** : T7 commence immédiatement en parallèle de T0/T1/T2. Une interface qui ne peut pas remplacer Claude Code, Codex et OpenCode au quotidien est un échec produit, même avec un moteur correct. Première tranche Work Focus, puis Composer, diffs et sessions ; voir DAILY-DRIVER-UX-2026-10.md. Ne pas présenter une spec ou un mockup comme une fonctionnalité livrée et ne pas faire de big-bang.
 
 ### T0 — Test harness de preuve (P0, transversal) — mini-SWE-agent / Pi Telemetry
 
@@ -87,9 +87,9 @@ Les tranches de T3/T6 peuvent commencer plus tôt si testées isolément. Le des
 **Gate :** skill produit sur cas A gagne sur B, contraintes de scope constantes, aucun prompt-injection élargissant les droits, réseau absent = refus honnête.
 **Backlog** H04.1–.5, H02.4, H10. **Risque** : l'optimisation de prompts surapprend le corpus ou dégrade la sécurité.
 
-### T7 — Human UI V2 (P3, tranches continues) — OpenCode + Pi TUI
+### T7 — Human UI V2 / Daily Driver (P0, tranches parallèles au moteur) — OpenCode + Pi TUI
 
-**État** : design système déjà décrit dans [DESIGN-SYSTEM-V2-2026-10.md](DESIGN-SYSTEM-V2-2026-10.md) ; React/Ink, ViewStore/PTY existants.
+**État** : design système déjà décrit dans [DESIGN-SYSTEM-V2-2026-10.md](DESIGN-SYSTEM-V2-2026-10.md) ; React/Ink, ViewStore/PTY existants. **La première priorité UX** est désormais l'expérience quotidienne, avec le programme [DAILY-DRIVER-UX-2026-10.md](DAILY-DRIVER-UX-2026-10.md), pas un chantier repoussé après la release.
 **Lots :** T7.1 vue Work et but clair ; T7.2 états REQUESTED vs EXECUTED vs VERIFIED ; T7.3 volet preuve/sources/agents avec progressive disclosure ; T7.4 correction immédiate et bascule modèle ; T7.5 keyboard, focus, resize 40x14 / 80x24 / 120x40, couleurs désactivables ; T7.6 voir causes de blocage en 1 geste.
 **Gate :** scénarios PTY avec vraie entrée clavier, 3 tailles, aucun Enter overlay ne soumet un vieux composer, preuve lisible sans consulter toute la log.
 **Backlog** H08.1–.5. **Style** composants maison, sobre/humain ; pas de library UI populaire ajoutée par inertie.

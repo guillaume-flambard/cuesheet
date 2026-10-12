@@ -50,6 +50,8 @@ import type { Control, SurfaceState } from "./state.ts";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
 import { Header } from "../components/Header.tsx";
 import { Timeline } from "../components/Timeline.tsx";
+import { WorkFocus } from "../components/WorkFocus.tsx";
+import { projectWorkFocus } from "../components/work-focus.ts";
 import { Composer } from "../components/Composer.tsx";
 import { StatusBar } from "../components/StatusBar.tsx";
 import { Projects } from "../overlays/Projects.tsx";
@@ -135,6 +137,11 @@ export function App(props: AppProps): JSX.Element {
   const column = SHELL_RULE_WIDTH(stdout.columns);
   const rows = Math.max(8, stdout.rows ?? 24);
   const contentRows = Math.max(1, rows - 9);
+  // The current work is readable at a glance without covering the composer
+  // or the log. On very short terminals we prefer navigable history to chrome.
+  const focusRows = state.overlay === "none" && !missing && contentRows >= 5
+    ? (contentRows >= 10 ? 3 : 2) : 0;
+  const focus = projectWorkFocus(state.entries, state.busy);
 
   return (
     <Box flexDirection="column" width={column} height={rows - 1} overflow="hidden">
@@ -186,7 +193,11 @@ export function App(props: AppProps): JSX.Element {
         ) : state.overlay === "help" ? (
           <Help onClose={() => send({ type: "close" })} />
         ) : (
-          <Timeline width={column} entries={state.entries} visible={contentRows} rows={contentRows} />
+          <Box flexDirection="column" width={column} height={contentRows} overflow="hidden">
+            {focusRows > 0 && <WorkFocus focus={focus} width={column} compact={focusRows === 2} />}
+            <Timeline width={column} entries={state.entries}
+              visible={contentRows - focusRows} rows={contentRows - focusRows} />
+          </Box>
         )}
       </Box>
 
