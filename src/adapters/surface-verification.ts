@@ -20,9 +20,9 @@ export function readArchivedDiagnostic(storageRoot: string, record: string): rea
     if (!receipt.isFile() || receipt.isSymbolicLink()) return [];
     const target = file.slice(0, -5) + ".diagnostic.txt";
     const st = lstatSync(target);
-    if (!st.isFile() || st.isSymbolicLink() || st.size > 4096) return [];
+    if (!st.isFile() || st.isSymbolicLink() || st.size > 16384) return [];
     if (process.platform !== "win32" && (st.mode & 0o077) !== 0) return [];
-    return readFileSync(target, "utf8").trimEnd().split("\n").slice(0, 70);
+    return readFileSync(target, "utf8").trimEnd().split("\n").slice(0, 512);
   } catch { return []; }
 }
 
@@ -68,13 +68,13 @@ export function createCompletionCheck(options: { script: string; root: string; t
     if (!intact()) {
       verification = { target, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: "the declared check changed after admission" }] };
     } else {
-      verification = profile ? await runCapsuleCheck({artifact,script,profile,socket:options.containerSocket!,root,checkDigest,timeoutMs:options.timeoutMs,signal}) : await runAgainstArtifactAsync({ artifact, command: process.execPath, args: [pinned], verificationId: `V-${effectId}`, timeoutMs: options.timeoutMs, signal });
+      verification = profile ? await runCapsuleCheck({artifact,script,profile,socket:options.containerSocket!,root,checkDigest,timeoutMs:options.timeoutMs,signal}) : await runAgainstArtifactAsync({ artifact, command: process.execPath, args: [pinned], verificationId: `V-${effectId}`, timeoutMs: options.timeoutMs, signal, diagnosticMaxChars:16384 });
       if (!intact()) verification = { target, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: "the declared check changed during verification" }] };
     }
     // Keep potentially sensitive check output out of append-only events and receipts.
-    const diagnostics = verification.evidence.filter(e=>e.kind==="check_output").map(e=>e.value).join("\n").slice(0,4096);
+    const diagnostics = Buffer.from(verification.evidence.filter(e=>e.kind==="check_output").map(e=>e.value).join("\n"),"utf8").subarray(0,16384);
     verification={...verification,evidence:verification.evidence.filter(e=>e.kind!=="check_output")};
-    if(diagnostics) writeFileSync(join(root,sessionId+"-"+effectId+"-"+artifact.artifactId+".diagnostic.txt"),diagnostics,{flag:"wx",mode:0o600});
+    if(diagnostics.length) writeFileSync(join(root,sessionId+"-"+effectId+"-"+artifact.artifactId+".diagnostic.txt"),diagnostics,{flag:"wx",mode:0o600});
     const record = join(root, `${sessionId}-${effectId}-${artifact.artifactId}.json`);
     writeFileSync(record + ".pending", JSON.stringify({ artifact, verification, checkDigest }, null, 2), { flag: "wx" });
     renameSync(record + ".pending", record);
