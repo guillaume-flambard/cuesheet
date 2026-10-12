@@ -21,7 +21,7 @@ async function settled(store: ReturnType<typeof createStore>) {
 it("editing the middle of a sentence preserves Unicode graphemes and its suffix", () => {
   assert.deepEqual(edit("a👩‍💻b", 2, "backspace"), { text: "ab", cursor: 1 });
   assert.deepEqual(edit("aéz", 1, "delete"), { text: "az", cursor: 1 });
-  assert.deepEqual(edit("abcd", 2, { insert: "X\nY" }), { text: "abX Ycd", cursor: 5 });
+  assert.deepEqual(edit("abcd", 2, { insert: "X\nY" }), { text: "abX\nYcd", cursor: 5 });
   assert.deepEqual(edit("abcd", 0, "left"), { text: "abcd", cursor: 0 });
 });
 

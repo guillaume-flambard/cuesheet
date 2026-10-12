@@ -28,6 +28,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
 import { characters, edit, type Edit } from "./editor.ts";
+import { composerLines } from "./composer-layout.ts";
 
 export function Composer(props: {
   width: number;
@@ -44,6 +45,7 @@ export function Composer(props: {
   disabled?: boolean;
   active?: boolean;
   history?: readonly string[];
+  maxRows?: number;
 }): JSX.Element {
   const [cursor, setCursor] = useState(characters(props.value).length);
   const [historyAt, setHistoryAt] = useState<number | null>(null);
@@ -59,6 +61,9 @@ export function Composer(props: {
     if (key.ctrl && input === "k") return props.onPalette();
     if ((key.ctrl && (input === "i" || input === "l")) || key.tab) return props.onInspect();
     if (props.active === false) return;
+    // Ctrl+J is a portable newline; Option/Alt+Enter works where a terminal
+    // reports the modifier. Bare Enter alone sends the whole original draft.
+    if ((key.ctrl && input === "j") || (key.return && key.meta)) return apply({ insert: "\n" });
     if (key.return) return props.onSubmit(props.value);
     if (key.upArrow || key.downArrow) {
       const history = props.history ?? [];
@@ -77,31 +82,35 @@ export function Composer(props: {
     if (key.backspace) return apply("backspace");
     if (key.delete) return apply("delete");
     if (key.escape) return apply("clear");
+    // Ink dispatches batched paste as a single input event. Retain line breaks;
+    // unlike a bare Return event, a chunk of source text cannot submit work.
     if (!key.ctrl && !key.meta && input) return apply({ insert: input });
   });
-  const chars = characters(props.value);
-  const at = Math.min(cursor, chars.length);
+  const lines = composerLines(props.value, cursor, props.width, props.maxRows ?? 1);
 
   return (
-    <Box flexDirection="column" flexShrink={0}>
+    <Box flexDirection="column" flexShrink={0} width={props.width}>
       <Text color={inkColor(theme.rule)}>{"─".repeat(props.width)}</Text>
-      <Box>
-        <Text color={inkColor(props.disabled ? theme.faint : theme.brand)} bold>{glyph.input} </Text>
-        {props.value === "" ? (
-          <>
-            <Text inverse>{" "}</Text>
-            <Text wrap="truncate-end" color={inkColor(theme.faint)}>
-              {props.disabled ? "no model to answer with" : (props.placeholder ?? "dis-moi ce que tu veux faire")}          Ctrl+K
+      {props.value === "" ? (
+        <Box>
+          <Text color={inkColor(props.disabled ? theme.faint : theme.brand)} bold>{glyph.input} </Text>
+          <Text inverse>{" "}</Text>
+          <Text wrap="truncate-end" color={inkColor(theme.faint)}>
+            {props.disabled ? "no model to answer with" : `${props.placeholder ?? "dis-moi ce que tu veux faire"}     Ctrl+K`}
+          </Text>
+        </Box>
+      ) : lines.map((line, i) => (
+        <Box key={i} width={props.width} overflow="hidden">
+          <Text color={inkColor(line.focused ? theme.brand : theme.faint)}>{line.focused ? glyph.input : " "} </Text>
+          <Box width={Math.max(1, props.width - 2)} overflow="hidden">
+            <Text wrap="truncate-end">
+              {line.before}
+              {line.focused ? <Text inverse>{line.caret}</Text> : null}
+              {line.after}
             </Text>
-          </>
-        ) : (
-          <>
-            <Text wrap="truncate-start">{chars.slice(0, at).join("")}</Text>
-            <Text inverse>{chars[at] ?? " "}</Text>
-            <Text wrap="truncate-end">{chars.slice(at + 1).join("")}</Text>
-          </>
-        )}
-      </Box>
+          </Box>
+        </Box>
+      ))}
     </Box>
   );
 }

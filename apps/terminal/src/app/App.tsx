@@ -53,6 +53,7 @@ import { Timeline } from "../components/Timeline.tsx";
 import { WorkFocus } from "../components/WorkFocus.tsx";
 import { projectWorkFocus } from "../components/work-focus.ts";
 import { Composer } from "../components/Composer.tsx";
+import { composerRowCount } from "../components/composer-layout.ts";
 import { StatusBar } from "../components/StatusBar.tsx";
 import { Projects } from "../overlays/Projects.tsx";
 import { Inspect } from "../overlays/Inspect.tsx";
@@ -136,7 +137,8 @@ export function App(props: AppProps): JSX.Element {
   // is the most visible way a terminal layout looks unfinished.
   const column = SHELL_RULE_WIDTH(stdout.columns);
   const rows = Math.max(8, stdout.rows ?? 24);
-  const contentRows = Math.max(1, rows - 9);
+  const composerRows = composerRowCount(state.composer, rows);
+  const contentRows = Math.max(1, rows - 9 - (composerRows - 1));
   // The current work is readable at a glance without covering the composer
   // or the log. On very short terminals we prefer navigable history to chrome.
   const focusRows = state.overlay === "none" && !missing && contentRows >= 5
@@ -203,6 +205,7 @@ export function App(props: AppProps): JSX.Element {
 
       <Composer
         width={column}
+        maxRows={composerRows}
         placeholder={state.entries.length === 0 ? undefined : " "}
         value={state.composer}
         onChange={(text) => send({ type: "compose", text })}
