@@ -7,7 +7,7 @@ export function edit(text: string, cursor: number, action: Edit | { insert: stri
   const chars = characters(text);
   let at = Math.max(0, Math.min(cursor, chars.length));
   if (typeof action === "object") {
-    const inserted = characters(action.insert.replace(/[\r\n]+/g, " "));
+    const inserted = characters(action.insert.replace(/\r\n?/g, "\n"));
     chars.splice(at, 0, ...inserted); at += inserted.length;
   } else if (action === "left") at = Math.max(0, at - 1);
   else if (action === "right") at = Math.min(chars.length, at + 1);
