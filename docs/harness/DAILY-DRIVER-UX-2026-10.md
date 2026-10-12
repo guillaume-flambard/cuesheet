@@ -18,6 +18,7 @@ Le shell existant dans apps/terminal/src/app/App.tsx possède déjà un Header, 
 - **UX2 Coding Experience** : revue des diffs, fichiers, tests, sorties complètes, corrections pendant une tâche et permissions intelligibles.
 - **UX3 Sessions et reprise** : ouvrir/continuer en moins de deux interactions, orientation claire du projet/modèle, reprise sans effet dupliqué.
 - **UX4 Navigation rapide** : palette unique contextuelle, projets/modèles/agents, recherche, inspect/effets/preuves, raccourcis découvrables.
+  - **Première tranche candidate** : filtre immédiat par saisie libre dans la palette existante, accents/casse ignorés, plusieurs mots, commandes introuvables sans déclenchement par défaut. Ctrl+U remet le filtre à zéro ; Enter ne déclenche que la commande visible sélectionnée ; Esc préserve le brouillon. Les overlays de confirmation/inspection existants conservent leurs protections. Tests dans test/palette-search.test.ts et test/palette-interaction.test.ts. Les autres tâches UX4 restent ouvertes.
 - **UX5 Human UI V3 et finition** : rythme, typographie, contrastes, thèmes, NO_COLOR, terminaux 40x14, 80x24, 120x40, scroll et resize sans clignotement.
 - **UX6 Dogfooding** : comprendre un dépôt, corriger un test, implémenter une feature, reprendre après interruption, vérifier/fusionner. Chaque retour à un concurrent à cause d'une friction devient un ticket.
 
