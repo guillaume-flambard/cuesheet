@@ -90,6 +90,13 @@ export interface LoopOptions {
   /** Hard ceiling on inferences. A loop that cannot be stopped is a hazard. */
   maxSteps: number;
   /**
+   * Exactly one layer owns uncertain-effect recovery. The generic loop guards
+   * its own action/observation pairs. A controller with durable tool receipts
+   * and explicit reconciliation (e.g. terminal execution slices) owns this
+   * gate itself, so core must not block its safe inspection/recovery steps.
+   */
+  effectRecovery?: "core" | "controller";
+  /**
    * Called for every event the moment it is appended. This is how a chat
    * surface can show the work as it happens, and how a caller can persist
    * incrementally: an event handed to this callback is durable in the caller's
@@ -138,6 +145,49 @@ export function compileFrame(
   };
 }
 
+/**
+ * Find requests whose execution has not produced an observable tool receipt.
+ *
+ * Unlike a model claim, an action without a subsequent result could already
+ * have mutated the world. Re-running the same subject must first reconcile it.
+ * The canonical link is intentSeq; old journals lacking it are correlated by
+ * subject/tool/step in event order for backwards-compatible replay.
+ */
+function unresolvedToolIntents(session: Session, subject: string): Event[] {
+  const pending = new Map<number, Event>();
+  const byLegacyKey = new Map<string, { seqs: number[]; next: number }>();
+  const keyOf = (tool: string, step: number) => JSON.stringify([tool, step]);
+  for (const event of session.events) {
+    if (event.subject !== subject) continue;
+    const tool = event.data.tool;
+    const step = event.data.step;
+    if (typeof tool !== "string" || typeof step !== "number" || !Number.isSafeInteger(step)) continue;
+    const key = keyOf(tool, step);
+    if (event.kind === "action") {
+      pending.set(event.seq, event);
+      const q = byLegacyKey.get(key) ?? { seqs: [], next: 0 };
+      q.seqs.push(event.seq);
+      byLegacyKey.set(key, q);
+    } else if (event.kind === "observation" && typeof event.data.exit === "number" && Number.isSafeInteger(event.data.exit)) {
+      const linked = event.data.intentSeq;
+      if (typeof linked === "number") {
+        const request = pending.get(linked);
+        if (request?.data.tool === tool && request.data.step === step && request.seq < event.seq) {
+          pending.delete(linked);
+        }
+      } else {
+        // Legacy observations had no explicit intentSeq; consume the oldest
+        // still pending request with the same tool and inference step.
+        const q = byLegacyKey.get(key);
+        if (!q) continue;
+        while (q.next < q.seqs.length && !pending.has(q.seqs[q.next]!)) q.next++;
+        if (q.next < q.seqs.length) pending.delete(q.seqs[q.next++]!);
+      }
+    }
+  }
+  return [...pending.values()];
+}
+
 export async function runAgentLoop(
   store: EventStore,
   model: ModelAdapter,
@@ -154,6 +204,22 @@ export async function runAgentLoop(
     options.onEvent?.(appended);
     return appended;
   };
+
+  // A previous crash can leave a requested effect without any observed
+  // outcome. Inspect the world and append a sourced receipt before resuming:
+  // neither another model nor an altered goal authorizes a blind replay.
+  const existing = store.toSession();
+  const unresolved = options.effectRecovery === "controller" ? [] : unresolvedToolIntents(existing, options.subject);
+  if (unresolved.length) {
+    return {
+      stop: {
+        reason: "blocked",
+        missing: unresolved.map(event => `Unreconciled tool intent #${event.seq} (${String(event.data.tool)}): inspect its actual effect before resuming.`),
+      },
+      session: existing,
+      claims,
+    };
+  }
 
   // The admission gate runs before anything is spent, against the live
   // registry, not against what a session-start snapshot happened to hold.
@@ -205,7 +271,7 @@ export async function runAgentLoop(
       // Journal and confirm the intent BEFORE dispatch: a crash or lost
       // connection must never leave an unrecorded external effect. This is
       // intentionally distinct from the subsequent observed tool receipt.
-      append({
+      const intent = append({
         kind: "action",
         subject: options.subject,
         data: { tool: call.name, input: call.input, step },
@@ -217,7 +283,7 @@ export async function runAgentLoop(
       append({
         kind: "observation",
         subject: options.subject,
-        data: { tool: call.name, exit: result.exit, output: result.output, step },
+        data: { tool: call.name, exit: result.exit, output: result.output, step, intentSeq: intent.seq },
       });
     }
 
