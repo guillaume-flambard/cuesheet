@@ -21,3 +21,13 @@ it("retains historical verdict only for matching produced digest and source",()=
  assert.match(result,/NON VALIDÉ/);
  assert.match(result,/digest du workspace courant/);
 });
+
+it("shows bounded verifier measurements without leaking control codes",()=>{
+ const store=new EventStore("proof3",()=>1);
+ store.append({kind:"work_verified",subject:"run",data:{verdict:"REJECTED",evidence:[{kind:"actual_digest",value:"failure\x1b[2J in test"},{kind:"producer_claim_ignored",value:"claimed ok"}]}});
+ const lines=verificationReviewLines(store.toSession().events).join("\n");
+ assert.match(lines,/Mesure actual_digest/);
+ assert.match(lines,/Mesure producer_claim_ignored/);
+ assert.doesNotMatch(lines,/\x1b/);
+ assert.doesNotMatch(lines,/VÉRIFIÉ HISTORIQUEMENT/);
+});
