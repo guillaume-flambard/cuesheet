@@ -66,3 +66,7 @@ La sortie du check est supprimée de la preuve append-only avant la création du
 ## Consultation paginable des diagnostics privés — cycle A
 
 Un check exécuté sur un artefact figé peut conserver jusqu’à 16 Kio (octets UTF-8) de diagnostics dans son sidecar privé à permissions restreintes. stderr est prioritaire. La revue récupère au plus 512 lignes et les rend consultables avec les touches de défilement existantes, y compris après recréation du vérificateur. Le reçu JSON et le journal des événements ne contiennent toujours pas la sortie du check. Cette tranche n’est pas un stockage de journaux illimité ni un streaming avec offset : les sorties excédentaires sont tronquées, les filtres de secrets restent heuristiques, et un contrôle ancien ne valide jamais les fichiers actuels.
+
+## Identité du check dans les reçus de revue
+
+Un verdict `VERIFIED` ne peut apparaître comme « vérifié historiquement » pour le contrat courant que si l’effet ciblé, le digest d’artefact, l’objectif et sa révision, ainsi que le digest du critère épinglé à cette révision correspondent. Un reçu provenant d’un autre check ou visant un autre effet reste visible comme historique mais NON VALIDÉ pour le contrat courant. Cette lecture ne recalcule pas le workspace et ne change pas le statut objectif.

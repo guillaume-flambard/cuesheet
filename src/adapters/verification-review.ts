@@ -20,7 +20,8 @@ export function verificationReviewLines(events: readonly Event[], readDiagnostic
       e.data.objectiveRevision===revision);
     const current=objective && objective.id===id && objective.revision===revision;
     const accepted=produced && d.verdict==="VERIFIED" && current &&
-      typeof d.checkDigest==="string" && d.checkDigest.length>0 &&
+      objective?.check?.boundRevision===revision && objective.check.digest===d.checkDigest &&
+      target.effectId===event.subject && /^[a-f0-9]{64}$/.test(digest) &&
       typeof d.record==="string" && d.record.length>0;
     const details=Array.isArray(d.evidence) ? d.evidence.slice(0,8).flatMap(item=>{ if(!item || typeof item!=="object") return []; const row=item as Record<string,unknown>; if(!["expected_digest","actual_digest","target_digest","producer_claim_ignored","check_output"].includes(String(row.kind))) return []; const value=typeof row.value==="string" ? row.value.replace(/[\x00-\x1f\x7f-\x9f]/g,"�").slice(0,row.kind==="check_output"?4096:160) : "(absent)"; return row.kind==="check_output" ? ["Sortie du check · diagnostic non fiable, extrait borné",...value.split("\n").slice(0,70)] : [`Mesure ${String(row.kind)} · ${value}`]; }) : [];
     const privateLines = typeof d.record === "string" && readDiagnostic ? readDiagnostic(d.record) : [];
