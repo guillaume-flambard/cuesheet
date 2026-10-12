@@ -80,6 +80,10 @@ it("PTY: declared owner check closes real surface work with independent evidence
     writeFileSync(oracle, `import assert from 'node:assert/strict'; import {readFileSync} from 'node:fs'; assert.equal(readFileSync('answer.txt','utf8'),'42');`);
     const env = childEnv({ home: root, sessions: join(root, "sessions") });
     env.PATH = `${bin}:${env.PATH}`; env.TERM = "xterm-256color";
+    // This fixture deliberately executes the fake node binary in a private
+    // temporary directory. Select the owner's explicit local route rather
+    // than depending on an ambient Docker daemon/socket on a developer Mac.
+    env.CUESHEET_TOOL_MODE = "local";
     const proposal = { text: "My output needs checking", toolCalls: [
       { name: "node", input: { argv: ["node", "-e", "require('fs').writeFileSync('answer.txt','42')"] } },
       { name: "finish", input: {} },
