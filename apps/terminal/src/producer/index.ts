@@ -2,6 +2,7 @@ import {planWorktreeIntegration,applyWorktreeIntegration} from '../../../../src/
 import {snapshotMatches} from '../../../../src/adapters/git-snapshot.ts';
 import { trackedFileMentions } from "../../../../src/adapters/file-mentions.ts";
 import { verificationReviewLines } from "../../../../src/adapters/verification-review.ts";
+import { currentArtifactComparison } from "../../../../src/adapters/verification-drift.ts";
 import { readGitReview, type GitReview } from '../../../../src/adapters/git-review.ts';
 import {randomUUID} from 'node:crypto';
 import {join,resolve} from 'node:path';
@@ -840,7 +841,12 @@ export function createProducer(options: ProducerOptions): Producer {
     notificationCount(){return notificationState().unread;},
     notificationPage,
     readNotifications(digest){const n=notificationState();if(n.digest===digest&&n.unread>0){options.journal?.assertWritable();shared.append({kind:"note",subject:"terminal.notification_read",data:{version:1,author:"human",throughSeq:n.throughSeq}});}return notificationPage();},
-    reviewPage() { return readGitReview(activeWorkspace); },
+    async reviewPage() {
+      const workspace=activeWorkspace;
+      const events=shared.toSession().events;
+      const [review,comparison]=await Promise.all([readGitReview(workspace),currentArtifactComparison(workspace,events)]);
+      return review.kind==="observed" ? {...review,lines:[...comparison,"",...review.lines]} : review;
+    },
     verificationReview() { return verificationReviewLines(shared.toSession().events); },
     fileSuggestions() { return trackedFileMentions(activeWorkspace); },
     situationPage() {
