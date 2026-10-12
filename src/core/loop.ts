@@ -202,13 +202,16 @@ export async function runAgentLoop(
 
     const observedBatch: Array<{ call: ToolRequest; result: ToolResult }> = [];
     for (const call of response.toolCalls) {
-      const result = await tools.run(call);
-      observedBatch.push({ call, result });
+      // Journal and confirm the intent BEFORE dispatch: a crash or lost
+      // connection must never leave an unrecorded external effect. This is
+      // intentionally distinct from the subsequent observed tool receipt.
       append({
         kind: "action",
         subject: options.subject,
         data: { tool: call.name, input: call.input, step },
       });
+      const result = await tools.run(call);
+      observedBatch.push({ call, result });
       // The result is an observation, not evidence. Only something the loop
       // can point at later closes a goal.
       append({
