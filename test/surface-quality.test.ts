@@ -41,19 +41,23 @@ const store=createStore();
 store.send({type:'observed',entries:[{id:'x:old',kind:'cuesheet',text:'OLD '.repeat(500)},{id:'x:new',kind:'cuesheet',text:'wrapped '.repeat(200)+' NEWEST_MARKER'}]});
 const out=new PassThrough();Object.assign(out,{columns:40,rows:18,isTTY:false});const frames=[];out.on('data',b=>frames.push({columns:out.columns,rows:out.rows,frame:b.toString()}));
 const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});const app=render(<App store={store} producer={{say(){},choose(){}} as any}/>,{stdout:out as any,stderr:out as any,stdin:input as any,debug:true,exitOnCtrlC:false});
-setTimeout(()=>{Object.assign(out,{columns:30,rows:14});out.emit('resize');},30);setTimeout(()=>{app.unmount();console.log(JSON.stringify(frames));},70);
+setTimeout(()=>{Object.assign(out,{columns:30,rows:14});out.emit('resize');},120);setTimeout(()=>{app.unmount();console.log(JSON.stringify(frames));},280);
 `);
     const run=spawnSync(process.execPath,[join(terminal,'node_modules/tsx/dist/cli.mjs'),script],{encoding:'utf8',timeout:20000});
     assert.equal(run.status,0,run.stderr);
     const frames=JSON.parse(run.stdout.trim());
     assert.ok(frames.length>=2,"initial and resized frames were rendered");
-    for(const snapshot of [frames[0],frames.at(-1)]){
-      const plain=snapshot.frame.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'').trimEnd();
-      assert.match(plain,/NEWEST_MARKER/);
-      assert.match(plain,/cuesheet/);
-      assert.match(plain,/help/);
-      assert.ok(plain.split('\n').length<=snapshot.rows-1,`frame exceeds terminal height: ${plain}`);
-      assert.ok(plain.split('\n').every((line:string)=>line.length<=snapshot.columns),"frame exceeds terminal width");
+    // Ink can emit a blank control frame before the first painted UI, especially
+    // on Linux. Require a meaningful render at BOTH dimensions, not an
+    // arbitrary first/last transport chunk.
+    for(const size of [{columns:40,rows:18},{columns:30,rows:14}]){
+      const snapshots=frames.filter((frame:{columns:number;rows:number;frame:string})=>frame.columns===size.columns&&frame.rows===size.rows);
+      const rendered=snapshots.map((snapshot:{frame:string})=>snapshot.frame.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'').trimEnd());
+      const matching=rendered.filter((plain:string)=>/NEWEST_MARKER/.test(plain)&&/cuesheet/.test(plain)&&/help/.test(plain));
+      assert.ok(matching.length>0,`no complete painted frame for ${size.columns}x${size.rows} (${snapshots.length} frames)`);
+      const plain=matching.at(-1)!; // settled paint, not transient pre-layout frames
+      assert.ok(plain.split('\n').length<=size.rows-1,`frame exceeds terminal height: ${plain}`);
+      assert.ok(plain.split('\n').every((line:string)=>line.length<=size.columns),"frame exceeds terminal width");
     }
   } finally {rmSync(root,{recursive:true,force:true});}
 });

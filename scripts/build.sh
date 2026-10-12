@@ -24,11 +24,16 @@ DIST="$ROOT/dist"
 TS="5.9.3"
 NODE_TYPES="24"
 
-# The type checker is a build tool, not a dependency: installed with --no-save
-# so package.json keeps declaring none, which test/portability.test.ts asserts.
-if [ ! -x node_modules/.bin/tsc ]; then
-  echo "build: installing the compiler, not saving it" >&2
-  npm install --no-save --no-audit --no-fund "typescript@$TS" "@types/node@$NODE_TYPES" >&2
+# Use the workspace's pinned compiler instead of mutating a pnpm-managed
+# dependency graph with npm install --no-save. npm's Arborist can fail with
+# isDescendantOf on a pnpm symlink layout; a build must not rewrite the install.
+TSC_BIN="node_modules/.bin/tsc"
+if [ ! -x "$TSC_BIN" ] && [ -x apps/terminal/node_modules/.bin/tsc ]; then
+  TSC_BIN="apps/terminal/node_modules/.bin/tsc"
+fi
+if [ ! -x "$TSC_BIN" ]; then
+  echo "build: TypeScript compiler unavailable; run pnpm install --frozen-lockfile first" >&2
+  exit 1
 fi
 
 # dist/ is removed rather than overwritten in place: a renamed or deleted
@@ -48,7 +53,7 @@ rmSync(target, { recursive: true, force: true });
 # that predate this build (docs/installability-proof.md, "The type check that
 # was never run"), so the exit code is recorded rather than obeyed. The count is
 # asserted by test/install.test.ts, which is where a regression in it is caught.
-TS_VERSION="$TS" DIST="$DIST" node_modules/.bin/tsc -p tsconfig.build.json > "$ROOT/.typecheck.log" 2>&1 || true
+TS_VERSION="$TS" DIST="$DIST" "$TSC_BIN" -p tsconfig.build.json > "$ROOT/.typecheck.log" 2>&1 || true
 TYPE_ERRORS=$(grep -c "error TS" "$ROOT/.typecheck.log" || true)
 echo "build: tsc emitted dist/, $TYPE_ERRORS type errors (see .typecheck.log)" >&2
 

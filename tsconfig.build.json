@@ -17,7 +17,8 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": ["./apps/terminal/node_modules/@types", "./node_modules/@types"]
   },
   "include": ["src/**/*.ts"]
 }

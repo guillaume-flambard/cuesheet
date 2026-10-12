@@ -27,8 +27,8 @@
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -87,25 +87,18 @@ const documented = new Set(KNOWN.split("\n").map((line) => line.trim()).filter(B
  * a failure is only a failure of the compiler itself.
  */
 function typecheck(): void {
-  const tsc = join(ROOT, "node_modules", ".bin", "tsc");
-  if (!existsSync(tsc)) {
-    execFileSync("bash", ["scripts/build.sh"], { cwd: ROOT, encoding: "utf8", stdio: "ignore" });
-  }
-  try {
-    execFileSync(tsc, ["-p", "tsconfig.build.json", "--noEmit"], {
-      cwd: ROOT,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch {
-    // Expected: the repository has known diagnostics, so tsc exits 1. The output
-    // is captured below either way, which is what this guard reads.
-  }
-  execFileSync("bash", ["-c", `node_modules/.bin/tsc -p tsconfig.build.json --noEmit > "${LOG}" 2>&1 || true`], {
+  const rootCompiler = join(ROOT, "node_modules", ".bin", "tsc");
+  const terminalCompiler = join(ROOT, "apps", "terminal", "node_modules", ".bin", "tsc");
+  const tsc = existsSync(rootCompiler) ? rootCompiler : terminalCompiler;
+  assert.ok(existsSync(tsc), "the compiler must come from the pnpm-locked workspace");
+  const result = spawnSync(tsc, ["-p", "tsconfig.build.json", "--noEmit"], {
     cwd: ROOT,
     encoding: "utf8",
-    stdio: "ignore",
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  if (result.error) throw result.error;
+  assert.notEqual(result.status, null, "compiler must exit");
+  writeFileSync(LOG, (result.stdout ?? "") + (result.stderr ?? ""));
 }
 
 /** Every `file:code` the compiler reported, de-duplicated. */
