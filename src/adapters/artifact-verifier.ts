@@ -39,6 +39,7 @@ export interface RunOptions {
   /** A stable id for this verification, for the record. */
   verificationId: string;
   signal?: AbortSignal;
+  diagnosticMaxChars?: number;
 }
 
 /**
@@ -110,13 +111,13 @@ function verdictFromResult(options: RunOptions, result: { status: number | null;
 }
 
 /** Bounded diagnostic output. Never use text as evidence of success. */
-function safeCheckOutput(raw: string): string {
+function safeCheckOutput(raw: string, maxChars = 4096): string {
   return raw
     .replace(/\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))/g,"")
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g,"�")
     .replace(/\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{16,})\b/g,"[REDACTED]")
     .replace(/((?:token|password|secret|api[_-]?key)\s*[:=]\s*)[^\s]+/gi,"$1[REDACTED]")
-    .slice(0,4096);
+    .slice(0,maxChars);
 }
 /** The terminal uses the same verdict rules without blocking its composer. */
 export async function runAgainstArtifactAsync(options: RunOptions): Promise<Verification> {
@@ -124,10 +125,12 @@ export async function runAgainstArtifactAsync(options: RunOptions): Promise<Veri
   if (readable.kind === "unavailable") {
     return { target: { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest }, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: readable.why }] };
   }
+  const diagnosticMaxChars = Number.isInteger(options.diagnosticMaxChars) ? Math.max(4096, Math.min(16384, options.diagnosticMaxChars!)) : 4096;
   const result = await new Promise<{ status: number | null; signal: string | null; error?: Error; output: string }>((settle) => {
     let stdout = "", stderr = "";
-    const collectOut=(chunk:Buffer)=>{if(stdout.length<8192)stdout+=chunk.toString("utf8").slice(0,8192-stdout.length);};
-    const collectErr=(chunk:Buffer)=>{if(stderr.length<4096)stderr+=chunk.toString("utf8").slice(0,4096-stderr.length);};
+    const stdoutLimit=diagnosticMaxChars*2;
+    const collectOut=(chunk:Buffer)=>{if(stdout.length<stdoutLimit)stdout+=chunk.toString("utf8").slice(0,stdoutLimit-stdout.length);};
+    const collectErr=(chunk:Buffer)=>{if(stderr.length<diagnosticMaxChars)stderr+=chunk.toString("utf8").slice(0,diagnosticMaxChars-stderr.length);};
     const output=()=>stderr ? stderr+"\n"+stdout : stdout;
     const child = spawn(options.command, options.args, {
       cwd: options.artifact.location, stdio: ["ignore","pipe","pipe"], env: { PATH: process.env.PATH ?? "" },
@@ -143,7 +146,7 @@ export async function runAgainstArtifactAsync(options: RunOptions): Promise<Veri
     return { target: { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest }, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: after.why }] };
   }
   const verdict=verdictFromResult(options,result);
-  const excerpt=safeCheckOutput(result.output);
+  const excerpt=safeCheckOutput(result.output,diagnosticMaxChars);
   return excerpt ? {...verdict,evidence:[...verdict.evidence,{kind:"check_output",value:excerpt}]} : verdict;
 }
 
