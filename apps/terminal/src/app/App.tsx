@@ -187,7 +187,8 @@ export function App(props: AppProps): JSX.Element {
             onCheck={()=>producer?.checkConfirmation?.() ?? null} onConfirmCheck={approval=>{send({type:"close"});producer?.say(`/check confirm ${approval.id} ${approval.revision} ${approval.digest}`);}}
             onNew={()=>loadSession()} onResume={()=>{send({type:"close"});if(!missing) producer?.resume?.();}} />
         ) : state.overlay === "review" ? (
-          <Review width={column} rows={contentRows} onLoad={loadReview} />
+          <Review width={column} rows={contentRows} onLoad={loadReview}
+            evidence={producer?.verificationReview?.() ?? ["Aucune preuve accessible dans cette session."]} />
         ) : state.overlay === "sessions" ? (
           <Sessions rows={contentRows} current={wired.session?.metadata.id} list={sessionChoices} onChoose={loadSession} />
         ) : missing ? (
