@@ -1,27 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Box, Text, useInput, measureElement, type DOMElement } from "ink";
 import { theme, inkColor } from "../theme/tokens.ts";
+import { filterPaletteCommands } from "./palette-search.ts";
 
 import type {CheckConfirmation,SharedContextPage} from "../producer/index.ts";
 
-const commands = [
-  { label: "View the log", overlay: "inspect" },
-  { label: "Help", overlay: "help" },
-  { label: "Provider et modèle", overlay: "models" },
-  { label: "Sessions", overlay: "sessions" },
-  { label: "Nouvelle session", overlay: "new" },
-  { label: "Reprendre le travail", overlay: "resume" },
-  { label: "Critère de validation", overlay: "check" },
-  { label: "Contexte partagé", overlay: "context" },
-  { label: "Agents", overlay: "agents" },
-  { label: "Modèles des agents", overlay: "agent-models" },
-  { label: "Situation", overlay: "situation" },
-  { label: "Notifications", overlay: "notifications" },
-  { label: "Workspaces", overlay: "workspaces" },
-] as const;
+
 
 export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onWorkspaces?():SharedContextPage; onNotifications?():SharedContextPage; onReadNotifications?(digest:string):SharedContextPage; onSituation?():SharedContextPage; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
   const [at, setAt] = useState(0);
+  const [query,setQuery] = useState("");
+  const matching = filterPaletteCommands(query);
   const [approval,setApproval]=useState<CheckConfirmation|null>(null);
   const [contextPage,setContextPage]=useState<SharedContextPage|null>(null);
   const [workspacesMode,setWorkspacesMode]=useState(false);
@@ -50,10 +39,16 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
       if(input.toLowerCase()==="c")props.onConfirmCheck?.(approval);
       return;
     }
-    if (key.downArrow) setAt((i) => Math.min(i + 1, commands.length - 1));
-    if (key.upArrow) setAt((i) => Math.max(i - 1, 0));
+    if (key.downArrow) return setAt((i) => Math.min(i + 1, Math.max(0, matching.length - 1)));
+    if (key.upArrow) return setAt((i) => Math.max(i - 1, 0));
+    if (key.backspace || key.delete) { setQuery(old => Array.from(old).slice(0, -1).join("")); setAt(0); return; }
+    if (key.ctrl && input === "u") { setQuery(""); setAt(0); return; }
+    if (!key.ctrl && !key.meta && input && !key.return && !key.escape) {
+      setQuery(old => old + input); setAt(0); return;
+    }
     if (key.return) {
-      const selected=commands[at]!.overlay;
+      const selected=matching[at]?.overlay;
+      if(!selected) return;
       if(selected==="new") props.onNew?.();
       else if(selected==="resume") props.onResume?.();
       else if(selected==="check") {const snapshot=props.onCheck?.() ?? null;setApproval(snapshot);setOffset(0);setNotice(snapshot ? "" : "Aucun check épinglé à renouveler pour le contrat courant.");}
@@ -93,10 +88,11 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
   const visible=Math.max(1,(props.rows ?? 10)-2);
   const start=Math.max(0,at-visible+1);
   return <Box flexDirection="column">
-    <Text wrap="truncate-end" color={inkColor(theme.dim)}>{notice || "Commands"}</Text>
-    {commands.slice(start,start+visible).map((command, offset) => <Text key={command.overlay} color={inkColor(start + offset === at ? theme.brand : theme.dim)}>
+    <Text wrap="truncate-end" color={inkColor(theme.dim)}>{notice || (query ? "Commands · " + query : "Commands · taper pour chercher")}</Text>
+    {matching.slice(start,start+visible).map((command, offset) => <Text key={command.overlay} wrap="truncate-end" color={inkColor(start + offset === at ? theme.brand : theme.dim)}>
       {start + offset === at ? "> " : "  "}{command.label}
     </Text>)}
-    <Text color={inkColor(theme.faint)}>↑↓ to move · enter to open · esc to close</Text>
+    {matching.length === 0 && <Text color={inkColor(theme.unknown)}>Aucune commande correspondante · effacer pour revenir</Text>}
+    <Text color={inkColor(theme.faint)} wrap="truncate-end">↑↓ to move · enter to open · esc to close · Ctrl+U effacer</Text>
   </Box>;
 }
