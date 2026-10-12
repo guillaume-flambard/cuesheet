@@ -45,3 +45,13 @@ Sources GitHub :
 - https://docs.github.com/en/rest/branches/branch-protection
 
 Ressources canoniques : `docs/harness/GITHUB-ORG-AND-BOT.md`, `IMPLEMENTATION-GATES-2026-10.md`, issue #8.
+
+## Résultat constaté — test réel PR #17 (observations à conserver)
+
+- Le compte **drop-agent-bot** a ouvert https://github.com/memolabs-dev/cuesheet/pull/17 sur une branche du dépôt, sans action manuelle d'auto-merge.
+- Le workflow `Enable auto-merge` (run https://github.com/memolabs-dev/cuesheet/actions/runs/38285640351) a activé le merge natif : `autoMergeRequest.mergeMethod=MERGE`, activé par `app/github-actions` à 17:39:23 UTC.
+- Avant fin de la CI, le label `hold-merge` a été ajouté à la PR. L'événement `labeled` a déclenché le workflow https://github.com/memolabs-dev/cuesheet/actions/runs/38285686723, dont le job de désarmement a réussi à 17:39:53 UTC.
+- **Observation confirmée** après désarmement : `autoMergeRequest=null`, `state=OPEN`, label toujours présent, check CI encore en cours au moment de la lecture.
+- À vérifier avant de clore cette preuve : CI verte pendant `hold-merge` avec PR toujours ouverte, puis retrait du label et fusion automatique sous `app/github-actions`.
+
+- **Preuve confirmée du maintien en pause malgré CI verte** : le check `Core and integration tests` de https://github.com/memolabs-dev/cuesheet/actions/runs/38285640228 a réussi à 17:40:27 UTC, tandis que la PR #17 était encore **OPEN**, avec `hold-merge` et `autoMergeRequest=null`.
