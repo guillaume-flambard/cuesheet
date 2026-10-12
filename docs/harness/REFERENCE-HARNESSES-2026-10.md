@@ -67,9 +67,9 @@ ADR-F — Rust decision : réaliser au préalable un profilage reproductible (st
 ### P0 — Gouvernance, bot et CI (immédiat)
 Référence : docs/harness/GITHUB-ORG-AND-BOT.md.
 - Transfert du dépôt, remote local : accompli et vérifié.
-- Installer/autoriser le GitHub App bot souhaité sur l'organisation et ce dépôt ; ne jamais supposer son identité ou installer une app sans validation.
+- Le compte drop-agent-bot (membre memolabs-dev) a obtenu et vérifié write sur cuesheet ; valider maintenant sa capacité réelle à ouvrir un PR, sans lui accorder admin ou bypass. Une GitHub App distincte n'est pas installée.
 - CI reproductible pour les PR, permissions minimales, revue humaine avant merge. Activer la protection de main après un premier check vert.
-Gate : un PR de documentation reçoit un résultat CI, permissions connues, aucun bypass review, remote local intact.
+Gate : un PR de documentation reçoit un résultat CI **vert**, permissions connues, aucun bypass review, remote local intact. Premier essai du 12 octobre : 1008 réussites, 6 échecs, 23 ignorés sur Ubuntu ; P0 reste ouvert. Le bot `drop-agent-bot` a maintenant accès write, mais son propre parcours PR n'a pas encore été démontré.
 
 ### P1 — Fiabilité et vérité des résultats
 Mapping : H01/H05/H09/H10, docs/ARCHITECTURE.md et NEXT-FRONTIER.md.

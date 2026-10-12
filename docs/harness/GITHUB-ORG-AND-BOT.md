@@ -8,14 +8,14 @@ Statut des faits vérifiés :
 - Clone principal : /Users/memo/projects/cuesheet, branche wip/pre-audit-snapshot-2026-10-04, dirty. Origin modifié vers memolabs-dev/cuesheet sans checkout, reset ou stash.
 - Sur GitHub, aucun workflow Actions, aucune exécution ni release et main non protégée au constat pré-migration.
 - Pas d'installation GitHub App visible dans l'organisation lors du contrôle. Le connecteur ChatGPT/GitHub peut lire le dépôt déplacé mais l'écriture d'une branche a été refusée 403 après transfert.
-- Le nom/identité du « bot » mentionné par le propriétaire n'a pas été établi. Ne pas prétendre qu'il est connecté, ne pas créer une identité de service imaginaire.
+- Bot identifié : drop-agent-bot, membre actif de l'organisation, rôle member. Son accès sur memolabs-dev/drop était write ; son accès sur memolabs-dev/cuesheet a été explicitement porté de read à write le 2026-10-12, puis vérifié. Aucun jeton du bot n'a été consulté. Un PR réellement créé par le bot reste à tester.
 - Les noms des secrets Actions sur le dépôt source étaient vides au contrôle ; ceci ne prouve pas absence de tous secrets possibles hors Actions.
 
 ## Étapes de sécurité immédiates
 
 1. Vérifier le rôle admin et le slug memolabs-dev ; déjà confirmé.
 2. Transférer le repo en conservant historique/ID ; déjà confirmé.
-3. Installer le GitHub App/bot attendu sur l'organisation ou uniquement sur cuesheet, après validation de son nom exact, via Organization Settings > GitHub Apps / Installed GitHub Apps. Les permissions doivent suivre les actions réelles attendues :
+3. Utiliser en priorité le compte bot existant drop-agent-bot, membre avec accès write sur cuesheet ; ne pas supposer qu'il est une GitHub App. Si une GitHub App distincte est désirée ultérieurement, son installation devra être validée séparément. Les permissions doivent suivre les actions réelles attendues :
    - lecture code/metadata/checks pour proposer un changement ;
    - écriture Contents et Pull requests uniquement si création de branches et PR réellement requise ;
    - pas de secrets, administration, suppression de repo, bypass branches ou write sur issues par défaut.
@@ -49,9 +49,12 @@ Issue/objectif → branche bot isolée → tests rouges reproduisant la friction
 - [x] ID GitHub du repo inchangé.
 - [x] Origin du checkout principal mis à jour.
 - [x] Checkout utilisateur préservé et non remis à zéro.
-- [ ] Bot identifié, autorisé et testé sur un PR dédié.
-- [ ] Premier workflow CI exécuté avec succès sur GitHub.
-- [ ] Protection main/revue/check requis activés.
+- [x] Bot drop-agent-bot identifié et accès write accordé au dépôt CUESHEET.
+- [ ] Auth et capacité réelle du bot à créer une branche/PR dédiées démontrées.
+- [x] Premier workflow CI exécuté sur GitHub, résultat failure (run 38274444853 : 1008 pass, 6 fail, 23 skip).
+- [ ] Corriger et faire passer la CI avant de la rendre obligatoire.
+- [x] Protection main activée : PR, une revue, refus force-push/delete, admins exemptés.
+- [ ] Ajouter le check CI obligatoire après un premier run vert (premier run 38274444853 : 1008 pass, 6 fail, 23 skip).
 - [ ] Parcours de création PR par le bot démontré sans droits inutiles.
 - [ ] Vérification des webhooks et autres intégrations spécifiques par un admin.
 
