@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { childEnv } from "./fixtures/hermetic-env.ts";
 
 it("WorkFocus stays legible after resize and palette preserves a draft", () => {
   const root=mkdtempSync(join(tmpdir(),"cuesheet-workfocus-"));
@@ -35,7 +36,7 @@ it("WorkFocus stays legible after resize and palette preserves a draft", () => {
     ];
     writeFileSync(script,lines.join("\n"));
     const run=spawnSync(process.execPath,[join(terminal,"node_modules/tsx/dist/cli.mjs"),script],
-      {encoding:"utf8",timeout:25_000,env:{...process.env,NO_COLOR:"1",FORCE_COLOR:"0"}});
+      {encoding:"utf8",timeout:25_000,env:{...childEnv({home:root,sessions:join(root,"sessions")}),NO_COLOR:"1",FORCE_COLOR:"0"}});
     assert.equal(run.status,0,run.stderr || run.stdout);
     const result=JSON.parse(run.stdout.trim());
     const plain=(s:string)=>s.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,"").trimEnd();
