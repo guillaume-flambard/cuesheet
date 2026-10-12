@@ -52,6 +52,7 @@ export function Composer(props: {
   const [historyAt, setHistoryAt] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [files,setFiles]=useState<string[]>([]);
+  const [mentionAt,setMentionAt]=useState(0);
   useEffect(()=>{
     let live=true;
     props.fileSuggestions?.().then(names=>{if(live)setFiles(names);}).catch(()=>{if(live)setFiles([]);});
@@ -67,13 +68,13 @@ export function Composer(props: {
   const apply = (action: Edit | { insert: string }) => {
     const next = edit(props.value, cursor, action);
     setCursor(next.cursor); props.onChange(next.text);
-    if (next.text !== props.value) { setHistoryAt(null); setDraft(next.text); }
+    if (next.text !== props.value) { setHistoryAt(null); setDraft(next.text); setMentionAt(0); }
   };
   useInput((input, key) => {
     if (key.ctrl && input === "c") return props.onQuit();
     if (key.ctrl && input === "k") return props.onPalette();
     if (props.active !== false && key.tab && mention && matches.length>0) {
-      const replacement=matches[0]!;
+      const replacement=matches[mentionAt % matches.length]!;
       const before=characters(props.value).slice(0,cursor).join("");
       const after=characters(props.value).slice(cursor).join("");
       const current=mention[0]!;
@@ -90,6 +91,10 @@ export function Composer(props: {
     if ((key.ctrl && input === "j") || (key.return && key.meta)) return apply({ insert: "\n" });
     if (key.return) return props.onSubmit(props.value);
     if (key.upArrow || key.downArrow) {
+      if (mention && matches.length > 0) {
+        setMentionAt(i => (i + (key.downArrow ? 1 : matches.length - 1)) % matches.length);
+        return;
+      }
       const history = props.history ?? [];
       if (!history.length) return;
       if (historyAt === null && key.downArrow) return;
@@ -136,7 +141,7 @@ export function Composer(props: {
         </Box>
       ))}
       {mention && matches.length>0 && <Text wrap="truncate-end" color={inkColor(theme.dim)}>
-        {"@ "+matches[0]+" · Tab insérer"+(matches.length>1?" · +"+(matches.length-1):"")}
+        {"@ "+matches[mentionAt % matches.length]+" · "+(mentionAt % matches.length+1)+"/"+matches.length+" · ↑↓ choisir · Tab insérer"}
       </Text>}
     </Box>
   );

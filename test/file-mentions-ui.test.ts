@@ -26,7 +26,10 @@ it("Tab selects an attributed tracked file, preserves rest of draft and never se
    'input.write("\\t");await tick();const chosen=store.get().composer;',
    'input.write("\\x0b");await tick();const palette=store.get().overlay;',
    'input.write("\\x1b");await tick();const draft=store.get().composer;',
-   'app.unmount();console.log(JSON.stringify({before,chosen,palette,draft,calls}));'
+   'input.write("\\x15");await tick();input.write("Modifier @src/");await tick();',
+   'input.write("\\x1b[B");await tick();const secondHint=paint;',
+   'input.write("\\t");await tick();const second=store.get().composer;',
+   'app.unmount();console.log(JSON.stringify({before,chosen,palette,draft,secondHint,second,calls}));'
   ];
   writeFileSync(script,lines.join("\n"));
   const run=spawnSync(process.execPath,[join(t,"node_modules/tsx/dist/cli.mjs"),script],{encoding:"utf8",timeout:25000,env:{...childEnv({home:root,sessions:join(root,"sessions")}),NO_COLOR:"1",FORCE_COLOR:"0"}});
@@ -36,6 +39,8 @@ it("Tab selects an attributed tracked file, preserves rest of draft and never se
   assert.equal(v.chosen,"Modifier @src/composer.ts ");
   assert.equal(v.draft,v.chosen);
   assert.equal(v.palette,"palette");
+  assert.match(v.secondHint,/2\/2/);
+  assert.equal(v.second,"Modifier @src/core.ts ");
   assert.equal(v.calls,0);
  }finally{rmSync(root,{recursive:true,force:true});}
 });
