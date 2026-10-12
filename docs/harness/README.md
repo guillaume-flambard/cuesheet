@@ -93,6 +93,9 @@ Extension C11 : [Human Legibility](HUMAN-LEGIBILITY.md), quatre tâches supplém
 
 - [Inspirations des harnesses et séquence d'intégration](REFERENCE-HARNESSES-2026-10.md) : étude et propositions, sans fermeture de backlog.
 - [Interface / design agentique](INTERFACE-DESIGN-2026-10.md) : hiérarchie UX, états et parcours de test Ink/PTY.
-- [Migration GitHub et bot](GITHUB-ORG-AND-BOT.md) : faits vérifiés et étapes de sécurité non achevées.
+- [Migration GitHub et bot](GITHUB-ORG-AND-BOT.md) : accès du bot multi-projets, PR de test et protections.
+- [Classement détaillé des 10 harnesses](REFERENCE-DEEP-DIVE-2026-10.md) : priorités, concepts, limites, tests et sources primaires.
+- [Plan de chantiers et critères d'acceptation](IMPLEMENTATION-GATES-2026-10.md) : P0 CI/bot → P1 moteur → P2 continuité → P3 multi-agent → P4 design → P5 benchmarks.
+- [Design System Human UI V2](DESIGN-SYSTEM-V2-2026-10.md) : vues, 40×14/80×24/120×40, états, wording, navigation et tests PTY.
 
 Les documents ci-dessus complètent H01–H10 et HL sans remplacer TODO.md, state.json ni les preuves.

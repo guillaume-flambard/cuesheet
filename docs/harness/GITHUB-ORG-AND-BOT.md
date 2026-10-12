@@ -29,7 +29,7 @@ Statut des faits vérifiés :
 
 GitHub Actions intégré : l'identité github-actions[bot] exécute une CI à permissions de lecture sur push/PR ; n'exige aucune GitHub App personnalisée. Workflow livré séparément dans .github/workflows/ci.yml.
 
-Bot agentique qui code : GitHub App distinct à installer/configurer ; il ouvre des branches isolées, PR en draft, joint une preuve de tests, reçoit les commentaires de revue, met à jour la branche. Il n'a pas droit de pousser directement sur main. Aucun agent ne peut valider sa propre preuve ni approuver sa PR comme revue humaine.
+Bot agentique qui code : le compte GitHub existant drop-agent-bot est authentifié séparément dans le trousseau GitHub CLI. Il dispose de write sur CUESHEET et Drop. Le 12 octobre, il a effectivement poussé la branche fix/ci-pnpm-build-20261012 et ouvert la PR draft #7 (https://github.com/memolabs-dev/cuesheet/pull/7) comme auteur. Ce test valide auth, push, commit et PR, mais PAS encore réponse aux revues/merge. Une GitHub App avec tokens à durée courte et permissions fines pourra remplacer plus tard ce compte technique après audit, sans accès admin par défaut. Aucun agent ne peut valider sa propre preuve ni approuver sa PR comme revue humaine.
 
 Permissions recommandées par job :
 - CI : contents:read, aucun secret provider, aucune écriture.
@@ -50,12 +50,21 @@ Issue/objectif → branche bot isolée → tests rouges reproduisant la friction
 - [x] Origin du checkout principal mis à jour.
 - [x] Checkout utilisateur préservé et non remis à zéro.
 - [x] Bot drop-agent-bot identifié et accès write accordé au dépôt CUESHEET.
-- [ ] Auth et capacité réelle du bot à créer une branche/PR dédiées démontrées.
+- [x] Auth propre au bot, push sous drop-agent-bot, branche et PR draft #7 démontrés (commits 830dac0, 0ad0093, 0409124).
 - [x] Premier workflow CI exécuté sur GitHub, résultat failure (run 38274444853 : 1008 pass, 6 fail, 23 skip).
 - [ ] Corriger et faire passer la CI avant de la rendre obligatoire.
 - [x] Protection main activée : PR, une revue, refus force-push/delete, admins exemptés.
 - [ ] Ajouter le check CI obligatoire après un premier run vert (premier run 38274444853 : 1008 pass, 6 fail, 23 skip).
-- [ ] Parcours de création PR par le bot démontré sans droits inutiles.
+- [x] Parcours authentification → commit/push → PR par bot démontré sans nouveaux droits admin.
+- [ ] Réponse à revue humaine et mise à jour d'une PR sous identité bot encore à tester.
 - [ ] Vérification des webhooks et autres intégrations spécifiques par un admin.
 
 Source officielle : https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository
+
+## Nom du bot partagé — décision proposée, non appliquée
+
+Le compte actuel drop-agent-bot n'est plus correctement nommé pour plusieurs produits. Recommandation de marque : « Memolabs Agent » ; candidat de login neutre : memolabs-agent (ou memolabs-devbot). Le bot est un outil de l'organisation, pas une composante de Drop ni de CUESHEET. Aucun changement d'identifiant GitHub n'a été exécuté sans revue des dépendances.
+
+Inventaire préalable obligatoire : contributions/PR ouvertes sur memolabs-dev/drop, mentions d'issue/review, CODEOWNERS, remotes, scripts, trousseau GH CLI, CLI/API/VPS, webhooks, applications GitHub, tokens/autorisations, commits noreply et provenance de signature. Après changement de login, vérifier chaque branche/PR et la configuration locale du compte bot, puis documenter les redirections et corriger les liens. Ne pas supposer que les @mentions, URLs de profil ou CODEOWNERS anciens sont redirigés : GitHub documente ces limites dans https://docs.github.com/en/account-and-profile/concepts/username-changes et https://docs.github.com/en/account-and-profile/reference/username-reference .
+
+Ne jamais renommer le compte par une opération de création d'un nouveau utilisateur ni supprimer l'ancien pour « nettoyer ». Un simple libellé d'affichage peut être renommé indépendamment du handle si nécessaire pour ne pas interrompre le service. Choix définitif du login à confirmer au moment de l'opération.
