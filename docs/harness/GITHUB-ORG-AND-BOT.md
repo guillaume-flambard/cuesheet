@@ -8,7 +8,7 @@ Statut des faits vérifiés :
 - Clone principal : /Users/memo/projects/cuesheet, branche wip/pre-audit-snapshot-2026-10-04, dirty. Origin modifié vers memolabs-dev/cuesheet sans checkout, reset ou stash.
 - Sur GitHub, aucun workflow Actions, aucune exécution ni release et main non protégée au constat pré-migration.
 - Pas d'installation GitHub App visible dans l'organisation lors du contrôle. Le connecteur ChatGPT/GitHub peut lire le dépôt déplacé mais l'écriture d'une branche a été refusée 403 après transfert.
-- Bot identifié : drop-agent-bot, membre actif de l'organisation, rôle member. Son accès sur memolabs-dev/drop était write ; son accès sur memolabs-dev/cuesheet a été explicitement porté de read à write le 2026-10-12, puis vérifié. Aucun jeton du bot n'a été consulté. Un PR réellement créé par le bot reste à tester.
+- Bot identifié : drop-agent-bot, membre actif de l'organisation, rôle member. Son accès sur memolabs-dev/drop était write ; son accès sur memolabs-dev/cuesheet a été explicitement porté de read à write le 2026-10-12, puis vérifié. Les credentials du bot ont été utilisés via GitHub CLI sans afficher le secret ; PR #7 et #10 sont bien créées sous son compte.
 - Les noms des secrets Actions sur le dépôt source étaient vides au contrôle ; ceci ne prouve pas absence de tous secrets possibles hors Actions.
 
 ## Étapes de sécurité immédiates
@@ -20,9 +20,9 @@ Statut des faits vérifiés :
    - écriture Contents et Pull requests uniquement si création de branches et PR réellement requise ;
    - pas de secrets, administration, suppression de repo, bypass branches ou write sur issues par défaut.
    Une intégration utilisateur OAuth et un GitHub App sont différents : vérifier le mécanisme réel.
-4. Configurer un token court de GitHub App pour jobs autorisés ; ne jamais placer un PAT dans un dépôt ni l'imprimer.
+4. Une GitHub App à token court reste une amélioration de sécurité future ; l'agent utilise aujourd'hui un compte technique avec secret en trousseau local. Ne jamais placer un PAT dans un dépôt ni l'imprimer.
 5. Exécuter CI sur une PR pilote ; après première exécution verte, rendre le check requis sur main.
-6. Règle main : PR requise, 1 revue humaine, checks requis, conversations résolues, interdiction force push/delete. Pas de merge automatique non revu ; l'auto-merge est envisageable seulement après revue et checks.
+6. Mise à jour du 12 octobre : mode solo assumé par le propriétaire, PR toujours requise, 0 approbation obligatoire, check strict Core and integration tests requis, conversations résolues, admins inclus, interdiction force-push/delete. Auto-merge permis par GitHub. Retour au quorum de revue recommandé à l'arrivée de contributeurs.
 7. Après la migration, vérifier remotes, droits, webhooks, checks, forks, URLs et permissions d'organisation. Ne pas recréer un repo à l'ancien chemin (risque de casser les redirects).
 
 ## Bot de développement souhaité : deux niveaux
@@ -37,11 +37,11 @@ Permissions recommandées par job :
 - Vérification : exécution isolée de données non fiables, logs épurés et artefacts désensibilisés.
 - Publication/release : workflow manuel séparé, provenance et validation humaine au début.
 
-Éviter pull_request_target avec exécution de code d'une PR non fiable ; épingler les actions sur SHA en étape ultérieure, avec vérification de provenance. Un bot « rapide » sans protections augmente le risque et n'est pas une accélération fiable.
+Éviter pull_request_target avec exécution de code d'une PR non fiable ; épingler les actions sur SHA en étape ultérieure, avec vérification de provenance. Le workflow de confiance auto-merge (pull_request_target) ne checkout et n'exécute JAMAIS le code d'une PR : il ne fait qu'armer l'option native GitHub, et le merge reste bloqué tant que la CI stricte n'est pas verte. Un bot « rapide » sans ces protections augmente le risque.
 
 ## Procédure des changements
 
-Issue/objectif → branche bot isolée → tests rouges reproduisant la friction → petit patch → tests + preuves → PR draft → CI → revue humaine → merge → release. N'inclure ni secrets, ni snapshots du HOME, ni sortie brute contenant des credentials.
+Issue/objectif → branche bot isolée → tests rouges reproduisant la friction → petit patch → tests + preuves → PR prête → CI obligatoire → auto-merge natif → CI sur main. Mettre le label hold-merge (ou laisser en draft) pour demander une revue avant intégration ; ce workflow n'autorise ni release automatique ni exception à la CI. N'inclure ni secrets, ni snapshots du HOME, ni sortie brute contenant des credentials.
 
 ## Contrôles finaux de migration
 
@@ -52,13 +52,13 @@ Issue/objectif → branche bot isolée → tests rouges reproduisant la friction
 - [x] Bot drop-agent-bot identifié et accès write accordé au dépôt CUESHEET.
 - [x] Auth propre au bot, push sous drop-agent-bot, branche et PR draft #7 démontrés (commits 830dac0, 0ad0093, 0409124).
 - [x] Premier workflow CI exécuté sur GitHub, résultat failure (run 38274444853 : 1008 pass, 6 fail, 23 skip).
-- [x] CI corrigée sur PR draft #7 : deux exécutions Ubuntu réussies (runs 38278572223 et 38279070595 ; première 1014 pass, 0 fail, 23 skip). Attention : main n'est pas encore corrigée tant que la PR n'est pas relue et fusionnée.
-- [x] Protection main activée : PR, une revue, refus force-push/delete, admins exemptés.
-- [ ] Après merge de #7 et première exécution verte sur main, rendre le check « Core and integration tests » obligatoire ; main n'a pas encore le workflow stabilisé.
+- [x] CI corrigée, PR #7 fusionnée automatiquement sur main le 12 octobre (16b3dc8).
+- [x] Protection main actualisée pour solo : PR et CI strictes obligatoires, 0 approbation, admins soumis, force-push/delete interdits, conversations résolues.
+- [x] Check « Core and integration tests » obligatoire sur main avant fusion ; PR #7, #10 et #11 fusionnées via auto-merge avec CI verte sur leurs heads.
 - [x] Parcours authentification → commit/push → PR par bot démontré sans nouveaux droits admin.
 - [x] Commentaire autonome du bot sur sa PR : https://github.com/memolabs-dev/cuesheet/pull/7#issuecomment-6128534827 .
-- [ ] Traiter une vraie revue humaine et y répondre sous identité bot, sans auto-approbation.
-- [ ] Corriger le test PTY Mac encore rouge : https://github.com/memolabs-dev/cuesheet/issues/9 ; Ubuntu vert ne couvre pas ce cas.
+- [ ] Revue humaine facultative en solo, à réactiver comme règle de branche avant d'accueillir une équipe ; aucun faux auto-approve.
+- [x] Scénario PTY Mac corrigé dans PR #11 (outil local explicite limité à fixture temporaire), tests ciblés 2/2 ; la suite Mac complète concurrente reste en investigation.
 - [ ] Vérification des webhooks et autres intégrations spécifiques par un admin.
 
 Source officielle : https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository
@@ -70,3 +70,15 @@ Le compte actuel drop-agent-bot n'est plus correctement nommé pour plusieurs pr
 Inventaire préalable obligatoire : contributions/PR ouvertes sur memolabs-dev/drop, mentions d'issue/review, CODEOWNERS, remotes, scripts, trousseau GH CLI, CLI/API/VPS, webhooks, applications GitHub, tokens/autorisations, commits noreply et provenance de signature. Après changement de login, vérifier chaque branche/PR et la configuration locale du compte bot, puis documenter les redirections et corriger les liens. Ne pas supposer que les @mentions, URLs de profil ou CODEOWNERS anciens sont redirigés : GitHub documente ces limites dans https://docs.github.com/en/account-and-profile/concepts/username-changes et https://docs.github.com/en/account-and-profile/reference/username-reference .
 
 Ne jamais renommer le compte par une opération de création d'un nouveau utilisateur ni supprimer l'ancien pour « nettoyer ». Un simple libellé d'affichage peut être renommé indépendamment du handle si nécessaire pour ne pas interrompre le service. Choix définitif du login à confirmer au moment de l'opération.
+
+
+## Politique de fusion automatisée du mode solo (2026-10-12)
+
+- Dépôt : allow_auto_merge=true ; delete_branch_on_merge=true.
+- Branch main : required_status_checks Core and integration tests, strict=true, required_approving_review_count=0, enforce_admins=true, required_conversation_resolution=true, pas de force push/delete.
+- `.github/workflows/auto-merge.yml` : sur opened/reopened/ready_for_review/synchronize/unlabeled, arme l'auto-merge pour une PR **non draft**, dont le dépôt source est exactement memolabs-dev/cuesheet et l'auteur est **drop-agent-bot** ou **guillaume-flambard**. Aucun checkout ni exécution du code PR. `GH_TOKEN` est celui du workflow, permissions limitées à contents/pull-requests write.
+- Label `hold-merge` : opt-out humain facultatif ; attention à l'ajouter avant de rendre la PR prête lorsque le check est déjà vert. Une PR en draft ne fusionne pas.
+- L'auto-merge natif respecte les checks et la politique de branche ; le workflow ne donne pas de bypass, n'approuve pas en usurpant une identité et n'accorde pas de droits supplémentaires au compte bot.
+- Risque accepté explicitement : les commits du bot peuvent être fusionnés sans inspection humaine si les tests ne détectent pas une régression. Réactiver une revue obligatoire, les CODEOWNERS et une GitHub App à permissions fines au passage à plusieurs développeurs.
+- Les PR créées par un workflow avec son `GITHUB_TOKEN` peuvent ne pas déclencher les workflows suivants : pour le chemin automatisé, utiliser un compte bot/App séparé (comme drop-agent-bot) et vérifier par PR de bout en bout.
+- Portée : ce workflow vit dans CUESHEET seulement. Il n'est PAS automatiquement installé dans DROP ou d'autres dépôts.
