@@ -118,6 +118,7 @@ export function App(props: AppProps): JSX.Element {
   const catalog = useCallback((choice: Parameters<typeof listModels>[0], signal: AbortSignal) => listModels(choice, { signal }), []);
 
   const sessionChoices=useCallback(()=>listTerminalSessions(),[]);
+  const loadFiles=useCallback(()=>producer?.fileSuggestions?.()??Promise.resolve([]),[producer]);
   const loadReview=useCallback(async():Promise<GitReview> =>
     producer?.reviewPage?.() ?? {kind:"unavailable",reason:"Revue Git indisponible dans cette session."},[producer]);
   const loadSession=(id?:string)=>{
@@ -142,7 +143,8 @@ export function App(props: AppProps): JSX.Element {
   const column = SHELL_RULE_WIDTH(stdout.columns);
   const rows = Math.max(8, stdout.rows ?? 24);
   const composerRows = composerRowCount(state.composer, rows);
-  const contentRows = Math.max(1, rows - 9 - (composerRows - 1));
+  const mentionHintRows = /(?:^|\s)@[\w./-]*$/.test(state.composer) ? 1 : 0;
+  const contentRows = Math.max(1, rows - 9 - (composerRows - 1) - mentionHintRows);
   // The current work is readable at a glance without covering the composer
   // or the log. On very short terminals we prefer navigable history to chrome.
   const focusRows = state.overlay === "none" && !missing && contentRows >= 5
@@ -212,6 +214,7 @@ export function App(props: AppProps): JSX.Element {
       <Composer
         width={column}
         maxRows={composerRows}
+        fileSuggestions={loadFiles}
         placeholder={state.entries.length === 0 ? undefined : " "}
         value={state.composer}
         onChange={(text) => send({ type: "compose", text })}
