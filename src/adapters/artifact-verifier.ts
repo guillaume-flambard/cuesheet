@@ -109,26 +109,40 @@ function verdictFromResult(options: RunOptions, result: { status: number | null;
   };
 }
 
+/** Bounded diagnostic output. Never use text as evidence of success. */
+function safeCheckOutput(raw: string): string {
+  return raw
+    .replace(/\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))/g,"")
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g,"�")
+    .replace(/\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{16,})\b/g,"[REDACTED]")
+    .replace(/((?:token|password|secret|api[_-]?key)\s*[:=]\s*)[^\s]+/gi,"$1[REDACTED]")
+    .slice(0,4096);
+}
 /** The terminal uses the same verdict rules without blocking its composer. */
 export async function runAgainstArtifactAsync(options: RunOptions): Promise<Verification> {
   const readable = readCapture(options.artifact);
   if (readable.kind === "unavailable") {
     return { target: { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest }, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: readable.why }] };
   }
-  const result = await new Promise<{ status: number | null; signal: string | null; error?: Error }>((settle) => {
+  const result = await new Promise<{ status: number | null; signal: string | null; error?: Error; output: string }>((settle) => {
+    let output = "";
+    const collect=(chunk:Buffer)=>{if(output.length<8192)output+=chunk.toString("utf8").slice(0,8192-output.length);};
     const child = spawn(options.command, options.args, {
-      cwd: options.artifact.location, stdio: "ignore", env: { PATH: process.env.PATH ?? "" },
+      cwd: options.artifact.location, stdio: ["ignore","pipe","pipe"], env: { PATH: process.env.PATH ?? "" },
       signal: options.signal, killSignal: "SIGKILL",
     });
+    child.stdout?.on("data",collect); child.stderr?.on("data",collect);
     const timer = setTimeout(() => child.kill("SIGKILL"), options.timeoutMs ?? 30_000);
-    child.on("error", (error) => { clearTimeout(timer); settle({ status: null, signal: null, error }); });
-    child.on("close", (status, signal) => { clearTimeout(timer); settle({ status, signal }); });
+    child.on("error", (error) => { clearTimeout(timer); settle({ status: null, signal: null, error, output }); });
+    child.on("close", (status, signal) => { clearTimeout(timer); settle({ status, signal, output }); });
   });
   const after = readCapture(options.artifact);
   if (after.kind === "unavailable") {
     return { target: { effectId: options.artifact.producerEffectId, artifactDigest: options.artifact.digest }, verdict: "INCONCLUSIVE", evidence: [{ kind: "actual_digest", value: after.why }] };
   }
-  return verdictFromResult(options, result);
+  const verdict=verdictFromResult(options,result);
+  const excerpt=safeCheckOutput(result.output);
+  return excerpt ? {...verdict,evidence:[...verdict.evidence,{kind:"check_output",value:excerpt}]} : verdict;
 }
 
 /** A sentence for a surface, reusing the shared wording. */
