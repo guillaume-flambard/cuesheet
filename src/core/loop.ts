@@ -65,8 +65,14 @@ export interface ToolRunner {
  */
 export interface ContextFrame {
   goal: string;
-  /** The most recent events, most recent last. Bounded by the compiler. */
+  /** Recent events only. The full canonical log always remains in Session. */
   history: Event[];
+  /** Omitted records are historical facts, not deleted from the event store. */
+  historyWindow?: {
+    omittedCount: number;
+    firstIncludedSeq: number | null;
+    latestSeq: number | null;
+  };
   /** Directives addressed to this subject that are still open. */
   directives: Directive[];
   /** Evidence so far, with whatever backing it has, including none. */
@@ -89,6 +95,12 @@ export interface LoopOptions {
   registry?: Capability[];
   /** Hard ceiling on inferences. A loop that cannot be stopped is a hazard. */
   maxSteps: number;
+  /**
+   * Maximum historical events in a model frame, 1..512. Default: 128.
+   * This is a count bound, not a token or byte cap: the terminal adapter
+   * also applies its own serialized character budget and source retrieval.
+   */
+  maxHistoryEvents?: number;
   /**
    * Exactly one layer owns uncertain-effect recovery. The generic loop guards
    * its own action/observation pairs. A controller with durable tool receipts
@@ -129,9 +141,19 @@ export function compileFrame(
   step: number,
 ): ContextFrame {
   const subject = options.subject;
+  const limit = options.maxHistoryEvents ?? 128;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 512) {
+    throw new Error("maxHistoryEvents must be a safe integer between 1 and 512.");
+  }
+  const history = session.events.slice(-limit);
   return {
     goal: options.goal,
-    history: session.events,
+    history,
+    historyWindow: {
+      omittedCount: session.events.length - history.length,
+      firstIncludedSeq: history[0]?.seq ?? null,
+      latestSeq: session.events.at(-1)?.seq ?? null,
+    },
     directives: session.openDirectives.filter((d) => d.target === subject),
     evidence: session.evidence,
     capabilities: [...session.capabilities.entries()].map(([name, c]) => ({
