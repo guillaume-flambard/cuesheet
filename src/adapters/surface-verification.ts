@@ -1,11 +1,30 @@
 /** Owner-selected, self-contained Node check, pinned before the model runs. */
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, renameSync, realpathSync, lstatSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname, basename } from "node:path";
 import { capture, type CapturedArtifact } from "./artifact-capture.ts";
 import { runAgainstArtifactAsync } from "./artifact-verifier.ts";
 import {capsuleCheckProfile,runCapsuleCheck} from "./capsule-verification.ts";
 import type { Verification } from "../verify.ts";
+
+/** Safely read a diagnostic from a previous verification instance. */
+export function readArchivedDiagnostic(storageRoot: string, record: string): readonly string[] {
+  try {
+    const root = realpathSync(storageRoot);
+    const file = resolve(record);
+    const parent = dirname(file);
+    if (dirname(realpathSync(parent)) !== root || !/^check-[A-Za-z0-9_-]+$/.test(basename(parent))) return [];
+    if (!/^surface-[0-9]+-[A-Za-z0-9_-]+\.json$/.test(basename(file))) return [];
+    if (!lstatSync(parent).isDirectory() || lstatSync(parent).isSymbolicLink()) return [];
+    const receipt = lstatSync(file);
+    if (!receipt.isFile() || receipt.isSymbolicLink()) return [];
+    const target = file.slice(0, -5) + ".diagnostic.txt";
+    const st = lstatSync(target);
+    if (!st.isFile() || st.isSymbolicLink() || st.size > 4096) return [];
+    if (process.platform !== "win32" && (st.mode & 0o077) !== 0) return [];
+    return readFileSync(target, "utf8").trimEnd().split("\n").slice(0, 70);
+  } catch { return []; }
+}
 
 export interface CompletionResult {
   artifact: CapturedArtifact;
@@ -32,20 +51,7 @@ export function createCompletionCheck(options: { script: string; root: string; t
   writeFileSync(pinned, script, { flag: "wx", mode: 0o400 });
   let attempt = 0;
   return { pinned: { script: pinned, digest: checkDigest },
-    readDiagnostic(record) {
-      // Records must be from this private check directory and use the runtime-generated name.
-      if (typeof record !== "string" || !/^[a-zA-Z0-9_-]+-[a-zA-Z0-9_-]+-A-[a-f0-9]{16}\.json$/.test(record.split("/").at(-1) ?? "")) return [];
-      const candidate = resolve(record);
-      if (resolve(candidate, "..") !== root) return [];
-      const path = candidate.slice(0,-5)+".diagnostic.txt";
-      try {
-        const st=lstatSync(path);
-        if (!st.isFile() || st.isSymbolicLink() || st.size>4096) return [];
-        if (process.platform!=="win32" && (st.mode & 0o077)!==0) return [];
-        const data=readFileSync(path,{encoding:"utf8",flag:"r"}).slice(0,4096);
-        return data.trimEnd().split("\n").slice(0,70);
-      } catch { return []; }
-    },
+    readDiagnostic(record) { return readArchivedDiagnostic(options.root, record); },
     async verify(workspace, effectId, signal) {
     signal?.throwIfAborted();
     if (!/^[A-Za-z0-9_-]+$/.test(effectId)) throw new Error("invalid effect identity");

@@ -26,6 +26,8 @@ it("keeps test diagnostics in a private sidecar rather than persisted verificati
   assert.match(readFileSync(sidecar,"utf8"),/HIDDEN_DIAGNOSTIC/);
   if(process.platform!=="win32")assert.equal(statSync(sidecar).mode&0o777,0o600);
   assert.deepEqual(check.readDiagnostic?.(result.record),["test failed: HIDDEN_DIAGNOSTIC"]);
+  const reopened=createCompletionCheck({script,root:storage,timeoutMs:5000});
+  assert.deepEqual(reopened.readDiagnostic?.(result.record),["test failed: HIDDEN_DIAGNOSTIC"]);
   assert.deepEqual(check.readDiagnostic?.(join(workspace,"outside.json")),[]);
   assert.deepEqual(check.readDiagnostic?.(result.record.replace(/\.json$/,".other.json")),[]);
   const history=[{seq:1,at:1,kind:"work_verified",subject:"E1",data:{...result.verification,record:result.record,checkDigest:result.checkDigest}}] as Event[];
