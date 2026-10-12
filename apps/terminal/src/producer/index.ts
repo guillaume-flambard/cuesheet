@@ -847,7 +847,7 @@ export function createProducer(options: ProducerOptions): Producer {
       const [review,comparison]=await Promise.all([readGitReview(workspace),currentArtifactComparison(workspace,events)]);
       return review.kind==="observed" ? {...review,lines:[...comparison,"",...review.lines]} : review;
     },
-    verificationReview() { return verificationReviewLines(shared.toSession().events); },
+    verificationReview() { return verificationReviewLines(shared.toSession().events,record=>options.verification?.readDiagnostic?.(record)??[]); },
     fileSuggestions() { return trackedFileMentions(activeWorkspace); },
     situationPage() {
       const s=currentSituation();return {digest:s.time.utc,offset:0,nextOffset:null,lines:[`${s.time.local} · ${s.time.timeZone} · ${s.time.offset}`,`UTC : ${s.time.utc}`,`Langue : ${s.responseLanguage.preference??"automatique · conversation"} · locale OS ${s.locale}`,`Interlocuteur : ${s.human.label??"identité non configurée"}`,`Machine : ${s.host.label??s.host.platform}`,`Projet : ${s.workspace}`,`Session : ${s.sessionId}`,`Exécution : ${s.executionId??"aucune active"}`,`Rôle : ${s.role} · ${s.model}`,`Objectif : ${s.objective?`${s.objective.id}@${s.objective.revision}`:"aucun"}`,...s.peers.map(p=>`${p.role} · ${p.model} · ${p.phase}`)]};
