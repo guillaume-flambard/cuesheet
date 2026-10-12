@@ -46,10 +46,23 @@ export function Composer(props: {
   active?: boolean;
   history?: readonly string[];
   maxRows?: number;
+  fileSuggestions?: () => Promise<string[]>;
 }): JSX.Element {
   const [cursor, setCursor] = useState(characters(props.value).length);
   const [historyAt, setHistoryAt] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
+  const [files,setFiles]=useState<string[]>([]);
+  useEffect(()=>{
+    let live=true;
+    props.fileSuggestions?.().then(names=>{if(live)setFiles(names);}).catch(()=>{if(live)setFiles([]);});
+    return ()=>{live=false;};
+  },[props.fileSuggestions]);
+  const prefix=characters(props.value).slice(0,cursor).join("");
+  const mention=/(?:^|\s)@([\w./-]*)$/.exec(prefix);
+  const matches=mention
+    ? files.filter(path=>path.toLowerCase().includes(mention[1]!.toLowerCase())).slice(0,3)
+    : [];
+
   useEffect(() => { if (!props.value) { setCursor(0); setHistoryAt(null); } }, [props.value]);
   const apply = (action: Edit | { insert: string }) => {
     const next = edit(props.value, cursor, action);
@@ -59,6 +72,17 @@ export function Composer(props: {
   useInput((input, key) => {
     if (key.ctrl && input === "c") return props.onQuit();
     if (key.ctrl && input === "k") return props.onPalette();
+    if (props.active !== false && key.tab && mention && matches.length>0) {
+      const replacement=matches[0]!;
+      const before=characters(props.value).slice(0,cursor).join("");
+      const after=characters(props.value).slice(cursor).join("");
+      const current=mention[0]!;
+      const replaced=before.slice(0,-current.length)+(current.startsWith(" ")?" ":"")+"@"+replacement+" "+after;
+      props.onChange(replaced);
+      setCursor(characters(before.slice(0,-current.length)+(current.startsWith(" ")?" ":"")+"@"+replacement+" ").length);
+      setHistoryAt(null);
+      return;
+    }
     if ((key.ctrl && (input === "i" || input === "l")) || key.tab) return props.onInspect();
     if (props.active === false) return;
     // Ctrl+J is a portable newline; Option/Alt+Enter works where a terminal
@@ -111,6 +135,9 @@ export function Composer(props: {
           </Box>
         </Box>
       ))}
+      {mention && matches.length>0 && <Text wrap="truncate-end" color={inkColor(theme.dim)}>
+        {"@ "+matches[0]+" · Tab insérer"+(matches.length>1?" · +"+(matches.length-1):"")}
+      </Text>}
     </Box>
   );
 }

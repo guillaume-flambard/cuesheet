@@ -42,3 +42,7 @@ Premier prompt sans commande technique ; session reprise en deux actions maximum
 Work Focus utilise les événements visibles bornés, pas le contrat canonique Rn complet. Il ne remplace pas une vraie carte d'objectif et de preuve issue du moteur. Les projets multi-agents, le diff viewer et le compositeur multiligne restent des sous-chantiers non terminés. Cette tranche ne constitue ni une preuve de parité concurrentielle ni une nouvelle capacité d'exécution.
 
 Dépendances : docs/harness/DESIGN-SYSTEM-V2-2026-10.md, INTERFACE-DESIGN-2026-10.md, HUMAN-LEGIBILITY.md, TODO.md H08, issue #15 (tests PTY), issue #24 (UX).
+
+## Tranche @fichiers (candidat #28, octobre 2026)
+
+Le compositeur propose jusqu'à 3 noms de fichiers suivis par Git au moment du chargement. La saisie d'un suffixe @filtre affiche une suggestion, Tab insère la référence sans soumettre le prompt, et le brouillon reste intact. Les noms sont lus par le producteur dans le répertoire-racine Git attesté, jamais depuis React. Fichiers non suivis et noms typiquement secrets sont exclus ; aucun contenu de fichier n'est lu. L'insertion d'un nom ne garantit PAS que le modèle a accès au contenu ni ne confère une nouvelle permission. Limites : pas de menu navigable à plusieurs résultats, périmètre racine Git seulement, exclusions de noms heuristiques non garanties pour toute donnée secrète, contexte de fichier à fournir via les outils autorisés ; travaux suivants = fraîcheur de l'index, navigation de résultats, validation du contexte réellement envoyé.
