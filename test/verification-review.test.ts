@@ -31,3 +31,13 @@ it("shows bounded verifier measurements without leaking control codes",()=>{
  assert.doesNotMatch(lines,/\x1b/);
  assert.doesNotMatch(lines,/VÉRIFIÉ HISTORIQUEMENT/);
 });
+
+it("renders recorded check output as paged plain-text lines without converting it to VERIFIED",()=>{
+ const store=new EventStore("proof4",()=>1);
+ store.append({kind:"work_verified",subject:"run",data:{verdict:"REJECTED",evidence:[{kind:"check_output",value:"FAIL test_one\nexpected A\nreceived B"}]}});
+ const view=verificationReviewLines(store.toSession().events).join("\n");
+ assert.match(view,/Sortie du check/);
+ assert.match(view,/FAIL test_one/);
+ assert.match(view,/expected A/);
+ assert.match(view,/NON VALIDÉ/);
+});

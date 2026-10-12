@@ -174,7 +174,8 @@ export interface VerificationEvidence {
     | "expected_digest"
     | "actual_digest"
     | "target_digest"
-    | "producer_claim_ignored";
+    | "producer_claim_ignored"
+    | "check_output";
   readonly value: string;
 }
 
