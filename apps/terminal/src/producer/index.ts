@@ -1,5 +1,6 @@
 import {planWorktreeIntegration,applyWorktreeIntegration} from '../../../../src/adapters/worktree-integration.ts';
 import {snapshotMatches} from '../../../../src/adapters/git-snapshot.ts';
+import { readGitReview, type GitReview } from '../../../../src/adapters/git-review.ts';
 import {randomUUID} from 'node:crypto';
 import {join,resolve} from 'node:path';
 import {allocateWorktree} from '../../../../src/adapters/managed-worktrees.ts';
@@ -167,6 +168,7 @@ export interface Producer {
   selectAgentModel?(role:string,selection:ModelPreferences|null):{ok:true}|{error:string};
   agentPage?(offset?:number):SharedContextPage;
   situationPage?():SharedContextPage;
+  reviewPage?():Promise<GitReview>;
   workspacePage?():SharedContextPage;
   notificationCount?():number;
   notificationPage?():SharedContextPage;
@@ -834,6 +836,7 @@ export function createProducer(options: ProducerOptions): Producer {
     notificationCount(){return notificationState().unread;},
     notificationPage,
     readNotifications(digest){const n=notificationState();if(n.digest===digest&&n.unread>0){options.journal?.assertWritable();shared.append({kind:"note",subject:"terminal.notification_read",data:{version:1,author:"human",throughSeq:n.throughSeq}});}return notificationPage();},
+    reviewPage() { return readGitReview(activeWorkspace); },
     situationPage() {
       const s=currentSituation();return {digest:s.time.utc,offset:0,nextOffset:null,lines:[`${s.time.local} · ${s.time.timeZone} · ${s.time.offset}`,`UTC : ${s.time.utc}`,`Langue : ${s.responseLanguage.preference??"automatique · conversation"} · locale OS ${s.locale}`,`Interlocuteur : ${s.human.label??"identité non configurée"}`,`Machine : ${s.host.label??s.host.platform}`,`Projet : ${s.workspace}`,`Session : ${s.sessionId}`,`Exécution : ${s.executionId??"aucune active"}`,`Rôle : ${s.role} · ${s.model}`,`Objectif : ${s.objective?`${s.objective.id}@${s.objective.revision}`:"aucun"}`,...s.peers.map(p=>`${p.role} · ${p.model} · ${p.phase}`)]};
     },

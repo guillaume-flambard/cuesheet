@@ -7,7 +7,7 @@ import type {CheckConfirmation,SharedContextPage} from "../producer/index.ts";
 
 
 
-export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onWorkspaces?():SharedContextPage; onNotifications?():SharedContextPage; onReadNotifications?(digest:string):SharedContextPage; onSituation?():SharedContextPage; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
+export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "inspect" | "help" | "models" | "sessions" | "review"): void; onNew?():void; onResume?():void; onCheck?():CheckConfirmation|null; onConfirmCheck?(approval:CheckConfirmation):void; onWorkspaces?():SharedContextPage; onNotifications?():SharedContextPage; onReadNotifications?(digest:string):SharedContextPage; onSituation?():SharedContextPage; onAgentModels?():void; onAgents?(offset?:number):SharedContextPage; onContext?(offset?:number,expectedDigest?:string):SharedContextPage }): JSX.Element {
   const [at, setAt] = useState(0);
   const [query,setQuery] = useState("");
   const matching = filterPaletteCommands(query);

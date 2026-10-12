@@ -59,6 +59,8 @@ import { Projects } from "../overlays/Projects.tsx";
 import { Inspect } from "../overlays/Inspect.tsx";
 import { Palette } from "../overlays/Palette.tsx";
 import { Help } from "../overlays/Help.tsx";
+import { Review } from "../overlays/Review.tsx";
+import type { GitReview } from "../../../../src/adapters/git-review.ts";
 import { createStore, type Store } from "./store.ts";
 import { Models } from "../overlays/Models.tsx";
 import { listModels } from "../../../../src/adapters/model-catalog.ts";
@@ -116,6 +118,8 @@ export function App(props: AppProps): JSX.Element {
   const catalog = useCallback((choice: Parameters<typeof listModels>[0], signal: AbortSignal) => listModels(choice, { signal }), []);
 
   const sessionChoices=useCallback(()=>listTerminalSessions(),[]);
+  const loadReview=useCallback(async():Promise<GitReview> =>
+    producer?.reviewPage?.() ?? {kind:"unavailable",reason:"Revue Git indisponible dans cette session."},[producer]);
   const loadSession=(id?:string)=>{
     if(store.get().busy) {store.send({type:"noted",entry:{kind:"failure",text:"Un travail est en cours. Interromps-le avant de changer de session."}});store.send({type:"close"});return;}
     if(id===wired.session?.metadata.id) {store.send({type:"close"});return;}
@@ -180,6 +184,8 @@ export function App(props: AppProps): JSX.Element {
             onContext={(offset,digest)=>producer?.sharedContextPage?.(offset,digest) ?? {digest:"",offset:0,nextOffset:null,lines:["Aucun contexte partagé configuré."]}}
             onCheck={()=>producer?.checkConfirmation?.() ?? null} onConfirmCheck={approval=>{send({type:"close"});producer?.say(`/check confirm ${approval.id} ${approval.revision} ${approval.digest}`);}}
             onNew={()=>loadSession()} onResume={()=>{send({type:"close"});if(!missing) producer?.resume?.();}} />
+        ) : state.overlay === "review" ? (
+          <Review width={column} rows={contentRows} onLoad={loadReview} />
         ) : state.overlay === "sessions" ? (
           <Sessions rows={contentRows} current={wired.session?.metadata.id} list={sessionChoices} onChoose={loadSession} />
         ) : missing ? (

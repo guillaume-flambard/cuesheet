@@ -13,6 +13,7 @@ export const paletteCommands = [
   { label: "Situation", overlay: "situation" },
   { label: "Notifications", overlay: "notifications" },
   { label: "Workspaces", overlay: "workspaces" },
+  { label: "Revoir les changements", overlay: "review" },
 ] as const;
 
 type Command = (typeof paletteCommands)[number];
