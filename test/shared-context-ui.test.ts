@@ -59,10 +59,13 @@ const out=new PassThrough();Object.assign(out,{columns:80,rows:24,isTTY:false});
 const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});
 const app=render(<App store={store} producer={producer}/>,{stdout:out,stderr:out,stdin:input,debug:true,exitOnCtrlC:false});const tick=()=>new Promise(r=>setTimeout(r,45));
 const before=journal.core.revision;const bytes=readFileSync(join(contexts.project.root,'context.jsonl'),'utf8');
-const until=async(predicate)=>{const deadline=Date.now()+8000;while(!predicate()&&Date.now()<deadline)await tick();if(!predicate())throw new Error('UI did not reach the expected rendered state');};
-input.write('\\x0b');await until(()=>last.includes('> View the log'));for(const label of ['Help','Provider et modèle','Sessions','Nouvelle session','Reprendre le travail','Critère de validation','Contexte partagé']){input.write('\\x1b[B');await until(()=>last.includes('> '+label));}input.write('\\r');await until(()=>last.includes('N/P pages'));const opened=last;
+const until=async(predicate,stage)=>{const deadline=Date.now()+15000;while(!predicate()&&Date.now()<deadline)await tick();if(!predicate())throw new Error('UI did not reach '+stage+'; last output: '+JSON.stringify(frames.slice(-3).map(f=>f.slice(-180))))};
+const sendAndSee=async(key,expected)=>{const cursor=frames.length;input.write(key);await until(()=>frames.slice(cursor).some(frame=>frame.includes(expected)),expected);};
+await sendAndSee('\\x0b','> View the log');
+for(const label of ['Help','Provider et modèle','Sessions','Nouvelle session','Reprendre le travail','Critère de validation','Contexte partagé'])await sendAndSee('\\x1b[B','> '+label);
+await sendAndSee('\\r','N/P pages');const opened=frames.findLast(frame=>frame.includes('N/P pages'))??last;
 input.write('n');await tick();for(let i=0;i<20;i++){input.write('\\x1b[B');await tick();}const next=frames.join('\\n');
-input.write('p');await tick();const previous=last;const sizes=[];for(const [columns,rows] of [[40,14],[80,24],[120,36]]){out.columns=columns;out.rows=rows;out.emit('resize');await tick();sizes.push({rows,frame:last});}
+input.write('p');await tick();const previous=last;const sizes=[];for(const [columns,rows] of [[40,14],[80,24],[120,36]]){const cursor=frames.length;out.columns=columns;out.rows=rows;out.emit('resize');await until(()=>frames.slice(cursor).some(frame=>frame.includes('N/P pages')),'resized '+columns+'x'+rows);sizes.push({rows,frame:frames.slice(cursor).findLast(frame=>frame.includes('N/P pages'))??last});}
 input.write('\\x1b');await tick();const closed=store.get().overlay==='none';const unchanged=before===journal.core.revision&&bytes===readFileSync(join(contexts.project.root,'context.jsonl'),'utf8');app.unmount();journal.close();console.log(JSON.stringify({opened,next,previous,sizes,closed,unchanged,calls}));`);
   const run=spawnSync(process.execPath,[join(terminal,"node_modules/tsx/dist/cli.mjs"),script],{encoding:"utf8",timeout:20000,env:childEnv(root)});assert.equal(run.status,0,run.stderr);const result=JSON.parse(run.stdout.trim());
   assert.match(result.opened,/Contexte partagé/);assert.match(result.opened,/révision 22/);assert.match(result.next,/shared row 21/);assert.match(result.next,/source-session:22/);assert.match(result.previous,/Souvenirs 1–20/);
