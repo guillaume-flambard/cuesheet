@@ -20,11 +20,11 @@ import assert from "node:assert/strict";
 import { existsSync, lstatSync, mkdtempSync, readlinkSync, rmSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
 import { allocateWorktree } from "../src/adapters/managed-worktrees.ts";
 import { captureGitSnapshot } from "../src/adapters/git-snapshot.ts";
 import { ContainerToolRunner } from "../src/adapters/container-tools.ts";
 import { NODE_CAPSULE_ROOT } from "../src/adapters/node-capsule.ts";
+import { releaseFixtureWorktree } from "./fixtures/fixture-worktree.ts";
 
 const image = process.env.CUESHEET_TEST_CAPSULE_IMAGE;
 const socket = process.env.CUESHEET_TEST_TOOL_SOCKET;
@@ -47,6 +47,8 @@ function capsuleLinks(root: string): string[] {
 test("CAP-ALIAS-01 a capsule command leaves no capsule dependency link behind on the host", { skip: !image || !socket }, async () => {
   const source = realpathSync(process.cwd());
   const root = realpathSync(mkdtempSync(join(tmpdir(), "cs-capsule-alias-")));
+  // Released by its requested path, whatever the allocation reports.
+  const requested = join(root, "workspaces", "alias");
   let workspace: string | undefined;
   try {
     const snapshot = await captureGitSnapshot(source);
@@ -74,9 +76,7 @@ test("CAP-ALIAS-01 a capsule command leaves no capsule dependency link behind on
       "a capsule command must not leave node_modules pointing into the image; the next host step would be running against a dangling link",
     );
   } finally {
-    if (workspace) {
-      try { execFileSync("git", ["-c", "core.hooksPath=/dev/null", "worktree", "remove", "--force", workspace], { cwd: source, stdio: "pipe", env: { PATH: process.env.PATH!, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" } }); } catch { /* already gone */ }
-    }
+    releaseFixtureWorktree(source, requested);
     rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
@@ -87,6 +87,8 @@ test("CAP-ALIAS-01 a link the owner already provided is not removed", { skip: !i
   // command that never touched it.
   const source = realpathSync(process.cwd());
   const root = realpathSync(mkdtempSync(join(tmpdir(), "cs-capsule-alias-owned-")));
+  // Released by its requested path, whatever the allocation reports.
+  const requested = join(root, "workspaces", "owned");
   let workspace: string | undefined;
   try {
     const snapshot = await captureGitSnapshot(source);
@@ -114,9 +116,7 @@ test("CAP-ALIAS-01 a link the owner already provided is not removed", { skip: !i
     assert.ok(existsSync(join(workspace, "node_modules")), "the owner's link survived");
     assert.equal(readlinkSync(join(workspace, "node_modules")), owned, "and it still points where the owner put it");
   } finally {
-    if (workspace) {
-      try { execFileSync("git", ["-c", "core.hooksPath=/dev/null", "worktree", "remove", "--force", workspace], { cwd: source, stdio: "pipe", env: { PATH: process.env.PATH!, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" } }); } catch { /* already gone */ }
-    }
+    releaseFixtureWorktree(source, requested);
     rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
