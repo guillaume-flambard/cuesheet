@@ -90,6 +90,13 @@ export interface LoopOptions {
   /** Hard ceiling on inferences. A loop that cannot be stopped is a hazard. */
   maxSteps: number;
   /**
+   * Exactly one layer owns uncertain-effect recovery. The generic loop guards
+   * its own action/observation pairs. A controller with durable tool receipts
+   * and explicit reconciliation (e.g. terminal execution slices) owns this
+   * gate itself, so core must not block its safe inspection/recovery steps.
+   */
+  effectRecovery?: "core" | "controller";
+  /**
    * Called for every event the moment it is appended. This is how a chat
    * surface can show the work as it happens, and how a caller can persist
    * incrementally: an event handed to this callback is durable in the caller's
@@ -202,7 +209,7 @@ export async function runAgentLoop(
   // outcome. Inspect the world and append a sourced receipt before resuming:
   // neither another model nor an altered goal authorizes a blind replay.
   const existing = store.toSession();
-  const unresolved = unresolvedToolIntents(existing, options.subject);
+  const unresolved = options.effectRecovery === "controller" ? [] : unresolvedToolIntents(existing, options.subject);
   if (unresolved.length) {
     return {
       stop: {

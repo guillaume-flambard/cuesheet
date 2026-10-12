@@ -98,3 +98,18 @@ it("a null-exit receipt is observed but inconclusive and cannot authorize blind 
   assert.equal(resumed.stop.reason, "blocked");
   assert.equal(calls, 0);
 });
+
+it("a controller with independent receipt admission can inspect safely after an orphan", async () => {
+  const store = new EventStore("controller-owned-recovery", () => 1000);
+  store.append({ kind: "action", subject: "builder", data: { tool: "node", step: 1, input: { argv: ["node", "write"] } } });
+  let inspections = 0;
+  const outcome = await runAgentLoop(
+    store,
+    { name: "inspector", async infer() { return { text: "", toolCalls: [{ name: "cat", input: { path: "answer.txt" } }] }; } },
+    { async run(request) { assert.equal(request.name, "cat"); inspections++; return { name: "cat", exit: 0, output: "42" }; } },
+    { subject: "builder", goal: "inspect possible effect", maxSteps: 1, effectRecovery: "controller" },
+  );
+  assert.equal(inspections, 1, "the controller owns policy and allows safe inspection");
+  assert.equal(outcome.stop.reason, "budget-exhausted");
+  assert.equal(store.toSession().events.some(event => event.seq === 1 && event.kind === "action"), true);
+});

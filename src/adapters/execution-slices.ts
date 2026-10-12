@@ -24,7 +24,7 @@ export async function runExecutionSlices(store:EventStore,model:ModelAdapter,too
     let fresh=false;let action:Event|undefined;
     const outcome=await runAgentLoop(store,{name:model.name,async infer(frame){
       options.signal.throwIfAborted();const response=await model.infer({...frame,step:frame.step+(slice-1)*options.maxSteps});completed++;return response;
-    }},tools,{...options,onEvent(event){
+    }},tools,{...options,effectRecovery:"controller",onEvent(event){
       options.onEvent?.(event);
       if(event.kind==="action" && typeof event.data.tool==="string")action=event;
       if(event.kind==="observation" && event.data.exit===0 && typeof event.data.tool==="string" && !bookkeeping.has(event.data.tool)){

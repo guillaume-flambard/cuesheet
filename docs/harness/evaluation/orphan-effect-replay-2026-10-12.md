@@ -31,3 +31,12 @@ Commande : `node --test test/core-orphan-resume.test.ts test/core-intent-before-
 - Mesurer 10k+ événements et cas concurrents, puis implémenter la réconciliation par source de vérité avec critères d'acceptation épinglés.
 
 Références : `docs/harness/IMPLEMENTATION-GATES-2026-10.md` (P1/P2), `REFERENCE-DEEP-DIVE-2026-10.md` (LangGraph/Codex), `docs/harness/evaluation/intent-before-effect-2026-10-12.md`.
+
+
+## Frontière d'autorité : moteur générique vs contrôleur terminal
+
+La première exécution de CI de cette PR a révélé **14 échecs**, parce que `runExecutionSlices` réutilise volontairement le même journal entre plusieurs tranches tandis que le contrôleur terminal possède déjà les receipts, la réconciliation d'effets incertains et la possibilité d'inspections sans mutation. Un second garde-fou générique bloquait à tort sa récupération, y compris des tâches sans effet secondaire.
+
+La correction introduit l'option explicite `LoopOptions.effectRecovery`, défaut `core` fail-closed. Seul `runExecutionSlices` définit `effectRecovery:"controller"` : ce contrôleur doit conserver la responsabilité existante de refuser toute mutation incertaine, d'inspecter l'état puis de réconcilier. Il ne s'agit pas d'un repli silencieux ni d'une permission plus large ; c'est **un seul propriétaire pour un invariant**.
+
+Preuve ciblée après correction : `node --test test/core-orphan-resume.test.ts test/core-intent-before-effect.test.ts test/loop.test.ts test/shared-memory.test.ts test/surface-v2.test.ts test/surface-verification.test.ts test/tool-receipts.test.ts` → **92 passés, 0 échec** sur Mac. Attendre la CI GitHub complète avant de promouvoir ce résultat dans main.
