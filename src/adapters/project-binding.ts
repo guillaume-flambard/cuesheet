@@ -212,7 +212,21 @@ export function bindProject(
   text: string,
   identities: readonly ProjectIdentity[] = projectIdentities(),
 ): Binding {
-  const tokens = tokensOf(text);
+  // Hyphenated identifiers inside prompts (e.g. BONJOUR-CUESHEET-OK) are not
+  // references to the embedded project. Accept project words only as separate
+  // lexical terms, except when the *whole* known hyphenated project name was
+  // written. Otherwise a harmless prompt can silently change the write scope.
+  const lexical = tokensOf(text);
+  const standalone = new Set(lexical.filter(token =>
+    new RegExp(`(?:^|[^a-z0-9-])${token}(?:$|[^a-z0-9-])`, 'i').test(text),
+  ));
+  for (const project of identities) {
+    if (!project.name.includes('-')) continue;
+    const escaped = project.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`(?:^|[^a-z0-9-])${escaped}(?:$|[^a-z0-9-])`, 'i').test(text))
+      for (const token of tokensOf(project.name)) standalone.add(token);
+  }
+  const tokens = lexical.filter(token => standalone.has(token));
   const named = identities
     .map((p) => candidateFor(p, tokens))
     .filter((c) => c.basis !== "none");

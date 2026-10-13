@@ -24,9 +24,13 @@ export function Header(props: {
   const rule = inkColor(theme.rule);
   return (
     <Box flexDirection="column" flexShrink={0}>
-      <Box justifyContent="space-between">
+      <Box width={props.width} justifyContent="space-between">
         <Text color={inkColor(theme.brand)} bold>cuesheet</Text>
-        <Text wrap="truncate-middle" color={inkColor(theme.dim)}>{props.project ?? "aucun projet"}</Text>
+        {props.width >= 64 && (
+          <Box flexShrink={1} minWidth={0}>
+            <Text wrap="truncate-middle" color={inkColor(theme.dim)}>{props.project ?? "aucun projet"}</Text>
+          </Box>
+        )}
         <Text color={inkColor(props.busy ? theme.active : theme.confirmed)}>
           {props.busy ? `${glyph.active} en cours` : `${glyph.confirmed} prêt`}
         </Text>

@@ -37,3 +37,14 @@ Read SPEC.md and this note; choose one slice, don't overwrite the dirty main che
 - Keep this PR scoped to runtime repeat guard, actual execution journal and OpenCode v2 typed failures. Revert unrelated French palette/status styling; those belong in a separate UI PR because fixture coverage depends on stable strings.
 - Update old fixtures that expected eight duplicate text-only inferences to expect one durable reply, two provider inferences and an honest unverified stagnation stop.
 - On Mac: 123 impacted tests PASS using isolated XDG configuration and terminal TypeScript PASS. CI must establish the full clean baseline.
+
+## Live E2E follow-up — 2026-10-13 afternoon
+- Baseline b1cabae reproduced real OpenCode Go reply BONJOUR-CUESHEET-OK, but falsely bound the run to /Users/memo/projects/cuesheet from an isolated scratch cwd, and incorrectly claimed container isolation in local mode.
+- Fixed lexical binding for hyphenated markers; real reply after fix showed the correct scratch path. No user repo mutations.
+- Local tool status now uses the actual declared ToolRoute reason (explicitly states no OS confinement for local).
+- Palette and project navigation translated to French while retaining search aliases.
+- Narrow header hides the project label below 64 columns; model name and status remain visible.
+- Evidence: /Users/memo/projects/_scratch/cuesheet-e2e-fixed-20261013 (terminal ANSI screenshots, not native desktop capture).
+- Repeat live test in /Users/memo/projects/_scratch/cuesheet-e2e-complete-20261013 waits for run completion; record outcome before declaring full pass.
+- Completed isolated live E2E via actual OpenCode Go provider: selected session-only, got BONJOUR-CUESHEET-OK, correct scratch cwd, true local tool route, final ready state, palette reopened, 40x14 and 120x40 resizes after inference. Terminal grid screenshots: /Users/memo/projects/_scratch/cuesheet-e2e-complete-20261013/screenshot-*.png.
+- Post-fix focused suites: project binding + palette + human UX 24/24, scope-runtime/scope-resume/surface-v2 40/40, header new regression 1/1; terminal typecheck and 40x14 PTY proof passed. These screenshots are ANSI-grid approximations, not native macOS desktop images.
