@@ -223,6 +223,12 @@ function dispatch(argv: string[]): number {
     commandUsage(command, named);
   }
 
+  // `version` is implemented here; spawning this file recursively hangs the launcher.
+  if (command === "version") {
+    if (rest.length > 0) return 2;
+    console.log(version());
+    return 0;
+  }
   const args = named.style === "subcommand" ? [command, ...rest] : rest;
   const result = spawnSync(process.execPath, [join(here, named.file), ...args], {
     stdio: "inherit",
