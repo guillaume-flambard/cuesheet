@@ -16,14 +16,20 @@ export interface ModelBinding {
   select(preferences: ModelPreferences, options: { busy: boolean; save: boolean; beforeCommit?: (selection:ModelPreferences)=>void }): { error: string } | { ok: true; warning?:string };
 }
 
-export function createModelBinding(options: { onUsage?:UsageSink; project: string; env?: NodeJS.ProcessEnv; path?: string; preferences?: ModelPreferences }): ModelBinding {
+export function createModelBinding(options: { onUsage?:UsageSink; onProgress?:import("./binary-model.ts").BinaryModelOptions["onProgress"]; project: string; env?: NodeJS.ProcessEnv; path?: string; preferences?: ModelPreferences }): ModelBinding {
   const env = options.env ?? process.env;
   const path = options.path ?? preferencesPath(env);
   let preferences: ModelPreferences = {};
   let loadError: string | null = null;
   try { preferences = options.preferences ?? readModelPreferences(path); }
   catch (error) { loadError = error instanceof Error ? error.message : String(error); }
-  let resolved: ResolvedModel | { missing: string } = loadError ? { missing: loadError } : resolveModel({ project: options.project, preferences, env, onUsage:options.onUsage });
+  // A changed model may still emit a final subprocess chunk while it is being
+  // cancelled. That stale provider must not repaint the new model's progress.
+  let progressEpoch=0;
+  const progressFor=(epoch:number):typeof options.onProgress => p=>{
+    if(progressEpoch===epoch)options.onProgress?.(p);
+  };
+  let resolved: ResolvedModel | { missing: string } = loadError ? { missing: loadError } : resolveModel({ project: options.project, preferences, env, onUsage:options.onUsage, onProgress:progressFor(progressEpoch) });
   const provider = env.CUESHEET_PROVIDER?.trim() || preferences.provider || 'opencode';
   const sameProvider = provider === preferences.provider;
   const model = env.CUESHEET_MODEL?.trim() || (sameProvider ? preferences.model : undefined);
@@ -68,7 +74,7 @@ export function createModelBinding(options: { onUsage?:UsageSink; project: strin
       const credentials = { ...env };
       for (const key of ['CUESHEET_PROVIDER', 'CUESHEET_MODEL', 'CUESHEET_BASE_URL', 'CUESHEET_MAX_TOKENS']) delete credentials[key];
       const next = resolveModel({ project: options.project, preferences: {}, env: credentials,
-        provider: clean.provider, model: clean.model ?? null, baseUrl: clean.baseUrl, maxTokens: clean.maxTokens,onUsage:options.onUsage });
+        provider: clean.provider, model: clean.model ?? null, baseUrl: clean.baseUrl, maxTokens: clean.maxTokens,onUsage:options.onUsage,onProgress:progressFor(progressEpoch+1) });
       if ('missing' in next) return { error: next.missing };
       clean.model = next.model ?? undefined;
       let prepared:ReturnType<typeof prepareModelPreferences>|undefined;
@@ -81,6 +87,7 @@ export function createModelBinding(options: { onUsage?:UsageSink; project: strin
       let warning:string|undefined;
       try {prepared?.commit();}
       catch {warning='Modèle appliqué à cette session ; la préférence globale n’a pas pu être sauvegardée.';}
+      progressEpoch++;
       resolved = next;
       selection = clean;
       for(const inference of inferences)inference.abort(new ModelSelectionChanged());

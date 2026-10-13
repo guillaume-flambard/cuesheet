@@ -59,6 +59,18 @@ import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
 import { createProducer, type Producer, type ProducerOptions } from "./index.ts";
 import type { Store } from "../app/store.ts";
 
+/** Safe live trace for Ctrl+L/Inspect. Never log raw provider output or hidden reasoning. */
+function modelProgressReporter(store:Store):(p:import("../app/state.ts").ModelProgress)=>void {
+  return progress=>{
+    store.send({type:"model-progress",progress});
+    const info=progress.kind==="usage"
+      ? `jetons entrée ${progress.input??"?"}, sortie ${progress.output??"?"}, coût fournisseur ${progress.cost??"?"}`
+      :progress.kind==="started"?"appel modèle démarré"
+      :progress.kind==="reasoning"?"réflexion signalée par le fournisseur":"réponse en génération";
+    store.send({type:"logged",line:`[modèle] ${info}`});
+  };
+}
+
 /** The commands the surface may run, rooted at the resolved directory. */
 export const ALLOWED = ["node", "git", "rg", "ls", "cat", "npm", "npx", "cargo"];
 
@@ -90,7 +102,7 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   const maxSlices=process.env.CUESHEET_MAX_SLICES===undefined ? 4 : Number(process.env.CUESHEET_MAX_SLICES);
   if(!Number.isSafeInteger(maxSlices) || maxSlices<1 || maxSlices>16)return {missing:"CUESHEET_MAX_SLICES must be an integer from 1 to 16."};
   const usage=settings.journal ? new SessionUsage({root:settings.journal.root,sessionId:settings.journal.metadata.id,assertWritable:()=>settings.journal!.assertWritable()}) : undefined;
-  const binding = settings.binding ?? createModelBinding({ project: cwd,onUsage:usage?.record });
+  const binding = settings.binding ?? createModelBinding({ project: cwd,onUsage:usage?.record,onProgress:modelProgressReporter(store) });
   const model: ModelAdapter = binding.adapter;
   const selectRoute=createToolRouteSelector({home:homedir(),enterprise:!!process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean).length,mode:process.env.CUESHEET_TOOL_MODE,image:process.env.CUESHEET_TOOL_IMAGE,socket:process.env.CUESHEET_TOOL_SOCKET});
   let verification;
@@ -142,7 +154,7 @@ export function createTerminalRuntime(cwd: string, id?: string): { store: Store;
     }
     const store = persistentView(session);
     const usage=new SessionUsage({root:session.root,sessionId:session.metadata.id,assertWritable:()=>session!.assertWritable()});
-    const binding = createModelBinding({project:session.metadata.cwd,preferences:session.lastModel,onUsage:usage.record});
+    const binding = createModelBinding({project:session.metadata.cwd,preferences:session.lastModel,onUsage:usage.record,onProgress:modelProgressReporter(store)});
     const live = createLiveProducer(store,session.metadata.cwd,{journal:session,verification,binding});
     if("missing" in live) throw new Error(live.missing);
     if(!binding.missing) live.producer.modelSelected?.(binding.selection);

@@ -21,6 +21,7 @@ export function StatusBar(props: {
   notifications?:number;
   entries: readonly Entry[];
   busy: boolean;
+  detailsAvailable?:boolean;
   onHelp(): void;
 }): JSX.Element {
   let read = 0;
@@ -32,7 +33,10 @@ export function StatusBar(props: {
     if (e.label.startsWith("edit")) modified += 1;
     if (e.certainty === "failed") failed += 1;
   }
-  const right = props.busy ? `${glyph.active} en cours` : failed > 0 ? `${glyph.failed} ${frenchCount(failed, "échec")}` : "? aide";
+  const right = props.busy
+    ? `${glyph.active} en cours${props.detailsAvailable && props.width>=72?" · Ctrl+L détails":""}`
+    : failed>0 ? `${glyph.failed} ${frenchCount(failed,"échec")}`
+    : props.detailsAvailable && props.width>=72 ? "Ctrl+L détails · ? aide" : "? aide";
   // A count of zero is not a fact a person asked for, it is the absence of one.
   // `modified` was already conditional and `read` was not, so the status bar
   // reported "0 read" on every quiet session, which says nothing and reads like

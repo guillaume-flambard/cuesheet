@@ -54,3 +54,10 @@ Acceptance: `node scripts/ui/verify.mjs 40 14`, `80 24`, `120 40` all pass, and 
 - The frontend shall remove terminal control framing before draft edit, preserving CRLF (normalized by the existing editor) and tabs.
 - Paste must not submit a turn; only a subsequent explicit bare Enter may send. No filesystem reads/tools during React render.
 - Verify both pure edits/Ink and real Mac PTY before/after, plus 40×14/80×24/120×40 shell proof and clean CI.
+
+## LIVE-01 — observability, first verified slice (2026-10-13)
+- One visible live execution strip in the main work surface with a current provider stage; it stays at the top while the session is active and resizes to one line at 40 columns.
+- Stream only provider transport metadata from OpenCode JSON NDJSON: request started, reasoning event present, response text in progress, and exact provider-reported step-finish token/cost readings. The stream must never emit raw private reasoning, prompts, error bodies, or tool arguments to the UX telemetry reducer.
+- Distinguish unknown (—/?) from measured zero. Totals in this view refer to the current terminal opening, not billing or full historical sessions. More detailed safe model transport events remain accessible from Ctrl+L/Inspect while model/tool events appear in the timeline.
+- Current Nvidia/OpenCode v2 real PTY provides stages but has not supplied numeric step-finish usage in this route: show "jetons — · coût —" rather than an estimate; do not claim complete OpenCode parity.
+- Follow-ups: provider-specific usage adapters and verified per-session durable financial ledger; event-sourced tool parameters, outputs and traces with secret redaction; explicitly available external reasoning summaries, per-request totals and provider budget, optional full-detail presentation and native terminal accessibility.

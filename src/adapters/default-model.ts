@@ -56,6 +56,7 @@ export interface ResolvedModel {
 
 export interface ResolveOptions {
   readonly onUsage?:UsageSink;
+  readonly onProgress?:import("./binary-model.ts").BinaryModelOptions["onProgress"];
   /** The resolved project directory, or null for a scratch run with none. */
   readonly project?: string | null;
   /** Explicit transport for this run, overriding CUESHEET_PROVIDER. */
@@ -174,7 +175,7 @@ export function resolveModel(options: ResolveOptions = {}): ResolvedModel | { mi
   }
 
   return {
-    adapter: new BinaryModelAdapter({ binary, project: options.project ?? null, ...(model ? { model } : {}) }),
+    adapter: new BinaryModelAdapter({ binary, project: options.project ?? null, onProgress:options.onProgress, ...(model ? { model } : {}) }),
     name: "opencode-binary",
     model,
     why: `the local binary at ${binary}${model ? `, model ${model}` : ", on its own configured model"}`,
