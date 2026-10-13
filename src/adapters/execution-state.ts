@@ -31,7 +31,11 @@ export function projectExecutions(events:readonly Event[],options:{replaying?:bo
       }else if(d.slice!==prior.slice || (prior.recordedPhase==="continuing" && phase!=="cancelled" && phase!=="failed"))invalid(event.seq);
     }
     if(phase==="running" && d.steps!==(d.slice-1)*d.stepsPerSlice)invalid(event.seq);
-    if((phase==="continuing" || phase==="limit" || phase==="stagnation") && d.steps!==d.slice*d.stepsPerSlice)invalid(event.seq);
+    if((phase==="continuing" || phase==="limit") && d.steps!==d.slice*d.stepsPerSlice)invalid(event.seq);
+    // A model can repeat the same tool-free answer before the slice limit.
+    // This is a safe early stagnation, NOT verified closure; its journal must
+    // accept the actual count, rather than demanding a fabricated full budget.
+    if(phase==="stagnation" && d.steps<(d.slice-1)*d.stepsPerSlice+1)invalid(event.seq);
     if(phase==="continuing" && d.slice>=d.maxSlices)invalid(event.seq);
     if(phase==="limit" && d.slice!==d.maxSlices)invalid(event.seq);
     const objectiveId=d.objectiveId ?? null,objectiveRevision=d.objectiveRevision ?? null;

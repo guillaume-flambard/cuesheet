@@ -12,7 +12,7 @@ export interface WorkFocus {
   readonly tone: Certainty;
 }
 
-const auxiliary = new Set(["working in", "modèle", "préférence", "model", "provider"]);
+const auxiliary = new Set(["working in", "dossier", "modèle", "préférence", "model", "provider"]);
 
 export function projectWorkFocus(entries: readonly Entry[], busy: boolean): WorkFocus {
   const lastUser = entries.findLastIndex(entry => entry.kind === "you");
@@ -38,7 +38,9 @@ export function projectWorkFocus(entries: readonly Entry[], busy: boolean): Work
       : signal.certainty === "failed" ? "Échec observé" : "Action observée";
     return {
       heading: request ? "Dernière demande" : "Travail",
-      request, detail: `${preface} · ${label}`, tone: signal.certainty,
+      request, detail: signal.kind === "status" && signal.label === "réponse"
+        ? "Réponse reçue · travail non vérifié"
+        : `${preface} · ${label}`, tone: signal.certainty,
     };
   }
   if (request !== null) return {

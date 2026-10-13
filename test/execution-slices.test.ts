@@ -28,3 +28,19 @@ test("a cancellation at the slice boundary prevents any subsequent inference",as
     {async run(call){return {name:call.name,exit:0,output:String(calls)};}}, {...options(controller.signal),onEvent(event){if(event.subject==="terminal.execution"&&event.data.state==="continuing")controller.abort(new Error("human stop"));}}),/human stop/);
   assert.equal(calls,2);
 });
+
+test("a repeated text-only answer stops early and journals the real step count without verification",async()=>{
+  const store=new EventStore("early-stagnation",()=>0);let calls=0;
+  const result=await runExecutionSlices(store,{name:"repeating",async infer(){calls++;return {text:"BONJOUR-CUESHEET-OK",toolCalls:[]};}},
+    {async run(call){throw Error("No tool should be invoked: "+call.name);}},
+    {...options(),maxSteps:8,maxSlices:4});
+  assert.equal(calls,2,"no identical repeated model proposals after the second");
+  assert.equal(result.stop.reason,"stagnation");
+  assert.equal(result.stop.steps,2);
+  const observations=store.toSession().events.filter(e=>e.kind==="observation"&&e.data.text==="BONJOUR-CUESHEET-OK");
+  assert.equal(observations.length,1,"only one durable answer, not a duplicated reply");
+  assert.equal(store.toSession().goal?.open,true,"no model-only claim can close the goal");
+  const recorded=store.toSession().events.filter(e=>e.subject==="terminal.execution");
+  assert.equal(recorded.at(-1)?.data.state,"stagnation");
+  assert.equal(recorded.at(-1)?.data.steps,2,"journal records the actual early stop");
+});

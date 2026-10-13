@@ -1,8 +1,8 @@
 /** Discoverable command palette; search changes visibility, never permissions. */
 export const paletteCommands = [
-  { label: "View the log", overlay: "inspect" },
-  { label: "Help", overlay: "help" },
-  { label: "Provider et modèle", overlay: "models" },
+  { label: "Journal d'exécution", overlay: "inspect" },
+  { label: "Aide", overlay: "help" },
+  { label: "Fournisseur et modèle", overlay: "models" },
   { label: "Sessions", overlay: "sessions" },
   { label: "Nouvelle session", overlay: "new" },
   { label: "Reprendre le travail", overlay: "resume" },
