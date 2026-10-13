@@ -83,7 +83,7 @@ try {
   else log("   run is in flight");
 
   const before = strip(raw);
-  if (!/working/.test(before)) fail("the surface does not report the run as working while it is held");
+  if (!/\ben cours\b/.test(before)) fail("le terminal ne signale pas « en cours » pendant l'exécution");
 
   log("3. type a new instruction WITHOUT stopping the run");
   await type("finalement ne touche pas au schema");
