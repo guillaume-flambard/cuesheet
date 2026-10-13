@@ -40,7 +40,7 @@ console.log(JSON.stringify({initial,providerScreen,waiting,cancelled,catalog,con
     assert.equal(run.status,0,run.stderr+'\n'+run.stdout);
     const result=JSON.parse(run.stdout.trim());
     assert.match(result.initial,/OPENAI_API_KEY/);
-    assert.match(result.providerScreen,/Provider et modèle/);
+    assert.match(result.providerScreen,/Fournisseur et modèle/);
     assert.equal(result.cancelled,true);
     assert.match(result.catalog,/UI_NEW_MODEL/);
     assert.doesNotMatch(result.catalog,/LATE_MODEL/);
