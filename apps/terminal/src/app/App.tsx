@@ -55,6 +55,7 @@ import { projectWorkFocus } from "../components/work-focus.ts";
 import { Composer } from "../components/Composer.tsx";
 import { composerRowCount } from "../components/composer-layout.ts";
 import { StatusBar } from "../components/StatusBar.tsx";
+import { RunTelemetry } from "../components/RunTelemetry.tsx";
 import { Projects } from "../overlays/Projects.tsx";
 import { Inspect } from "../overlays/Inspect.tsx";
 import { Palette } from "../overlays/Palette.tsx";
@@ -151,8 +152,9 @@ export function App(props: AppProps): JSX.Element {
   const contentRows = Math.max(1, rows - 9 - (composerRows - 1) - mentionHintRows);
   // The current work is readable at a glance without covering the composer
   // or the log. On very short terminals we prefer navigable history to chrome.
-  const focusRows = state.overlay === "none" && !missing && contentRows >= 5
-    ? (contentRows >= 10 ? 3 : 2) : 0;
+  const telemetryRows = state.overlay === "none" && !missing && state.telemetry.requests>0 && contentRows>=4 ? (contentRows<8?1:2) : 0;
+  const focusRows = state.overlay === "none" && !missing && contentRows - telemetryRows >= 5
+    ? (contentRows - telemetryRows >= 10 ? 3 : 2) : 0;
   const focus = projectWorkFocus(state.entries, state.busy);
 
   return (
@@ -209,9 +211,10 @@ export function App(props: AppProps): JSX.Element {
           <Help onClose={() => send({ type: "close" })} />
         ) : (
           <Box flexDirection="column" width={column} height={contentRows} overflow="hidden">
+            {telemetryRows > 0 && <RunTelemetry value={state.telemetry} width={column} busy={state.busy} compact={telemetryRows===1}/>}
             {focusRows > 0 && <WorkFocus focus={focus} width={column} compact={focusRows === 2} />}
             <Timeline width={column} entries={state.entries}
-              visible={contentRows - focusRows} rows={contentRows - focusRows} />
+              visible={contentRows - focusRows - telemetryRows} rows={contentRows - focusRows - telemetryRows} />
           </Box>
         )}
       </Box>
@@ -235,6 +238,7 @@ export function App(props: AppProps): JSX.Element {
 
       <StatusBar
         notifications={producer?.notificationCount?.()??0}
+        detailsAvailable={state.telemetry.requests>0}
         width={column}
         entries={state.entries}
         busy={state.busy}

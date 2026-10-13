@@ -62,3 +62,10 @@ Read SPEC.md and this note; choose one slice, don't overwrite the dirty main che
 - After fix in /Users/memo/projects/_scratch/cuesheet-composer-paste-fixed-20261013: draft was 'Débutconst x=1;\nconsole.log(x);\n// fin'; transport markers absent and submits array stayed empty until bare Enter. The preceding 'Début' was deliberately already in the draft.
 - Composer now strips OSC/CSI terminal-control framing but retains lines, tabs, and safe printable text. Existing Unicode editor and history semantics unchanged.
 - Scoped to frontend; no real provider inference or owner preference mutation.
+
+## LIVE-01 verification on owner Mac, 2026-10-13
+- Baseline Cuesheet main 5902592; isolated branch feat/live-observability-20261013; no changes to the owner's dirty checkout.
+- Real Ninja NVIDIA model route: nvidia/nvidia/nemotron-3.5-lightning-30b-a3b via OpenCode v2.0.27; prompt NVIDIA-LIVE-TELEMETRY-OK returned once and Cuesheet settled; 2 actual provider calls, live "Modèle sollicité" then "Réponse en cours" shown before response; width 100→40→120. Evidence under /Users/memo/projects/_scratch/cuesheet-telemetry-live-20261013/ (ANSI-grid screenshot approximation).
+- Missing tokens/cost in observed v2 stream correctly remain "jetons — · coût —" rather than false zeros. Direct separate OpenCode diagnostic timed out without any NDJSON events; no numeric usage can be claimed.
+- Fake binary streams step_start/reasoning/text/step_finish in real subprocess with time-separated events and emits only redacted stage + usage; 2 new tests pass. 93 focused integration tests: 91 passed, 2 intentionally live-skipped; TypeScript pass. Previous shell proof 40×14, 80×24 and 120×40 to be rechecked before merge.
+- UI stream progress stays in React projection, not core decisions. Ctrl+L/Inspect logs only the safe milestone names and numeric reported usage. Telemetry totals are opening-scoped and do not claim billing or resumed-session accuracy.

@@ -110,6 +110,29 @@ export interface Option {
  * the only thing that appends them, so it already knows where it wrote.
  */
 
+/**
+ * Live telemetry is only reported transport metadata, never a model thought
+ * trace or estimated billing. Session totals refer to this opened terminal.
+ */
+export interface LiveTelemetry {
+  readonly phase:"attente"|"raisonnement"|"réponse"|"terminé";
+  readonly requests:number;
+  readonly steps:number;
+  readonly input:number;
+  readonly output:number;
+  readonly cost:number;
+  readonly inputUnknown:boolean;
+  readonly outputUnknown:boolean;
+  readonly costUnknown:boolean;
+}
+export type ModelProgress =
+  | {readonly kind:"started"|"reasoning"|"response"}
+  | {readonly kind:"usage";readonly input:number|null;readonly output:number|null;readonly tokens:number|null;readonly cost:number|null};
+export const emptyTelemetry:LiveTelemetry={
+  phase:"terminé",requests:0,steps:0,input:0,output:0,cost:0,
+  inputUnknown:false,outputUnknown:false,costUnknown:false,
+};
+
 /** The whole visible state. One object, passed down, never mutated in a component. */
 export interface SurfaceState {
   readonly project: string | null;
@@ -129,6 +152,7 @@ export interface SurfaceState {
   readonly log: readonly string[];
   readonly statusRight: string;
   readonly busy: boolean;
+  readonly telemetry: LiveTelemetry;
   /**
    * Every line this surface has ever put on the timeline, by identity,
    * including the ones the cap has since scrolled off the end.
@@ -172,6 +196,8 @@ export type Control =
   /** Producer-only. The run ended. */
   | { readonly type: "ended" }
   | { readonly type: "interrupted" }
+  /** Producer-only: already-redacted live model transport events. */
+  | {readonly type:"model-progress";readonly progress:ModelProgress}
   /**
    * Producer-only. Lines translated from the core's vocabulary, each carrying
    * the identity the producer gave it.
@@ -221,6 +247,7 @@ export const emptySurface: SurfaceState = {
   log: [],
   statusRight: "",
   busy: false,
+  telemetry: emptyTelemetry,
   seen: new Set<EntryId>(),
   minted: 0,
 };
@@ -322,12 +349,34 @@ export function derive(state: SurfaceState, control: Control): SurfaceState {
       return { ...state, busy: true, overlay: "none" };
 
     case "ended":
-      return { ...state, busy: false };
+      return { ...state, busy: false, telemetry:{...state.telemetry,phase:"terminé"} };
 
     case "interrupted":
-      return { ...state, busy: false, entries: state.entries.map(entry =>
+      return { ...state, busy: false, telemetry:{...state.telemetry,phase:"terminé"}, entries: state.entries.map(entry =>
         (entry.kind === "action" || entry.kind === "status") && entry.certainty === "active"
           ? { ...entry, certainty: "unknown" as const } : entry) };
+
+    case "model-progress": {
+      const p=control.progress,t=state.telemetry;
+      if(p.kind==="started")
+        return {...state,telemetry:{...t,phase:"attente" as const,requests:t.requests+1}};
+      if(p.kind==="reasoning" || p.kind==="response")
+        return {...state,telemetry:{...t,phase:p.kind==="reasoning"?"raisonnement" as const:"réponse" as const}};
+      if(p.kind!=="usage") return state;
+      // Each step-finish contributes once, and only provider-reported values
+      // count; null is never silently converted into a known zero.
+      const valid=(value:number|null)=>value!==null&&Number.isSafeInteger(value)&&value>=0;
+      const costValid=p.cost!==null&&Number.isFinite(p.cost)&&p.cost>=0;
+      return {...state,telemetry:{
+        ...t,steps:t.steps+1,
+        input:t.input+(valid(p.input)?p.input!:0),
+        output:t.output+(valid(p.output)?p.output!:0),
+        cost:t.cost+(costValid?p.cost!:0),
+        inputUnknown:t.inputUnknown||!valid(p.input),
+        outputUnknown:t.outputUnknown||!valid(p.output),
+        costUnknown:t.costUnknown||!costValid,
+      }};
+    }
 
     case "observed": {
       if (control.entries.length === 0) return state;

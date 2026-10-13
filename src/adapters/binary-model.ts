@@ -109,6 +109,14 @@ export const AGENT_CONFIG: Readonly<Record<string, unknown>> = {
   },
 };
 
+/**
+ * Only transport metadata crosses into the UI. Never forward untrusted model
+ * text, hidden chain-of-thought, provider error bodies, or tool arguments.
+ */
+export type ModelStreamProgress =
+  | {readonly kind:"started"|"reasoning"|"response"}
+  | {readonly kind:"usage";readonly input:number|null;readonly output:number|null;readonly tokens:number|null;readonly cost:number|null};
+
 export interface BinaryModelOptions {
   /** Absolute path to the binary. Resolved by the caller, not guessed here. */
   binary: string;
@@ -122,6 +130,8 @@ export interface BinaryModelOptions {
   project?: string | null;
   /** `provider/model` for the local runtime, e.g. `opencode/space-bunny-free`. */
   model?: string;
+  /** Live, redacted transport metadata only. */
+  onProgress?: (event:ModelStreamProgress)=>void;
   /** Hard ceiling on one inference. A model that cannot be stopped is a hazard. */
   timeoutMs?: number;
 }
@@ -562,6 +572,34 @@ export class BinaryModelAdapter implements ModelAdapter {
     if (this.options.model) args.splice(1, 0, "--model", this.options.model);
 
     return new Promise<RawRun>((resolve, reject) => {
+      const report=(event:ModelStreamProgress)=>{try{this.options.onProgress?.(event);}catch{/* Presentation never changes inference. */}};
+      report({kind:"started"});
+      let pending = "";
+      let lastPhase:"started"|"reasoning"|"response"="started";
+      const stream=(chunk:string)=>{
+        pending+=chunk;
+        // A malicious/non-NDJSON stream must not grow the UI parser unbounded.
+        if(pending.length>262144){pending="";return;}
+        let end=pending.indexOf("\n");
+        while(end!==-1){
+          const line=pending.slice(0,end);pending=pending.slice(end+1);
+          try{
+            const event=JSON.parse(line) as {type?:unknown;part?:Record<string,unknown>};
+            const part=event.part;
+            if(part?.type==="reasoning" && lastPhase!=="reasoning"){
+              lastPhase="reasoning";report({kind:"reasoning"});
+            }
+            if(part?.type==="text" && lastPhase!=="response"){
+              lastPhase="response";report({kind:"response"});
+            }
+            if(part?.type==="step-finish"){
+              const value=usageOf({part});
+              if(value)report({kind:"usage",input:value.input,output:value.output,tokens:value.tokens,cost:value.cost});
+            }
+          }catch{/* Raw provider output is validated at the established parse boundary. */}
+          end=pending.indexOf("\n");
+        }
+      };
       // Inline config follows project config in OpenCode's merge order. The
       // proposal boundary must apply to projects as well as scratch runs;
       // writing a config into the user's project would mutate their settings.
@@ -589,7 +627,9 @@ export class BinaryModelAdapter implements ModelAdapter {
       }, this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
       child.stdout.on("data", (chunk: Buffer) => {
-        stdout += chunk.toString("utf8");
+        const data=chunk.toString("utf8");
+        stdout += data;
+        stream(data);
       });
       child.stderr.on("data", (chunk: Buffer) => {
         stderr += chunk.toString("utf8");
