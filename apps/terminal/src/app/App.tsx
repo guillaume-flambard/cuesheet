@@ -164,7 +164,7 @@ export function App(props: AppProps): JSX.Element {
         {state.overlay === "models" && agentModelsMode && producer ? (
           <AgentModels rows={contentRows} busy={state.busy} targets={()=>producer.agentModelTargets?.()??[]} apply={(role,choice)=>producer.selectAgentModel?.(role,choice)??{error:"Sélection indisponible."}} list={catalog} onClose={()=>send({type:"close"})}/>
         ) : state.overlay === "models" && binding ? (
-          <Models selection={binding.selection} rows={contentRows} busy={state.busy} list={catalog}
+          <Models selection={binding.selection} rows={contentRows} width={column} startWithModels={binding.selection.provider==='opencode'} busy={state.busy} list={catalog}
             apply={(choice, save) => {
               const result = binding.select(choice, { save, busy: store.get().busy, beforeCommit:selection=>producer?.modelSelected?.(selection) });
               if ("ok" in result) {

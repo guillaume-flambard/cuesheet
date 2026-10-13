@@ -2,9 +2,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { PROVIDERS, type ModelPreferences } from '../../../../src/adapters/model-preferences.ts';
 import type { CatalogModel } from '../../../../src/adapters/model-catalog.ts';
+import {theme,inkColor,glyph} from '../theme/tokens.ts';
 
 export interface ModelsProps {
   titlePrefix?:string;
+  width?:number;
+  /** Open the searchable OpenCode model list before the provider list. */
+  startWithModels?:boolean;
   sessionOnly?:boolean;
   selection: ModelPreferences;
   rows: number;
@@ -16,7 +20,9 @@ export interface ModelsProps {
 
 type Stage = 'provider' | 'endpoint' | 'model' | 'limit' | 'confirm';
 export function Models(props: ModelsProps): JSX.Element {
-  const [stage, setStage] = useState<Stage>('provider');
+  const [stage, setStage] = useState<Stage>(
+    props.startWithModels && props.selection.provider === 'opencode' ? 'model' : 'provider'
+  );
   const [choice, setChoice] = useState<ModelPreferences>(props.selection);
   const [at, setAt] = useState(Math.max(0, PROVIDERS.indexOf(props.selection.provider ?? 'opencode')));
   const [input, setInput] = useState('');
@@ -47,14 +53,21 @@ export function Models(props: ModelsProps): JSX.Element {
   const filtered = catalog.filter(model => `${model.id} ${model.name}`.toLowerCase().includes(input.toLowerCase()));
   const items = stage === 'provider' ? [...PROVIDERS] : stage === 'model' && !manual ? filtered.map(model => model.id) : [];
   const selected = Math.min(at, Math.max(0, items.length - 1));
-  const visible = Math.max(1, props.rows - 3);
+  const visible = Math.max(1, props.rows - 4);
   const start = Math.max(0, selected - visible + 1);
   const enterModel = (next: ModelPreferences) => {
     setChoice(next); setInput(''); setAt(0); setManual(false); setStage('model'); setError('');
   };
   useInput((text, key) => {
+    // Ink reports a standalone Escape as both escape and meta on some terminals.
+    // Process it before ignoring modifier shortcuts.
+    if (key.escape) {
+      if (props.startWithModels && stage === 'model') {
+        setStage('provider');setInput('');setError('');setAt(Math.max(0,PROVIDERS.indexOf(choice.provider??'opencode')));return;
+      }
+      return props.onClose();
+    }
     if (key.ctrl || key.meta) return;
-    if (key.escape) return props.onClose();
     if (key.tab && stage === 'model') { setManual(value => !value); setAt(0); return; }
     if (key.upArrow || key.downArrow) {
       if (stage === 'confirm' && !props.sessionOnly) setSave(value => !value);
@@ -96,17 +109,20 @@ export function Models(props: ModelsProps): JSX.Element {
     else if (text) setInput(value => value + text.replace(/[\r\n\x00-\x1f\x7f]/g, ''));
     setAt(0);
   });
-  const title = stage === 'provider' ? 'Provider et modèle' : `${choice.provider} · ${stage === 'endpoint' ? 'URL du serveur' : stage === 'model' ? 'Modèle' : stage === 'limit' ? 'Limite de sortie' : 'Appliquer'}`;
-  return <Box flexDirection="column" height={props.rows} overflow="hidden">
-    <Text bold wrap="truncate-end">{props.titlePrefix ? `${props.titlePrefix} · ${title}` : title}</Text>
-    {stage === 'provider' ? items.slice(start, start + visible).map((item, index) => <Text key={item} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{item}</Text>) : stage === 'confirm' ? <>
+  const title = stage === 'provider' ? 'Fournisseur et modèle' : `${choice.provider} · ${stage === 'endpoint' ? 'URL du serveur' : stage === 'model' ? 'Modèle' : stage === 'limit' ? 'Limite de sortie' : 'Appliquer'}`;
+  const limit = Math.max(1,Math.min(props.width??80,120));
+  const compact = limit < 54 || props.rows < 7;
+  return <Box flexDirection="column" height={props.rows} width={limit} overflow="hidden">
+    <Text bold color={inkColor(theme.text)} wrap="truncate-end">{props.titlePrefix ? `${props.titlePrefix} · ${title}` : title}</Text>
+    <Text color={inkColor(theme.faint)} wrap="truncate-end">{glyph.rule.repeat(Math.min(limit,72))}</Text>
+    {stage === 'provider' ? items.slice(start, start + visible).map((item, index) => <Text key={item} color={inkColor(start+index===selected?theme.brand:theme.text)} bold={start+index===selected} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{item === 'opencode' ? 'OpenCode' : item}</Text>) : stage === 'confirm' ? <>
       <Text wrap="truncate-end">{choice.model ?? 'Modèle configuré dans OpenCode'}</Text>
       {choice.baseUrl && <Text wrap="truncate-end">{choice.baseUrl}</Text>}
       <Text wrap="truncate-end">{choice.provider === 'opencode' ? 'Limite configurée dans OpenCode' : choice.maxTokens ? `${choice.maxTokens} tokens` : 'Limite du provider'} · {props.sessionOnly ? 'Appliquer à cette session' : save ? 'Appliquer et sauvegarder' : 'Appliquer pour ce terminal'}</Text>
     </> : <>
-      <Text wrap="truncate-start">{stage === 'model' ? (manual ? 'ID libre' : 'Recherche') : stage === 'limit' ? (choice.provider === 'anthropic' ? 'Tokens (requis)' : 'Tokens (vide : défaut)') : 'URL'} : {input}<Text inverse> </Text></Text>
-      {stage === 'model' && !manual && filtered.slice(start, start + Math.max(1, visible - 1)).map((model, index) => <Text key={model.id} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.id || model.name}</Text>)}
+      <Text wrap="truncate-start" color={inkColor(theme.text)}>{stage === 'model' ? (manual ? 'ID libre' : 'Rechercher un modèle') : stage === 'limit' ? (choice.provider === 'anthropic' ? 'Jetons (requis)' : 'Jetons (vide : défaut)') : 'URL'} : {input}<Text inverse> </Text></Text>
+      {stage === 'model' && !manual && filtered.slice(start, start + Math.max(1, visible - 1)).map((model, index) => <Text key={model.id} color={inkColor(start+index===selected?theme.brand:theme.text)} bold={start+index===selected} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.id || model.name}</Text>)}
     </>}
-    <Text wrap="truncate-end" dimColor>{error || (props.busy ? 'Travail en cours : le nouveau modèle prendra la suite.' : loading ? 'Chargement… Tab : ID libre · Esc : retour' : stage === 'model' ? `${catalog.length} modèles · Tab : ID libre · Entrée : choisir · Esc : retour` : stage === 'confirm' ? props.sessionOnly ? 'Entrée : appliquer · Esc : retour' : '↑↓ : sauvegarde · Entrée : appliquer · Esc : retour' : '↑↓ : choisir · Entrée : continuer · Esc : retour')}</Text>
+    <Text wrap="truncate-end" color={inkColor(error?theme.failed:theme.dim)}>{error || (props.busy ? 'Travail en cours : changement à la prochaine requête.' : loading ? (compact?'Chargement des modèles…':'Chargement du catalogue… · Échap : fournisseurs') : stage === 'model' ? (compact ? `${catalog.length} références · Entrée : choisir · Tab : ID` : `${catalog.length} références · Connexion non vérifiée · Tab : ID libre · Entrée : choisir`) : stage === 'confirm' ? props.sessionOnly ? 'Entrée : appliquer · Échap : retour' : '↑↓ : mémoriser · Entrée : appliquer · Échap : retour' : '↑↓ : choisir · Entrée : continuer · Échap : fermer')}</Text>
   </Box>;
 }
