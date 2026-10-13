@@ -56,3 +56,9 @@ Read SPEC.md and this note; choose one slice, don't overwrite the dirty main che
 - Regression: deferred catalog, premature Enter, scroll to last slot, no-match + failed implicit ID, manual opt-in. Existing first-run and agent-model fixtures updated.
 - ANSI PTY grid screenshots stored at /Users/memo/projects/_scratch/cuesheet-model-picker-clarity-20261013/screenshot-models-{open,search,compact}.png (not macOS desktop captures).
 - No real model inference in this slice; previous P0-LIVE evidence remains as recorded. UI layer only.
+
+## 2026-10-13 UX1b actual macOS bracketed paste
+- Reproduction before fix in scratch /Users/memo/projects/_scratch/cuesheet-composer-paste-pty-20261013: pasted string was polluted with [200~ and ESC[201~; no premature submit.
+- After fix in /Users/memo/projects/_scratch/cuesheet-composer-paste-fixed-20261013: draft was 'Débutconst x=1;\nconsole.log(x);\n// fin'; transport markers absent and submits array stayed empty until bare Enter. The preceding 'Début' was deliberately already in the draft.
+- Composer now strips OSC/CSI terminal-control framing but retains lines, tabs, and safe printable text. Existing Unicode editor and history semantics unchanged.
+- Scoped to frontend; no real provider inference or owner preference mutation.

@@ -18,3 +18,18 @@ export function edit(text: string, cursor: number, action: Edit | { insert: stri
   else if (action === "clear") { chars.length = 0; at = 0; }
   return { text: chars.join(""), cursor: at };
 }
+
+
+/**
+ * Ink does not consistently remove terminal bracketed-paste delimiters:
+ * a real macOS PTY can deliver "[200~" (after consuming ESC) and "\x1b[201~"
+ * inside the same text event. Those are transport framing, not user content.
+ * Preserve line breaks and tabs, but never store control sequences in a prompt.
+ */
+export function cleanTerminalInput(input: string): string {
+  return input
+    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+    .replace(/(?:\x1b)?\[(?:200|201)~/g, "")
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
+}

@@ -48,3 +48,9 @@ Acceptance: `node scripts/ui/verify.mjs 40 14`, `80 24`, `120 40` all pass, and 
 - Keep the selection arrow in the usable list viewport at any row count.
 - Enter during catalogue loading never applies a partial identifier; a no-match query never becomes an implicit free-text model ID. Tab remains an explicit manual-entry opt-in.
 - Gate: real Ink keyboard render, real Mac node-pty 80×24→40×14, typecheck and clean CI. Preserve shell, existing sessions and real model credentials.
+
+## UX1b relay 2026-10-13 — bracketed paste boundary
+- Real macOS PTY revealed literal bracketed paste wrappers leaking into the composer draft and eventual model input. A valid pasted multiline block must retain line structure, whitespace, and Unicode graphemes without shell framing or ANSI injection.
+- The frontend shall remove terminal control framing before draft edit, preserving CRLF (normalized by the existing editor) and tabs.
+- Paste must not submit a turn; only a subsequent explicit bare Enter may send. No filesystem reads/tools during React render.
+- Verify both pure edits/Ink and real Mac PTY before/after, plus 40×14/80×24/120×40 shell proof and clean CI.
