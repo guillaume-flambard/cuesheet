@@ -35,6 +35,28 @@ test('persistence failure before intent prevents effects; bounded work never loo
   assert.equal((await runCodeWorker({...f.options,append:()=>{throw Error('disk failed');},tools})).phase,'failed');assert.equal(effects,0);
   assert.equal((await runCodeWorker({...f.options,maxSteps:1,tools})).phase,'exhausted');assert.equal(effects,1);
 });
+
+test('cancelled non-cooperative tool unblocks worker with an uncertain effect and no forged receipt',async()=>{
+  let started!:()=>void, release!:()=>void;
+  const running=new Promise<void>(resolve=>started=resolve);
+  const held=new Promise<void>(resolve=>release=resolve);
+  const f=fixture({name:'fixture',async infer(){return {text:'',toolCalls:[{name:'node',input:{argv:['node','-e','effect']}}]};}});
+  let toolCalls=0;
+  const execution=runCodeWorker({...f.options,tools:{async run(){toolCalls++;started();await held;return {name:'node',exit:0,output:'late success'};}}});
+  let watchdog:ReturnType<typeof setTimeout>|undefined;
+  try {
+    await running;
+    f.abort.abort(new Error('human interrupted'));
+    const result=await Promise.race([execution,new Promise<never>((_,reject)=>{watchdog=setTimeout(()=>reject(new Error('worker ignored abort during tool')),1000);})]);
+    assert.equal(result.phase,'uncertain');
+    assert.equal(toolCalls,1);
+    assert.equal(projectEffectAttempts(f.store.toSession().events)[0]?.phase,'uncertain');
+    assert.equal(f.store.toSession().events.some(e=>e.subject==='terminal.receipt'),false);
+    release();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(f.store.toSession().events.some(e=>e.subject==='terminal.receipt'),false);
+  } finally {if(watchdog)clearTimeout(watchdog);release();}
+});
 test('final worker frame ceiling includes its task and private observations before inference',async()=>{
   let calls=0;const f=fixture({name:'fixture',async infer(){calls++;return {text:'',toolCalls:[]};}});
   const result=await runCodeWorker({...f.options,maxFrameChars:4000,frame:()=>({...frame,goal:'x'.repeat(4000)}),tools:{async run(){throw Error('no effect');}}});

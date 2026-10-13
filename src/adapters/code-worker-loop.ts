@@ -47,7 +47,22 @@ export async function runCodeWorker(options: {
         effectPending=true;
         // Append callbacks may themselves observe a new human revision.
         if(!current())return outcome('uncertain');
-        const result=await options.tools.run(request);
+        // A tool adapter may ignore AbortSignal and never settle. The intent is already
+        // durable, so cancellation must return UNCERTAIN rather than claiming completion
+        // or keeping the controller/other workers waiting indefinitely.
+        let stopTool=()=>{};
+        const cancelledTool=new Promise<never>((_,reject)=>{
+          stopTool=()=>reject(options.signal.reason??new Error('Worker cancelled during tool execution.'));
+          options.signal.addEventListener('abort',stopTool,{once:true});
+          if(options.signal.aborted)stopTool();
+        });
+        let result;
+        try {
+          result=await Promise.race([
+            Promise.resolve().then(()=>{options.signal.throwIfAborted();return options.tools.run(request);}),
+            cancelledTool,
+          ]);
+        } finally {options.signal.removeEventListener('abort',stopTool);}
         if(result.exit===null||!Number.isInteger(result.exit))return outcome('uncertain');
         options.append({kind:'note',subject:'terminal.receipt',data:{version:1,operation:'completed',intentSeq:intent.seq,tool:request.name,exit:result.exit,digest:createHash('sha256').update(result.output).digest('hex')}});
         effectPending=false;
