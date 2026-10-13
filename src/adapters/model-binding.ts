@@ -57,7 +57,7 @@ export function createModelBinding(options: { onUsage?:UsageSink; project: strin
     adapter,
     get selection() { return { ...selection }; },
     get missing() { return 'missing' in resolved ? resolved.missing : null; },
-    get label() { return 'missing' in resolved ? 'no model' : `${resolved.name}${resolved.model ? ` · ${resolved.model}` : ''}`; },
+    get label() { return 'missing' in resolved ? 'aucun modèle' : `${resolved.name}${resolved.model ? ` · ${resolved.model}` : ''}`; },
     select(choice, { save, beforeCommit }) {
       let clean: ModelPreferences;
       try { clean = validatePreferences(choice); }

@@ -125,7 +125,7 @@ export function Composer(props: {
           <Text color={inkColor(props.disabled ? theme.faint : theme.brand)} bold>{glyph.input} </Text>
           <Text inverse>{" "}</Text>
           <Text wrap="truncate-end" color={inkColor(theme.faint)}>
-            {props.disabled ? "no model to answer with" : `${props.placeholder ?? "dis-moi ce que tu veux faire"}     Ctrl+K`}
+            {props.disabled ? "aucun modèle pour répondre" : `${props.placeholder ?? "dis-moi ce que tu veux faire"}     Ctrl+K`}
           </Text>
         </Box>
       ) : lines.map((line, i) => (

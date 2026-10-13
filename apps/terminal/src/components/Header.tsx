@@ -26,9 +26,9 @@ export function Header(props: {
     <Box flexDirection="column" flexShrink={0}>
       <Box justifyContent="space-between">
         <Text color={inkColor(theme.brand)} bold>cuesheet</Text>
-        <Text wrap="truncate-middle" color={inkColor(theme.dim)}>{props.project ?? "no project"}</Text>
+        <Text wrap="truncate-middle" color={inkColor(theme.dim)}>{props.project ?? "aucun projet"}</Text>
         <Text color={inkColor(props.busy ? theme.active : theme.confirmed)}>
-          {props.busy ? `${glyph.active} working` : `${glyph.confirmed} ready`}
+          {props.busy ? `${glyph.active} en cours` : `${glyph.confirmed} prêt`}
         </Text>
       </Box>
       <Text wrap="truncate-end" color={rule}>{props.model}</Text>
