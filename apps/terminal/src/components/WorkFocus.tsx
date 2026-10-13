@@ -10,6 +10,17 @@ const colors = {
   failed: theme.failed,
 } as const;
 
+/**
+ * At 40 columns the fixed focus strip must show the observed value, not a
+ * repeated category prefix. Drop only leading context segments; the timeline
+ * still keeps the full evidence and is navigable.
+ */
+export function compactFocusDetail(detail: string, width: number): string {
+  const parts = detail.split(" · ");
+  while (parts.length > 1 && [...parts.join(" · ")].length > width) parts.shift();
+  return parts.join(" · ");
+}
+
 /** One quiet, fixed-height overview; no side effects or direct runtime access. */
 export function WorkFocus({ focus, width, compact }: {
   focus: Focus;
@@ -29,7 +40,7 @@ export function WorkFocus({ focus, width, compact }: {
           : `${compact ? "Demande" : "Ta demande"} · ${focus.request}`}
       </Text>
       <Text wrap="truncate-end" color={inkColor(colors[focus.tone])}>
-        {focus.detail}
+        {compact ? compactFocusDetail(focus.detail, width) : focus.detail}
       </Text>
     </Box>
   );

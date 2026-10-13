@@ -18,3 +18,7 @@ OpenCode v2 shows catalog models from providers without configured credentials. 
 - Unmatched models remain searchable, not silently hidden.
 - No account is described as verified until a real inference succeeds.
 - Tests and TypeScript succeed.
+
+## Relay 2 — P0-NARROW-PTY (2026-10-13)
+At 40×14, the fixed focus line truncated the evidence identifier even though the timeline contained it; the PTY proof failed. Make the focus adaptive by omitting redundant prefix segments and preserving the result, and change the "you" label to French. Do not change the engine or hide the full timeline.
+Acceptance: `node scripts/ui/verify.mjs 40 14`, `80 24`, `120 40` all pass, and terminal TypeScript passes.
