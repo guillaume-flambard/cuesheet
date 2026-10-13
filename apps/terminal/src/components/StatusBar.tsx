@@ -14,6 +14,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
 import type { Entry } from "../app/state.ts";
+import { frenchCount } from "./french-count.ts";
 
 export function StatusBar(props: {
   width: number;
@@ -31,15 +32,15 @@ export function StatusBar(props: {
     if (e.label.startsWith("edit")) modified += 1;
     if (e.certainty === "failed") failed += 1;
   }
-  const right = props.busy ? `${glyph.active} en cours` : failed > 0 ? `${glyph.failed} ${failed} échec(s)` : "? aide";
+  const right = props.busy ? `${glyph.active} en cours` : failed > 0 ? `${glyph.failed} ${frenchCount(failed, "échec")}` : "? aide";
   // A count of zero is not a fact a person asked for, it is the absence of one.
   // `modified` was already conditional and `read` was not, so the status bar
   // reported "0 read" on every quiet session, which says nothing and reads like
   // an internal metric. Every count is now conditional for the same reason.
   const parts: string[] = [];
-  if (read > 0) parts.push(`${read} lu(s)`);
-  if (props.notifications) parts.push(`${props.notifications} notification(s)`);
-  if (modified > 0) parts.push(`${modified} modifié(s)`);
+  if (read > 0) parts.push(frenchCount(read, "lu"));
+  if (props.notifications) parts.push(frenchCount(props.notifications, "notification"));
+  if (modified > 0) parts.push(frenchCount(modified, "modifié"));
   return (
     <Box justifyContent="space-between" flexShrink={0}>
       <Text color={inkColor(theme.faint)}>{parts.join(" · ")}</Text>
