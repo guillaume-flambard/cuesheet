@@ -100,13 +100,13 @@ describe("runAgentLoop", () => {
 
     assert.equal(
       outcome.stop.reason,
-      "budget-exhausted",
-      "the model saying done is not evidence",
+      "stagnation",
+      "the model saying done is not evidence or fresh progress",
     );
     assert.equal(
       outcome.claims.length,
-      3,
-      "the scripted provider repeats its last response, so the claim recurs every step",
+      1,
+      "identical text without effects is shown only once, even when the model repeats it",
     );
     assert.equal(outcome.claims[0], "done, all verified");
     assert.equal(outcome.session.goal?.open, true, "the goal stays open");
@@ -166,7 +166,7 @@ describe("runAgentLoop", () => {
       name: "endless",
       async infer() {
         calls++;
-        return { text: "still thinking", toolCalls: [] };
+        return { text: `still thinking ${calls}`, toolCalls: [] };
       },
     };
 
@@ -240,7 +240,7 @@ describe("runAgentLoop", () => {
       name: "observing",
       async infer(frame) {
         seen.push(frame);
-        return { text: "ok", toolCalls: [] };
+        return { text: `ok ${seen.length}`, toolCalls: [] };
       },
     };
 

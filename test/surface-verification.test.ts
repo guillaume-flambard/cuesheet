@@ -63,7 +63,7 @@ it("a model cannot weaken the check by rewriting its source or passing another c
     producer.say("produce answer.txt containing 42"); await idle(store);
     assert.ok(store.get().log.some((l) => l.includes('"verdict":"REJECTED"')));
     assert.equal(store.get().log.some((l) => l.startsWith("[evidence]")), false);
-    assert.ok(store.get().entries.some((e) => e.kind === "status" && e.label === "work" && e.certainty === "unknown"));
+    assert.ok(store.get().entries.some((e) => e.kind === "status" && (e.label === "work" || e.label === "réponse") && e.certainty === "unknown"));
   } finally { w.clean(); }
 });
 

@@ -245,10 +245,25 @@ export function readStream(stdout: string): {
     }
     const event = parsed as Record<string, unknown>;
     if(event.type==="error"){
-      const error=event.error as {name?:unknown;data?:{statusCode?:unknown;message?:unknown}}|undefined;
-      const status=error?.name==="APIError"&&Number.isSafeInteger(error.data?.statusCode)&&Number(error.data?.statusCode)>=400&&Number(error.data?.statusCode)<=599 ? Number(error.data!.statusCode):null;
-      const free=status===403&&typeof error?.data?.message==="string"&&error.data.message.includes("free tier")&&error.data.message.includes("within OpenCode");
-      providerErrors.push(free?"provider refused HTTP 403: its free tier is restricted to OpenCode usage; choose a provider/model admitted for this harness. No fallback was selected.":status===401?"provider refused HTTP 401: verify authentication for the selected provider.":status===403?"provider refused HTTP 403: access is not admitted for this request.":status===429?"provider refused HTTP 429: rate or quota limit; retry later or choose an admitted model.":status!==null?`provider refused HTTP ${status}; no proposal was accepted.`:"provider emitted an error; no proposal was accepted.");continue;
+      // OpenCode v1 wrapped provider errors in APIError.data, whereas v2
+      // emits {type:'provider.auth'|'provider.no-route',status,message}.
+      // Never interpolate the provider body or arbitrary message: credentials
+      // and prompt contents may be present there.
+      const error=event.error as {name?:unknown;type?:unknown;status?:unknown;message?:unknown;data?:{statusCode?:unknown;message?:unknown}}|undefined;
+      const code=error?.status ?? (error?.name==="APIError" ? error.data?.statusCode : null);
+      const status=Number.isSafeInteger(code)&&Number(code)>=400&&Number(code)<=599 ? Number(code) : null;
+      const message=typeof error?.message==="string" ? error.message
+        : typeof error?.data?.message==="string" ? error.data.message : "";
+      const free=status===403&&message.includes("free tier")&&message.includes("within OpenCode");
+      const noRoute=error?.type==="provider.no-route";
+      providerErrors.push(free?"HTTP 403 : formule gratuite (free tier) réservée à l'application OpenCode. Choisis un autre modèle pour Cuesheet."
+        :noRoute?"Modèle non accessible depuis ce compte (catalogue ≠ accès réel). Choisis un autre modèle."
+        :status===401?"HTTP 401 : identifiants du fournisseur manquants ou invalides."
+        :status===403?"HTTP 403 : accès refusé par le fournisseur pour ce modèle."
+        :status===410?"HTTP 410 : modèle retiré par le fournisseur. Choisis un autre modèle."
+        :status===429?"HTTP 429 : quota ou limite atteinte ; réessaie plus tard."
+        :status!==null?`HTTP ${status} : le fournisseur a refusé la demande.`
+        :"Le fournisseur a renvoyé une erreur. Vérifie le compte et le modèle choisi.");continue;
     }
     const part = event["part"] as Record<string, unknown> | undefined;
     if (!part) {

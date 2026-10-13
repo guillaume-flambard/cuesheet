@@ -316,9 +316,9 @@ describe("UI-01 one semantic response renders exactly once", () => {
     const run = await drive(model, "keep going");
 
     const said = answers(run.state);
-    assert.equal(calls, 8, "the run really did spend its whole step budget");
-    assert.equal(said.length, 8, "eight answers the model gave are eight lines a person read");
-    assert.equal(new Set(said.map((entry) => (entry.kind === "cuesheet" ? entry.id : ""))).size, 8, "and eight names for them");
+    assert.equal(calls, 2, "repeating identical tool-free text stops as unverified stagnation");
+    assert.equal(said.length, 1, "only the first tool-free answer is recorded, never a duplicate");
+    assert.equal(new Set(said.map((entry) => (entry.kind === "cuesheet" ? entry.id : ""))).size, 1, "one event has one stable identity");
   });
 
   it("a remounted surface draws the reply once, from the names it holds", () => {

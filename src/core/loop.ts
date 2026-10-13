@@ -121,6 +121,7 @@ export interface LoopOptions {
 export type LoopStop =
   | { reason: "goal-closed"; steps: number; evidence: number }
   | { reason: "budget-exhausted"; steps: number; evidence: number }
+  | { reason: "stagnation"; steps: number; evidence: number }
   | { reason: "blocked"; missing: string[] };
 
 export interface LoopOutcome {
@@ -272,14 +273,27 @@ export async function runAgentLoop(
   // observations; prevent further identical denied effects and leave the goal
   // open for a human to correct the tool route or the plan.
   let previousRefusedBatch: string | null = null;
+  let previousIdleReply: string | null = null;
 
   for (let step = 1; step <= options.maxSteps; step++) {
     const session = store.toSession();
     const frame = compileFrame(session, options, step);
 
     const response = await model.infer(frame);
+    const reply = response.text.trim();
+    // Repeating an unchanged answer without proposing any tool/effect is not
+    // progress. Do not charge for 30 more identical calls or paint duplicates.
+    // Importantly this NEVER closes the goal: an answer is not evidence.
+    if (reply && response.toolCalls.length === 0 && reply === previousIdleReply) {
+      return {
+        stop: { reason: "stagnation", steps: step, evidence: session.evidence.length },
+        session,
+        claims,
+      };
+    }
+    previousIdleReply = reply && response.toolCalls.length === 0 ? reply : null;
 
-    if (response.text.trim()) {
+    if (reply) {
       claims.push(response.text);
       append({
         kind: "observation",

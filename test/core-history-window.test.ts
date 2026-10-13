@@ -61,7 +61,7 @@ it("every inference recompiles its recent window from new canonical events", asy
       return { text: "not a proof", toolCalls: [] };
     },
   }, { async run() { throw Error("no tool"); } }, { subject: "builder", goal: "continue", maxSteps: 2 });
-  assert.equal(outcome.stop.reason, "budget-exhausted");
+  assert.equal(outcome.stop.reason, "stagnation");
   assert.equal(windows.length, 2);
   assert.deepEqual(windows.map(w => w.length), [128, 128]);
   assert.equal(windows[1].last, (windows[0].last ?? 0) + 1);

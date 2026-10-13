@@ -23,3 +23,17 @@ Read SPEC.md and this note; choose one slice, don't overwrite the dirty main che
 - Change: compact WorkFocus strips redundant left context until the meaningful evidence fits the small viewport; Timeline actions abbreviate labels at narrow widths, and user attribution is now "vous".
 - Proof after change: 40×14 PASS, 80×24 PASS, 120×40 PASS. TypeScript PASS; diff check PASS.
 - Do not claim a real owner visual review or authenticated model response. The actual local installed runtime still needs refresh after green CI.
+
+## 2026-10-13 real Mac E2E / visual proof
+- Owner Mac: OpenCode v2.0.27, Cuesheet on real node-pty with keyboard model selection, submit, resize and cancellation.
+- Baseline defect: OpenCode model free-tier 403 and Google no-route both reported as generic provider error; initial actual model responded three times while terminal remained busy.
+- Corrected source: OpenCode Go free-preview returns `BONJOUR-CUESHEET-OK` exactly once. Early journal `stagnation` accepts real step count 2 (previous validator erroneously expected 8, causing Invalid execution record). UI returns to `prêt`, while keeping goal non-verified.
+- Screenshots generated from the PTY's rendered ANSI character grid (text contrast approximation, not macOS desktop capture): `/Users/memo/projects/_scratch/cuesheet-e2e-owner-20261013/screenshot-*.png`.
+- Mac saved preference was inadvertently changed by first UI test; restored from earlier durable session to openrouter/google/gemma-4-26b-a4b-it:free. Later selector tests toggle session-only explicitly.
+- Focused isolated tests: 72 pass, 2 live skipped. Typecheck green. Full parallel suite and GitHub CI pending.
+- Outstanding: project-name auto-bind false positive; visual polish and real-terminal resize during an active run warrant another focused relay.
+
+## P0 CI correction relay
+- Keep this PR scoped to runtime repeat guard, actual execution journal and OpenCode v2 typed failures. Revert unrelated French palette/status styling; those belong in a separate UI PR because fixture coverage depends on stable strings.
+- Update old fixtures that expected eight duplicate text-only inferences to expect one durable reply, two provider inferences and an honest unverified stagnation stop.
+- On Mac: 123 impacted tests PASS using isolated XDG configuration and terminal TypeScript PASS. CI must establish the full clean baseline.

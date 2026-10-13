@@ -140,7 +140,7 @@ if(process.argv[2]==='init')runtime.producer.say('persist this goal');else runti
 const until=Date.now()+5000;while(runtime.store.get().busy && Date.now()<until)await new Promise(r=>setTimeout(r,10));
 console.log(JSON.stringify({id:runtime.session.metadata.id,metadata:runtime.session.metadata,closed:runtime.session.core.toSession().goal?.open===false,evidence:runtime.session.core.toSession().evidence,calls}));runtime.session.close();}`);
     const env:NodeJS.ProcessEnv={PATH:process.env.PATH,HOME:root,CUESHEET_SESSIONS:storage,CUESHEET_PROVIDER:'compatible',CUESHEET_MODEL:'fixture',CUESHEET_BASE_URL:'http://localhost:9000/v1',CUESHEET_VERIFY_SCRIPT:check};
-    const first=spawnSync(process.execPath,[script,'init'],{env,encoding:'utf8',timeout:10000});assert.equal(first.status,0,first.stderr);const initial=JSON.parse(first.stdout.trim());assert.equal(initial.calls,8);assert.equal(initial.closed,false);
+    const first=spawnSync(process.execPath,[script,'init'],{env,encoding:'utf8',timeout:10000});assert.equal(first.status,0,first.stderr);const initial=JSON.parse(first.stdout.trim());assert.equal(initial.calls,2);assert.equal(initial.closed,false);
     writeFileSync(check,'process.exit(1)');delete env.CUESHEET_VERIFY_SCRIPT;
     const second=spawnSync(process.execPath,[script,'resume',initial.id],{env,encoding:'utf8',timeout:10000});assert.equal(second.status,0,second.stderr);const resumed=JSON.parse(second.stdout.trim());
     assert.equal(resumed.closed,true);assert.equal(resumed.calls,1);assert.equal(resumed.metadata.check.digest,initial.metadata.check.digest);assert.ok(existsSync(resumed.evidence[0].backing));

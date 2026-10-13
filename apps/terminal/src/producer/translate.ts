@@ -311,6 +311,9 @@ export function entryForStop(stop: LoopStop, run: EntryId): Entry[] {
   if (stop.reason === "budget-exhausted") {
     return [{ id, kind: "status", label: "work", value: `still open after ${stop.steps} steps`, certainty: "unknown" }];
   }
+  if (stop.reason === "stagnation") {
+    return [{ id, kind: "status", label: "réponse", value: "Réponse affichée, aucun nouveau progrès. Le travail reste non vérifié.", certainty: "unknown" }];
+  }
   // Blocked. The three stops are different facts and the surface says which one
   // it was: a run that could not start is not a run that failed to finish.
   return stop.missing.length > 0

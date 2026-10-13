@@ -430,7 +430,7 @@ describe("a real run reaches the timeline as real observations", () => {
     // out of budget, and the surface said so.
     const status = entries(store.get(), "status");
     assert.ok(
-      status.some((s) => s.kind === "status" && /still open/.test(s.value)),
+      status.some((s) => s.kind === "status" && s.certainty === "unknown" && /still open|non vérifié/.test(s.value)),
       `the surface reported the budget, not the model's claim: ${JSON.stringify(status)}`,
     );
   });
@@ -734,7 +734,7 @@ describe("the loop's own stop decides what the surface says", () => {
 
     const statuses = entries(store.get(), "status").filter((s) => s.kind === "status");
     assert.ok(
-      statuses.some((s) => s.kind === "status" && s.certainty === "unknown" && /still open/.test(s.value)),
+      statuses.some((s) => s.kind === "status" && s.certainty === "unknown" && /still open|non vérifié/.test(s.value)),
       `the run is reported as open: ${JSON.stringify(statuses)}`,
     );
     assert.ok(
