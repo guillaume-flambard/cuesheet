@@ -18,7 +18,23 @@ async function fixture(run:(source:string,root:string,git:(...args:string[])=>st
   const git=(...args:string[])=>execFileSync('git',args,{cwd:source,env:childEnv({home:dir,sessions:root}),encoding:'utf8'}).trim();
   try{git('init','-q');git('config','user.name','Fixture');git('config','user.email','fixture@example.invalid');writeFileSync(join(source,'file'),'base');git('add','.');git('commit','-qm','base');await run(source,root,git);}finally{rmSync(dir,{recursive:true,force:true});}
 }
-async function wait(view:ReturnType<typeof createStore>){const until=Date.now()+15000;while(view.get().busy&&Date.now()<until)await new Promise(r=>setTimeout(r,10));assert.equal(view.get().busy,false);}
+async function wait(view:ReturnType<typeof createStore>){
+  if (!view.get().busy) return;
+  await new Promise<void>((resolve,reject)=>{
+    let settled=false;
+    let unsubscribe=()=>{};
+    const settle=(error?:Error)=>{
+      if(settled)return;
+      settled=true;
+      clearTimeout(timer);
+      unsubscribe();
+      if(error)reject(error);else resolve();
+    };
+    const timer=setTimeout(()=>settle(new Error("worker run did not become idle; surface="+JSON.stringify({busy:view.get().busy,phase:view.get().phase}))),15000);
+    unsubscribe=view.subscribe(()=>{if(!view.get().busy)settle();});
+    if(!view.get().busy)settle();
+  });
+}
 const tasks={tasks:[{role:'builder',task:'Build useful file',files:['built']},{role:'tester',task:'Test independently',files:['tested']}]};
 function factory(scope:string,root:string){return Object.assign(new ShellToolRunner({allow:['node','cat','ls'],roots:[scope],defaultCwd:scope,env:childEnv({home:root,sessions:root})}),{names:['node','cat','ls']});}
 test('producer runs isolated workers, feeds private observations, persists receipts and refuses premature finish',async()=>fixture(async(source,root,git)=>{
