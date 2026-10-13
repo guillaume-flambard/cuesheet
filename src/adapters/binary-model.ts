@@ -32,7 +32,7 @@ import {declaredTools} from "./tool-vocabulary.ts";
  *
  * So Cuesheet owns the agent definition. `agentConfig()` below writes a
  * project-local `opencode.json` with an empty tool list and an empty permission
- * set, and `--pure` keeps an external plugin from adding a tool back. The binary
+ * set, and OPENCODE_PURE=1 prevents external plugins from adding tools back. The binary
  * is then asked what it *would* do, and the answer arrives as text.
  *
  * ## Why the proposal is parsed out of text
@@ -45,9 +45,9 @@ import {declaredTools} from "./tool-vocabulary.ts";
  * Cuesheet's own `ShellToolRunner` like any other. Four verbs, frozen capture
  * and the oracle are untouched, and "the model said it finished" stays a claim.
  *
- * ## On `--dir`
+ * ## On the execution directory
  *
- * The binary requires a working directory, so one is always passed. When the
+ * The binary requires a working directory, so one is always supplied. When the
  * caller resolved a project, that project is the directory, so the binary's view
  * of the world matches the frame it was handed. When the context source is
  * `scratch` and there is no repository at all, a throwaway directory is created
@@ -65,7 +65,7 @@ import {declaredTools} from "./tool-vocabulary.ts";
 import { spawn } from "node:child_process";
 import { accessSync, constants, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join } from "node:path";
+import { join } from "node:path";
 
 import type { ContextFrame, ModelAdapter, ModelResponse, ToolRequest } from "../core/loop.ts";
 import { FailureWithOrigin } from "../effects.ts";
@@ -97,6 +97,14 @@ export const AGENT_CONFIG: Readonly<Record<string, unknown>> = {
       mode: "primary",
       tools: { "*": false },
       permission: { "*": "deny" },
+    },
+  },
+  // OpenCode v2 uses plural agents and ordered permission rules.
+  agents: {
+    [PROPOSAL_AGENT]: {
+      description: "Proposes work as text. No tools, no filesystem, no shell.",
+      mode: "primary",
+      permissions: [{ action: "*", resource: "*", effect: "deny" }],
     },
   },
 };
@@ -460,16 +468,13 @@ export class BinaryModelAdapter implements ModelAdapter {
   /**
    * The directory the binary runs in.
    *
-   * The project when there is one, so the binary's own view of the world is the
-   * project rather than wherever Cuesheet was launched. A scratch run has no
-   * repository, and gets a throwaway directory it will never write to, because
-   * the alternative is inventing a working directory for a model that has no
-   * business having one.
+   * All inference runs are isolated from project-local OpenCode configuration.
+   * The user project stays within the owner-controlled ContextFrame and tools.
    */
   private workingDir(): { dir: string; owned: boolean } {
-    const project = this.options.project;
-    if (project && isAbsolute(project)) return { dir: project, owned: false };
-    if (project && project.trim() !== "") return { dir: project, owned: false };
+    // OpenCode v2 loads per-project config (including agents and permissions).
+    // Running in an untrusted project could override our deny-all proposer.
+    // Use a fresh owned directory: workspace facts are already in the frame.
     return { dir: mkdtempSync(join(tmpdir(), "cuesheet-model-")), owned: true };
   }
 
@@ -479,9 +484,6 @@ export class BinaryModelAdapter implements ModelAdapter {
       // The agent config lives in the directory the binary is pointed at, which
       // is what makes the tool list empty. For a scratch run that directory is
       // the throwaway one, so the config is written there and nowhere else.
-      if (owned) {
-        writeFileSync(join(dir, "opencode.json"), JSON.stringify(AGENT_CONFIG, null, 2), "utf8");
-      }
       const run = await this.spawnRun(dir, frame, signal);
       return parseProposal(run);
     } finally {
@@ -522,18 +524,24 @@ export class BinaryModelAdapter implements ModelAdapter {
       return Promise.reject(new FailureWithOrigin("launch", "world", "OPENCODE_CONFIG_CONTENT must be a JSON object"));
     }
     const inheritedAgents = inline.agent && typeof inline.agent === "object" && !Array.isArray(inline.agent) ? inline.agent : {};
-    const config = { ...inline, ...AGENT_CONFIG, agent: { ...inheritedAgents, ...(AGENT_CONFIG.agent as Record<string, unknown>) } };
+    const inheritedV2Agents = inline.agents && typeof inline.agents === "object" && !Array.isArray(inline.agents) ? inline.agents : {};
+    const config = {
+      ...inline, ...AGENT_CONFIG,
+      agent: { ...inheritedAgents, ...(AGENT_CONFIG.agent as Record<string, unknown>) },
+      agents: { ...inheritedV2Agents, ...(AGENT_CONFIG.agents as Record<string, unknown>) },
+    };
+    // Write the effective proposer config in the private invocation directory.
+    // OpenCode v2 may not honor OPENCODE_CONFIG_CONTENT on all subcommands;
+    // local configuration loading is independently inspectable.
+    writeFileSync(join(dir, "opencode.json"), JSON.stringify(config), {mode:0o600});
     const args = [
       "run",
-      "--dir",
-      dir,
+      "--standalone",
       "--agent",
       PROPOSAL_AGENT,
       "--format",
       "json",
-      // No external plugins. A plugin is third-party code that could add a tool
-      // to the list this adapter's whole argument depends on being empty.
-      "--pure",
+      // OpenCode v2 removed --pure; OPENCODE_PURE still disables plugins.
       renderProposalPrompt(frame, vocabularyOf(frame)),
     ];
     if (this.options.model) args.splice(1, 0, "--model", this.options.model);
@@ -543,9 +551,10 @@ export class BinaryModelAdapter implements ModelAdapter {
       // proposal boundary must apply to projects as well as scratch runs;
       // writing a config into the user's project would mutate their settings.
       const child = spawn(this.options.binary, args, {
+        cwd: dir,
         stdio: ["ignore", "pipe", "pipe"],
         signal, killSignal: "SIGKILL",
-        env: { ...process.env, OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
+        env: { ...process.env, OPENCODE_PURE: "1", OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
       });
       let stdout = "";
       let stderr = "";
