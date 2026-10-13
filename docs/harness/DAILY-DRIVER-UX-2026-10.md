@@ -70,3 +70,7 @@ Un check exécuté sur un artefact figé peut conserver jusqu’à 16 Kio (octet
 ## Identité du check dans les reçus de revue
 
 Un verdict `VERIFIED` ne peut apparaître comme « vérifié historiquement » pour le contrat courant que si l’effet ciblé, le digest d’artefact, l’objectif et sa révision, ainsi que le digest du critère épinglé à cette révision correspondent. Un reçu provenant d’un autre check ou visant un autre effet reste visible comme historique mais NON VALIDÉ pour le contrat courant. Cette lecture ne recalcule pas le workspace et ne change pas le statut objectif.
+
+## Audit P0 de démarrage — 2026-10-13
+
+Sur le Mac de développement, OpenCode v2.0.27 est installé dans ~/.opencode/bin/opencode. La commande historique opencode models --pure échoue, tandis que opencode models renvoie 577 identifiants filtrés. Ce correctif de catalogue ne prouve ni l’authentification de chaque modèle ni la compatibilité du transport d’inférence, qui utilise aussi des paramètres CLI historiques. Le parcours connexion puis premier prompt, le resize, la langue et l’esthétique restent des P0 à démontrer en usage réel.\n
