@@ -81,3 +81,7 @@ La CLI locale v2.0.27 accepte `run --standalone --agent <id> --format json` mais
 ## Sélection du modèle — accès direct (2026-10-13)
 
 Depuis la surface principale, le choix OpenCode ouvre un catalogue filtrable sans demander de sélectionner à nouveau le fournisseur. Le nombre de références affiché ne garantit pas la disponibilité d'un accès authentifié. Ink peut marquer Échap comme meta : le gestionnaire traite désormais Échap avant d'ignorer les raccourcis modificateurs. L'écran utilise les tokens CUESHEET et des intitulés français, sans composants génériques. Test clavier : recherche, filtre, choix, confirmation et retour aux fournisseurs. Une véritable réponse authentifiée, la traduction des autres vues et le resize du shell entier restent ouverts dans #52.
+
+## Human UI — shell et resize (2026-10-13)
+
+Le shell conserve une seule colonne de lecture mais s'adapte à la largeur du terminal : jusqu'à 136 colonnes pour le contenu, puis centrage dynamique dans les fenêtres larges. Les changements de taille sont traités par l'événement stdout resize ainsi que SIGWINCH, avec nettoyage des deux abonnements. Les libellés visibles de l'en-tête, du pied de page, de la saisie désactivée et du modèle absent sont désormais en français. Le test Ink vérifie le passage 40x18 vers 30x14 puis 160x30, l'absence de dépassement et le centrage effectif. Ce test ne remplace pas encore une session manuelle dans Ghostty/Terminal ; celle-ci reste requise avant de considérer le P0 #52 clos.

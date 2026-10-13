@@ -92,7 +92,9 @@ export function App(props: AppProps): JSX.Element {
   useEffect(() => {
     const resize = () => resized((n) => n + 1);
     stdout.on("resize", resize);
-    return () => { stdout.off("resize", resize); };
+    // SIGWINCH is a fallback when a PTY does not forward stdout resize events.
+    process.on("SIGWINCH", resize);
+    return () => { stdout.off("resize", resize); process.off("SIGWINCH", resize); };
   }, [stdout]);
 
   // The store and the producer exist once, for the life of the process. They are
@@ -140,7 +142,9 @@ export function App(props: AppProps): JSX.Element {
   // One width, computed once and passed down. Three components each deciding
   // their own rule width is how a header ends up wider than the status bar, which
   // is the most visible way a terminal layout looks unfinished.
+  const terminalColumns = Math.max(1, stdout.columns ?? 100);
   const column = SHELL_RULE_WIDTH(stdout.columns);
+  const marginLeft = Math.max(0, Math.floor((terminalColumns - column) / 2));
   const rows = Math.max(8, stdout.rows ?? 24);
   const composerRows = composerRowCount(state.composer, rows);
   const mentionHintRows = /(?:^|\s)@[\w./-]*$/.test(state.composer) ? 1 : 0;
@@ -152,12 +156,12 @@ export function App(props: AppProps): JSX.Element {
   const focus = projectWorkFocus(state.entries, state.busy);
 
   return (
-    <Box flexDirection="column" width={column} height={rows - 1} overflow="hidden">
+    <Box flexDirection="column" width={column} marginLeft={marginLeft} height={rows - 1} overflow="hidden">
       <Header
         width={column}
         project={state.project}
         busy={state.busy}
-        model={producer ? modelName : "no model"}
+        model={producer ? modelName : "aucun modèle"}
       />
 
       <Box flexDirection="column" flexGrow={1} flexShrink={0} height={contentRows + 2} overflow="hidden" paddingTop={1} paddingBottom={1}>
@@ -271,7 +275,7 @@ function wire(props: AppProps, sessionId?:string | null): {
   const cwd = props.cwd ?? process.cwd();
   if (!props.store) {
     const live=createTerminalRuntime(cwd,sessionId === null ? undefined : sessionId ?? process.env.CUESHEET_SESSION);
-    if("missing" in live) return {store,producer:null,missing:live.missing,modelName:"no model"};
+    if("missing" in live) return {store,producer:null,missing:live.missing,modelName:"aucun modèle"};
     return {store:live.store,producer:live.producer,binding:live.binding,session:live.session,missing:null,modelName:live.binding.label};
   }
   const live = createLiveProducer(store, cwd);
@@ -280,7 +284,7 @@ function wire(props: AppProps, sessionId?:string | null): {
       store,
       producer: null,
       missing: live.missing,
-      modelName: "no model",
+      modelName: "aucun modèle",
     };
   }
   return { store, producer: live.producer, binding: live.binding, missing: null, modelName: live.binding.label };
@@ -298,6 +302,6 @@ function Notice({ text }: { text: string }): JSX.Element {
 
 /** Exported so a test can check the shell without a terminal. */
 export const SHELL_RULE_WIDTH = (columns: number | undefined): number =>
-  Math.max(1, Math.min(columns ?? 100, 120));
+  Math.max(1, Math.min(columns ?? 100, 136));
 
 export type { SurfaceState, Option };
