@@ -40,9 +40,15 @@ export function Models(props: ModelsProps): JSX.Element {
     setLoading(true); setCatalog([]); setError('');
     props.list(choice, controller.signal).then(models => {
       if (current) {
-        const available = choice.provider === 'opencode' ? [{ id: '', name: 'Modèle configuré dans OpenCode' }, ...models] : models;
+        const available: CatalogModel[] = choice.provider === 'opencode'
+          ? [{ id: '', name: 'Modèle par défaut (non vérifié)' }, ...models] : models;
         setCatalog(available);
-        setAt(query.current ? 0 : Math.max(0, available.findIndex(model => model.id === (choice.model ?? ''))));
+        // Put the cursor on a declared local account, not an arbitrary catalog
+        // entry. Highlighting is not model selection; Enter remains explicit.
+        const preferred = choice.model
+          ? available.findIndex(model => model.id === choice.model)
+          : available.findIndex(model => model.configured);
+        setAt(query.current ? 0 : Math.max(0, preferred));
         setLoading(false);
       }
     }, cause => {
@@ -112,6 +118,7 @@ export function Models(props: ModelsProps): JSX.Element {
   const title = stage === 'provider' ? 'Fournisseur et modèle' : `${choice.provider} · ${stage === 'endpoint' ? 'URL du serveur' : stage === 'model' ? 'Modèle' : stage === 'limit' ? 'Limite de sortie' : 'Appliquer'}`;
   const limit = Math.max(1,Math.min(props.width??80,120));
   const compact = limit < 54 || props.rows < 7;
+  const modelCount = catalog.filter(model => !!model.id).length;
   return <Box flexDirection="column" height={props.rows} width={limit} overflow="hidden">
     <Text bold color={inkColor(theme.text)} wrap="truncate-end">{props.titlePrefix ? `${props.titlePrefix} · ${title}` : title}</Text>
     <Text color={inkColor(theme.faint)} wrap="truncate-end">{glyph.rule.repeat(Math.min(limit,72))}</Text>
@@ -121,8 +128,8 @@ export function Models(props: ModelsProps): JSX.Element {
       <Text wrap="truncate-end">{choice.provider === 'opencode' ? 'Limite configurée dans OpenCode' : choice.maxTokens ? `${choice.maxTokens} tokens` : 'Limite du provider'} · {props.sessionOnly ? 'Appliquer à cette session' : save ? 'Appliquer et sauvegarder' : 'Appliquer pour ce terminal'}</Text>
     </> : <>
       <Text wrap="truncate-start" color={inkColor(theme.text)}>{stage === 'model' ? (manual ? 'ID libre' : 'Rechercher un modèle') : stage === 'limit' ? (choice.provider === 'anthropic' ? 'Jetons (requis)' : 'Jetons (vide : défaut)') : 'URL'} : {input}<Text inverse> </Text></Text>
-      {stage === 'model' && !manual && filtered.slice(start, start + Math.max(1, visible - 1)).map((model, index) => <Text key={model.id} color={inkColor(start+index===selected?theme.brand:theme.text)} bold={start+index===selected} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.id || model.name}</Text>)}
+      {stage === 'model' && !manual && filtered.slice(start, start + Math.max(1, visible - 1)).map((model, index) => <Text key={model.id} color={inkColor(start+index===selected?theme.brand:theme.text)} bold={start+index===selected} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.configured ? '● ' : '  '}{model.id || model.name}</Text>)}
     </>}
-    <Text wrap="truncate-end" color={inkColor(error?theme.failed:theme.dim)}>{error || (props.busy ? 'Travail en cours : changement à la prochaine requête.' : loading ? (compact?'Chargement des modèles…':'Chargement du catalogue… · Échap : fournisseurs') : stage === 'model' ? (compact ? `${catalog.length} références · Entrée : choisir · Tab : ID` : `${catalog.length} références · Connexion non vérifiée · Tab : ID libre · Entrée : choisir`) : stage === 'confirm' ? props.sessionOnly ? 'Entrée : appliquer · Échap : retour' : '↑↓ : mémoriser · Entrée : appliquer · Échap : retour' : '↑↓ : choisir · Entrée : continuer · Échap : fermer')}</Text>
+    <Text wrap="truncate-end" color={inkColor(error?theme.failed:theme.dim)}>{error || (props.busy ? 'Travail en cours : changement à la prochaine requête.' : loading ? (compact?'Chargement des modèles…':'Chargement du catalogue… · Échap : fournisseurs') : stage === 'model' ? (compact ? `${modelCount} modèle${modelCount===1?'':'s'} · Tab : ID` : `${modelCount} modèle${modelCount===1?'':'s'} · ● compte déclaré, connexion non testée · Tab : ID libre`) : stage === 'confirm' ? props.sessionOnly ? 'Entrée : appliquer · Échap : retour' : '↑↓ : mémoriser · Entrée : appliquer · Échap : retour' : '↑↓ : choisir · Entrée : continuer · Échap : fermer')}</Text>
   </Box>;
 }

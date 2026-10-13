@@ -4,7 +4,48 @@ import { ANTHROPIC_VERSION, readAnthropicJson } from './anthropic.ts';
 import { findBinary } from './default-model.ts';
 import { validBaseUrl, type ModelPreferences } from './model-preferences.ts';
 
-export interface CatalogModel { id: string; name: string; }
+export interface CatalogModel {
+  id: string;
+  name: string;
+  /** A local OpenCode credential is declared; NOT a verified login or inference. */
+  configured?: boolean;
+}
+
+/**
+ * OpenCode v2 lists models from providers without configured credentials.
+ * The local "auth list" metadata lets us prioritize declared accounts, without
+ * calling a model or spending credits. Never display the raw auth output.
+ * Older CLIs/errors simply leave models unmarked.
+ */
+async function configuredOpenCodeProviders(binary: string, env: NodeJS.ProcessEnv, signal: AbortSignal): Promise<ReadonlySet<string>> {
+  const aliases = new Map([
+    ['OpenCode Go', 'opencode-go'],
+    ['OpenCode Console', 'opencode'],
+    ['GitHub Copilot', 'github-copilot'],
+    ['Google', 'google'],
+    ['Nvidia', 'nvidia'],
+    ['OpenRouter', 'openrouter'],
+  ]);
+  try {
+    const output = await new Promise<string>((resolve, reject) => {
+      execFile(binary, ['auth', 'list'], {
+        signal, killSignal: 'SIGKILL', timeout: 5000, maxBuffer: 64 * 1024,
+        env: { ...env, OPENCODE_PURE: '1' },
+      }, (error, stdout) => error ? reject(error) : resolve(stdout));
+    });
+    const configured = new Set<string>();
+    for (const line of output.split(/\r?\n/)) {
+      const clean = line.replace(/\x1b\[[0-9;]*m/g, '').trim();
+      for (const [name, provider] of aliases) {
+        // A name alone is insufficient: require a credential source/status.
+        if (clean.startsWith(name + '  ') && /\s(stored|environment)\s*$/.test(clean)) configured.add(provider);
+      }
+    }
+    return configured;
+  } catch {
+    return new Set();
+  }
+}
 export async function listModels(choice: ModelPreferences, options: { signal?: AbortSignal; env?: NodeJS.ProcessEnv; timeoutMs?: number } = {}): Promise<CatalogModel[]> {
   const env = options.env ?? process.env;
   const timeout = AbortSignal.timeout(options.timeoutMs ?? 10000);
@@ -13,13 +54,17 @@ export async function listModels(choice: ModelPreferences, options: { signal?: A
   if (choice.provider === 'opencode') {
     const binary = findBinary(env);
     if (!binary) throw new Error('OpenCode introuvable. Saisis un identifiant manuellement.');
-    const stdout = await new Promise<string>((resolve, reject) => {
+    const catalog = new Promise<string>((resolve, reject) => {
       execFile(binary, ['models'], { signal, killSignal: 'SIGKILL', timeout: options.timeoutMs ?? 10000, maxBuffer: 2 * 1024 * 1024, env: { ...env, OPENCODE_PURE: '1' } },  (error, output) => {
         if (error) reject(new Error('Catalogue OpenCode indisponible. Saisie manuelle disponible.'));
         else resolve(output);
       });
     });
-    return normalize(stdout.split('\n').filter(id => /^[\w.-]+\/[\w./:-]+$/.test(id)).map(id => ({ id, name: id })));
+    const [stdout, configured] = await Promise.all([catalog, configuredOpenCodeProviders(binary, env, signal)]);
+    const models = normalize(stdout.split('\n').filter(id => /^[\w.-]+\/[\w./:-]+$/.test(id)).map(id => ({ id, name: id })));
+    return models.map(model => configured.has(model.id.split('/')[0]!)
+      ? { ...model, configured: true } : model)
+      .sort((a, b) => Number(!!b.configured) - Number(!!a.configured));
   }
   if (choice.provider === 'anthropic') {
     if (!env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY manque. Saisie manuelle disponible.');
