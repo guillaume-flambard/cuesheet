@@ -88,11 +88,11 @@ export function Palette(props: { rows?: number; width?:number; onOpen(overlay: "
   const visible=Math.max(1,(props.rows ?? 10)-2);
   const start=Math.max(0,at-visible+1);
   return <Box flexDirection="column">
-    <Text wrap="truncate-end" color={inkColor(theme.dim)}>{notice || (query ? "Commandes · " + query : "Commandes · taper pour rechercher")}</Text>
+    <Text wrap="truncate-end" color={inkColor(theme.dim)}>{notice || (query ? "Commands · " + query : "Commands · taper pour chercher")}</Text>
     {matching.slice(start,start+visible).map((command, offset) => <Text key={command.overlay} wrap="truncate-end" color={inkColor(start + offset === at ? theme.brand : theme.dim)}>
       {start + offset === at ? "> " : "  "}{command.label}
     </Text>)}
     {matching.length === 0 && <Text color={inkColor(theme.unknown)}>Aucune commande correspondante · effacer pour revenir</Text>}
-    <Text color={inkColor(theme.faint)} wrap="truncate-end">↑↓ naviguer · Entrée ouvrir · Échap fermer · Ctrl+U effacer</Text>
+    <Text color={inkColor(theme.faint)} wrap="truncate-end">↑↓ to move · enter to open · esc to close · Ctrl+U effacer</Text>
   </Box>;
 }

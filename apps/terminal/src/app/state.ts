@@ -380,7 +380,7 @@ export function derive(state: SurfaceState, control: Control): SurfaceState {
       // looks like a different directory.
       {
         const wrote = named(state, [
-          { kind: "status", label: "dossier", value: control.where, certainty: "confirmed" },
+          { kind: "status", label: "working in", value: control.where, certainty: "confirmed" },
         ]);
         return {
           ...state,
@@ -418,7 +418,7 @@ export function derive(state: SurfaceState, control: Control): SurfaceState {
       const picked = state.choices.find((c) => c.path === control.option.path);
       if (!picked) return state;
       const wrote = named(state, [
-        { kind: "status", label: "dossier", value: picked.path, certainty: "confirmed" },
+        { kind: "status", label: "working in", value: picked.path, certainty: "confirmed" },
       ]);
       return {
         ...state,

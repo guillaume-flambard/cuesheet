@@ -31,15 +31,15 @@ export function StatusBar(props: {
     if (e.label.startsWith("edit")) modified += 1;
     if (e.certainty === "failed") failed += 1;
   }
-  const right = props.busy ? `${glyph.active} en cours` : failed > 0 ? `${glyph.failed} ${failed} échec${failed === 1 ? "" : "s"}` : "? aide";
+  const right = props.busy ? `${glyph.active} en cours` : failed > 0 ? `${glyph.failed} ${failed} échec(s)` : "? aide";
   // A count of zero is not a fact a person asked for, it is the absence of one.
   // `modified` was already conditional and `read` was not, so the status bar
   // reported "0 read" on every quiet session, which says nothing and reads like
   // an internal metric. Every count is now conditional for the same reason.
   const parts: string[] = [];
-  if (read > 0) parts.push(`${read} fichier${read === 1 ? "" : "s"} lu${read === 1 ? "" : "s"}`);
-  if (props.notifications) parts.push(`${props.notifications} notification${props.notifications === 1 ? "" : "s"}`);
-  if (modified > 0) parts.push(`${modified} fichier${modified === 1 ? "" : "s"} modifié${modified === 1 ? "" : "s"}`);
+  if (read > 0) parts.push(`${read} lu(s)`);
+  if (props.notifications) parts.push(`${props.notifications} notification(s)`);
+  if (modified > 0) parts.push(`${modified} modifié(s)`);
   return (
     <Box justifyContent="space-between" flexShrink={0}>
       <Text color={inkColor(theme.faint)}>{parts.join(" · ")}</Text>

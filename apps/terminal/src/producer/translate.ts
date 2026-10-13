@@ -309,7 +309,7 @@ export function entryForStop(stop: LoopStop, run: EntryId): Entry[] {
     return [{ id, kind: "status", label: "work", value: `settled in ${steps} step${steps === 1 ? "" : "s"}`, certainty: "confirmed" }];
   }
   if (stop.reason === "budget-exhausted") {
-    return [{ id, kind: "status", label: "travail", value: `Toujours ouvert après ${stop.steps} étapes. Vérification indépendante nécessaire.`, certainty: "unknown" }];
+    return [{ id, kind: "status", label: "work", value: `still open after ${stop.steps} steps`, certainty: "unknown" }];
   }
   if (stop.reason === "stagnation") {
     return [{ id, kind: "status", label: "réponse", value: "Réponse affichée, aucun nouveau progrès. Le travail reste non vérifié.", certainty: "unknown" }];

@@ -300,7 +300,7 @@ describe("the chat surface", () => {
         { CUESHEET_SESSIONS: sessions, CUESHEET_PROVIDER: "opencode", CUESHEET_OPENCODE_BIN: binary },
       );
       assert.equal(code, 0, out);
-      assert.match(out, /stop: budget-exhausted/);
+      assert.match(out, /stop: stagnation/);
       assert.match(out, /the intention is still staged/);
       const file = readdirSync(sessions).find((name) => name.startsWith("chat-") && name.endsWith(".jsonl"));
       assert.ok(file, "surface journal was persisted");

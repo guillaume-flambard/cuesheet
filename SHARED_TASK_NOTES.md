@@ -32,3 +32,8 @@ Read SPEC.md and this note; choose one slice, don't overwrite the dirty main che
 - Mac saved preference was inadvertently changed by first UI test; restored from earlier durable session to openrouter/google/gemma-4-26b-a4b-it:free. Later selector tests toggle session-only explicitly.
 - Focused isolated tests: 72 pass, 2 live skipped. Typecheck green. Full parallel suite and GitHub CI pending.
 - Outstanding: project-name auto-bind false positive; visual polish and real-terminal resize during an active run warrant another focused relay.
+
+## P0 CI correction relay
+- Keep this PR scoped to runtime repeat guard, actual execution journal and OpenCode v2 typed failures. Revert unrelated French palette/status styling; those belong in a separate UI PR because fixture coverage depends on stable strings.
+- Update old fixtures that expected eight duplicate text-only inferences to expect one durable reply, two provider inferences and an honest unverified stagnation stop.
+- On Mac: 123 impacted tests PASS using isolated XDG configuration and terminal TypeScript PASS. CI must establish the full clean baseline.

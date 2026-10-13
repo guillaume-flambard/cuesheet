@@ -673,7 +673,7 @@ export function createProducer(options: ProducerOptions): Producer {
     activeVault=options.vaultForScope?.(scope.path);
     activeVaultPublisher=options.vaultPublisherForScope?.(scope.path);
     const toolPolicy=(activeTools as ToolRunner & {readonly policy?:string}).policy;
-    if(toolPolicy){shared.append({kind:"directive",subject,data:{text:`Controller tool route: ${toolPolicy}. This is the declared execution policy, not proof of the task outcome.`}});log(`[route] ${toolPolicy}`);observe([{kind:"status",label:"outils",value:toolPolicy.includes("Route locale") || toolPolicy.includes("Aucun socket Docker") ? "Exécution locale : commandes limitées au dossier, sans isolation système." : toolPolicy.includes("Route conteneur") ? "Conteneur configuré ; disponibilité vérifiée à chaque appel." : "Outils indisponibles ou route non vérifiée.",certainty:"unknown"}]);}
+    if(toolPolicy){shared.append({kind:"directive",subject,data:{text:`Controller tool route: ${toolPolicy}. This is the declared execution policy, not proof of the task outcome.`}});log(`[route] ${toolPolicy}`);observe([{kind:"status",label:"outils",value:"conteneur Linux isolé ; réseau coupé ; outils selon l’image",certainty:"unknown"}]);}
     const objectives = projectObjectives(shared.toSession().events);
     if (!resume || !objectives.current || objectives.current.id.startsWith("legacy-")) {
       const source = shared.toSession().events.filter(event => event.subject === "terminal.user" && !["confirm_check","shared_context"].includes(String(event.data.operation)) || event.kind === "goal").at(-1)
@@ -814,7 +814,7 @@ export function createProducer(options: ProducerOptions): Producer {
         return;
       }
       const why = cause instanceof Error ? cause.message : String(cause);
-      observe([{ kind: "failure", text: `Exécution interrompue : ${why}` }]);
+      observe([{ kind: "failure", text: `the run stopped: ${why}` }]);
       recordObserved(`failed: ${why}`);
     } finally {
       inFlight = false;

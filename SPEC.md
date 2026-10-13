@@ -29,3 +29,8 @@ Acceptance: `node scripts/ui/verify.mjs 40 14`, `80 24`, `120 40` all pass, and 
 - Identical model-only replies are not verification. Stop repeating after a second identical no-tool answer, emit only one observation, leave the goal open with a distinct stagnation record, and render an honest neutral status.
 - Fix v2 typed provider errors safely without printing provider bodies, and remove misleading terminal claims about execution route.
 - Open P0 issue: project-token binding can switch a scratch request to a project merely because its name appears inside a hyphenated phrase. Preserve current scope until explicitly resolved; do not auto-change this binding policy without a separate review.
+
+## P0 CI correction relay
+- Keep this PR scoped to runtime repeat guard, actual execution journal and OpenCode v2 typed failures. Revert unrelated French palette/status styling; those belong in a separate UI PR because fixture coverage depends on stable strings.
+- Update old fixtures that expected eight duplicate text-only inferences to expect one durable reply, two provider inferences and an honest unverified stagnation stop.
+- On Mac: 123 impacted tests PASS using isolated XDG configuration and terminal TypeScript PASS. CI must establish the full clean baseline.
