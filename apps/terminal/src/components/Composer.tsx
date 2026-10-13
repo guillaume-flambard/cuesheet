@@ -27,7 +27,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
-import { characters, edit, type Edit } from "./editor.ts";
+import { characters, edit, cleanTerminalInput, type Edit } from "./editor.ts";
 import { composerLines } from "./composer-layout.ts";
 
 export function Composer(props: {
@@ -113,7 +113,10 @@ export function Composer(props: {
     if (key.escape) return apply("clear");
     // Ink dispatches batched paste as a single input event. Retain line breaks;
     // unlike a bare Return event, a chunk of source text cannot submit work.
-    if (!key.ctrl && !key.meta && input) return apply({ insert: input });
+    if (!key.ctrl && !key.meta && input) {
+      const insert = cleanTerminalInput(input);
+      if (insert) apply({ insert });
+    }
   });
   const lines = composerLines(props.value, cursor, props.width, props.maxRows ?? 1);
 
