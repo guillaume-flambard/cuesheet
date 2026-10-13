@@ -49,6 +49,7 @@ export function Models(props: ModelsProps): JSX.Element {
           ? available.findIndex(model => model.id === choice.model)
           : available.findIndex(model => model.configured);
         setAt(query.current ? 0 : Math.max(0, preferred));
+        setError('');
         setLoading(false);
       }
     }, cause => {
@@ -56,7 +57,8 @@ export function Models(props: ModelsProps): JSX.Element {
     });
     return () => { current = false; controller.abort(); };
   }, [stage, choice.provider, choice.baseUrl, props.list]);
-  const filtered = catalog.filter(model => `${model.id} ${model.name}`.toLowerCase().includes(input.toLowerCase()));
+  const filtered = catalog.filter(model => (!input.trim() || !!model.id)
+    && `${model.id} ${model.name}`.toLowerCase().includes(input.toLowerCase()));
   const items = stage === 'provider' ? [...PROVIDERS] : stage === 'model' && !manual ? filtered.map(model => model.id) : [];
   const selected = Math.min(at, Math.max(0, items.length - 1));
   const visible = Math.max(1, props.rows - 4);
@@ -74,7 +76,7 @@ export function Models(props: ModelsProps): JSX.Element {
       return props.onClose();
     }
     if (key.ctrl || key.meta) return;
-    if (key.tab && stage === 'model') { setManual(value => !value); setAt(0); return; }
+    if (key.tab && stage === 'model') { setManual(value => !value); setError(''); setAt(0); return; }
     if (key.upArrow || key.downArrow) {
       if (stage === 'confirm' && !props.sessionOnly) setSave(value => !value);
       else setAt(value => Math.max(0, Math.min(items.length - 1, value + (key.downArrow ? 1 : -1))));
@@ -91,7 +93,14 @@ export function Models(props: ModelsProps): JSX.Element {
         if (!input.trim()) { setError('URL requise, incluant /v1.'); return; }
         enterModel({ ...choice, baseUrl: input.trim() });
       } else if (stage === 'model') {
-        const model = !manual && filtered[selected] ? filtered[selected]!.id : input.trim();
+        // A search query is not a model identifier. An early Enter while the
+        // asynchronous catalogue loads must never silently apply a partial ID.
+        if (!manual && loading && catalog.length === 0) return;
+        if (!manual && !filtered[selected]) {
+          setError(input.trim() ? 'Aucun modèle correspondant. Tab : saisir un ID libre.' : 'Catalogue vide. Tab : saisir un ID libre.');
+          return;
+        }
+        const model = manual ? input.trim() : filtered[selected]!.id;
         if (!model && choice.provider !== 'opencode') { setError('Saisis un modèle ou choisis dans le catalogue.'); return; }
         setChoice({ ...choice, model: model || undefined });
         setInput(choice.maxTokens?.toString() ?? '');
@@ -113,12 +122,22 @@ export function Models(props: ModelsProps): JSX.Element {
     if (stage === 'provider' || stage === 'confirm') return;
     if (key.backspace || key.delete) setInput(value => Array.from(value).slice(0, -1).join(''));
     else if (text) setInput(value => value + text.replace(/[\r\n\x00-\x1f\x7f]/g, ''));
+    setError('');
     setAt(0);
   });
   const title = stage === 'provider' ? 'Fournisseur et modèle' : `${choice.provider} · ${stage === 'endpoint' ? 'URL du serveur' : stage === 'model' ? 'Modèle' : stage === 'limit' ? 'Limite de sortie' : 'Appliquer'}`;
   const limit = Math.max(1,Math.min(props.width??80,120));
   const compact = limit < 54 || props.rows < 7;
   const modelCount = catalog.filter(model => !!model.id).length;
+  const matchCount = filtered.filter(model => !!model.id).length;
+  const matchLabel = input.trim()
+    ? `${matchCount} sur ${modelCount} modèles`
+    : `${modelCount} modèle${modelCount===1?'':'s'}`;
+  const focusedModel = stage === 'model' && !manual ? filtered[selected] : undefined;
+  // These are hints, not connectivity/authorization claims.
+  const accessHint = focusedModel?.configured
+    ? 'compte déclaré, connexion non testée'
+    : focusedModel?.id === '' ? 'modèle par défaut non testé' : 'accès non vérifié';
   return <Box flexDirection="column" height={props.rows} width={limit} overflow="hidden">
     <Text bold color={inkColor(theme.text)} wrap="truncate-end">{props.titlePrefix ? `${props.titlePrefix} · ${title}` : title}</Text>
     <Text color={inkColor(theme.faint)} wrap="truncate-end">{glyph.rule.repeat(Math.min(limit,72))}</Text>
@@ -128,8 +147,8 @@ export function Models(props: ModelsProps): JSX.Element {
       <Text wrap="truncate-end">{choice.provider === 'opencode' ? 'Limite configurée dans OpenCode' : choice.maxTokens ? `${choice.maxTokens} tokens` : 'Limite du provider'} · {props.sessionOnly ? 'Appliquer à cette session' : save ? 'Appliquer et sauvegarder' : 'Appliquer pour ce terminal'}</Text>
     </> : <>
       <Text wrap="truncate-start" color={inkColor(theme.text)}>{stage === 'model' ? (manual ? 'ID libre' : 'Rechercher un modèle') : stage === 'limit' ? (choice.provider === 'anthropic' ? 'Jetons (requis)' : 'Jetons (vide : défaut)') : 'URL'} : {input}<Text inverse> </Text></Text>
-      {stage === 'model' && !manual && filtered.slice(start, start + Math.max(1, visible - 1)).map((model, index) => <Text key={model.id} color={inkColor(start+index===selected?theme.brand:theme.text)} bold={start+index===selected} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.configured ? '● ' : '  '}{model.id || model.name}</Text>)}
+      {stage === 'model' && !manual && filtered.slice(start, start + visible).map((model, index) => <Text key={model.id} color={inkColor(start+index===selected?theme.brand:theme.text)} bold={start+index===selected} wrap="truncate-end">{start + index === selected ? '› ' : '  '}{model.id || model.name}</Text>)}
     </>}
-    <Text wrap="truncate-end" color={inkColor(error?theme.failed:theme.dim)}>{error || (props.busy ? 'Travail en cours : changement à la prochaine requête.' : loading ? (compact?'Chargement des modèles…':'Chargement du catalogue… · Échap : fournisseurs') : stage === 'model' ? (compact ? `${modelCount} modèle${modelCount===1?'':'s'} · Tab : ID` : `${modelCount} modèle${modelCount===1?'':'s'} · ● compte déclaré, connexion non testée · Tab : ID libre`) : stage === 'confirm' ? props.sessionOnly ? 'Entrée : appliquer · Échap : retour' : '↑↓ : mémoriser · Entrée : appliquer · Échap : retour' : '↑↓ : choisir · Entrée : continuer · Échap : fermer')}</Text>
+    <Text wrap="truncate-end" color={inkColor(error?theme.failed:theme.dim)}>{error || (props.busy ? 'Travail en cours : changement à la prochaine requête.' : loading ? (compact?'Chargement des modèles…':'Chargement du catalogue… · Échap : fournisseurs') : stage === 'model' ? (compact ? `${matchLabel} · Tab : ID` : `${matchLabel} · ${accessHint} · Tab : ID libre`) : stage === 'confirm' ? props.sessionOnly ? 'Entrée : appliquer · Échap : retour' : '↑↓ : mémoriser · Entrée : appliquer · Échap : retour' : '↑↓ : choisir · Entrée : continuer · Échap : fermer')}</Text>
   </Box>;
 }

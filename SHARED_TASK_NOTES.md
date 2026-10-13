@@ -48,3 +48,11 @@ Read SPEC.md and this note; choose one slice, don't overwrite the dirty main che
 - Repeat live test in /Users/memo/projects/_scratch/cuesheet-e2e-complete-20261013 waits for run completion; record outcome before declaring full pass.
 - Completed isolated live E2E via actual OpenCode Go provider: selected session-only, got BONJOUR-CUESHEET-OK, correct scratch cwd, true local tool route, final ready state, palette reopened, 40x14 and 120x40 resizes after inference. Terminal grid screenshots: /Users/memo/projects/_scratch/cuesheet-e2e-complete-20261013/screenshot-*.png.
 - Post-fix focused suites: project binding + palette + human UX 24/24, scope-runtime/scope-resume/surface-v2 40/40, header new regression 1/1; terminal typecheck and 40x14 PTY proof passed. These screenshots are ANSI-grid approximations, not native macOS desktop images.
+
+## 2026-10-13 model picker clarity — implemented in isolated branch
+- Observed Mac OpenCode v2 catalog now at 579 entries, two matching longcat-2.5-preview-free.
+- At 80×24 rendered two results, focused matching route and 2 sur 579 modèles; at 40×14 focused result remains visible. The compact viewport may show one item at once; arrows scroll and selection stays visible.
+- Removed a repeated dot on every model, retained a single explicit 'compte déclaré, connexion non testée' line associated with selection.
+- Regression: deferred catalog, premature Enter, scroll to last slot, no-match + failed implicit ID, manual opt-in. Existing first-run and agent-model fixtures updated.
+- ANSI PTY grid screenshots stored at /Users/memo/projects/_scratch/cuesheet-model-picker-clarity-20261013/screenshot-models-{open,search,compact}.png (not macOS desktop captures).
+- No real model inference in this slice; previous P0-LIVE evidence remains as recorded. UI layer only.
