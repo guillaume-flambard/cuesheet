@@ -51,7 +51,7 @@ export function Timeline({ width, entries, visible, rows }: { width: number; ent
               wrong line, and the settled form of a row that arrived twice is drawn
               as if it were the original. The identity is the same one the surface
               deduplicates on, so the two agree by construction. */}
-          {entries.map((entry) => <Line key={entry.id} entry={entry} />)}
+          {entries.map((entry) => <Line key={entry.id} entry={entry} width={width} />)}
         </Box>
       </Box>
       <Text wrap="truncate-end" color={inkColor(theme.faint)}>{offset ? "Historique · Pg↓ pour revenir" : "Pg↑ historique · ↑ messages"}</Text>
@@ -59,12 +59,12 @@ export function Timeline({ width, entries, visible, rows }: { width: number; ent
   );
 }
 
-function Line({ entry }: { entry: Entry }): JSX.Element {
+function Line({ entry, width }: { entry: Entry; width: number }): JSX.Element {
   switch (entry.kind) {
     case "you":
       return (
         <Box marginTop={1} flexShrink={0}>
-          <Text color={inkColor(theme.dim)}>  you  </Text>
+          <Text color={inkColor(theme.dim)}>  vous </Text>
           <Text>{entry.text}</Text>
         </Box>
       );
@@ -75,14 +75,24 @@ function Line({ entry }: { entry: Entry }): JSX.Element {
           <Text>{entry.text}</Text>
         </Box>
       );
-    case "action":
+    case "action": {
+      // A narrow PTY must show the meaningful result, not only the label.
+      // "Action observée · verdict" + an evidence ID otherwise gets clipped
+      // at 40 columns and makes verification invisible to the user.
+      const compact = width < 54;
+      const detail = entry.detail ?? "";
+      const brief = entry.label.split(" · ").at(-1) ?? entry.label;
+      const label = compact
+        ? (brief.length + detail.length + 5 <= width ? brief + " " : "")
+        : entry.label.padEnd(10);
       return (
         <Box flexShrink={0}>
           <Text color={colorFor(entry.certainty)}>  {markFor(entry.certainty)} </Text>
-          <Text color={inkColor(theme.dim)}>{entry.label.padEnd(10)}</Text>
-          <Text color={inkColor(theme.faint)}>{entry.detail ?? ""}</Text>
+          <Text color={inkColor(theme.dim)}>{label}</Text>
+          <Text color={inkColor(theme.faint)}>{detail}</Text>
         </Box>
       );
+    }
     case "status":
       return (
         <Box flexShrink={0}>
