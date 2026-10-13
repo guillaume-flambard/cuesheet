@@ -41,3 +41,10 @@ Acceptance: `node scripts/ui/verify.mjs 40 14`, `80 24`, `120 40` all pass, and 
 - Human UI: French palette labels and navigation, with legacy English search aliases.
 - 40-column header: never let the long project name overlap the product name/status.
 - Acceptance: isolated model selection, one real live provider reply, settled run, 40×14/80×24/120×40 PTY screenshots, and focused regression tests.
+
+## UX5 relay 2026-10-13 — model selection clarity
+- Browse 500+ OpenCode catalog references without repeating a badge on every row.
+- Show filtered result count alongside total, and selected model's *declared but unverified* credential status (never imply successful inference).
+- Keep the selection arrow in the usable list viewport at any row count.
+- Enter during catalogue loading never applies a partial identifier; a no-match query never becomes an implicit free-text model ID. Tab remains an explicit manual-entry opt-in.
+- Gate: real Ink keyboard render, real Mac node-pty 80×24→40×14, typecheck and clean CI. Preserve shell, existing sessions and real model credentials.
