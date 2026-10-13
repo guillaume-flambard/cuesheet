@@ -12,7 +12,7 @@ export interface WorkFocus {
   readonly tone: Certainty;
 }
 
-const auxiliary = new Set(["working in", "modèle", "préférence", "model", "provider"]);
+const auxiliary = new Set(["working in", "dossier", "modèle", "préférence", "model", "provider"]);
 
 export function projectWorkFocus(entries: readonly Entry[], busy: boolean): WorkFocus {
   const lastUser = entries.findLastIndex(entry => entry.kind === "you");

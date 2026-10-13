@@ -61,8 +61,8 @@ const app=render(<App store={store} producer={producer}/>,{stdout:out,stderr:out
 const before=journal.core.revision;const bytes=readFileSync(join(contexts.project.root,'context.jsonl'),'utf8');
 const until=async(predicate,stage)=>{const deadline=Date.now()+15000;while(!predicate()&&Date.now()<deadline)await tick();if(!predicate())throw new Error('UI did not reach '+stage+'; overlay='+store.get().overlay+'; last output: '+JSON.stringify(frames.slice(-3).map(f=>f.slice(-180))))};
 const sendAndSee=async(key,expected)=>{const cursor=frames.length;input.write(key);await until(()=>frames.slice(cursor).some(frame=>frame.includes(expected)),expected);await tick();};
-await tick();await sendAndSee('\\x0b','> View the log');
-for(const label of ['Help','Provider et modèle','Sessions','Nouvelle session','Reprendre le travail','Critère de validation','Contexte partagé'])await sendAndSee('\\x1b[B','> '+label);
+await tick();await sendAndSee('\\x0b','> Voir le journal');
+for(const label of ['Aide','Fournisseur et modèle','Sessions','Nouvelle session','Reprendre le travail','Critère de validation','Contexte partagé'])await sendAndSee('\\x1b[B','> '+label);
 await sendAndSee('\\r','N/P pages');const opened=frames.findLast(frame=>frame.includes('N/P pages'))??last;
 input.write('n');await tick();for(let i=0;i<20;i++){input.write('\\x1b[B');await tick();}const next=frames.join('\\n');
 input.write('p');await tick();const previous=last;const sizes=[];for(const [columns,rows] of [[40,14],[80,24],[120,36]]){const cursor=frames.length;out.columns=columns;out.rows=rows;out.emit('resize');await until(()=>frames.slice(cursor).some(frame=>frame.includes('N/P pages')),'resized '+columns+'x'+rows);sizes.push({rows,frame:frames.slice(cursor).findLast(frame=>frame.includes('N/P pages'))??last});}

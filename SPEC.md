@@ -34,3 +34,10 @@ Acceptance: `node scripts/ui/verify.mjs 40 14`, `80 24`, `120 40` all pass, and 
 - Keep this PR scoped to runtime repeat guard, actual execution journal and OpenCode v2 typed failures. Revert unrelated French palette/status styling; those belong in a separate UI PR because fixture coverage depends on stable strings.
 - Update old fixtures that expected eight duplicate text-only inferences to expect one durable reply, two provider inferences and an honest unverified stagnation stop.
 - On Mac: 123 impacted tests PASS using isolated XDG configuration and terminal TypeScript PASS. CI must establish the full clean baseline.
+
+## Live Mac E2E relay — correctness before polish
+- P0: A safe scratch request containing BONJOUR-CUESHEET-OK must remain inside the scratch cwd, never silently bind to the Cuesheet repo. Explicit mentions of whole project names (including hyphenated names) still bind.
+- P0: Display the effective tool-route policy, not a hardcoded container claim.
+- Human UI: French palette labels and navigation, with legacy English search aliases.
+- 40-column header: never let the long project name overlap the product name/status.
+- Acceptance: isolated model selection, one real live provider reply, settled run, 40×14/80×24/120×40 PTY screenshots, and focused regression tests.

@@ -64,7 +64,7 @@ export function Projects(props: {
         </Box>
       ))}
       <Box marginTop={1}>
-        <Text color={inkColor(theme.faint)}>↑↓ to move · enter to work there · esc to keep working where you are</Text>
+        <Text color={inkColor(theme.faint)}>↑↓ : choisir · Entrée : ouvrir · Échap : rester ici</Text>
       </Box>
     </Box>
   );

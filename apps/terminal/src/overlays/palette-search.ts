@@ -1,8 +1,8 @@
 /** Discoverable command palette; search changes visibility, never permissions. */
 export const paletteCommands = [
-  { label: "View the log", overlay: "inspect" },
-  { label: "Help", overlay: "help" },
-  { label: "Provider et modèle", overlay: "models" },
+  { label: "Voir le journal", overlay: "inspect" },
+  { label: "Aide", overlay: "help" },
+  { label: "Fournisseur et modèle", overlay: "models" },
   { label: "Sessions", overlay: "sessions" },
   { label: "Nouvelle session", overlay: "new" },
   { label: "Reprendre le travail", overlay: "resume" },
@@ -12,7 +12,7 @@ export const paletteCommands = [
   { label: "Modèles des agents", overlay: "agent-models" },
   { label: "Situation", overlay: "situation" },
   { label: "Notifications", overlay: "notifications" },
-  { label: "Workspaces", overlay: "workspaces" },
+  { label: "Espaces de travail", overlay: "workspaces" },
   { label: "Revoir les changements", overlay: "review" },
 ] as const;
 
@@ -24,7 +24,8 @@ export function filterPaletteCommands(input: string): Command[] {
   const parts = normalized(input).trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return [...paletteCommands];
   return paletteCommands.filter(command => {
-    const search = normalized(command.label + " " + command.overlay);
+    const aliases: Record<string,string> = { inspect:'view the log journal', help:'help', models:'provider model modèle', workspaces:'workspaces' };
+    const search = normalized(command.label + " " + command.overlay + " " + (aliases[command.overlay] ?? ''));
     return parts.every(part => search.includes(part));
   });
 }

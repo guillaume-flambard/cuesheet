@@ -41,9 +41,9 @@ it("typing in the palette filters commands, empty matches never invoke another a
     const result=JSON.parse(run.stdout.trim());
     const plain=(s:string)=>s.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,"");
     assert.equal(result.searchMode,"palette");
-    assert.match(plain(result.filtered),/Provider et modèle/);
+    assert.match(plain(result.filtered),/Fournisseur et modèle/);
     assert.match(plain(result.filtered),/Modèles des agents/);
-    assert.doesNotMatch(plain(result.filtered),/View the log/);
+    assert.doesNotMatch(plain(result.filtered),/Voir le journal/);
     assert.match(plain(result.noMatch),/Aucune commande/);
     assert.equal(result.afterNoMatch,"palette","Enter without matches cannot select a hidden command");
     assert.equal(result.opened,"help","Help can be reached by just typing help and Enter");
