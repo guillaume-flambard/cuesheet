@@ -54,6 +54,7 @@ import { ProjectVaultPublisher } from "../../../../src/adapters/vault-publisher.
 import { VaultRetrieval } from "../../../../src/adapters/vault.ts";
 import { SharedContexts,sharedScope } from "../../../../src/adapters/shared-memory.ts";
 import { SkillTools } from "../../../../src/adapters/skill-tools.ts";
+import { skillRootsForScope } from "../../../../src/adapters/skill-scope.ts";
 import type { ModelAdapter, ToolRunner } from "../../../../src/core/loop.ts";
 import { createProducer, type Producer, type ProducerOptions } from "./index.ts";
 import type { Store } from "../app/store.ts";
@@ -104,9 +105,14 @@ export function createLiveProducer(store: Store, cwd: string, settings: { journa
   try {tools=toolsForScope(cwd);} catch {return {missing:"Tool route is invalid or its resource journal is damaged; verify mode, local Unix socket, immutable image and session resources."};}
   const researchForScope=(scope:string)=>new ResearchTools({root:scope,provider:process.env.CUESHEET_SEARCH_PROVIDER,apiKey:process.env.BRAVE_SEARCH_API_KEY});
   const research=researchForScope(cwd);
-  const configuredSkillRoots=process.env.CUESHEET_SKILL_ROOTS?.split(delimiter).filter(Boolean);
-  const skillsForScope=(scope:string)=>new SkillTools({roots:configuredSkillRoots ?? [join(scope,".cuesheet","skills")]});
-  const skills=skillsForScope(cwd);
+  let skillsForScope: (scope: string) => SkillTools;
+  let skills: SkillTools;
+  try {
+    skillsForScope = (scope: string) => new SkillTools({roots:skillRootsForScope(scope)});
+    skills = skillsForScope(cwd);
+  } catch (error) {
+    return {missing: error instanceof Error ? error.message : String(error)};
+  }
   const sharedContexts=new SharedContexts({cwd,organizations:process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)});
   const organizationRoots=process.env.CUESHEET_CONTEXT_ROOTS?.split(delimiter).filter(Boolean)??[];
   const vaultForScope=(scope:string)=>new VaultRetrieval({principal:"local-owner",scopes:[{kind:"project",id:sharedScope("project",scope).id,root:join(scope,".cuesheet","vault")},...organizationRoots.map(root=>({kind:"enterprise" as const,id:sharedScope("organization",root).id,root:join(resolve(root),"vault")}))],authorize:()=>true});

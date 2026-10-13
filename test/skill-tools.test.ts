@@ -42,7 +42,7 @@ test("unknown, unreadable and escaped manifests remain distinguishable and publi
 });
 
 test("launcher forwards only explicitly named research and skill settings",()=>{
-  const env=surfaceEnvironment([],{CUESHEET_SEARCH_PROVIDER:"brave",BRAVE_SEARCH_API_KEY:"fixture-key",CUESHEET_SKILL_ROOTS:"/fixture/skills",UNRELATED_SECRET:"hidden"});
+  const env=surfaceEnvironment([],{CUESHEET_SEARCH_PROVIDER:"brave",BRAVE_SEARCH_API_KEY:"fixture-key",CUESHEET_SKILL_ROOTS:"/fixture/skills",CUESHEET_SKILL_PROJECT:"/fixture/project",UNRELATED_SECRET:"hidden"});
   assert.equal(env.CUESHEET_SEARCH_PROVIDER,"brave");assert.equal(env.BRAVE_SEARCH_API_KEY,"fixture-key");
-  assert.equal(env.CUESHEET_SKILL_ROOTS,"/fixture/skills");assert.equal(env.UNRELATED_SECRET,undefined);
+  assert.equal(env.CUESHEET_SKILL_ROOTS,"/fixture/skills");assert.equal(env.CUESHEET_SKILL_PROJECT,"/fixture/project");assert.equal(env.UNRELATED_SECRET,undefined);
 });
