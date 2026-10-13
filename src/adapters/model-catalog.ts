@@ -14,7 +14,7 @@ export async function listModels(choice: ModelPreferences, options: { signal?: A
     const binary = findBinary(env);
     if (!binary) throw new Error('OpenCode introuvable. Saisis un identifiant manuellement.');
     const stdout = await new Promise<string>((resolve, reject) => {
-      execFile(binary, ['models', '--pure'], { signal, killSignal: 'SIGKILL', timeout: options.timeoutMs ?? 10000, maxBuffer: 2 * 1024 * 1024, env }, (error, output) => {
+      execFile(binary, ['models'], { signal, killSignal: 'SIGKILL', timeout: options.timeoutMs ?? 10000, maxBuffer: 2 * 1024 * 1024, env: { ...env, OPENCODE_PURE: '1' } },  (error, output) => {
         if (error) reject(new Error('Catalogue OpenCode indisponible. Saisie manuelle disponible.'));
         else resolve(output);
       });
