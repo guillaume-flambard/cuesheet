@@ -2,9 +2,9 @@
 import {after} from 'node:test';
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync,realpathSync} from 'node:fs';
 import {tmpdir} from 'node:os';import {join,dirname} from 'node:path';import {execFileSync} from 'node:child_process';
-const original=process.env.HOME;
+const original=process.env.HOME;const originalRoot=process.env.MEMOLABS_ROOT;
 export const portfolioHome=realpathSync(mkdtempSync(join(tmpdir(),'cs-test-portfolio-')));
-const projects=join(portfolioHome,'projects');mkdirSync(projects);
+const projects=join(portfolioHome,'memolabs');mkdirSync(projects);
 const rows=['| Name | Path | Kind | Status | Nature | Stack |'];
 for(let index=0;index<12;index++){
  const name=index===0?'cuesheet':'fixture-'+index,path='tools/'+name,dir=join(projects,path);mkdirSync(dir,{recursive:true});
@@ -15,5 +15,5 @@ for(let index=0;index<12;index++){
  rows.push(`| ${name} | ${path} | repo | active | tool | TypeScript |`);
 }
 writeFileSync(join(projects,'PROJECTS.md'),rows.join('\n'));
-process.env.HOME=portfolioHome;
-after(()=>{if(original===undefined)delete process.env.HOME;else process.env.HOME=original;rmSync(portfolioHome,{recursive:true,force:true});});
+process.env.HOME=portfolioHome;delete process.env.MEMOLABS_ROOT;
+after(()=>{if(original===undefined)delete process.env.HOME;else process.env.HOME=original;if(originalRoot!==undefined)process.env.MEMOLABS_ROOT=originalRoot;rmSync(portfolioHome,{recursive:true,force:true});});

@@ -1,6 +1,8 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { appendFileSync, mkdirSync } from "node:fs"
 import { join } from "node:path"
+import { execFileSync } from "node:child_process"
+import { homedir } from "node:os"
 
 // CUESHEET shadow sensor. Pure sensor, same discipline as valve-shadow.
 //
@@ -27,8 +29,20 @@ import { join } from "node:path"
 
 const SPOOL_DIR =
   process.env["CUESHEET_SPOOL_DIR"] ?? "/Users/memo/.local/share/opencode/cuesheet"
-const CUESHEET_ROOT =
-  process.env["CUESHEET_ROOT"] ?? "/Users/memo/projects/tools/cuesheet"
+// The plugin is copied into ~/.config/opencode/plugins, so it cannot find the
+// repo from its own location. It asks the one registry ($MEMOLABS_ROOT/PROJECTS.md)
+// through `proj path cuesheet`; a failed lookup leaves "" and the core import
+// below degrades instead of throwing. CUESHEET_ROOT still overrides it.
+function resolveCuesheet(): string {
+  try {
+    return execFileSync(join(homedir(), "bin", "proj"), ["path", "cuesheet"], {
+      encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"],
+    }).trim()
+  } catch {
+    return ""
+  }
+}
+const CUESHEET_ROOT = process.env["CUESHEET_ROOT"] ?? resolveCuesheet()
 const SKILL_ROOTS = ["/Users/memo/.agents/skills"]
 const MAX_FIELD = 2000
 

@@ -24,18 +24,20 @@ import { buildFrontier, wakeable } from "../core/memory.ts";
 /**
  * Where the portfolio lives on the machine that is not asking.
  *
- * `~/projects` is this machine's layout, and it used to be a module constant,
- * which meant the adapter could not be pointed at any other layout at all. It
- * is now a default that every entry point can override, so a second person can
- * read their own portfolio without editing this file. See test/portability.test.ts.
+ * The registry root: `$MEMOLABS_ROOT` (default `~/memolabs`), whose PROJECTS.md
+ * Path cells are relative to it. It used to be `~/projects` as a module
+ * constant, which meant the adapter could not be pointed at any other layout at
+ * all; `~/projects` was retired on 2026-10-14. It is a default that every entry
+ * point can override, so a second person can read their own portfolio without
+ * editing this file. See test/portability.test.ts.
  */
-export const DEFAULT_PROJECTS_ROOT = (()=>{try{return join(homedir(),"projects");}catch{return "";}})();
+export const DEFAULT_PROJECTS_ROOT = (()=>{try{return process.env["MEMOLABS_ROOT"] || join(homedir(),"memolabs");}catch{return "";}})();
 
 /** The five categories the registry groups projects into. */
 const CATEGORIES = ["products", "tools", "infrastructure", "experiments", "clients"];
 
 export interface FrontierOptions {
-  /** Where the projects tree is. Defaults to `~/projects`. */
+  /** Where the registry root is. Defaults to `$MEMOLABS_ROOT`, else `~/memolabs`. */
   projectsRoot?: string;
 }
 
