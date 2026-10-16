@@ -1,0 +1,40 @@
+# CANDIDATE ONLY: never install before exclusive-controller verification.
+# Target: memolabs-dev/cuesheet. Refresh cutoff immediately before activation.
+merge_queue:
+  max_parallel_checks: 1
+
+merge_protections_settings:
+  auto_merge_conditions:
+    - "base = main"
+    - "-draft"
+    - "-from-fork"
+    - "author = memo-labs-automation[bot]"
+    - "created-at >= 2099-01-01T00:00:00Z"
+    - "label != hold-merge"
+    - "label != needs-human-review"
+    - "#files <= 8"
+    - "#added-lines <= 400"
+    - "#deleted-lines <= 150"
+    - "-files ~= ^(\\.github/|\\.mergify\\.yml$|\\.gitlab/|\\.circleci/|\\.env|\\.npmrc$|\\.pypirc$|\\.cargo/|AGENTS\\.md$|CODEOWNERS$|Dockerfile|Containerfile|Makefile$|Justfile$|server/|bridge/|plugin/|src/|app/|apps/|lib/|pkg/|cmd/|internal/|packages/|ios/|android/|native/|backend/|frontend/|web/|mobile/|deploy/|deployment/|docker/|infra/|infrastructure/|ansible/|terraform/|stacks/|scripts/|tests/|test/|__tests__/|config/|configs/|secrets/|migrations/|database/|db/|\\.changeset/|package\\.json$|pnpm-lock\\.yaml$|yarn\\.lock$|package-lock\\.json$|Cargo\\.(toml|lock)$|Package\\.swift$|go\\.(mod|sum)$|pyproject\\.toml$|requirements.*\\.txt$|.*\\.(ts|tsx|js|jsx|mjs|cjs|rs|swift|py|go|sh|bash|zsh|tf|tfvars|yml|yaml|json|toml|xml|plist)$)"
+    - "check-success = @github-actions/Core and integration tests"
+
+queue_rules:
+  - name: memo-labs-safe-auto
+    batch_size: 1
+    merge_method: squash
+    queue_conditions: &safe_auto_conditions
+      - "base = main"
+      - "-draft"
+      - "-from-fork"
+      - "author = memo-labs-automation[bot]"
+      - "created-at >= 2099-01-01T00:00:00Z"
+      - "label != hold-merge"
+      - "label != needs-human-review"
+      - "#files <= 8"
+      - "#added-lines <= 400"
+      - "#deleted-lines <= 150"
+      - "-files ~= ^(\\.github/|\\.mergify\\.yml$|\\.gitlab/|\\.circleci/|\\.env|\\.npmrc$|\\.pypirc$|\\.cargo/|AGENTS\\.md$|CODEOWNERS$|Dockerfile|Containerfile|Makefile$|Justfile$|server/|bridge/|plugin/|src/|app/|apps/|lib/|pkg/|cmd/|internal/|packages/|ios/|android/|native/|backend/|frontend/|web/|mobile/|deploy/|deployment/|docker/|infra/|infrastructure/|ansible/|terraform/|stacks/|scripts/|tests/|test/|__tests__/|config/|configs/|secrets/|migrations/|database/|db/|\\.changeset/|package\\.json$|pnpm-lock\\.yaml$|yarn\\.lock$|package-lock\\.json$|Cargo\\.(toml|lock)$|Package\\.swift$|go\\.(mod|sum)$|pyproject\\.toml$|requirements.*\\.txt$|.*\\.(ts|tsx|js|jsx|mjs|cjs|rs|swift|py|go|sh|bash|zsh|tf|tfvars|yml|yaml|json|toml|xml|plist)$)"
+      - "check-success = @github-actions/Core and integration tests"
+    merge_conditions: *safe_auto_conditions
+
+
