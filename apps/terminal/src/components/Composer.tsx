@@ -28,7 +28,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Box, Text, useInput, useStdin } from "ink";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
 import {completeCommand,commandMatches} from "../app/commands.ts";
-import { characters, edit, editorView, type Edit } from "./editor.ts";
+import { characters, edit, editorView, selectRange, removeRange, type Edit } from "./editor.ts";
 
 export function Composer(props: {
   width: number;
@@ -51,15 +51,30 @@ export function Composer(props: {
   const [cursor, setCursor] = useState(characters(props.value).length);
   const [historyAt, setHistoryAt] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
+  /** The selection's fixed end, or null when nothing is selected. */
+  const [anchor, setAnchor] = useState<number | null>(null);
   const {stdin}=useStdin();
   const editor=useRef({text:props.value,cursor,rendered:props.value});
   if(editor.current.rendered!==props.value){editor.current.text=props.value;editor.current.rendered=props.value;editor.current.cursor=Math.min(editor.current.cursor,characters(props.value).length);}
-  useEffect(() => { if (!props.value) { setCursor(0); setHistoryAt(null); } }, [props.value]);
+  useEffect(() => { if (!props.value) { setCursor(0); setHistoryAt(null); setAnchor(null); } }, [props.value]);
+  /** The ordered live selection, or null. The anchor is the half that does not move. */
+  const selection=()=>anchor===null?null:selectRange(anchor,editor.current.cursor);
+  const extend=()=>{ if(anchor===null)setAnchor(editor.current.cursor); };
   const apply = (action: Edit | { insert: string }) => {
     const next = edit(editor.current.text, editor.current.cursor, action);
     editor.current.text=next.text;editor.current.cursor=next.cursor;
     setCursor(next.cursor); props.onChange(next.text);
     if (next.text !== props.value) { setHistoryAt(null); setDraft(next.text); }
+  };
+  /** Replacing a selection is one operation, not a delete followed by an insert. */
+  const replace=()=>{
+    const range=selection();
+    if(!range||range.start===range.end){setAnchor(null);return false;}
+    const next=removeRange(editor.current.text,range);
+    editor.current.text=next.text;editor.current.cursor=next.cursor;
+    setCursor(next.cursor);setAnchor(null);props.onChange(next.text);
+    setHistoryAt(null);setDraft(next.text);
+    return true;
   };
   useInput((input, key) => {
     const paste=(stdin as {pasteText?:string|null}).pasteText;
@@ -95,21 +110,22 @@ export function Composer(props: {
       editor.current.text=value;editor.current.cursor=characters(value).length;
       setHistoryAt(next >= history.length ? null : next); setCursor(characters(value).length); props.onChange(value); return;
     }
-    if (key.leftArrow) return apply("left");
-    if (key.rightArrow) return apply("right");
+    if (key.leftArrow) { if(key.shift)extend(); return apply("left"); }
+    if (key.rightArrow) { if(key.shift)extend(); return apply("right"); }
     if (key.ctrl && input === "a") return apply("home");
     if (key.ctrl && input === "e") return apply("end");
     if (key.ctrl && input === "u") return apply("clear");
-    if (key.backspace) return apply("backspace");
-    if (key.delete) return apply("delete");
-    if (key.escape) {if(!props.preserveOnEscape)apply("clear");return;}
-    // `?` on an empty draft is the shell's help request and the shell's handler
+    if (key.backspace) return replace()||apply("backspace");
+    if (key.delete) return replace()||apply("delete");
+    if (key.escape) {if(selection()){setAnchor(null);return;}if(!props.preserveOnEscape)apply("clear");return;}
     // answers it. Inserting the character as well left a stray `?` in the draft,
     // which then submitted as text once the overlay closed.
     if (input === "?" && editor.current.text === "") return;
-    if (!key.ctrl && !key.meta && input) return apply({ insert: input });
+    // Deleting the selection and inserting are one keystroke, not two: the
+    // range goes first, then the character lands at the collapsed cursor.
+    if (!key.ctrl && !key.meta && input) { replace(); return apply({ insert: input }); }
   });
-  const view=editorView(props.value,cursor,Math.max(3,props.width-4));
+  const view=editorView(props.value,cursor,Math.max(3,props.width-4),selection()??undefined);
   const focused=props.active!==false;
   const surface=focused?inkColor(theme.focus):undefined;
   const empty=props.value==='';
@@ -119,7 +135,7 @@ export function Composer(props: {
     <Text wrap="truncate-end" color={inkColor(theme.faint)}>{hint||' '}</Text>
     <Text backgroundColor={surface} color={inkColor(theme.text)} wrap="truncate-end">
       <Text color={inkColor(props.disabled||!focused?theme.faint:theme.brand)} bold> › </Text>
-      {empty?<><Text inverse={focused}> </Text><Text color={inkColor(theme.faint)}>{placeholder.padEnd(Math.max(0,props.width-4))}</Text></>:<><Text>{view.before}</Text><Text inverse={focused}>{view.cursor}</Text><Text>{view.after}{' '.repeat(Math.max(0,props.width-3-view.cells))}</Text></>}
+      {empty?<><Text inverse={focused}> </Text><Text color={inkColor(theme.faint)}>{placeholder.padEnd(Math.max(0,props.width-4))}</Text></>:<><Text>{view.before}</Text><Text inverse={focused} color={inkColor(theme.brand)}>{view.first}</Text><Text inverse={focused} color={view.cursorFirst?inkColor(theme.brand):undefined}>{view.second}</Text><Text>{view.after}{' '.repeat(Math.max(0,props.width-3-view.cells))}</Text></>}
     </Text>
     <Text> </Text>
   </Box>;

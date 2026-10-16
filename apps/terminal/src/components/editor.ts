@@ -23,17 +23,55 @@ export function edit(text: string, cursor: number, action: Edit | { insert: stri
 
 /** Terminal cells, including joined emoji and combining graphemes. */
 export function cellWidth(text:string):number {
- return characters(text).reduce((n,c)=>n+(/\p{Extended_Pictographic}/u.test(c)||/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\uff01-\uff60]/u.test(c)?2:/^\p{Mark}+$/u.test(c)?0:1),0);
+ return characters(text).reduce((n,c)=>n+(/\p{Extended_Pictographic}/u.test(c)||/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\uff01-\uff60]/u.test(c)?2:/^\p{Mark}+$/u.test(c)?0:1),1);
 }
-/** A single row keeps the cursor visible without changing the stored draft. */
-export function editorView(text:string,cursor:number,width:number):{before:string;cursor:string;after:string;cells:number} {
- const chars=characters(text.replace(/\n/g,'↵')),at=Math.min(Math.max(0,cursor),chars.length),limit=Math.max(3,width);
- let start=0;
- while(start<at&&cellWidth(chars.slice(start,at).join(''))+(start?1:0)+cellWidth(chars[at]??' ')+(at+1<chars.length?1:0)>limit)start++;
- const current=chars[at]??' ';
- const prefix=start&&cellWidth(current)+(at+1<chars.length?1:0)+1<=limit?'‹':'';
- const before=prefix+chars.slice(start,at).join('');let end=at+1;
- while(end<chars.length&&cellWidth(before+current+chars.slice(at+1,end+1).join(''))+(end+1<chars.length?1:0)<=limit)end++;
- const after=chars.slice(at+1,end).join('')+(end<chars.length?'›':'');
- return {before,cursor:current,after,cells:cellWidth(before+current+after)};
+
+/**
+ * A selection is an ordered, inclusive-exclusive grapheme range.
+ *
+ * The anchor is where the selection started and the cursor is where it ended.
+ * Only the ordered pair is rendered, so growing a selection leftwards and then
+ * rightwards produces the same range at the same length.
+ */
+export function selectRange(anchor:number,cursor:number):{start:number;end:number} {
+ return anchor<=cursor?{start:anchor,end:cursor}:{start:cursor,end:anchor};
+}
+
+/** Removing a selection leaves the cursor at the start of the removed range. */
+export function removeRange(text:string,range:{start:number;end:number}):{text:string;cursor:number} {
+ const chars=characters(text);
+ const start=Math.max(0,Math.min(range.start,chars.length)),end=Math.max(start,Math.min(range.end,chars.length));
+ chars.splice(start,end-start);
+ return {text:chars.join(''),cursor:start};
+}
+
+/**
+ * One row window, optionally highlighting the selected graphemes.
+ *
+ * The single row is fixed by the product direction: the input is the anchor
+ * `> _` and never moves. A selection is the honest way a draft shows more than
+ * one cell of intent without growing the line. The window is the smallest span
+ * that contains the selection and the cursor block inside the cell budget, so a
+ * long draft scrolls rather than hiding the insertion point.
+ */
+export function editorView(text:string,cursor:number,width:number,range?:{start:number;end:number}):{before:string;first:string;second:string;after:string;cells:number;cursorFirst:boolean} {
+ const chars=characters(text.replace(/\n/g,'\u21b5')),at=Math.min(Math.max(0,cursor),chars.length),limit=Math.max(3,width);
+ const span=range?selectRange(range.start,range.end):{start:at,end:at};
+ const start=Math.max(0,Math.min(span.start,chars.length)),end=Math.max(start,Math.min(span.end,chars.length));
+ let from=0,to=chars.length;
+ while(from<start&&cellWidth(chars.slice(from,to).join(''))>limit)from++;
+ while(to>end&&cellWidth(chars.slice(from,to).join(''))>limit)to--;
+ // The block carries the cursor. With the cursor at the right edge of a
+ // selection the block is the character just past it; at the left edge it is
+ // the range's own first character. Either way the two segments together cover
+ // exactly the selected graphemes once, in render order.
+ const right=at>=end;
+ const prefix=from>0?'\u2039':'',suffix=to<chars.length?'\u203a':'';
+ const before=prefix+chars.slice(from,start).join('');
+ const selected=chars.slice(right?start:start+1,right?end:end).join('');
+ const block=chars[right?end:start]??' ';
+ const after=chars.slice(right?end+1:end,to).join('')+suffix;
+ return right
+  ?{before,first:selected,second:block,after,cells:cellWidth(before+selected+block+after),cursorFirst:false}
+  :{before,first:block,second:selected,after,cells:cellWidth(before+block+selected+after),cursorFirst:true};
 }
