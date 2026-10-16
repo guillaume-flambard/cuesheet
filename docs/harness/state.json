@@ -4233,9 +4233,10 @@
       "verification": "Typecheck, suite de rendu aux tailles maitresses, PTY reel, et attribution differentielle de chaque changement de comportement",
       "evidence": [
         "EV-H08.6-TYPES",
-        "EV-H08.6-BATCH"
+        "EV-H08.6-BATCH",
+        "EV-H08.6-BASELINE"
       ],
-      "notes": "Ink 8 fournit nativement ce que terminal-input.ts reconstruisait: Home et End en CSI et en SS3, Alt+fleches, Meta+Entree, Shift+Home, plus Kitty shift+entree et les modificateurs super et eventType jusque la inaccessibles. Reste ouvert: (1) le test PTY de reprise apres Ctrl+C, qui echoue sur Ink 8 avec et sans les corrections, l'interruption elle-meme etant bien vue; (2) decider du sort de terminal-input.ts, conservation ou suppression au profit du moteur, cle par cle et avec un test par touche; (3) les 3 echecs de budget de surface-quality, que contentOffsetY et clientHeight d'Ink 8 pourraient enfin traiter; (4) l'audit des 130 autres fichiers de test, non joues ici car aucun ne rend la surface."
+      "notes": "Ink 8 fournit nativement ce que terminal-input.ts reconstruisait: Home et End en CSI et en SS3, Alt+fleches, Meta+Entree, Shift+Home, plus Kitty shift+entree et les modificateurs super et eventType jusque la inaccessibles. Le test PTY de reprise apres Ctrl+C est clos et n'etait pas une regression: il est obsolete vis-a-vis du transport serve du modele et echoue deja a l'identique au commit parent avec Ink 4, ce que la sonde PTY et l'A/B de la suite de rendu montrent. Reste ouvert: (1) decider du sort de terminal-input.ts, conservation ou suppression au profit du moteur, cle par cle et avec un test par touche; (2) les 3 echecs de budget de surface-quality, preexistants, que contentOffsetY et clientHeight d'Ink 8 pourraient enfin traiter; (3) l'audit des 130 autres fichiers de test, non joues ici car aucun ne rend la surface."
     },
     {
       "id": "H06.3b2",
@@ -9051,16 +9052,17 @@
       "requirement": "REQ-H08.6",
       "given": "Le worktree isole chore/ink8-react19-20261016, au commit 8670c38",
       "when": "On migre les dependances, on corrige les ruptures declarees et on rejoue la suite de rendu.",
-      "then": "Typecheck propre ; les 18 fichiers de rendu passent au niveau du baseline (52 sur 59, les 7 restants etant preexistants ou le cas PTY documente) ; aucun chemin ne perd le brouillon ni l'interruption.",
+      "then": "Typecheck propre ; la suite de rendu (22 fichiers) donne le meme resultat qu'au commit parent 6efd331 en Ink 4, soit 135 tests, 128 passes et les 7 memes echecs preexistants, la migration n'en ajoutant aucun ; aucun chemin ne perd le brouillon ni l'interruption.",
       "verification": [
         "automated",
         "inspection",
         "runtime"
       ],
-      "status": "PENDING",
+      "status": "VERIFIED",
       "evidence": [
         "EV-H08.6-TYPES",
-        "EV-H08.6-BATCH"
+        "EV-H08.6-BATCH",
+        "EV-H08.6-BASELINE"
       ]
     }
   ],
@@ -9659,7 +9661,7 @@
       "commit": "8670c38",
       "result": "PASS",
       "method": "migration incrementale dans un worktree isole, mesure avant et apres",
-      "details": "Ink 8.0.0 et React 19.3.1 installes (React 19.3+ exige par Ink 8, Node 24 satisfait). Le typecheck passait de 42 erreurs a 0 apres trois corrections: import du type JSX dans 19 fichiers (React 19 a supprime le namespace global), lecture de la taille par useWindowSize (les flux Ink ne sont plus types TTY), et lib ES2023 dans le tsconfig. Le plancher ES2023 ne venait pas du tsconfig mais de type-fest@0.12.0, dependance transitive d'Ink 4 portant une reference lib esnext: Ink 8 la retire et revele 16 erreurs latentes, dont findLast et findLastIndex. Suite de rendu: 18 fichiers, 59 tests, 52 passent. Les 7 echecs sont les 3 palettes connues, les 3 echecs de budget preexistants a surface-quality et le test PTY de reprise apres Ctrl+C."
+      "details": "Ink 8.0.0 et React 19.3.1 installes (React 19.3+ exige par Ink 8, Node 24 satisfait). Le typecheck passait de 42 erreurs a 0 apres trois corrections: import du type JSX dans 19 fichiers (React 19 a supprime le namespace global), lecture de la taille par useWindowSize (les flux Ink ne sont plus types TTY), et lib ES2023 dans le tsconfig. Le plancher ES2023 ne venait pas du tsconfig mais de type-fest@0.12.0, dependance transitive d'Ink 4 portant une reference lib esnext: Ink 8 la retire et revele 16 erreurs latentes, dont findLast et findLastIndex. Suite de rendu: 18 fichiers, 59 tests, 52 passent. Les 7 echecs sont les 3 palettes connues, les 3 echecs de budget preexistants a surface-quality et le test PTY de reprise apres Ctrl+C, dont l'attribution a Ink 8 a ete refutee par EV-H08.6-BASELINE (il echoue deja a l'identique au commit parent 6efd331 en Ink 4)."
     },
     {
       "id": "EV-H08.6-BATCH",
@@ -9667,6 +9669,13 @@
       "result": "PASS",
       "method": "rejeu instrumente de la sequence du test, puis attribution avec et sans la correction",
       "details": "Ink 8 peut livrer plusieurs touches d'un meme paquet dans un seul lot React. Le ref du composeur n'etait resynchronise depuis props.value qu'au rendu, donc une touche arrivant juste apres Entree s'ajoutait au brouillon deja soumis: la rafale soumettait BURST_ONE puis BURST_ONEBURST_TWO. Corrige en vidant le ref a la soumission. La seconde correction, le curseur place a la fin d'un brouillon restaure de l'exterieur, est necessaire: le simple plancher du curseur le laissait a 0 et le point d'exclamation arrivait en tete, ce que product-experience-ui a attrape. Attribution verifiee en rejouant le fichier avec le Composer du commit precedent: il passait, donc la regression venait bien de la correction, qui a ete completee."
+    },
+    {
+      "id": "EV-H08.6-BASELINE",
+      "commit": "a4fe4af",
+      "result": "PASS",
+      "method": "A/B sur deux worktrees isoles avec la meme suite et la meme commande, plus une sonde PTY dediee qui lit l'argv du faux modele",
+      "details": "La suite de rendu (22 fichiers qui rendent la surface, --test-concurrency=1, meme commande des deux cotes) donne 135 tests, 128 passes, 7 echecs sur un worktree propre au commit parent 6efd331 en Ink 4, et exactement le meme 135/128/7 dans le worktree Ink 8. Les 7 echecs sont les memes de part et d'autre (3 palettes, 3 budgets de surface-quality, le test PTY de reprise), donc preexistants: la migration n'ajoute aucun echec. Le test PTY de reprise apres Ctrl+C en fait partie, et son attribution initiale a Ink 8 etait fausse. Une sonde PTY dediee rejoue la sequence du test et journalise l'argv du faux opencode: en 6efd331 propre le produit lance 'serve --hostname 127.0.0.1 --port 0 --pure', jamais 'run --format json', et cela sur les deux moteurs; le test du depot echoue deja la, en Ink 4 (not ok 1, # fail 1). Cause nommee dans la source: ModelBinding.infer (src/adapters/model-binding.ts) passe toujours un callback de progression, et BinaryModelAdapter.spawnRun (src/adapters/binary-model.ts) route vers streamProposal des qu'il est present, donc le produit passe par opencode serve. Le faux binaire du test est un stub CLI qui imprime une ligne JSON et sort, d'ou 'OpenCode server exited.'. Le checkout principal ne passe que par une modification locale non committee, qui ignore onProgress et supprime l'import streamProposal; elle appartient a un autre chantier et a ete lue puis laissee intacte. Le test est donc obsolete vis-a-vis d'un changement de transport anterieur au moteur: ce n'est pas une regression d'Ink, et le fermer appartient au travail sur le transport."
     }
   ],
   "risks": {
@@ -9889,8 +9898,8 @@
   "ready_for_manual_acceptance": false,
   "counts": {
     "requirements": 136,
-    "acceptanceVerified": 43,
-    "acceptancePending": 106,
+    "acceptanceVerified": 44,
+    "acceptancePending": 105,
     "acceptanceFailed": 0,
     "p0_open": 71,
     "p1_open": 51

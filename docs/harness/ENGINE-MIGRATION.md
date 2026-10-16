@@ -60,10 +60,19 @@ Typecheck in the worktree went from **42 errors to 0**, in three classes:
 
 ## The defect the migration actually exposed
 
-The render suite in the worktree: **18 files, 59 tests, 52 pass**. The 7
-failures are the 3 known palette tests (`notification-ui`, `situation-ui`,
-`workspace-ui`), the 3 row-budget failures already failing at the parent commit,
-and one PTY test (below). No new failure.
+The render suite was run the same way on both checkouts: the 22 files that
+render the surface, `--test-concurrency=1`, `--test-reporter=tap`.
+
+| Checkout | tests | pass | fail |
+|---|---|---|---|
+| `ink4-base`, clean worktree at `6efd331`, Ink 4 | 135 | 128 | 7 |
+| `ink8`, Ink 8 | 135 | 128 | 7 |
+
+The 7 failures are the same set in both, and every one of them already fails at
+the parent commit with Ink 4: the 3 palette tests (`notification-ui`,
+`situation-ui`, `workspace-ui`), the 3 row-budget tests in `surface-quality`, and
+one PTY test that is not a regression either (next section). The migration adds
+no failure.
 
 Among the two tests that first appeared new, one was a measurement artifact and
 one was real.
@@ -97,6 +106,46 @@ it otherwise. Both corrections were attributed by re-running the file with the
 previous commit's `Composer.tsx`: it passed, so the regression was the fix, and
 the fix was completed rather than reverted.
 
+## The apparent regression that was not one
+
+`test/terminal-ux.test.ts`, "PTY: Ctrl+C cancels the model and the same terminal
+accepts another request", fails in the worktree. The first attribution was "an
+engine behaviour change", on the grounds that it also failed with the previous
+commit's `Composer.tsx`. That reasoning is invalid: a failure that survives a
+revert can be pre-existing as well, and here it is.
+
+A dedicated PTY probe replays the test's sequence and records the argv the fake
+`opencode` is launched with, which names the transport:
+
+| Checkout | fake `opencode` argv | `REPRISE_OK` |
+|---|---|---|
+| main checkout (`6efd331` plus an uncommitted local edit) | `run --agent cuesheet-proposal --format json --pure` | rendered |
+| clean worktree at `6efd331`, Ink 4 | `serve --hostname 127.0.0.1 --port 0 --pure` | never |
+| worktree, Ink 8 | `serve --hostname 127.0.0.1 --port 0 --pure` | never |
+
+The repo's own test at the clean parent agrees: at `6efd331`, Ink 4,
+`not ok 1 - PTY: Ctrl+C cancels the model and the same terminal accepts another
+request`, `# fail 1`.
+
+Cause, named in the source: `ModelBinding.infer` in
+`src/adapters/model-binding.ts` always passes a progress callback, and
+`BinaryModelAdapter.spawnRun` in `src/adapters/binary-model.ts` routes to
+`streamProposal` whenever that callback is present. The product drives the model
+through `opencode serve`. The fake binary in the test is a CLI stub that prints
+one JSON line and exits, so `streamProposal` waits for a
+`http://127.0.0.1:<port>` line that never arrives and the child's exit rejects the
+run: "OpenCode server exited." The main checkout passes only because of an
+uncommitted local edit there that ignores `onProgress` and drops the
+`streamProposal` import. That edit is another session's work in progress; it was
+read and is preserved untouched.
+
+The failure is therefore a stale test against a transport change that happened
+before the engine work, not a property of Ink. Two honest ways to close it, both
+outside this chantier: make the fake `opencode` implement the `serve` protocol (a
+URL, the HTTP routes, the event stream), or keep the CLI transport and let the
+adapter be the one that says so. Choosing between them is a decision about the
+model transport, and the uncommitted edit is already taking the second road.
+
 ## What the engine now gives for free
 
 Measured with a direct probe of Ink 8, no transform in the path:
@@ -129,12 +178,11 @@ not a side effect of the version bump.
 ## Open items, in the order they should be taken
 
 1. **PTY: Ctrl+C cancels the model and the same terminal accepts another
-   request.** `test/terminal-ux.test.ts`. On Ink 8 it fails, and it fails with
-   the previous commit's `Composer.tsx` as well, so it is an engine behaviour
-   change and not the batched-keys fix. The interruption itself works
-   ("Interrompu" is rendered); the second request never gets its answer. This is
-   the one real regression, and it is exactly the interrupt path this chantier
-   cares about. Reproduce with a dedicated PTY probe before changing anything.
+   request** — closed, and it was never a regression. The test is stale against
+   the model transport: the product runs the model through `opencode serve`, the
+   test's fake binary is a CLI stub, and the same test fails identically at the
+   parent commit `6efd331` with Ink 4. The section above names the cause in the
+   source. Closing it belongs to the transport work, not to the engine.
 2. **Decide the fate of `terminal-input.ts`.** Keep it as a compatibility layer,
    or delete it and let Ink 8 parse, key by key, with one test per key. Measured
    evidence says deletion is reachable; it is not free.
@@ -157,8 +205,9 @@ ES2023 floor and the batched keys were not, and both were found by measuring.
 
 What this cannot say: nothing here claims the migration is complete, that the
 surface is faster, or that Ink 8 is better than Ink 4 in the general case. It
-says the typecheck is clean, the render suite is at baseline with one open PTY
-item, and the keyboard layer the engine now provides is real.
+says the typecheck is clean, the render suite carries exactly the same 7
+pre-existing failures as its parent, and the keyboard layer the engine now
+provides is real.
 
 ## What this chantier does not authorise
 
