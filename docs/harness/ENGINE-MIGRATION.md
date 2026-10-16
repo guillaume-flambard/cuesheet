@@ -193,8 +193,22 @@ not a side effect of the version bump.
    so the engine cannot affect them, but "cannot" is an argument and not a
    measurement. Run them once before any claim that the migration is complete.
 5. The worktree is `workspace/worktrees/cuesheet/ink8`, branch
-   `chore/ink8-react19-20261016`, first commit `8670c38` on top of `6efd331`.
-   Nothing is pushed and the installed runtime is untouched so far.
+   `chore/ink8-react19-20261016`: `8670c38` (engine), `a4fe4af` (plan) and
+   `2205ee8` (this correction). Pushed to `origin` on the owner's go-ahead, which
+   also covers the runtime; that push therefore carries the 18 ancestor commits of
+   `wip/pre-audit-snapshot-2026-10-04` that were not published yet, since git
+   sends the branch with its history.
+6. The installed runtime at `~/.local/share/cuesheet/runtime`, a worktree of the
+   main checkout, used to sit detached on `6efd331` with Ink 4. It is repointed to
+   `2205ee8` with `ink 8.0.0` and `react 19.3.1` installed offline, so the
+   installed `cuesheet` command now runs the migrated surface. Revert, if wanted:
+   `git -C ~/.local/share/cuesheet/runtime checkout --detach 6efd331` then
+   `pnpm install --offline` there. Verified on the installed command itself, not on
+   the worktree: 12 checks through a real PTY (mount, identity, title, typing,
+   backspace, Ctrl+K overlay, composer kept behind it, Escape closing it, shell
+   redrawn, composer surviving, typing after it, clean exit), and the four master
+   sizes 80x24, 120x30, 160x50 and 240x70 each painting identity and footer inside
+   the window.
 
 ## Method, and what it cannot say
 
@@ -212,7 +226,9 @@ provides is real.
 ## What this chantier does not authorise
 
 - No change to the surface geometry, the column rule or the master sizes.
-- No move of the installed runtime without the owner saying so.
+- No move of the installed runtime without the owner saying so. He said so on
+  2026-10-16; the move, its verification and its revert command are in open item
+  6.
 - No commercial, launch or phase decision.
 - No replacement of the architecture: same components, same layout, one engine
   generation up.

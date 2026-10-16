@@ -4234,9 +4234,10 @@
       "evidence": [
         "EV-H08.6-TYPES",
         "EV-H08.6-BATCH",
-        "EV-H08.6-BASELINE"
+        "EV-H08.6-BASELINE",
+        "EV-H08.6-RUNTIME"
       ],
-      "notes": "Ink 8 fournit nativement ce que terminal-input.ts reconstruisait: Home et End en CSI et en SS3, Alt+fleches, Meta+Entree, Shift+Home, plus Kitty shift+entree et les modificateurs super et eventType jusque la inaccessibles. Le test PTY de reprise apres Ctrl+C est clos et n'etait pas une regression: il est obsolete vis-a-vis du transport serve du modele et echoue deja a l'identique au commit parent avec Ink 4, ce que la sonde PTY et l'A/B de la suite de rendu montrent. Reste ouvert: (1) decider du sort de terminal-input.ts, conservation ou suppression au profit du moteur, cle par cle et avec un test par touche; (2) les 3 echecs de budget de surface-quality, preexistants, que contentOffsetY et clientHeight d'Ink 8 pourraient enfin traiter; (3) l'audit des 130 autres fichiers de test, non joues ici car aucun ne rend la surface."
+      "notes": "Ink 8 fournit nativement ce que terminal-input.ts reconstruisait: Home et End en CSI et en SS3, Alt+fleches, Meta+Entree, Shift+Home, plus Kitty shift+entree et les modificateurs super et eventType jusque la inaccessibles. Le test PTY de reprise apres Ctrl+C est clos et n'etait pas une regression: il est obsolete vis-a-vis du transport serve du modele et echoue deja a l'identique au commit parent avec Ink 4, ce que la sonde PTY et l'A/B de la suite de rendu montrent. Reste ouvert: (1) decider du sort de terminal-input.ts, conservation ou suppression au profit du moteur, cle par cle et avec un test par touche; (2) les 3 echecs de budget de surface-quality, preexistants, que contentOffsetY et clientHeight d'Ink 8 pourraient enfin traiter; (3) l'audit des 130 autres fichiers de test, non joues ici car aucun ne rend la surface. Le runtime installe est repointe sur le tip de la branche (ink 8.0.0, react 19.3.1) et verifie par sonde PTY sur la commande installee elle-meme; le retour arriere est une commande."
     },
     {
       "id": "H06.3b2",
@@ -9676,6 +9677,13 @@
       "result": "PASS",
       "method": "A/B sur deux worktrees isoles avec la meme suite et la meme commande, plus une sonde PTY dediee qui lit l'argv du faux modele",
       "details": "La suite de rendu (22 fichiers qui rendent la surface, --test-concurrency=1, meme commande des deux cotes) donne 135 tests, 128 passes, 7 echecs sur un worktree propre au commit parent 6efd331 en Ink 4, et exactement le meme 135/128/7 dans le worktree Ink 8. Les 7 echecs sont les memes de part et d'autre (3 palettes, 3 budgets de surface-quality, le test PTY de reprise), donc preexistants: la migration n'ajoute aucun echec. Le test PTY de reprise apres Ctrl+C en fait partie, et son attribution initiale a Ink 8 etait fausse. Une sonde PTY dediee rejoue la sequence du test et journalise l'argv du faux opencode: en 6efd331 propre le produit lance 'serve --hostname 127.0.0.1 --port 0 --pure', jamais 'run --format json', et cela sur les deux moteurs; le test du depot echoue deja la, en Ink 4 (not ok 1, # fail 1). Cause nommee dans la source: ModelBinding.infer (src/adapters/model-binding.ts) passe toujours un callback de progression, et BinaryModelAdapter.spawnRun (src/adapters/binary-model.ts) route vers streamProposal des qu'il est present, donc le produit passe par opencode serve. Le faux binaire du test est un stub CLI qui imprime une ligne JSON et sort, d'ou 'OpenCode server exited.'. Le checkout principal ne passe que par une modification locale non committee, qui ignore onProgress et supprime l'import streamProposal; elle appartient a un autre chantier et a ete lue puis laissee intacte. Le test est donc obsolete vis-a-vis d'un changement de transport anterieur au moteur: ce n'est pas une regression d'Ink, et le fermer appartient au travail sur le transport."
+    },
+    {
+      "id": "EV-H08.6-RUNTIME",
+      "commit": "2205ee8",
+      "result": "PASS",
+      "method": "sonde PTY sur la commande installee et sur les 4 tailles maitresses, apres repointage du runtime",
+      "details": "Le runtime installe (~/.local/share/cuesheet/runtime, worktree du checkout principal) est passe de 6efd331 avec Ink 4 a 2205ee8 avec ink 8.0.0 et react 19.3.1, instalies hors ligne. La commande installee elle-meme a ete sondee par PTY, pas le worktree: montage de la surface avec identite et guide, titre de fenetre, frappe dans le composeur, retour arriere, ouverture du palette par Ctrl+K avec le composeur conserve derriere, fermeture par Echap avec redessin de la surface et composeur intact, frappe apres fermeture, sortie propre: 12 controles, tous vrais. Les 4 tailles maitresses 80x24, 120x30, 160x50 et 240x70 peignent chacune l'identite et le pied de page dans la fenetre. Retour arriere: git -C ~/.local/share/cuesheet/runtime checkout --detach 6efd331 puis pnpm install --offline."
     }
   ],
   "risks": {
