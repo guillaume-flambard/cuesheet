@@ -2501,7 +2501,7 @@
     {
       "id": "H08.5",
       "priority": "P0",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "requirements": [
         "REQ-H08.5"
       ],
@@ -2552,8 +2552,11 @@
         "AC-H08.5"
       ],
       "verification": "Spec scenarios + regression + static differential + relevant integration + full suite; real run where specified",
-      "evidence": [],
-      "notes": ""
+      "evidence": [
+        "EV-H08.5-KEYS",
+        "EV-H08.5-BUDGET"
+      ],
+      "notes": "Keyboard reachability, the three sizes, resize and NO_COLOR are verified (EV-H08.5-KEYS) and the draft cell budget is restored (EV-H08.5-BUDGET). Still open for AC-H08.5: the row budget under a long wrapped timeline (one of the 6 pre-existing UI failures) and an explicit test that Return inside an overlay does not submit the draft. See OPENCODE-UX-ANATOMY.md."
     },
     {
       "id": "H09.4",
@@ -7596,7 +7599,10 @@
         "runtime"
       ],
       "status": "PENDING",
-      "evidence": []
+      "evidence": [
+        "EV-H08.5-KEYS",
+        "EV-H08.5-BUDGET"
+      ]
     },
     {
       "id": "AC-H09.4",
@@ -9585,6 +9591,20 @@
       "result": "PASS",
       "method": "automated tests, mutation, full-suite differential, build, dry run on real data",
       "details": "managed-worktree-release 13/13, worktrees-cli 3/3, state-graph 41/41; suite 44 failures before, 43 after, none new; build 0 type errors; C02 dry run 13/13 releasable. docs/harness/WORKTREE-RELEASE.md#evidence"
+    },
+    {
+      "id": "EV-H08.5-KEYS",
+      "commit": "a464fc3",
+      "result": "PASS",
+      "method": "real PTY (node-pty + @xterm/headless) plus unit tests",
+      "details": "Ink 4 leaves Home, End, Ctrl+arrow and Ctrl+Backspace unreachable: the SS3 form \\x1bOH was unrecognized, \\x08 parsed as a single-character backspace, and ? on an empty draft opened help and typed the ?. Fixed in terminal-input.ts, Composer.tsx and editor.ts, with grapheme selection added. Verified by real PTY at 40x14, 80x24, 120x40 and 160x50, resized, and with NO_COLOR (selection visible). Tests: terminal-keyboard.test.ts (8), editor-view.test.ts (2), terminal-input.test.ts."
+    },
+    {
+      "id": "EV-H08.5-BUDGET",
+      "commit": "a464fc3",
+      "result": "PASS",
+      "method": "differential run against the parent 3a0bde1 in a separate worktree",
+      "details": "043aad5 changed cellWidth's base from 0 to 1 and dropped the cursor field editorView returns. wrapCells measures one grapheme at a time, so every character cost two cells and all wrapped text folded at half width: work inspection and the shared-context palette failed, and mac-commands-motion's cell-budget assertion failed at width 4. Restored. The 19-file UI set then fails exactly where it fails at 3a0bde1: 6 pre-existing failures (3 in surface-quality, 3 real-palette), 81 pass of 87."
     }
   ],
   "risks": {

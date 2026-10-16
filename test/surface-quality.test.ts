@@ -104,3 +104,18 @@ const store=createStore();const out=new PassThrough();let last='';out.on('data',
   for(const shot of JSON.parse(run.stdout.trim())){const frame=shot.frame.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'');const lines=frame.trimEnd().split('\n');assert.ok(lines.length<=shot.rows-1,`${shot.columns}x${shot.rows} stays inside the box`);assert.match(frame,/Ctrl\+K commands/,`${shot.columns}x${shot.rows} shows the keyboard guide`);assert.match(lines[0]!,/◈ cuesheet/,`${shot.columns}x${shot.rows} keeps the identity on one header row`);}
  }finally{rmSync(root,{recursive:true,force:true});}
 });
+
+it('a running turn stays stoppable from the narrowest supported size',()=>{
+ const root=mkdtempSync(join(tmpdir(),'cs-status-busy-narrow-'));
+ try{
+  const terminal=resolve('apps/terminal'),script=join(root,'busy.tsx');writeFileSync(join(root,'package.json'),'{"type":"module"}');
+  writeFileSync(script,`import React from ${JSON.stringify(join(terminal,'node_modules/react/index.js'))};import {render} from ${JSON.stringify(join(terminal,'node_modules/ink/build/index.js'))};import {PassThrough} from 'node:stream';import {App} from ${JSON.stringify(join(terminal,'src/app/App.tsx'))};import {createStore} from ${JSON.stringify(join(terminal,'src/app/store.ts'))};
+const store=createStore();store.send({type:'began'});const out=new PassThrough();let last='';out.on('data',b=>last=b.toString());const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});const app=render(<App store={store} producer={{say(){},choose(){}} as any}/>,{stdout:out as any,stderr:out as any,stdin:input as any,debug:true,exitOnCtrlC:false});
+(async()=>{Object.assign(out,{columns:40,rows:14,isTTY:false});out.emit('resize');await new Promise(r=>setTimeout(r,150));app.unmount();console.log(JSON.stringify({frame:last}));})();`);
+  const run=spawnSync(join(terminal,'node_modules/.bin/tsx'),[script],{encoding:'utf8',timeout:30000});assert.equal(run.status,0,run.stderr);
+  const frame=JSON.parse(run.stdout.trim().split('\n').at(-1)!).frame.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'');
+  assert.match(frame,/Ctrl\+C stop/,'the narrow busy footer names the interrupt, the one hint that must survive');
+  assert.match(frame,/◈ cuesheet/,'the shell still rendered');
+  assert.ok(frame.trimEnd().split('\n').length<=13,'the frame stays inside the box');
+ }finally{rmSync(root,{recursive:true,force:true});}
+});

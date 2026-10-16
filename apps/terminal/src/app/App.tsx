@@ -47,7 +47,7 @@ import {AgentModels} from '../overlays/AgentModels.tsx';
  * anything, and none of them reads the filesystem.
  */
 
-import React, { useCallback, useMemo, useEffect, useState } from "react";
+import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdout, useStdin } from "ink";
 import { useSurface } from "./store.ts";
 import type { Control, SurfaceState, WorkReference } from "./state.ts";
@@ -71,6 +71,28 @@ import { listTerminalSessions, type TerminalSession } from "../../../../src/adap
 import { createLiveProducer, createTerminalRuntime } from "../producer/runtime.ts";
 import type { Producer } from "../producer/index.ts";
 import type { Option } from "./state.ts";
+import { windowTitle, oscTitle } from "./window-title.ts";
+
+/**
+ * The window title names the work, so a shell full of terminals says which one
+ * is busy. Only a real terminal receives the escape sequence: a pipe, a file or
+ * a test stream is not a title surface, and writing control bytes into it would
+ * pollute the captured frame instead of decorating a titlebar.
+ *
+ * The title is set and then left alone. Handing it back on exit would be a
+ * write during Ink's own teardown, where the renderer drops it; most shells set
+ * their own title in the prompt anyway, and an empty payload would leave a
+ * blank titlebar where a shell does not.
+ */
+function useTerminalTitle(stdout:{isTTY?:boolean;write?:(chunk:string)=>unknown}|undefined,title:string):void {
+  const written=useRef<string|null>(null);
+  useEffect(()=>{
+    if(!stdout?.isTTY||typeof stdout.write!=="function")return;
+    if(written.current===title)return;
+    written.current=title;
+    stdout.write(oscTitle(title));
+  },[stdout,title]);
+}
 
 export interface AppProps {
   /**
@@ -191,6 +213,7 @@ export function App(props: AppProps): JSX.Element {
   const contentRows = Math.max(1, rows - 8);
   const workSurface=producer?.workSurface?.();
   const context=contextLines(workSurface,Math.min(8,Math.max(2,Math.floor(contentRows/3))));
+  useTerminalTitle(stdout,windowTitle({intent:workSurface?.intent,project:state.project}));
 
   return (
     <MotionContext.Provider value={motion}>
