@@ -29,3 +29,41 @@ it('ending input flushes Escape without a delayed push after EOF',async()=>{
 it('fragmented Mac Option-arrow sequences normalize without altering AZERTY symbols',()=>{
  const f=fixture();try{for(const chunk of ['\x1b[1;','3D','€@','\x1b[1;3','C'])f.source.write(chunk);assert.deepEqual(f.take().map(p=>p.text),['\x1bb','€@','\x1bf']);}finally{f.keyboard.dispose();}
 });
+
+// Ink 4's useInput Key has no home/end flag and names no modifier on Ctrl+Left,
+// so the terminal's own encoding is the only thing that can make these keys
+// work. Every encoding below was measured dead in a real PTY before this map.
+it('Home reaches the composer as line start, in every encoding a terminal sends',()=>{
+  const f=fixture();try{
+    for(const sequence of ['\x1b[H','\x1b[1~','\x1b[7~','\x1bOH'])f.source.write(sequence);
+    assert.deepEqual(f.take().map(p=>p.text),['\x01','\x01','\x01','\x01']);
+  }finally{f.keyboard.dispose();}
+});
+
+it('End reaches the composer as line end, in every encoding a terminal sends',()=>{
+  const f=fixture();try{
+    for(const sequence of ['\x1b[F','\x1b[4~','\x1b[8~','\x1bOF'])f.source.write(sequence);
+    assert.deepEqual(f.take().map(p=>p.text),['\x05','\x05','\x05','\x05']);
+  }finally{f.keyboard.dispose();}
+});
+
+it('Ctrl and Alt arrows reach word motion as one canonical pair',()=>{
+  const f=fixture();try{
+    f.source.write('\x1b[1;5D\x1b[1;5C\x1b[1;3D\x1b[1;7C\x1bb\x1bf');
+    assert.deepEqual(f.take().map(p=>p.text),['\x1bb','\x1bf','\x1bb','\x1bf','\x1bb','\x1bf']);
+  }finally{f.keyboard.dispose();}
+});
+
+it('Ctrl+Backspace is the word deletion the composer already implements',()=>{
+  const f=fixture();try{
+    f.source.write('\x08\x7f\b');
+    assert.deepEqual(f.take().map(p=>p.text),['\x17','\x08','\x17']);
+  }finally{f.keyboard.dispose();}
+});
+
+it('plain arrow keys keep their single-step meaning',()=>{
+  const f=fixture();try{
+    f.source.write('\x1b[D\x1b[C\x1b[A\x1b[B');
+    assert.deepEqual(f.take().map(p=>p.text),['\x1b[D','\x1b[C','\x1b[A','\x1b[B']);
+  }finally{f.keyboard.dispose();}
+});

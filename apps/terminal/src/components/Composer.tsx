@@ -72,6 +72,12 @@ export function Composer(props: {
     if (props.active === false) return;
     if(key.meta&&(input==='b'||key.leftArrow))return apply("word-left");
     if(key.meta&&(input==='f'||key.rightArrow))return apply("word-right");
+    // Ink reports Ctrl+Left as leftArrow+ctrl and Ctrl+Right as rightArrow+ctrl.
+    // A terminal sends them for word motion, so they are read directly here: the
+    // transform emits the same Emacs pair, and the published test harness drives
+    // raw stdin, where these are the only form the key takes.
+    if(key.ctrl&&key.leftArrow)return apply("word-left");
+    if(key.ctrl&&key.rightArrow)return apply("word-right");
     if((key.meta&&(key.backspace||key.delete))||(key.ctrl&&input==='w'))return apply("word-backspace");
     if (key.ctrl && input === "o") return apply({insert:"\n"});
     // Ink 4 leaves ESC+CR as literal CR after removing ESC, without a meta flag.
@@ -97,6 +103,10 @@ export function Composer(props: {
     if (key.backspace) return apply("backspace");
     if (key.delete) return apply("delete");
     if (key.escape) {if(!props.preserveOnEscape)apply("clear");return;}
+    // `?` on an empty draft is the shell's help request and the shell's handler
+    // answers it. Inserting the character as well left a stray `?` in the draft,
+    // which then submitted as text once the overlay closed.
+    if (input === "?" && editor.current.text === "") return;
     if (!key.ctrl && !key.meta && input) return apply({ insert: input });
   });
   const view=editorView(props.value,cursor,Math.max(3,props.width-4));

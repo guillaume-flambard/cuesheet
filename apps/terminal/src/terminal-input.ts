@@ -37,16 +37,39 @@ export function terminalInput(source:NodeJS.ReadStream):{input:TerminalReadStrea
         if(csi){
           const sequence=csi[0];pending=pending.slice(sequence.length);
           const mouse=sequence.match(/^\x1b\[<(\d+);\d+;\d+[mM]$/);
-          if(mouse){const code=Number(mouse[1]);if(code&64)packet(code&1?'\x1b[6~':'\x1b[5~');}else if(/^\x1b\[1;[35]D$/.test(sequence))packet("\x1bb");else if(/^\x1b\[1;[35]C$/.test(sequence))packet("\x1bf");else packet(sequence);
+          if(mouse){const code=Number(mouse[1]);if(code&64)packet(code&1?'\x1b[6~':'\x1b[5~');}
+          // Ink 4 reports neither Home/End nor a modifier for them: useInput's Key
+          // object has no home/end flag, so the sequence is dropped and the
+          // physical keys stay dead. Every encoding a terminal can send (CSI,
+          // rxvt, putty) maps onto the two motions the composer already
+          // implements, Ctrl+A and Ctrl+E.
+          else if(/^\x1b\[(?:H|1~|7~)$/.test(sequence))packet('\x01');
+          else if(/^\x1b\[(?:F|4~|8~)$/.test(sequence))packet('\x05');
+          // Ctrl and Alt arrow both reach word motion. Ink reports Ctrl+Left as
+          // leftArrow+ctrl, which no handler reads; the canonical Emacs pair is
+          // emitted instead, which is what Alt+arrow already produced.
+          else if(/^\x1b\[1;[3579]D$/.test(sequence))packet("\x1bb");
+          else if(/^\x1b\[1;[3579]C$/.test(sequence))packet("\x1bf");
+          else packet(sequence);
           continue;
         }
         if(pending.startsWith('\x1b[')||pending==='\x1bO')return;
-        const length=pending.startsWith('\x1bO')?3:2;packet(pending.slice(0,length));pending=pending.slice(length);continue;
+        const length=pending.startsWith('\x1bO')?3:2;
+        const ss3=pending.slice(0,length);
+        // Application-cursor mode (SS3) sends Home and End as \x1bOH / \x1bOF,
+        // which no parser names and the composer cannot read either.
+        packet(ss3==='\x1bOH'?'\x01':ss3==='\x1bOF'?'\x05':ss3);
+        pending=pending.slice(length);continue;
       }
       const control=pending.search(/[\x00-\x1f\x7f]/);
       if(control===-1){packet(pending);pending='';continue;}
       if(control>0){packet(pending.slice(0,control));pending=pending.slice(control);continue;}
-      packet(pending[0]==='\x7f'?'\x08':pending[0]);pending=pending.slice(1);
+      // \x08 is what terminals send for Ctrl+Backspace (and Ctrl+H). Ink parses
+      // it as a plain single-character backspace, so it is emitted as Ctrl+W,
+      // the word deletion the composer already implements; \x7f stays the
+      // single-character Backspace.
+      packet(pending[0]==='\x7f'?'\x08':pending[0]==='\x08'?'\x17':pending[0]);
+      pending=pending.slice(1);
     }
   };
   const stream=new Transform({readableObjectMode:true,transform(chunk:Buffer,_encoding,callback){pending+=decoder.write(chunk);drain();callback();},flush(callback){
