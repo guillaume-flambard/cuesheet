@@ -3,7 +3,8 @@
 Status: OPEN, bounded. Owner asked for the comparison on 2026-10-16, then for a
 bounded chantier plus a first step. This file is the plan and the evidence for
 that work. It is a chantier for the terminal surface only; it does not reopen
-the layout, the product direction or the Ink version.
+the layout or the product direction. The engine version is a separate ordered
+chantier, recorded in `ENGINE-MIGRATION.md`.
 
 ## Method, and what it cannot say
 
@@ -35,7 +36,7 @@ proposes panels, a mode selector or a second surface.
 | Overlays | About twenty-five designed `dialog-*` states, plus explicit `startup-loading`, `reconnecting`, `retry-provider`, `migration-overlay`, `error-component` states | Overlays exist (work, changes, models, sessions, palette, context, situation, help, inspect) | Overlays are not the gap. What to check next is whether each failure and wait is a designed state or a sentence. Step 3. |
 | Input sigils | `@` files, `!` shell, `/` commands | `/` commands and a palette | Not a defect. Recorded so the difference is a decision, not an oversight. |
 | Keybinds | About a hundred and fifty, configurable in `tui.json`, including `home`/`end`, `shift+home`/`shift+end`, word selection, undo/redo | Home/End, Ctrl+arrow, Ctrl+Backspace, Shift+arrow selection now reach the composer | The reachable set was just widened. Ink 4 cannot carry shift+home or ctrl+shift+arrow; that is an engine limit, not a missing handler. |
-| Engine | TypeScript on `@opentui/core` with Solid | Ink 4 with React 18 | **Owner-only decision.** Do not migrate, and do not move the installed runtime, on the strength of a UX comparison. |
+| Engine | TypeScript on `@opentui/core` with Solid | Ink 4 with React 18, migrating to Ink 8 with React 19 | The owner ordered the migration on 2026-10-16, as its own decision. The engine was never a UX finding: the target is execution level and is recorded with its evidence in `ENGINE-MIGRATION.md`. |
 | Notifications | Desktop notification when the terminal is blurred | In-app counts and a notifications page; no OS transport | Out of scope here: an OS notification is an external side effect and needs its own decision. |
 | Terminal respect | Mouse, cursor style and blinking, a configurable diff style | Mouse wheel is handled in the transform | Partly present. Not scheduled; record only. |
 
@@ -85,7 +86,7 @@ missing key. One state per pass, each with a test.
 ## What this chantier does not authorise
 
 - No change to the surface geometry, the column rule or the master sizes.
-- No Ink or React upgrade, no engine change, no move of the installed runtime.
+- No engine change as part of these three steps. The migration is a separate ordered chantier (`ENGINE-MIGRATION.md`) and no step here depends on it. The installed runtime does not move without the owner.
 - No new dependency for any of the three steps; both delivered steps are pure
   functions plus one Ink hook.
 - Nothing here is a commercial, launch or phase decision.
