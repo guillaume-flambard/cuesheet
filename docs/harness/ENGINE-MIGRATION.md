@@ -74,6 +74,12 @@ the parent commit with Ink 4: the 3 palette tests (`notification-ui`,
 one PTY test that is not a regression either (next section). The migration adds
 no failure.
 
+`ink4-base` is `workspace/worktrees/cuesheet/ink4-base`, a detached worktree at
+`6efd331` whose `node_modules` and `apps/terminal/node_modules` are symlinks into
+the main checkout. It is a baseline to measure against, not a checkout to work
+in: the day the main checkout installs Ink 8, that worktree silently stops being
+an Ink 4 baseline.
+
 Among the two tests that first appeared new, one was a measurement artifact and
 one was real.
 
