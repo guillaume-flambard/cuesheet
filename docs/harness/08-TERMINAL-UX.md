@@ -49,6 +49,57 @@ Streaming stable, sans clignotement excessif ni blocage du clavier. Garder les
 détails bruts dans une vue inspectable, avec secrets filtrés et output truncation
 signalée. Le résultat complet est récupérable par une référence bornée.
 
+## Ergonomie clavier, état vérifié (2026-10-16)
+
+Mesuré d'abord dans un vrai PTY (node-pty plus @xterm/headless), sur le dépôt et
+sur la copie installée. Défauts trouvés :
+
+- Ink 4 n'a pas de champ `home`/`end` dans `Key`. Home (`\x1b[H`, `\x1b[1~`,
+  `\x1b[7~`) et le SS3 (`\x1bOH`) étaient silencieusement perdus.
+- Ctrl et Alt plus flèche arrivent en modes `1;3`, `1;5`, `1;7`, `1;9`, non
+  reconnus : aucun déplacement par mot.
+- `\x08` était lu comme un backspace d'un caractère, pas comme une suppression
+  de mot.
+- `?` sur un brouillon vide ouvrait l'aide et insérait quand même le caractère.
+- Shift plus flèche ne sélectionnait rien : la branche flèche déplaçait le
+  curseur sans garder d'ancre.
+
+Corrigé dans les lieux où le comportement vit déjà, sans nouvelle dépendance :
+la transformation `terminal-input.ts` ramène Home/End (tous encodages) sur
+Ctrl+A/Ctrl+E, les flèches Ctrl/Alt sur le couple canonique de mot, et `\x08`
+sur Ctrl+W ; le composer lit directement Ctrl plus flèche, garde une ancre de
+sélection avec Shift plus flèche, et remplace ou supprime la sélection en une
+seule opération (taper, Retour arrière, Suppr, Escape qui lâche d'abord la
+sélection).
+
+Preuves : `node --test test/terminal-input.test.ts test/terminal-keyboard.test.ts
+test/editor-view.test.ts` (20 cas, 20 verts). `terminal-keyboard` pilote la
+chaîne réelle stdin, transformation, Ink, composer, store. `editor-view`
+reconstruit le brouillon à partir des segments rendus, ce qui échoue dès qu'un
+graphème est perdu ou dupliqué. PTY réel après changement : Home puis B donne
+`Bbanana`, End puis Z donne `bananaZ`, Ctrl+Retour arrière efface un mot, `?`
+laisse le brouillon vide, et avec neuf Shift+droite les cellules inverses de la
+ligne de saisie lisent `keepthis`, puis `DONE tail` après frappe. La sélection
+visible est bien la sélection qui s'édite.
+
+Limites d'Ink 4, explicites et non contournées :
+
+- Ctrl+Shift plus flèche (sélection par mot) est indistinguable d'un saut par
+  mot : Ink rapporte ctrl sans shift pour cette séquence.
+- Shift+Home et Shift+End ne sont pas exprimables, faute de champ `home`/`end`.
+
+Ces deux combinaisons, ainsi qu'une désambiguïsation fiable d'Escape, sont
+fournies en amont par Ink 6 et suivants (publié en 8.0.0) : protocole clavier
+Kitty natif, `Key` expose `home`, `end`, `super`, `hyper`, `capsLock`, et une
+négociation automatique avec délai. C'est une capacité documentée de la
+dépendance, lue dans ses sources (`parse-keypress.ts`, `kitty-keyboard.ts`,
+`hooks/use-input.ts`), pas une preuve d'exécution locale. La montée depuis
+4.4.1 exige React supérieur ou égal à 19.3, le projet est sur React 18 :
+migration majeure, décision propriétaire, hors de cette tranche.
+
+Trois tests de rendu `surface-quality` et un test de palette `workspace-ui`
+échouent déjà sur l'arbre non modifié ; ils ne viennent pas de ce travail.
+
 ## Acceptation et tâches
 
 - [ ] H08.1 Vue travail progressive et états issus des projections.
