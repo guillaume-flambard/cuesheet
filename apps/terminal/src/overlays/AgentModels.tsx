@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React,{useState} from 'react';
 import {Box,Text,useInput} from 'ink';
 import {Models,type ModelsProps} from './Models.tsx';

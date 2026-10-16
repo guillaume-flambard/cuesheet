@@ -9,12 +9,12 @@
     "start": "tsx src/main.tsx"
   },
   "dependencies": {
-    "ink": "^4.4.1",
-    "react": "^18.3.1"
+    "ink": "^8.0.0",
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "@types/react": "^18.3.0",
+    "@types/react": "^19.3.0",
     "esbuild": "^0.28.0",
     "node-pty": "^1.1.0",
     "tsx": "^4.20.0",

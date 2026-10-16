@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 /**
  * `/inspect`: the raw log, which is where the mechanics are allowed to be.
  *

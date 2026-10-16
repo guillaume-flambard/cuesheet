@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 /**
  * The project list, as an overlay rather than a panel.
  *

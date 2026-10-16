@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React,{useState,useEffect,useRef} from 'react';
 import {Box,Text,useInput} from 'ink';
 import type {Entry,WorkSurface,WorkReference} from '../app/state.ts';

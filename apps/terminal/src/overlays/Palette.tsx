@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React, { useState, useRef, useEffect } from "react";
 import { Box, Text, useInput, measureElement, type DOMElement } from "ink";
 import { theme, inkColor } from "../theme/tokens.ts";

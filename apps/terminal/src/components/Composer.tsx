@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 /**
  * The composer: the centre of the application.
  *
@@ -55,7 +56,11 @@ export function Composer(props: {
   const [anchor, setAnchor] = useState<number | null>(null);
   const {stdin}=useStdin();
   const editor=useRef({text:props.value,cursor,rendered:props.value});
-  if(editor.current.rendered!==props.value){editor.current.text=props.value;editor.current.rendered=props.value;editor.current.cursor=Math.min(editor.current.cursor,characters(props.value).length);}
+  // The ref is the editor's own state; props.value is the store's mirror of it.
+  // When the store fills a field that was empty, that draft comes from outside
+  // (a refused submission restores it), so the cursor belongs at its end. Our
+  // own edit already placed the cursor, and is only clamped to the new length.
+  if(editor.current.rendered!==props.value){const fromEmpty=editor.current.rendered==="";editor.current.text=props.value;editor.current.rendered=props.value;editor.current.cursor=fromEmpty?characters(props.value).length:Math.min(editor.current.cursor,characters(props.value).length);}
   useEffect(() => { if (!props.value) { setCursor(0); setHistoryAt(null); setAnchor(null); } }, [props.value]);
   /** The ordered live selection, or null. The anchor is the half that does not move. */
   const selection=()=>anchor===null?null:selectRange(anchor,editor.current.cursor);
@@ -98,7 +103,17 @@ export function Composer(props: {
     // Ink 4 leaves ESC+CR as literal CR after removing ESC, without a meta flag.
     if ((input === "\r" && !key.return) || (key.return && (key.shift || key.meta))) return apply({insert:"\n"});
     if (key.return || input === "\n") {
-      return props.onSubmit(editor.current.text);
+      const submitted = editor.current.text;
+      // The store clears the draft, but this ref is only re-synced from props
+      // during render. Ink 8 can deliver several keys of one packet inside a
+      // single React batch, so a keystroke arriving right after Return would
+      // otherwise insert onto the text that was just submitted.
+      editor.current.text = "";
+      editor.current.rendered = "";
+      editor.current.cursor = 0;
+      setCursor(0);
+      setAnchor(null);
+      return props.onSubmit(submitted);
     }
     if (key.upArrow || key.downArrow) {
       const history = props.history ?? [];

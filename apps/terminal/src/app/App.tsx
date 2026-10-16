@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import {Work} from '../overlays/Work.tsx';
 import {Changes} from '../overlays/Changes.tsx';
 import {MotionContext} from "../theme/motion.tsx";
@@ -48,7 +49,7 @@ import {AgentModels} from '../overlays/AgentModels.tsx';
  */
 
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
-import { Box, Text, useApp, useInput, useStdout, useStdin } from "ink";
+import { Box, Text, useApp, useInput, useStdout, useStdin, useWindowSize } from "ink";
 import { useSurface } from "./store.ts";
 import type { Control, SurfaceState, WorkReference } from "./state.ts";
 import { theme, glyph, inkColor } from "../theme/tokens.ts";
@@ -112,12 +113,10 @@ export function App(props: AppProps): JSX.Element {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const {stdin}=useStdin();
-  const [, resized] = useState(0);
-  useEffect(() => {
-    const resize = () => resized((n) => n + 1);
-    stdout.on("resize", resize);
-    return () => { stdout.off("resize", resize); };
-  }, [stdout]);
+  // Ink 8 types stdin and stdout as plain Node streams, so the size comes from
+  // Ink own hook: it reads the size before the first paint and re-renders on
+  // every resize event, which is exactly what the manual listener existed for.
+  const { columns: windowColumns, rows: windowRows } = useWindowSize();
 
   // The store and the producer exist once, for the life of the process. They are
   // built outside the render body on purpose: a producer is not a value, and
@@ -205,10 +204,10 @@ export function App(props: AppProps): JSX.Element {
   // One width, computed once and passed down. Three components each deciding
   // their own rule width is how a header ends up wider than the status bar, which
   // is the most visible way a terminal layout looks unfinished.
-  const terminalWidth = SHELL_RULE_WIDTH(stdout.columns);
+  const terminalWidth = SHELL_RULE_WIDTH(windowColumns);
   const gutter = terminalWidth >= 100 ? 4 : terminalWidth >= 40 ? 2 : 0;
   const column = Math.max(1, Math.min(96, terminalWidth - gutter * 2));
-  const terminalRows = Math.max(8, stdout.rows ?? 24);
+  const terminalRows = Math.max(8, windowRows ?? 24);
   const rows = terminalRows;
   const contentRows = Math.max(1, rows - 8);
   const workSurface=producer?.workSurface?.();

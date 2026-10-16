@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React,{useEffect,useState} from 'react';
 import {Box,Text,useInput} from 'ink';
 import type {ChangeReview} from '../../../../src/adapters/worktree-review.ts';

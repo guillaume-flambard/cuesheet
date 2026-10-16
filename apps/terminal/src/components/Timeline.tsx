@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 /**
  * The conversation, and the only part that grows.
  *

@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React from 'react';
 import {Box,Text} from 'ink';
 import {theme,inkColor} from '../theme/tokens.ts';

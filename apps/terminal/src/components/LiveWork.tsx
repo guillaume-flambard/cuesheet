@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React from "react";
 import {Box,Text} from "ink";
 import type {Entry} from "../app/state.ts";

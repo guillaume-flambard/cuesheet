@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React, { useMemo, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import {SelectionRow,ViewTitle} from '../components/Surface.tsx';

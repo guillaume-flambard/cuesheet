@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import React,{useState} from 'react';import {Box,Text,useInput} from 'ink';
 import {ViewTitle} from '../components/Surface.tsx';
 import {commandCatalog} from '../app/commands.ts';import {theme,inkColor} from '../theme/tokens.ts';
