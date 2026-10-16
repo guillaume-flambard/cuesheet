@@ -92,3 +92,15 @@ const store=createStore();store.send({type:'compose',text:'DRAFT_KEEP'});store.s
   for(const shot of JSON.parse(run.stdout.trim())){const frame=shot.frame.replace(/\\x1b\\[[0-?]*[ -/]*[@-~]/g,'');assert.match(frame,/INTENT_KEEP/);assert.match(frame,/DRAFT_KEEP/);assert.match(frame,/Leave Kollio/);assert.match(frame,/planned/);assert.doesNotMatch(frame,/no project|reads|working/);assert.ok(frame.trimEnd().split('\n').length<=shot.rows-1);}
  } finally {rmSync(root,{recursive:true,force:true});}
 });
+
+it('the smallest supported size keeps the status bar, where the keyboard is read',()=>{
+ const root=mkdtempSync(join(tmpdir(),'cs-status-narrow-'));
+ try{
+  const terminal=resolve('apps/terminal'),script=join(root,'narrow.tsx');writeFileSync(join(root,'package.json'),'{"type":"module"}');
+  writeFileSync(script,`import React from ${JSON.stringify(join(terminal,'node_modules/react/index.js'))};import {render} from ${JSON.stringify(join(terminal,'node_modules/ink/build/index.js'))};import {PassThrough} from 'node:stream';import {App} from ${JSON.stringify(join(terminal,'src/app/App.tsx'))};import {createStore} from ${JSON.stringify(join(terminal,'src/app/store.ts'))};
+const store=createStore();const out=new PassThrough();let last='';out.on('data',b=>last=b.toString());const input=new PassThrough();Object.assign(input,{isTTY:true,setRawMode(){},ref(){},unref(){}});const app=render(<App store={store} producer={{say(){},choose(){}} as any}/>,{stdout:out as any,stderr:out as any,stdin:input as any,debug:true,exitOnCtrlC:false});
+(async()=>{const shots=[];for(const [columns,rows] of [[40,14],[80,24]]){Object.assign(out,{columns,rows,isTTY:false});out.emit('resize');await new Promise(r=>setTimeout(r,90));shots.push({columns,rows,frame:last});}app.unmount();console.log(JSON.stringify(shots));})();`);
+  const run=spawnSync(join(terminal,'node_modules/.bin/tsx'),[script],{encoding:'utf8',timeout:30000});assert.equal(run.status,0,run.stderr);
+  for(const shot of JSON.parse(run.stdout.trim())){const frame=shot.frame.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'');const lines=frame.trimEnd().split('\n');assert.ok(lines.length<=shot.rows-1,`${shot.columns}x${shot.rows} stays inside the box`);assert.match(frame,/Ctrl\+K commands/,`${shot.columns}x${shot.rows} shows the keyboard guide`);assert.match(lines[0]!,/◈ cuesheet/,`${shot.columns}x${shot.rows} keeps the identity on one header row`);}
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
