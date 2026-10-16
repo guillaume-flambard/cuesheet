@@ -23,7 +23,7 @@ export function edit(text: string, cursor: number, action: Edit | { insert: stri
 
 /** Terminal cells, including joined emoji and combining graphemes. */
 export function cellWidth(text:string):number {
- return characters(text).reduce((n,c)=>n+(/\p{Extended_Pictographic}/u.test(c)||/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\uff01-\uff60]/u.test(c)?2:/^\p{Mark}+$/u.test(c)?0:1),1);
+ return characters(text).reduce((n,c)=>n+(/\p{Extended_Pictographic}/u.test(c)||/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\uff01-\uff60]/u.test(c)?2:/^\p{Mark}+$/u.test(c)?0:1),0);
 }
 
 /**
@@ -54,24 +54,37 @@ export function removeRange(text:string,range:{start:number;end:number}):{text:s
  * that contains the selection and the cursor block inside the cell budget, so a
  * long draft scrolls rather than hiding the insertion point.
  */
-export function editorView(text:string,cursor:number,width:number,range?:{start:number;end:number}):{before:string;first:string;second:string;after:string;cells:number;cursorFirst:boolean} {
+export function editorView(text:string,cursor:number,width:number,range?:{start:number;end:number}):{before:string;first:string;second:string;after:string;cursor:string;cells:number;cursorFirst:boolean} {
  const chars=characters(text.replace(/\n/g,'\u21b5')),at=Math.min(Math.max(0,cursor),chars.length),limit=Math.max(3,width);
  const span=range?selectRange(range.start,range.end):{start:at,end:at};
  const start=Math.max(0,Math.min(span.start,chars.length)),end=Math.max(start,Math.min(span.end,chars.length));
- let from=0,to=chars.length;
- while(from<start&&cellWidth(chars.slice(from,to).join(''))>limit)from++;
- while(to>end&&cellWidth(chars.slice(from,to).join(''))>limit)to--;
  // The block carries the cursor. With the cursor at the right edge of a
  // selection the block is the character just past it; at the left edge it is
  // the range's own first character. Either way the two segments together cover
  // exactly the selected graphemes once, in render order.
  const right=at>=end;
- const prefix=from>0?'\u2039':'',suffix=to<chars.length?'\u203a':'';
- const before=prefix+chars.slice(from,start).join('');
- const selected=chars.slice(right?start:start+1,right?end:end).join('');
- const block=chars[right?end:start]??' ';
- const after=chars.slice(right?end+1:end,to).join('')+suffix;
- return right
-  ?{before,first:selected,second:block,after,cells:cellWidth(before+selected+block+after),cursorFirst:false}
-  :{before,first:block,second:selected,after,cells:cellWidth(before+block+selected+after),cursorFirst:true};
+ const build=(from:number,to:number,markers:boolean)=>{
+  const prefix=markers&&from>0?'\u2039':'',suffix=markers&&to<chars.length?'\u203a':'';
+  const before=prefix+chars.slice(from,start).join('');
+  const selected=chars.slice(right?start:start+1,right?end:end).join('');
+  const block=chars[right?end:start]??' ';
+  const after=chars.slice(right?end+1:end,to).join('')+suffix;
+  const first=right?selected:block,second=right?block:selected;
+  return {before,first,second,after,cursor:block,cells:cellWidth(before+first+second+after),cursorFirst:!right};
+ };
+ // The window starts on the cursor block and grows one grapheme at a time,
+ // left first, and only while the scroll markers still fit the budget. The
+ // markers are part of the width, so `cells` never exceeds the cell budget the
+ // caller gave, and the cursor is never the grapheme that gets dropped.
+ let from=start,to=right?Math.min(end+1,chars.length):end;
+ let view=build(from,to,true);
+ if(view.cells>limit){view=build(from,to,false);if(view.cells>limit){from=at;to=at;view=build(from,to,false);}}
+ for(let guard=chars.length+2;guard>0&&view.cells<=limit;guard--){
+  const left=from>0?build(from-1,to,true):null;
+  if(left&&left.cells<=limit){from--;view=left;continue;}
+  const right_=to<chars.length?build(from,to+1,true):null;
+  if(right_&&right_.cells<=limit){to++;view=right_;continue;}
+  break;
+ }
+ return view;
 }
